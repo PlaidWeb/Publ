@@ -1,7 +1,13 @@
 # config.py.dist
 # Sample configuration
 
+# Where static files get mapped to in URL space
 static_path = '/'
+# Where static files come from
 static_directory = 'example_site/static'
+
+# Where our site templates live
 template_directory = 'example_site/templates'
+
+# Where our site content lives
 entries_directory = 'example_site/entries'
