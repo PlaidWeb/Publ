@@ -2,10 +2,17 @@
 <html>
 <head>
     <title>{{entry.title | safe}}</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
 </head>
 <body>
 <h1>{{entry.title}}</h1>
 
     {{entry.body | safe}}
+    {% if entry.more %}
+
+    <div class="more"<a name="more"></a>
+    {{entry.more | safe}}
+    </div>
+    {% endif %}
 </body>
 </html>

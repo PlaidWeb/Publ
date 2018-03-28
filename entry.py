@@ -9,7 +9,13 @@ def parse(filepath):
         message = email.message_from_file(file)
 
     entry = {k.lower() : v for k,v in message.items()}
-    entry['body'] = markdown.markdown(message.get_payload())
+
+    entry_text = message.get_payload()
+    body, more = entry_text.split('~~~~~')
+    entry['body'] = markdown.markdown(body)
+    entry['more'] = markdown.markdown(more)
+
+
 
     # TODO add entry ID, date as appropriate
 
