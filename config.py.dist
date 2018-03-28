@@ -1,0 +1,5 @@
+# config.py.dist
+# Sample configuration
+
+template_directory = 'templates'
+entries_directory = 'entries'
