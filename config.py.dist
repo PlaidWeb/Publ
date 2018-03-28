@@ -1,5 +1,7 @@
 # config.py.dist
 # Sample configuration
 
+static_path = '/'
+static_directory = 'static'
 template_directory = 'templates'
 entries_directory = 'entries'
