@@ -2,6 +2,6 @@
 # Sample configuration
 
 static_path = '/'
-static_directory = 'static'
-template_directory = 'templates'
-entries_directory = 'entries'
+static_directory = 'example_site/static'
+template_directory = 'example_site/templates'
+entries_directory = 'example_site/entries'
