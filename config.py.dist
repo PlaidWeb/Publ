@@ -1,13 +1,20 @@
 # config.py.dist
 # Sample configuration
 
-# Where static files get mapped to in URL space
-static_path = '/'
 # Where static files come from
 static_directory = 'example_site/static'
+
+# Static files' URL path
+static_path = '/'
 
 # Where our site templates live
 template_directory = 'example_site/templates'
 
 # Where our site content lives
-entries_directory = 'example_site/entries'
+content_directory = 'example_site/content'
+
+# Where image renditions get saved out
+image_rendition_directory = 'example_site/static/img'
+
+# The URL that maps to the root of image_rendition_directory
+image_rendition_root = '/static/img'
