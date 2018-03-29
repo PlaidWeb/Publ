@@ -1,5 +1,5 @@
-# entry.py
-# Functions for handling entry content
+# item.py
+# Functions for handling content items
 
 import email
 import markdown

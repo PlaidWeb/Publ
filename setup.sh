@@ -15,9 +15,11 @@ echo "Configuring environment..."
 pipenv install
 
 echo "Updating data..."
-mkdir -p data tmp
+#mkdir -p data
 #pipenv run python -c "import db; db.create_tables()" || exit $?
 
+# Restart Passenger (at least per Dreamhost's config; TODO is this universal?)
+mkdir -p tmp
 touch tmp/restart.txt
 
 echo "Setup complete."
