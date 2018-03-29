@@ -128,7 +128,7 @@ as the ORM but eventualy I might move to SQLAlchemy or the like. Who knows!
 
 ## Design, roadmap, etc
 
-please see the [project wiki](https://github.com/fluffy-critter/Publ/wiki/Roadmap)
+please see the [project wiki](https://github.com/fluffy-critter/Publ/wiki/)
 
 ## Supporting Publ development
 
