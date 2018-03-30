@@ -29,9 +29,10 @@ class Entry:
         # also this code feels really messy
         with open(fullpath, 'r') as file:
             for line in file:
+                print("{} {}".format(state,line))
                 if state == ParseState.HEADERS:
                     if line.strip():
-                        k,v = line.split(':')
+                        k,_,v = line.partition(': ')
                         self.headers[k.lower()] = v.strip()
                     else:
                         state = ParseState.ATF
@@ -71,12 +72,12 @@ def scan_file(fullpath, relpath, assign_id=False):
     fixup_needed = not 'id' in entry.headers or not 'date' in entry.headers
 
     values = {
-        'file_path' = fullpath,
-        'category' = os.path.dirname(relpath),
-        'status' = index.PublishStatus[entry.headers.get('status').upper() or 'PUBLISHED'],
-        'type' = index.EntryType[entry.headers.get('type').upper() or 'ENTRY'],
-        'slug_text' = entry.headers.get('slug') or make_slug(entry.headers.get('title') or os.path.basename(relpath)),
-        'redirect_url' = entry.headers.get('redirect-to'),
+        'file_path': fullpath,
+        'category': os.path.dirname(relpath),
+        'status': index.PublishStatus[entry.headers.get('status').upper() or 'PUBLISHED'],
+        'type': index.EntryType[entry.headers.get('type').upper() or 'ENTRY'],
+        'slug_text': entry.headers.get('slug') or make_slug(entry.headers.get('title') or os.path.basename(relpath)),
+        'redirect_url': entry.headers.get('redirect-to'),
     }
 
     entry_id = 'id' in entry.headers and int(entry.headers['id']) or None

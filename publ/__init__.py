@@ -1,5 +1,5 @@
 from . import index
-from . import item
+from . import entry
 
 index = index
-item = item
+entry = entry

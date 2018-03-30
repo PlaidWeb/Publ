@@ -71,7 +71,7 @@ def render_content(path, entry):
     if content_file:
         tmpl = map_template(path, 'entry')
         app.logger.debug("rendering %s with %s" % (content_file, tmpl))
-        return render_template(tmpl, entry=publ.item.parse(content_file))
+        return render_template(tmpl, entry=publ.entry.Entry(content_file))
 
     # maybe it's a template?
     template_file = map_template(path, entry)
