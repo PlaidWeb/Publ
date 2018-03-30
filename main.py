@@ -9,7 +9,6 @@ import publ
 
 from flask import Flask,redirect,render_template,send_from_directory
 
-publ.index.create_tables()
 
 app = Flask(__name__,
     static_folder=config.static_directory,
@@ -71,7 +70,11 @@ def render_content(path, entry):
     if content_file:
         tmpl = map_template(path, 'entry')
         app.logger.debug("rendering %s with %s" % (content_file, tmpl))
-        return render_template(tmpl, entry=publ.entry.Entry(content_file))
+        entry_data = publ.entry.Entry(content_file)
+        if entry_data.markdown:
+            entry_data.body = markdown.markdown(entry_data.body)
+            entry_data.more = markdown.markdown(entry_data.more)
+        return render_template(tmpl, entry=entry_data)
 
     # maybe it's a template?
     template_file = map_template(path, entry)
@@ -84,4 +87,5 @@ def render_content(path, entry):
     return render_template(os.path.join('404.html'), path=os.path.join(path, entry)), 404
 
 if __name__ == "__main__":
+    publ.model.create_tables()
     app.run(debug=True)

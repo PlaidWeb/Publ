@@ -1,5 +1,5 @@
-from . import index
-from . import entry
+from . import index, model, entry
 
 index = index
+model = model
 entry = entry

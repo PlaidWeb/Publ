@@ -10,7 +10,7 @@ from enum import Enum
 
 import config
 
-from . import index
+from . import model
 
 class ParseState(Enum):
     HEADERS = 0
@@ -22,6 +22,9 @@ class Entry:
         self.headers = {}
         self.body = ''
         self.more = ''
+
+        _,ext = os.path.splitext(fullpath)
+        self.markdown = (ext == '.md')
 
         state = ParseState.HEADERS
 
@@ -46,6 +49,7 @@ class Entry:
     def write_file(self, fullpath):
         with open(fullpath, 'w') as file:
             for k,v in self.headers.items():
+                # TODO camelcase the header name
                 print("{}: {}".format(k, v), file=file)
             print('', file=file)
             print(self.body, file=file)
@@ -59,9 +63,8 @@ def make_slug(title):
     # TODO this should probably handle things other than English ASCII...
     return re.sub(r"[^a-zA-Z0-9]+", r"-", title.strip())
 
-def scan_file(fullpath, relpath, assign_id=False):
+def scan_file(fullpath, relpath, assign_id):
     ''' scan a file and put it into the index '''
-
     entry = Entry(fullpath)
 
     if not 'id' in entry.headers and not assign_id:
@@ -73,8 +76,8 @@ def scan_file(fullpath, relpath, assign_id=False):
     values = {
         'file_path': fullpath,
         'category': os.path.dirname(relpath),
-        'status': index.PublishStatus[entry.headers.get('status', 'PUBLISHED').upper()],
-        'entry_type': index.EntryType[entry.headers.get('type', 'ENTRY').upper()],
+        'status': model.PublishStatus[entry.headers.get('status', 'PUBLISHED').upper()],
+        'entry_type': model.EntryType[entry.headers.get('type', 'ENTRY').upper()],
         'slug_text': entry.headers.get('slug') or make_slug(entry.headers.get('title') or os.path.basename(relpath)),
         'redirect_url': entry.headers.get('redirect-to'),
     }
@@ -89,12 +92,12 @@ def scan_file(fullpath, relpath, assign_id=False):
 
     try:
         # If we have entry_id, use that as the query; otherwise use fullpath
-        record = index.Entry.get(
-            entry_id and (index.Entry.id == entry_id) or
-            (index.Entry.file_path == fullpath))
-        record.update(**values).where(index.Entry.id == record.id).execute()
-    except index.Entry.DoesNotExist:
-        record = index.Entry.create(id=entry_id, **values)
+        record = model.Entry.get(
+            entry_id and (model.Entry.id == entry_id) or
+            (model.Entry.file_path == fullpath))
+        record.update(**values).where(model.Entry.id == record.id).execute()
+    except model.Entry.DoesNotExist:
+        record = model.Entry.create(id=entry_id, **values)
 
     entry.headers['id'] = record.id
 
@@ -102,21 +105,4 @@ def scan_file(fullpath, relpath, assign_id=False):
         entry.write_file(fullpath)
 
     return record
-
-def scan_index(content_dir):
-    ''' scans the specified directory for content to ingest '''
-    fixups = []
-    for root, _, files in os.walk(content_dir, followlinks=True):
-        for file in files:
-            basename = file
-            fullpath = os.path.join(root, file)
-            relpath = os.path.relpath(fullpath, content_dir)
-            if not scan_file(fullpath, relpath, assign_id=False):
-                # file scan failed, add to the fixups queue
-                fixups.append((fullpath, relpath))
-
-    # perform the fixup queue
-    for fullpath, relpath in fixups:
-        scan_file(fullpath, relpath, assign_id=True)
-
 
