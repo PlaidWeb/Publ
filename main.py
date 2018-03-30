@@ -34,10 +34,11 @@ def map_template(path, template_type):
 def map_content_file(path):
     # TODO this goes away, since we'll be looking up by id in the data store and
     # getting the appropriately-formatted content from there
-    content_file = path + ".md"
-    app.logger.debug("  trying " + content_file)
-    if os.path.isfile(content_file):
-        return content_file
+    for ext in ['', '.md', '.html']:
+        content_file = path + ext
+        app.logger.debug("  trying " + content_file)
+        if os.path.isfile(content_file):
+            return content_file
     app.logger.debug("not found")
     return None
 
