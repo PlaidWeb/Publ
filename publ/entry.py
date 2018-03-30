@@ -29,7 +29,6 @@ class Entry:
         # also this code feels really messy
         with open(fullpath, 'r') as file:
             for line in file:
-                print("{} {}".format(state,line))
                 if state == ParseState.HEADERS:
                     if line.strip():
                         k,_,v = line.partition(': ')
@@ -74,8 +73,8 @@ def scan_file(fullpath, relpath, assign_id=False):
     values = {
         'file_path': fullpath,
         'category': os.path.dirname(relpath),
-        'status': index.PublishStatus[entry.headers.get('status').upper() or 'PUBLISHED'],
-        'type': index.EntryType[entry.headers.get('type').upper() or 'ENTRY'],
+        'status': index.PublishStatus[entry.headers.get('status', 'PUBLISHED').upper()],
+        'entry_type': index.EntryType[entry.headers.get('type', 'ENTRY').upper()],
         'slug_text': entry.headers.get('slug') or make_slug(entry.headers.get('title') or os.path.basename(relpath)),
         'redirect_url': entry.headers.get('redirect-to'),
     }
@@ -83,28 +82,26 @@ def scan_file(fullpath, relpath, assign_id=False):
     entry_id = 'id' in entry.headers and int(entry.headers['id']) or None
 
     if 'date' in entry.headers:
-        values['date'] = dateutil.parser.parse(entry.headers['date'])
+        values['entry_date'] = dateutil.parser.parse(entry.headers['date'])
     else:
-        values['date'] = datetime.datetime.fromtimestamp(os.stat(fullpath).st_ctime)
-        entry.headers['date'] = values['date'].isoformat()
+        values['entry_date'] = datetime.datetime.fromtimestamp(os.stat(fullpath).st_ctime)
+        entry.headers['date'] = values['entry_date'].isoformat()
 
-    # Try to get an existing entry for this one
-    if entry_id:
-        record, created = index.Entry.get_or_create(id=entry_id, defaults=values)
-    else:
-        record = index.Entry.create(*defaults)
-        entry_id = record.id
-        entry.headers['id'] = entry_id
-        created = True
+    try:
+        # If we have entry_id, use that as the query; otherwise use fullpath
+        record = index.Entry.get(
+            entry_id and (index.Entry.id == entry_id) or
+            (index.Entry.file_path == fullpath))
+        record.update(**values).where(index.Entry.id == record.id).execute()
+    except index.Entry.DoesNotExist:
+        record = index.Entry.create(id=entry_id, **values)
 
-    if not created:
-        # update the database with the newly slurped file
-        record.update(**values).where(index.Entry.id == entry_id).execute()
+    entry.headers['id'] = record.id
 
     if fixup_needed:
         entry.write_file(fullpath)
 
-    return True
+    return record
 
 def scan_index(content_dir):
     ''' scans the specified directory for content to ingest '''
