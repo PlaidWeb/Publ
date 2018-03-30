@@ -5,11 +5,11 @@ import os.path
 import markdown
 
 import config
-import item
+import publ
 
 from flask import Flask,redirect,render_template,send_from_directory
 
-static_root_dir = os.path.join(os.getcwd(), 'public')
+
 app = Flask(__name__,
     static_folder=config.static_directory,
     static_path=config.static_path,
@@ -34,10 +34,11 @@ def map_template(path, template_type):
 def map_content_file(path):
     # TODO this goes away, since we'll be looking up by id in the data store and
     # getting the appropriately-formatted content from there
-    content_file = path + ".md"
-    app.logger.debug("  trying " + content_file)
-    if os.path.isfile(content_file):
-        return content_file
+    for ext in ['', '.md', '.html']:
+        content_file = path + ext
+        app.logger.debug("  trying " + content_file)
+        if os.path.isfile(content_file):
+            return content_file
     app.logger.debug("not found")
     return None
 
@@ -70,7 +71,11 @@ def render_content(path, entry):
     if content_file:
         tmpl = map_template(path, 'entry')
         app.logger.debug("rendering %s with %s" % (content_file, tmpl))
-        return render_template(tmpl, entry=item.parse(content_file))
+        entry_data = publ.entry.Entry(content_file)
+        if entry_data.markdown:
+            entry_data.body = markdown.markdown(entry_data.body)
+            entry_data.more = markdown.markdown(entry_data.more)
+        return render_template(tmpl, entry=entry_data)
 
     # maybe it's a template?
     template_file = map_template(path, entry)
@@ -83,4 +88,5 @@ def render_content(path, entry):
     return render_template(os.path.join('404.html'), path=os.path.join(path, entry)), 404
 
 if __name__ == "__main__":
+    publ.model.create_tables()
     app.run(debug=True)
