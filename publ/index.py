@@ -1,129 +1,33 @@
 # index.py
-# Content indices et al
+# Content indexer
 
-from peewee import *
-import playhouse.db_url
-from enum import Enum
+import os
+from . import entry
 
-import config
+ENTRY_TYPES = ['.md', '.htm', '.html']
+IMAGE_TYPES = ['.png', '.gif', '.jpg']
 
-database = playhouse.db_url.connect(config.database)
+def scan_file(fullpath, relpath, assign_id):
+    _,ext = os.path.splitext(fullpath)
+    if ext in ENTRY_TYPES:
+        return entry.scan_file(fullpath, relpath, assign_id)
+    #elif ext in IMAGE_TYPES:
+    #   TODO
 
-def atomic():
-    return database.atomic()
+def scan_index(content_dir):
+    ''' scans the specified directory for content to ingest '''
+    fixups = []
+    for root, _, files in os.walk(content_dir, followlinks=True):
+        for file in files:
+            basename = file
+            fullpath = os.path.join(root, file)
+            relpath = os.path.relpath(fullpath, content_dir)
+            if not scan_file(fullpath, relpath, False):
+                # file scan failed, add to the fixups queue
+                fixups.append((fullpath, relpath))
 
-''' Boilerplate for schema migration '''
-
-class BaseModel(Model):
-    class Meta:
-        database = database
-
-    @staticmethod
-    def update_schema(check_update,from_version):
-        ''' Implement this to migrate a database from an older version, and return the current version of this table.
-
-        Only process updates if check_update is true. Example:
-
-            if check_update and from_version < 1:
-                migrate(
-                    migrator.add_column('BlahTable', 'foo', BlahTable.foo),
-                    migrator.add_column('BlahTable', 'bar', BlahTable.baz), # changed from 'bar' to 'baz' in verison 2
-                )
-            if check_update and from_version < 2:
-                migrate(
-                    migrator.rename_column('BlahTable', 'bar', 'baz'),
-                )
-            return 2
-        '''
-        return 0
-
-class Global(BaseModel):
-    ''' Settings for the site itself (schema version, generic global config, etc.) '''
-    key = CharField(unique=True)
-    int_value = IntegerField(null=True)
-    string_value = CharField(null=True)
-
-    @staticmethod
-    def update_schema(check_update,from_version):
-        ''' Hook for migrating schemata, e.g. table names '''
-        return 0
-
-''' Our types '''
-
-class PublishStatus(Enum):
-    DRAFT = 0
-    PUBLISHED = 1
-    HIDDEN = 2
-
-    @property
-    def is_visible(self):
-        return self == PublishStatus.PUBLISHED
-
-    @staticmethod
-    class Field(IntegerField):
-        def db_value(self,value):
-            return value.value
-        def python_value(self,value):
-            return PublishStatus(value)
-
-class EntryType(Enum):
-    ENTRY = 0
-    PAGE = 1
-
-    @staticmethod
-    class Field(IntegerField):
-        def db_value(self,value):
-            return value.value
-        def python_value(self,value):
-            return EntryType(value)
+    # perform the fixup queue
+    for fullpath, relpath in fixups:
+        scan_file(fullpath, relpath, True)
 
 
-class Entry(BaseModel):
-    file_path = CharField()
-    category = CharField()
-    status = PublishStatus.Field()
-    entry_type = EntryType.Field()
-    entry_date = DateTimeField()
-    slug_text = CharField()
-    redirect_url = CharField(null=True)
-
-    class Meta:
-        indexes = (
-            (('entry_type', 'category', 'entry_date'), False),
-        )
-
-class LegacyUrl(BaseModel):
-    incoming_url = CharField(unique=True)
-    redirect_url = CharField()
-
-class Image(BaseModel):
-    file_path = CharField(unique=True)
-    md5sum = CharField()
-    mtime = DateTimeField()
-
-
-''' Table management '''
-
-all_types = [
-    Global,    # MUST come first
-
-    Entry,
-    LegacyUrl,
-    Image,
-]
-
-def create_tables():
-    with database.atomic():
-        database.create_tables(all_types, safe=True)
-        for table in all_types:
-            schemaVersion, created = Global.get_or_create(key='schemaVersion.' + table.__name__)
-            schemaVersion.int_value = table.update_schema(not created, schemaVersion.int_value)
-            schemaVersion.save()
-
-def drop_all_tables(i_am_really_sure=False):
-    ''' Call this if you need to nuke everything and restart. Only for development purposes, hopefully. '''
-    if not i_am_really_sure:
-        raise "You are not really sure. Call with i_am_really_sure=True to proceed."
-    with database.atomic():
-        for table in all_types:
-            database.drop_table(table)
