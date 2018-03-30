@@ -11,6 +11,8 @@ flask = "*"
 requests = "*"
 markdown = "*"
 watchdog = "*"
+peewee = "*"
+python-dateutil = "*"
 
 
 [dev-packages]
