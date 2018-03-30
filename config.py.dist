@@ -5,7 +5,7 @@
 static_directory = 'example_site/static'
 
 # Static files' URL path
-static_path = '/'
+static_path = '/static'
 
 # Where our site templates live
 template_directory = 'example_site/templates'
@@ -18,3 +18,14 @@ image_rendition_directory = 'example_site/static/img'
 
 # The URL that maps to the root of image_rendition_directory
 image_rendition_root = '/static/img'
+
+# In-memory database; fastest but most memory-intensive
+database = "sqlite:///:memory:"
+
+# SQLite database; adequate performance, but doesn't work well on Dreamhost
+# database = "sqlite:///data/index.db"
+
+# MySQL database; scales well but has admin overhead
+# NOTE: You cannot share databases between Publ instances! Make sure this
+# database is unique to the instance.
+# database = "mysql+pool://user:password@host/dbname?stale_timeout=60"
