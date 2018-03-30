@@ -125,3 +125,11 @@ to be sufficient for most sites, and larger sites can do a file-backed sqlite
 store. Really large-scale deployments could use MySQL or Postgres or whatever.
 For prototyping I expect to use [Peewee](https://peewee.readthedocs.io/en/latest/)
 as the ORM but eventualy I might move to SQLAlchemy or the like. Who knows!
+
+## Design, roadmap, etc
+
+please see the [project wiki](https://github.com/fluffy-critter/Publ/wiki/)
+
+## Supporting Publ development
+
+Please consider supporting me on  [Patreon](http://patreon.com/fluffy) or [Liberapay](https://liberapay.com/fluffy).
