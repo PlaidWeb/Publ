@@ -6,27 +6,35 @@ import subprocess
 import logging
 import logging.handlers
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-log_handler = logging.handlers.TimedRotatingFileHandler('tmp/passenger.log')
-log_handler.setLevel(logging.DEBUG)
-log_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s '
-    '[in %(pathname)s:%(lineno)d]'
-))
-logger.addHandler(log_handler)
+# set up logging; see https://docs.python.org/2/library/logging.config.html#logging-config-fileformat for details
+if os.path.isfile('logging.conf'):
+    logging.config.fileConfig('logging.conf')
+else:
+    # This needs to be compatible with both python2 and python3, so unfortunately
+    # we can't just use logging.basicConfig(handlers=...)
+    log_handler = logging.handlers.TimedRotatingFileHandler('tmp/publ.log')
+    log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d]'
+    ))
+    logging.getLogger().addHandler(log_handler)
+
+logger = logging.getLogger(__name__)
 
 logger.info('My interpreter: %s' % sys.executable)
 
 INTERP = subprocess.check_output(['pipenv', 'run', 'which', 'python3']).strip().decode('utf-8')
-logger.info('Expected interpreter: %s' % INTERP)
 
 if sys.executable != INTERP:
-    log_handler.flush()
+    logger.info('Restarting with interpreter: %s', INTERP)
+    [h.flush() for h in logger.handlers]
     os.execl(INTERP, INTERP, *sys.argv)
 
 sys.path.append(os.getcwd())
 
+# load the app
 import main
 
 # hackish way to make Passenger urldecode the same way WSGI does
