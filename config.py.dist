@@ -25,10 +25,11 @@ image_rendition_directory = 'example_site/static/img'
 image_rendition_root = '/static/img'
 
 # In-memory database; fastest but most memory-intensive
-database = "sqlite:///:memory:"
+# also for some reason peewee keeps dropping it? WTF
+#database = "sqlite:///:memory:"
 
 # SQLite database; adequate performance, but doesn't work well on Dreamhost
-# database = "sqlite:///data/index.db"
+database = "sqlite:///data/index.db"
 
 # MySQL database; scales well but has admin overhead
 # NOTE: You cannot share databases between Publ instances! Make sure this
