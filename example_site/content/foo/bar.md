@@ -1,7 +1,7 @@
 title: This is a test entry
-id: 300
-date: 2018-03-31 00:05:34-07:00
-
+ID: 300
+Date: 2018-03-31 00:59:00-07:00
+Slug-Text: bladlkfjal
 
 This is an incredibly basic test entry.
 
@@ -9,29 +9,9 @@ This is an incredibly basic test entry.
 
 Well, I dunno.
 
-
-
-
-
-
-
-
-
-
-
-
 ~~~~~
-
 But here is stuff below the cut. whee cut.
 
 ![some image foo](http://beesbuzz.biz/d/lewi/lewi-1.jpg)
 
-
-
-
-
-
-
-
-
-
+Also here is a link to [entry id 1](1)
