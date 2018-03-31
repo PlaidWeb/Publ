@@ -6,6 +6,7 @@ import os
 import re
 import arrow
 from enum import Enum
+from requests.structures import CaseInsensitiveDict
 
 import config
 
@@ -13,12 +14,13 @@ from . import model
 
 class ParseState(Enum):
     HEADERS = 0
-    ATF = 1
-    BTF = 2
+    WHITESPACE = 1
+    ATF = 2
+    BTF = 3
 
 class Entry:
     def __init__(self, fullpath):
-        self.headers = {}
+        self.headers = CaseInsensitiveDict()
         self.body = ''
         self.more = ''
 
@@ -32,16 +34,19 @@ class Entry:
         with open(fullpath, 'r') as file:
             for line in file:
                 if state == ParseState.HEADERS:
-                    if line.strip():
-                        k,_,v = line.partition(': ')
-                        if v:
-                            self.headers[k.lower()] = v.strip()
-                        elif k.strip():
-                            # we didn't have any headers but we do have content, so we'd better just treat this as ATF content
-                            state = ParseState.ATF
+                    m = re.match(r'([a-zA-Z0-9\-]+):\s+(.*)$', line)
+                    if m:
+                        k,v = m.group(1,2)
+                        self.headers[k] = v.strip() # TODO handle multiples
                     else:
+                        # We found post-header whitespace to consume
+                        state = ParseState.WHITESPACE
+
+                if state == ParseState.WHITESPACE:
+                    if line.strip():
                         state = ParseState.ATF
 
+                # ATF processing the BTF marker doesn't fallthrough to BTF parsing
                 if state == ParseState.ATF:
                     if line.strip() == '~~~~~':
                         state = ParseState.BTF
@@ -56,10 +61,10 @@ class Entry:
                 # TODO camelcase the header name
                 print("{}: {}".format(k, v), file=file)
             print('', file=file)
-            print(self.body, file=file)
+            file.write(self.body)
             if self.more:
                 print('~~~~~', file=file)
-                print(self.more, file=file)
+                file.write(self.more)
 
 def make_slug(title):
     ''' convert a title into a URL-friendly slug '''
@@ -80,19 +85,19 @@ def scan_file(fullpath, relpath, assign_id):
     values = {
         'file_path': fullpath,
         'category': os.path.dirname(relpath),
-        'status': model.PublishStatus[entry.headers.get('status', 'PUBLISHED').upper()],
-        'entry_type': model.EntryType[entry.headers.get('type', 'ENTRY').upper()],
-        'slug_text': entry.headers.get('slug') or make_slug(entry.headers.get('title') or os.path.basename(relpath)),
-        'redirect_url': entry.headers.get('redirect-to'),
+        'status': model.PublishStatus[entry.headers.get('Status', 'PUBLISHED').upper()],
+        'entry_type': model.EntryType[entry.headers.get('Type', 'ENTRY').upper()],
+        'slug_text': entry.headers.get('Slug-Text') or make_slug(entry.headers.get('Title') or os.path.basename(relpath)),
+        'redirect_url': entry.headers.get('Redirect-To'),
     }
 
-    entry_id = 'id' in entry.headers and int(entry.headers['id']) or None
+    entry_id = 'ID' in entry.headers and int(entry.headers['ID']) or None
 
     if 'date' in entry.headers:
         entry_date = arrow.get(entry.headers['date'], tzinfo=config.timezone)
     else:
         entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
-        entry.headers['date'] = entry_date.format()
+        entry.headers['Date'] = entry_date.format()
     values['entry_date'] = entry_date.datetime
 
     try:
@@ -104,7 +109,7 @@ def scan_file(fullpath, relpath, assign_id):
     except model.Entry.DoesNotExist:
         record = model.Entry.create(id=entry_id, **values)
 
-    entry.headers['id'] = record.id
+    entry.headers['ID'] = record.id
 
     if fixup_needed:
         entry.write_file(fullpath)
