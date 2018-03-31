@@ -2,6 +2,8 @@ title: This is a test entry
 ID: 300
 Date: 2018-03-31 00:59:00-07:00
 Slug-Text: bladlkfjal
+Path-Alias: /some-old-url.php
+Path-Alias: /foo/bar
 
 This is an incredibly basic test entry.
 
