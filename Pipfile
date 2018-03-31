@@ -12,7 +12,7 @@ requests = "*"
 markdown = "*"
 watchdog = "*"
 peewee = "*"
-python-dateutil = "*"
+arrow = "*"
 
 
 [dev-packages]

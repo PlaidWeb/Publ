@@ -4,8 +4,7 @@
 import markdown
 import os
 import re
-import datetime
-import dateutil.parser
+import arrow
 from enum import Enum
 
 import config
@@ -35,10 +34,15 @@ class Entry:
                 if state == ParseState.HEADERS:
                     if line.strip():
                         k,_,v = line.partition(': ')
-                        self.headers[k.lower()] = v.strip()
+                        if v:
+                            self.headers[k.lower()] = v.strip()
+                        elif k.strip():
+                            # we didn't have any headers but we do have content, so we'd better just treat this as ATF content
+                            state = ParseState.ATF
                     else:
                         state = ParseState.ATF
-                elif state == ParseState.ATF:
+
+                if state == ParseState.ATF:
                     if line.strip() == '~~~~~':
                         state = ParseState.BTF
                     else:
@@ -85,10 +89,11 @@ def scan_file(fullpath, relpath, assign_id):
     entry_id = 'id' in entry.headers and int(entry.headers['id']) or None
 
     if 'date' in entry.headers:
-        values['entry_date'] = dateutil.parser.parse(entry.headers['date'])
+        entry_date = arrow.get(entry.headers['date'], tzinfo=config.timezone)
     else:
-        values['entry_date'] = datetime.datetime.fromtimestamp(os.stat(fullpath).st_ctime)
-        entry.headers['date'] = values['entry_date'].isoformat()
+        entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
+        entry.headers['date'] = entry_date.format()
+    values['entry_date'] = entry_date.datetime
 
     try:
         # If we have entry_id, use that as the query; otherwise use fullpath
