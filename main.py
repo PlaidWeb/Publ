@@ -6,87 +6,66 @@ import markdown
 
 import config
 import publ
+import logging
 
-from flask import Flask,redirect,render_template,send_from_directory
-
+from flask import Flask,redirect,render_template,send_from_directory,url_for
 
 app = Flask(__name__,
     static_folder=config.static_directory,
     static_path=config.static_path,
     template_folder=config.template_directory)
 
-def map_template(path, template_type):
-    orig_path = path
+def map_template(path, template):
     path = os.path.normpath(path)
+    app.logger.debug('looking for template %s in directory %s', template, path)
     while True:
-        # TODO map html, xml, or whatever, and provide an appropriate content-type too
-        candidate = os.path.join(path, template_type + '.html')
-        app.logger.debug("checking candidate %s" % candidate)
-        if os.path.isfile(os.path.join(config.template_directory, candidate)):
-            app.logger.debug("found %s" % candidate)
-            return candidate
+        for extension in ['', '.html', '.xml', '.json']:
+            candidate = os.path.join(path, template + extension)
+            app.logger.debug("checking candidate %s" % candidate)
+            if os.path.isfile(os.path.join(config.template_directory, candidate)):
+                app.logger.debug("found %s", candidate)
+                return candidate
         parent = os.path.dirname(path)
         if parent == path:
-            app.logger.warning("Couldn't find template %s for path %s" % (template_type, orig_path))
+            app.logger.warning("Couldn't find template %s for path %s", template_type, orig_path)
             return None
         path = parent
 
-def map_content_file(path):
-    # TODO this goes away, since we'll be looking up by id in the data store and
-    # getting the appropriately-formatted content from there
-    for ext in ['', '.md', '.html']:
-        content_file = path + ext
-        app.logger.debug("  trying " + content_file)
-        if os.path.isfile(content_file):
-            return content_file
-    app.logger.debug("not found")
-    return None
-
 @app.route('/')
-def main_page():
-    return render_index('')
+@app.route('/<path:category>/')
+@app.route('/<template>')
+@app.route('/<path:category>/<template>')
+def render_category(category='', template='index'):
+    tmpl = map_template(category, template)
+    return 'render template {} for category {}'.format(tmpl, category)
 
-@app.route('/<path:path>/')
-def render_index(path):
-    tmpl = map_template(path, 'index')
-    return 'render index template %s for category %s' % (tmpl, path)
+@app.route('/<int:entry_id>')
+@app.route('/<int:entry_id>-<slug_text>')
+@app.route('/<path:category>/<int:entry_id>')
+@app.route('/<path:category>/<int:entry_id>-<slug_text>')
+def render_entry(entry_id, slug_text='', category=''):
+    # check if it's a valid entry
+    idx_entry = publ.model.Entry.get_or_none(publ.model.Entry.id == entry_id)
+    if not idx_entry:
+        app.logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
+        return render_template(map_template(category, '404')), 404
 
-@app.route('/<entry>')
-def root_directory(entry):
-    return render_content('', entry)
+    if idx_entry.category != category or idx_entry.slug_text != slug_text:
+        return redirect(url_for('render_entry',
+            entry_id=entry_id,
+            category=idx_entry.category,
+            slug_text=idx_entry.slug_text))
 
-@app.route('/<path:path>/<entry>')
-def render_content(path, entry):
-    # TODO entry will be a thing that gets parsed:
-    #   <int:id> redirects to item's canonical URL
-    #   <int:id>-slug renders the content OR redirects to the canonical URL if it doesn't match
-    #   <name> renders the path's template, or returns the static content or whatever
-    fullpath = os.path.normpath(os.path.join(path, entry))
-    filepath = os.path.join(config.content_directory, fullpath)
-    if os.path.isdir(filepath):
-        return render_index(fullpath)
+    tmpl = map_template(category, 'entry')
+    entry_data = publ.entry.Entry(idx_entry.file_path)
+    if entry_data.markdown:
+        entry_data.body = entry_data.body and markdown.markdown(entry_data.body)
+        entry_data.more = entry_data.more and markdown.markdown(entry_data.more)
+    return render_template(tmpl, entry=entry_data)
 
-    content_file = map_content_file(filepath)
-    app.logger.debug("got content file %s -> %s" % (filepath, content_file))
-    if content_file:
-        tmpl = map_template(path, 'entry')
-        app.logger.debug("rendering %s with %s" % (content_file, tmpl))
-        entry_data = publ.entry.Entry(content_file)
-        if entry_data.markdown:
-            entry_data.body = markdown.markdown(entry_data.body)
-            entry_data.more = markdown.markdown(entry_data.more)
-        return render_template(tmpl, entry=entry_data)
-
-    # maybe it's a template?
-    template_file = map_template(path, entry)
-    if template_file:
-        return 'render template %s for category %s' % (template_file, path)
-
-    # TODO: check for legacy URL mapping
-
-    # content not found
-    return render_template(os.path.join('404.html'), path=os.path.join(path, entry)), 404
+logging.info("Setting up")
+publ.model.create_tables()
+publ.index.scan_index(config.content_directory)
 
 if __name__ == "__main__":
-    publ.model.create_tables()
     app.run(debug=True)
