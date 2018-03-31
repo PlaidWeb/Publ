@@ -92,15 +92,15 @@ class Entry(BaseModel):
             (('entry_type', 'category', 'entry_date'), False),
         )
 
-class LegacyUrl(BaseModel):
-    incoming_url = CharField(unique=True)
-    redirect_url = CharField()
+class PathAlias(BaseModel):
+    path = CharField(unique=True)
+    redirect_url = CharField(null=True)
+    redirect_entry = ForeignKeyField(Entry, null=True, backref='aliases')
 
 class Image(BaseModel):
     file_path = CharField(unique=True)
     md5sum = CharField()
     mtime = DateTimeField()
-
 
 ''' Table management '''
 
@@ -108,7 +108,7 @@ all_types = [
     Global,    # MUST come first
 
     Entry,
-    LegacyUrl,
+    PathAlias,
     Image,
 ]
 

@@ -8,6 +8,7 @@ import config
 import publ
 import logging
 
+import flask
 from flask import Flask,redirect,render_template,send_from_directory,url_for
 
 app = Flask(__name__,
@@ -16,6 +17,7 @@ app = Flask(__name__,
     template_folder=config.template_directory)
 
 def map_template(path, template):
+    orig_path = path
     path = os.path.normpath(path)
     app.logger.debug('looking for template %s in directory %s', template, path)
     while True:
@@ -27,15 +29,25 @@ def map_template(path, template):
                 return candidate
         parent = os.path.dirname(path)
         if parent == path:
-            app.logger.warning("Couldn't find template %s for path %s", template_type, orig_path)
+            app.logger.warning("Couldn't find template %s for path %s", template, orig_path)
             return None
         path = parent
+
+def get_redirect():
+    return (publ.path_alias.get_redirection(flask.request.full_path)
+        or publ.path_alias.get_redirection(flask.request.path)
+        )
 
 @app.route('/')
 @app.route('/<path:category>/')
 @app.route('/<template>')
 @app.route('/<path:category>/<template>')
 def render_category(category='', template='index'):
+    # See if this is an aliased path
+    redir = get_redirect()
+    if redir:
+        return redirect(redir)
+
     tmpl = map_template(category, template)
     return 'render template {} for category {}'.format(tmpl, category)
 
@@ -47,9 +59,15 @@ def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
     idx_entry = publ.model.Entry.get_or_none(publ.model.Entry.id == entry_id)
     if not idx_entry:
+        # This might be a legacy URL that tripped the id match rule
+        redir = get_redirect()
+        if redir:
+            return redirect(redir)
+
         app.logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
         return render_template(map_template(category, '404')), 404
 
+    # check if the canonical URL matches
     if idx_entry.category != category or idx_entry.slug_text != slug_text:
         return redirect(url_for('render_entry',
             entry_id=entry_id,

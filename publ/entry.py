@@ -11,6 +11,7 @@ from requests.structures import CaseInsensitiveDict
 import config
 
 from . import model
+from . import path_alias
 
 class ParseState(Enum):
     HEADERS = 0
@@ -20,7 +21,7 @@ class ParseState(Enum):
 
 class Entry:
     def __init__(self, fullpath):
-        self.headers = CaseInsensitiveDict()
+        self.headers = []
         self.body = ''
         self.more = ''
 
@@ -37,7 +38,7 @@ class Entry:
                     m = re.match(r'([a-zA-Z0-9\-]+):\s+(.*)$', line)
                     if m:
                         k,v = m.group(1,2)
-                        self.headers[k] = v.strip() # TODO handle multiples
+                        self.headers.append((k,v))
                     else:
                         # We found post-header whitespace to consume
                         state = ParseState.WHITESPACE
@@ -55,6 +56,29 @@ class Entry:
                 elif state == ParseState.BTF:
                     self.more += line
 
+    ''' Get the first header matching the given key, case-insensitive '''
+    def get_header(self, key, default=None):
+        for k,v in self.headers:
+            if k.lower() == key.lower():
+                return v
+        return default
+
+    ''' Get a list of all headers matching the given key '''
+    def get_headers(self, key):
+        return [v for (k,v) in self.headers if k.lower() == key.lower()]
+
+    ''' Replace the first instance of a header, or set it anew if it doesn't exist
+
+        Returns whether the key was newly-created
+    '''
+    def set_header(self, key, val):
+        for idx,(k,v) in enumerate(self.headers):
+            if k.lower() == key.lower():
+                self.headers[idx] = (key,val)
+                return False
+        self.headers.append((k,v))
+        return True
+
     def write_file(self, fullpath):
         with open(fullpath, 'w') as file:
             for k,v in self.headers.items():
@@ -66,9 +90,8 @@ class Entry:
                 print('~~~~~', file=file)
                 file.write(self.more)
 
+''' convert a title into a URL-friendly slug '''
 def make_slug(title):
-    ''' convert a title into a URL-friendly slug '''
-
     # TODO this should probably handle things other than English ASCII...
     return re.sub(r"[^a-zA-Z0-9]+", r"-", title.strip())
 
@@ -76,28 +99,28 @@ def scan_file(fullpath, relpath, assign_id):
     ''' scan a file and put it into the index '''
     entry = Entry(fullpath)
 
-    if not 'id' in entry.headers and not assign_id:
+    entry_id = int(entry.get_header('id') or 0)
+    if not entry_id and not assign_id:
         # We can't operate on this yet
         return False
 
-    fixup_needed = not 'id' in entry.headers or not 'date' in entry.headers
+    fixup_needed = not entry_id or not entry.get_header('date')
 
     values = {
         'file_path': fullpath,
         'category': os.path.dirname(relpath),
-        'status': model.PublishStatus[entry.headers.get('Status', 'PUBLISHED').upper()],
-        'entry_type': model.EntryType[entry.headers.get('Type', 'ENTRY').upper()],
-        'slug_text': entry.headers.get('Slug-Text') or make_slug(entry.headers.get('Title') or os.path.basename(relpath)),
-        'redirect_url': entry.headers.get('Redirect-To'),
+        'status': model.PublishStatus[entry.get_header('Status', 'PUBLISHED').upper()],
+        'entry_type': model.EntryType[entry.get_header('Type', 'ENTRY').upper()],
+        'slug_text': entry.get_header('Slug-Text') or make_slug(entry.get_header('Title') or os.path.basename(relpath)),
+        'redirect_url': entry.get_header('Redirect-To'),
     }
 
-    entry_id = 'ID' in entry.headers and int(entry.headers['ID']) or None
-
-    if 'date' in entry.headers:
-        entry_date = arrow.get(entry.headers['date'], tzinfo=config.timezone)
+    header_date = entry.get_header('Date')
+    if header_date:
+        entry_date = arrow.get(header_date, tzinfo=config.timezone)
     else:
         entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
-        entry.headers['Date'] = entry_date.format()
+    entry.set_header('Date', entry_date.format())
     values['entry_date'] = entry_date.datetime
 
     try:
@@ -109,10 +132,13 @@ def scan_file(fullpath, relpath, assign_id):
     except model.Entry.DoesNotExist:
         record = model.Entry.create(id=entry_id, **values)
 
-    entry.headers['ID'] = record.id
+    entry.set_header('ID', record.id)
 
     if fixup_needed:
         entry.write_file(fullpath)
+
+    for alias in entry.get_headers("Path-Alias"):
+        path_alias.set_alias(alias, entry=record)
 
     return record
 
