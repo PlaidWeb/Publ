@@ -79,7 +79,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     tmpl = map_template(category, 'entry')
     entry_data = publ.entry.Entry(idx_entry.file_path)
-    if entry_data.markdown:
+    if entry_data.is_markdown:
         entry_data.body = entry_data.body and markdown.markdown(entry_data.body)
         entry_data.more = entry_data.more and markdown.markdown(entry_data.more)
     return render_template(tmpl, entry=entry_data)
