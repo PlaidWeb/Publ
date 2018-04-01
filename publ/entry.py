@@ -20,7 +20,7 @@ def Entry(fullpath):
     entry.body, _, entry.more = entry.get_payload().partition('~~~~~')
 
     _,ext = os.path.splitext(fullpath)
-    self.is_markdown = (ext == '.md')
+    entry.is_markdown = (ext == '.md')
 
     return entry
 
