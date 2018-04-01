@@ -6,7 +6,6 @@ import os
 import re
 import arrow
 from enum import Enum
-from requests.structures import CaseInsensitiveDict
 
 import config
 
@@ -21,6 +20,7 @@ class ParseState(Enum):
 
 class Entry:
     def __init__(self, fullpath):
+        # TODO this feels hacky and inelegant and there's probably a cleaner approach
         self.headers = []
         self.body = ''
         self.more = ''
@@ -57,27 +57,26 @@ class Entry:
                     self.more += line
 
     ''' Get the first header matching the given key, case-insensitive '''
-    def get_header(self, key, default=None):
+    def get(self, key, default=None):
         for k,v in self.headers:
             if k.lower() == key.lower():
                 return v
         return default
 
     ''' Get a list of all headers matching the given key '''
-    def get_headers(self, key):
+    def all(self, key):
         return [v for (k,v) in self.headers if k.lower() == key.lower()]
 
-    ''' Replace the first instance of a header, or set it anew if it doesn't exist
+    def __getitem__(self, key):
+        return self.get(key)
 
-        Returns whether the key was newly-created
-    '''
-    def set_header(self, key, val):
+    ''' Replace the value of the first matching header, or add it anew '''
+    def set(self, key, val):
         for idx,(k,v) in enumerate(self.headers):
             if k.lower() == key.lower():
                 self.headers[idx] = (key,val)
-                return False
+                return
         self.headers.append((k,v))
-        return True
 
     def write_file(self, fullpath):
         with open(fullpath, 'w') as file:
@@ -99,23 +98,23 @@ def scan_file(fullpath, relpath, assign_id):
     ''' scan a file and put it into the index '''
     entry = Entry(fullpath)
 
-    entry_id = int(entry.get_header('id') or 0)
+    entry_id = int(entry['id'] or 0)
     if not entry_id and not assign_id:
         # We can't operate on this yet
         return False
 
-    fixup_needed = not entry_id or not entry.get_header('date')
+    fixup_needed = not entry_id or not entry['date']
 
     values = {
         'file_path': fullpath,
         'category': os.path.dirname(relpath),
-        'status': model.PublishStatus[entry.get_header('Status', 'PUBLISHED').upper()],
-        'entry_type': model.EntryType[entry.get_header('Type', 'ENTRY').upper()],
-        'slug_text': entry.get_header('Slug-Text') or make_slug(entry.get_header('Title') or os.path.basename(relpath)),
-        'redirect_url': entry.get_header('Redirect-To'),
+        'status': model.PublishStatus[entry['Status', 'PUBLISHED'].upper()],
+        'entry_type': model.EntryType[entry['Type', 'ENTRY'].upper()],
+        'slug_text': entry['Slug-Text'] or make_slug(entry['Title'] or os.path.basename(relpath)),
+        'redirect_url': entry['Redirect-To'],
     }
 
-    header_date = entry.get_header('Date')
+    header_date = entry['Date']
     if header_date:
         entry_date = arrow.get(header_date, tzinfo=config.timezone)
     else:
@@ -132,12 +131,12 @@ def scan_file(fullpath, relpath, assign_id):
     except model.Entry.DoesNotExist:
         record = model.Entry.create(id=entry_id, **values)
 
-    entry.set_header('ID', record.id)
+    entry.set('ID', record.id)
 
     if fixup_needed:
         entry.write_file(fullpath)
 
-    for alias in entry.get_headers("Path-Alias"):
+    for alias in entry.all("Path-Alias"):
         path_alias.set_alias(alias, entry=record)
 
     return record

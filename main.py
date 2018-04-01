@@ -74,6 +74,9 @@ def render_entry(entry_id, slug_text='', category=''):
             category=idx_entry.category,
             slug_text=idx_entry.slug_text))
 
+    if idx_entry.status == publ.model.PublishStatus.DRAFT:
+        return render_template(map_template(category, '403')), 403
+
     tmpl = map_template(category, 'entry')
     entry_data = publ.entry.Entry(idx_entry.file_path)
     if entry_data.markdown:
