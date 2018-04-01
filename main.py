@@ -16,27 +16,36 @@ app = Flask(__name__,
     static_path=config.static_path,
     template_folder=config.template_directory)
 
-def map_template(path, template):
-    orig_path = path
-    path = os.path.normpath(path)
-    app.logger.debug('looking for template %s in directory %s', template, path)
-    while True:
-        for extension in ['', '.html', '.xml', '.json']:
-            candidate = os.path.join(path, template + extension)
-            app.logger.debug("checking candidate %s" % candidate)
-            if os.path.isfile(os.path.join(config.template_directory, candidate)):
-                app.logger.debug("found %s", candidate)
-                return candidate
-        parent = os.path.dirname(path)
-        if parent == path:
-            app.logger.warning("Couldn't find template %s for path %s", template, orig_path)
-            return None
-        path = parent
+def map_template(orig_path, template_list):
+    if type(template_list) == str:
+        template_list = [template_list]
+
+    for template in template_list:
+        path = os.path.normpath(orig_path)
+        while path != None:
+            for extension in ['', '.html', '.xml', '.json']:
+                candidate = os.path.join(path, template + extension)
+                # app.logger.debug("Checking candidate %s", candidate)
+                if os.path.isfile(os.path.join(config.template_directory, candidate)):
+                    return candidate
+            parent = os.path.dirname(path)
+            if parent != path:
+                path = parent
+            else:
+                path = None
 
 def get_redirect():
     return (publ.path_alias.get_redirection(flask.request.full_path)
         or publ.path_alias.get_redirection(flask.request.path)
         )
+
+def render_error(category, error_code):
+    # TODO do we want to be able to do proper fallbacks here? (e.g. 410 -> 404)
+    template = map_template(category, [str(error_code), 'error'])
+    if template:
+        return render_template(template, error=error_code), error_code
+    # no template found, so fall back to default Flask handler
+    flask.abort(error_code)
 
 @app.route('/')
 @app.route('/<path:category>/')
@@ -57,30 +66,40 @@ def render_category(category='', template='index'):
 @app.route('/<path:category>/<int:entry_id>-<slug_text>')
 def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
-    idx_entry = publ.model.Entry.get_or_none(publ.model.Entry.id == entry_id)
-    if not idx_entry:
+    record = publ.model.Entry.get_or_none(publ.model.Entry.id == entry_id)
+    if not record:
         # This might be a legacy URL that tripped the id match rule
         redir = get_redirect()
         if redir:
             return redirect(redir)
 
         app.logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
-        return render_template(map_template(category, '404')), 404
+        return render_error(category, 404)
+
+    # see if the file still exists
+    if not os.path.isfile(record.file_path):
+        # This entry no longer exists so delete it
+        record.delete_instance(recursive=True)
+        return render_error(category, 410)
 
     # check if the canonical URL matches
-    if idx_entry.category != category or idx_entry.slug_text != slug_text:
+    if record.category != category or record.slug_text != slug_text:
         return redirect(url_for('render_entry',
             entry_id=entry_id,
-            category=idx_entry.category,
-            slug_text=idx_entry.slug_text))
+            category=record.category,
+            slug_text=record.slug_text))
 
-    if idx_entry.status == publ.model.PublishStatus.DRAFT:
-        return render_template(map_template(category, '403')), 403
+    if record.status == publ.model.PublishStatus.DRAFT:
+        return render_error(category, 403)
 
     tmpl = map_template(category, 'entry')
-    # TODO this should be driven by the template
-    entry_data = publ.entry.Entry(idx_entry.file_path)
-    return render_template(tmpl, entry=entry_data)
+    entry = publ.entry.Entry(record)
+
+    redir = entry.get('Redirect-To')
+    if redir:
+        return redirect(redir)
+
+    return render_template(tmpl, entry=entry)
 
 logging.info("Setting up")
 publ.model.create_tables()

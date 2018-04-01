@@ -13,24 +13,60 @@ import config
 from . import model
 from . import path_alias
 
-# TODO this should be the actual class that gets sent along to templates.
-# Expected functionality:
-# - instance it from an index record (not the fullpath)
-# - demand-load from the file when we need something that's not kept in the index
-# - body and more are functions that take markdown parameters as arguments
-def Entry(fullpath):
-    with open(fullpath, 'r') as file:
-        entry = email.message_from_file(file)
+class MarkdownText:
+    def __init__(self, text):
+        self._text = text
 
-    # TODO make this split only work when the ~~~~~ is on a single line
-    entry.body, _, entry.more = entry.get_payload().partition('~~~~~')
+    def __str__(self):
+        return self()
 
-    _,ext = os.path.splitext(fullpath)
-    if ext == '.md':
-        entry.body = entry.body and markdown.markdown(entry.body)
-        entry.more = entry.more and markdown.markdown(entry.more)
+    def __call__(self, **kwargs):
+        # TODO instance parser with image rendition support
+        return markdown.markdown(self._text)
 
-    return entry
+class Entry:
+    def __init__(self, record):
+        self._record = record   # index record
+        self._message = None    # actual message payload, lazy-loaded
+
+    ''' Ensure the message payload is loaded '''
+    def _load(self):
+        if not self._message:
+            filepath = self._record.file_path
+            with open(filepath, 'r') as file:
+                self._message = email.message_from_file(file)
+
+            body, _, more = self._message.get_payload().partition('\n~~~~~\n')
+
+            _,ext = os.path.splitext(filepath)
+            if ext == '.md':
+                self.body = body and MarkdownText(body) or None
+                self.more = more and MarkdownText(more) or None
+            else:
+                self.body = body and body or None
+                self.more = more and more or None
+            return True
+        return False
+
+    ''' attribute getter, to convert attributes to index and payload lookups '''
+    def __getattr__(self, name):
+        if hasattr(self._record, name):
+            return getattr(self._record, name)
+
+        if self._load():
+            # We just loaded which modifies our own attrs, so rerun the default logic
+            return getattr(self, name)
+        return self._message.get(name)
+
+    ''' Get a single header on an entry '''
+    def get(self, name):
+        self._load()
+        return self._message.get(name)
+
+    ''' Get all related headers on an entry, as an iterable list '''
+    def get_all(self, name):
+        self._load()
+        return self._message.get_all(name) or []
 
 ''' convert a title into a URL-friendly slug '''
 def make_slug(title):
