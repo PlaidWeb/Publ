@@ -13,14 +13,22 @@ import config
 from . import model
 from . import path_alias
 
+# TODO this should be the actual class that gets sent along to templates.
+# Expected functionality:
+# - instance it from an index record (not the fullpath)
+# - demand-load from the file when we need something that's not kept in the index
+# - body and more are functions that take markdown parameters as arguments
 def Entry(fullpath):
     with open(fullpath, 'r') as file:
         entry = email.message_from_file(file)
 
+    # TODO make this split only work when the ~~~~~ is on a single line
     entry.body, _, entry.more = entry.get_payload().partition('~~~~~')
 
     _,ext = os.path.splitext(fullpath)
-    entry.is_markdown = (ext == '.md')
+    if ext == '.md':
+        entry.body = entry.body and markdown.markdown(entry.body)
+        entry.more = entry.more and markdown.markdown(entry.more)
 
     return entry
 
@@ -31,7 +39,8 @@ def make_slug(title):
 
 def scan_file(fullpath, relpath, assign_id):
     ''' scan a file and put it into the index '''
-    entry = Entry(fullpath)
+    with open(fullpath, 'r') as file:
+        entry = email.message_from_file(file)
 
     entry_id = entry['ID']
     if entry_id == None and not assign_id:
@@ -44,8 +53,9 @@ def scan_file(fullpath, relpath, assign_id):
         'category': entry.get('Category', os.path.dirname(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'PUBLISHED').upper()],
         'entry_type': model.EntryType[entry.get('Type', 'ENTRY').upper()],
-        'slug_text': entry['Slug-Text'] or make_slug(entry.get('Title', os.path.basename(relpath))),
+        'slug_text': make_slug(entry['Slug-Text'] or entry['Title'] or os.path.basename(relpath)),
         'redirect_url': entry['Redirect-To'],
+        'title': entry['Title'],
     }
 
     if 'Date' in entry:
@@ -65,7 +75,7 @@ def scan_file(fullpath, relpath, assign_id):
 
     # Update the entry ID
     del entry['ID']
-    entry['ID'] = record.id
+    entry['ID'] = str(record.id)
 
     # add other relationships to the index
     for alias in entry.get_all('Path-Alias', []):
@@ -74,7 +84,7 @@ def scan_file(fullpath, relpath, assign_id):
     if fixup_needed:
         tmpfile = fullpath + '.tmp'
         with open(tmpfile, 'w') as file:
-            file.write(entry)
+            file.write(str(entry))
         os.replace(tmpfile, fullpath)
 
     return record

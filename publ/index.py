@@ -16,8 +16,11 @@ def scan_file(fullpath, relpath, assign_id):
     try:
         if ext in ENTRY_TYPES:
             return entry.scan_file(fullpath, relpath, assign_id)
-        #elif ext in IMAGE_TYPES:
+        #if ext in IMAGE_TYPES:
         #   TODO
+
+        # file is a no-op
+        return True
     except Exception as e:
         logger.exception("Got error parsing %s", fullpath)
 
