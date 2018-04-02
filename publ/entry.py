@@ -7,22 +7,36 @@ import re
 import arrow
 import email
 import uuid
+import tempfile
 
 import config
 
 from . import model
 from . import path_alias
+from . import utils
 
-class MarkdownText:
+class MarkdownText(utils.SelfStrCall):
     def __init__(self, text):
         self._text = text
 
-    def __str__(self):
-        return self()
-
-    def __call__(self, **kwargs):
-        # TODO instance parser with image rendition support
+    def __call__(self):
+        # TODO instance parser with image rendition support with args specified here
         return markdown.markdown(self._text)
+
+''' Link for an entry; defaults to an individual page '''
+class EntryLink(utils.SelfStrCall):
+    def __init__(self, record):
+        self._record = record
+
+    def __call__(self):
+        # TODO add arguments for category/view, shortlink, etc.
+        if self._record.redirect_url:
+            return self._record.redirect_url
+
+        return flask.url_for('entry',
+            category=self._record.category,
+            id=self._record.id,
+            slug=self._record.slug_text)
 
 class Entry:
     def __init__(self, record):
@@ -45,6 +59,9 @@ class Entry:
             else:
                 self.body = body and body or None
                 self.more = more and more or None
+
+            self.link = EntryLink(self._record)
+
             return True
         return False
 
@@ -104,7 +121,7 @@ def scan_file(fullpath, relpath, assign_id):
     if entry_id != None:
         record, created = model.Entry.get_or_create(id=entry_id, defaults=values)
     else:
-        record, created = model.Entry.get_or_create(file_path=relpath, defaults=values)
+        record, created = model.Entry.get_or_create(file_path=fullpath, defaults=values)
 
     if not created:
         record.update(**values).where(model.Entry.id == record.id).execute()
@@ -121,8 +138,8 @@ def scan_file(fullpath, relpath, assign_id):
         path_alias.set_alias(alias, entry=record)
 
     if fixup_needed:
-        tmpfile = fullpath + '.tmp'
-        with open(tmpfile, 'w') as file:
+        with tempfile.NamedTemporaryFile('w', delete=False) as file:
+            tmpfile = file.name
             file.write(str(entry))
         os.replace(tmpfile, fullpath)
 
