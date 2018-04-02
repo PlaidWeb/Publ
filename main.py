@@ -78,7 +78,9 @@ def render_entry(entry_id, slug_text='', category=''):
 
     # see if the file still exists
     if not os.path.isfile(record.file_path):
-        # This entry no longer exists so delete it
+        # This entry no longer exists so delete it, and anything that references it
+        # SQLite doesn't support cascading deletes so let's just clean up manually
+        publ.model.PathAlias.delete(publ.model.PathAlias.redirect_entry == record).execute()
         record.delete_instance(recursive=True)
         return render_error(category, 410)
 
