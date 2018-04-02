@@ -1,6 +1,21 @@
-from . import index, model, entry, path_alias
+from . import rendering, model, index
 
-index = index
 model = model
-entry = entry
-path_alias = path_alias
+index = index
+
+def setup(app):
+    for route in [
+    '/',
+    '/<path:category>/',
+    '/<template>',
+    '/<path:category>/<template>',
+    ]:
+        app.add_url_rule(route, 'category', rendering.render_category)
+
+    for route in [
+    '/<int:entry_id>',
+    '/<int:entry_id>-<slug_text>',
+    '/<path:category>/<int:entry_id>',
+    '/<path:category>/<int:entry_id>-<slug_text>',
+    ]:
+        app.add_url_rule(route, 'entry', rendering.render_entry)
