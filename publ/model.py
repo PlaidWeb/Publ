@@ -4,6 +4,7 @@
 from peewee import *
 import playhouse.db_url
 from enum import Enum
+import uuid
 
 import config
 

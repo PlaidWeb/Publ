@@ -5,8 +5,8 @@ import markdown
 import os
 import re
 import arrow
-from enum import Enum
 import email
+import uuid
 
 import config
 
@@ -78,11 +78,11 @@ def scan_file(fullpath, relpath, assign_id):
     with open(fullpath, 'r') as file:
         entry = email.message_from_file(file)
 
-    entry_id = entry['ID']
+    entry_id = entry['Entry-ID']
     if entry_id == None and not assign_id:
         return False
 
-    fixup_needed = entry_id == None or not 'Date' in entry
+    fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
 
     values = {
         'file_path': fullpath,
@@ -110,8 +110,11 @@ def scan_file(fullpath, relpath, assign_id):
         record.update(**values).where(model.Entry.id == record.id).execute()
 
     # Update the entry ID
-    del entry['ID']
-    entry['ID'] = str(record.id)
+    del entry['Entry-ID']
+    entry['Entry-ID'] = str(record.id)
+
+    if not 'UUID' in entry:
+        entry['UUID'] = str(uuid.uuid4())
 
     # add other relationships to the index
     for alias in entry.get_all('Path-Alias', []):
