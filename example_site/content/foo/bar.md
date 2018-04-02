@@ -1,10 +1,10 @@
-title: This is a test entry
-Date: 2018-03-31 00:59:00-07:00
+Title: This is a test entry
 Slug-Text: bladlkfjal
 Path-Alias: /some-old-url.php
 Path-Alias: /foo/bar
-UUID: 3ccec95a-7706-4494-9fd5-996169b58ab3
-Entry-ID: 307
+UUID: fd6995dc-6d99-4d62-91db-3c639747cefa
+Date: 2018-04-01 21:06:39-07:00
+Entry-ID: 321
 
 This is an incredibly basic test entry.
 

@@ -48,6 +48,9 @@ class EntryType(Enum):
         def python_value(self,value):
             return EntryType(value)
 
+class FileMTime(BaseModel):
+    file_path = CharField(unique=True)
+    stat_mtime = IntegerField()  # TODO investigate if this is Y2k38-ready
 
 class Entry(BaseModel):
     file_path = CharField()
@@ -79,6 +82,7 @@ class Image(BaseModel):
 ''' Table management '''
 
 all_types = [
+    FileMTime,
     Entry,
     PathAlias,
     Image,
