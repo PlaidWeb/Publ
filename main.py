@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Main Publ application
 
-import os.path
+import os
 import markdown
 
 import config
@@ -10,6 +10,8 @@ import logging
 
 import flask
 from flask import Flask,redirect,render_template,send_from_directory,url_for
+
+# logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__,
     static_folder=config.static_directory,
