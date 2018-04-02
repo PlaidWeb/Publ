@@ -1,8 +1,9 @@
 body {
-    background: yellow;
-    color: black;
+    background: white;
 }
 
-.more {
-    background: cyan;
+h1, h2, h3 {
+    font-family: 'Helvetica', 'Liberation Sans', 'Arial';
+    border-bottom: solid black 1px;
 }
+

@@ -4,3 +4,4 @@ __pycache__
 tmp
 example_site/static/img/
 data
+.DS_Store

@@ -16,15 +16,16 @@ def set_alias(path, entry=None, url=None):
         record.redirect_url = url
         record.save()
 
-def get_redirection(path):
-    record = model.PathAlias.get_or_none(model.PathAlias.path == path)
-    if not record:
-        return None
-    if record.redirect_entry:
-        return url_for('render_entry',
-            entry_id=record.redirect_entry.id,
-            category=record.redirect_entry.category,
-            slug_text=record.redirect_entry.slug_text)
-    if record.redirect_url:
-        return record.redirect_url
-    return None
+def get_redirect(paths):
+    if type(paths) == str:
+        paths = [paths]
+
+    for path in paths:
+        record = model.PathAlias.get_or_none(model.PathAlias.path == path)
+        if record and record.redirect_entry:
+            return url_for('entry',
+                entry_id=record.redirect_entry.id,
+                category=record.redirect_entry.category,
+                slug_text=record.redirect_entry.slug_text)
+        elif record and record.redirect_url:
+            return record.redirect_url
