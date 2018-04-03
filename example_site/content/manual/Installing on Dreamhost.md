@@ -87,4 +87,9 @@ And then in the `config.py` you'd set `static_path` to point to your CDN domain 
 
 TODO: Fix this up when image renditions are an actual thing
 
+## Upgrading the code
+
+When code updates, you can simply do a `git pull && ./setup.sh`, which ensures that all the library dependencies are updated as well.
+Technically library dependencies will update no matter what but that might take a while which might make your app get killed
+on startup until it manages to finish. So it's better to run `./setup.sh` so that the dependencies update before the app tries to restart.
 

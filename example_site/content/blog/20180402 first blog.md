@@ -92,7 +92,7 @@ You really don't want to see all of the weird moving parts that go behind high-D
 
 So, now I had a whole bunch of mess to deal with. I basically stopped blogging
 on my own site (who the heck reads personal blogs anymore, anyway?). I still posted
-comics to my MT-based comics, and then used IFTTT to syndicate that content over
+comics to my MT-based site, and then used IFTTT to syndicate that content over
 to Facebook and Tumblr. I started to only post my music on Soundcloud (with IFTTT to
 republish it on Facebook and Tumblr).
 
@@ -133,7 +133,7 @@ much hands-on, and don't provide a lot of niceties. I wanted to build a system t
 gives the best of both worlds between static and dynamic publishing.
 
 At some point I learned about [Flask](http://flask.pocoo.org) and [Jinja](http://jinja.pocoo.org).
-These seemed like a perfect basis for how to build the system I want to build.
+These seemed like a perfect basis for how to build the system I wanted to build.
 
 ## Design philosophy
 
