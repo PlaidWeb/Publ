@@ -2,6 +2,7 @@ Title: This is a test entry
 Slug-Text: bladlkfjal
 Path-Alias: /some-old-url.php
 Path-Alias: /foo/bar
+Path-Unalias: /foo/bar
 UUID: fd6995dc-6d99-4d62-91db-3c639747cefa
 Date: 2018-04-01 21:06:39-07:00
 Entry-ID: 321
