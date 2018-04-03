@@ -7,7 +7,8 @@ from flask import url_for
 def set_alias(path, entry=None, url=None):
     if path[0] == '!':
         # We want to delete this redirection
-        model.PathAlias.delete(model.PathAlias.path == path).execute()
+        realpath = path[1:]
+        model.PathAlias.delete(model.PathAlias.path == realpath).execute()
         return
 
     record, created = model.PathAlias.get_or_create(

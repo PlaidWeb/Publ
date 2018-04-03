@@ -45,7 +45,6 @@ class Entry:
         self._message = None    # actual message payload, lazy-loaded
 
         self.date = arrow.get(record.entry_date)
-        self.last_modified = arrow.get(os.stat(record.file_path).st_mtime)
 
         # permalink is always local (ignoring redirections)
         # (although it's not very 'permanent' is it?)
@@ -72,6 +71,8 @@ class Entry:
                 self.more = more and more or None
 
             self.link = EntryLink(self._record)
+
+            self.last_modified = arrow.get(os.stat(record.file_path).st_mtime)
 
             return True
         return False
