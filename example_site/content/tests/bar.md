@@ -16,6 +16,6 @@ Well, I dunno.
 ~~~~~
 But here is stuff below the cut. whee cut.
 
-![some image foo](http://beesbuzz.biz/d/lewi/lewi-1.jpg)
-
 Also here is a link to [entry 301](301)
+
+This entry is also available with a [path alias](/some-old-url.php).
