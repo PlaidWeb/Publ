@@ -99,7 +99,7 @@ class Entry:
 ''' convert a title into a URL-friendly slug '''
 def make_slug(title):
     # TODO this should probably handle things other than English ASCII...
-    return re.sub(r"[^a-zA-Z0-9]+", r"-", title.strip())
+    return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ','-')
 
 ''' Attempt to guess the title from the filename '''
 def guess_title(basename):
