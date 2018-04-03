@@ -30,7 +30,10 @@ Headers are, more or less, a series of lines like:
     Header-Name: Header-Value
     Another-Header-Name: Header-Value
 
-followed by a blank line. You can define whatever headers you want for your
+followed by a blank line. (At present, Publ actually uses Python's RFC2822 parser, so in theory you should be able
+to do line continuations if that's necessary for some reason.)
+
+You can define whatever headers you want for your
 templates; the following headers are what Publ itself uses:
 
 * **`Title`**: The title of the entry
