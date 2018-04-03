@@ -13,6 +13,18 @@ import config
 
 logger = logging.getLogger(__name__)
 
+# mapping from template extension to MIME type; probably could be better
+extmap = {
+    '.html': 'text/html',
+    '.xml': 'application/xml',
+    '.json': 'application/json'
+}
+
+def mimetype(template):
+    # infer the content-type from the extension
+    _,ext = os.path.splitext(template)
+    return extmap.get(ext, 'text/html')
+
 def map_template(orig_path, template_list):
     if type(template_list) == str:
         template_list = [template_list]
@@ -22,7 +34,6 @@ def map_template(orig_path, template_list):
         while path != None:
             for extension in ['', '.html', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
-                # logger.debug("Checking candidate %s", candidate)
                 if os.path.isfile(os.path.join(config.template_directory, candidate)):
                     return candidate
             parent = os.path.dirname(path)
@@ -42,7 +53,7 @@ def render_error(category, *error_codes):
 
     template = map_template(category, template_list)
     if template:
-        return render_template(template, error=error_code), error_code
+        return render_template(template, error=error_code, mimetype=mimetype(template)), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
@@ -68,7 +79,7 @@ def render_category(category='', template='index'):
         'date': request.args.get('date')
         })
 
-    return render_template(tmpl, category=Category(category), view=view_obj)
+    return render_template(tmpl, category=Category(category), view=view_obj, mimetype=mimetype(template))
 
 def expire_entry(record):
     # This entry no longer exists so delete it, and anything that references it
@@ -130,5 +141,6 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(entry_redirect)
 
     tmpl = map_template(category, 'entry')
+    # TODO is there ever a reason to specify entry mimetype? probably not?
     return render_template(tmpl, entry=entry_obj, category=Category(category))
 
