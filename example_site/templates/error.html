@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{error.code}} {{error.message}}</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
+</head>
+<body>
+    <h1>{{error.code}} {{error.message}}</h1>
+
+<p>We could not service your request.</p>
+
+<p>Boring request information below:</p>
+
+<ul>
+    <li>request time: {{arrow.now().format()}}</li>
+    <li>url: <code>{{request.url}}</code></li>
+    <li>path: <code>{{request.path}}</code></li>
+    <li>full_path: <code>{{request.full_path}}</code></li>
+    <li>endpoint: <code>{{request.endpoint}}</code></li>
+    <li>url_rule: <code>{{request.url_rule}}</code></li>
+</ul>
+
+</body>
+</html>

@@ -6,7 +6,7 @@
     <subtitle>A personal publishing system for the modern web</subtitle>
     <link href="{{ url_for('category',category=category,template='feed',_external=True)}}" rel="self" />
     <link href="{{ url_for('category',category=category,_external=True)}}" />
-    <id>tag:{{request.host}},2018-04-01:/{{category.path}}</id>
+    <id>tag:{{request.host}},2018-04-01:{{category.path or "root"}}</id>
     <updated>{{view.last_modified.isoformat()}}</updated>
 
     {% for entry in view.where(recurse=True).entries %}

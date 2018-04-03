@@ -32,7 +32,9 @@ you also have access to the `entry` and `category` endpoints if you need them fo
 some reason. (However, you will usually just be using the appropriate methods
 on the objects providced to the template.)
 
-There are also the following custom functions available:
+The following additional things are provided to the request context:
+
+* **`arrow`**: The [Arrow](https://arrow.readthedocs.io/en/latest/) time library
 
 * <a name="fn-get-view"></a>**`get_view`**: Requests a view of entries; it takes the following arguments:
 
@@ -45,6 +47,11 @@ There are also the following custom functions available:
         * `True`: Include subcategories
         * `False`: Do not include subcategories (default)
 
+    * **`future`**: Whether to include entries from the future
+
+        * `True`: Include future entries
+        * `False`: Do not include future entries (default)
+
     * (TODO: date, pagination, sorting, tags, etc.)
 
 
@@ -52,7 +59,7 @@ There are also the following custom functions available:
 ### Entry pages
 
 Specific entries are always rendered with its category's `entry` template.
-The template gets the following parameters to it:
+The template gets the following additional objects:
 
 * **`entry`**: Information about the [entry](#entry-object)
 * **`category`**: Information about the [category](#category-object)
@@ -60,15 +67,19 @@ The template gets the following parameters to it:
 ### Category pages
 
 Categories are rendered with whatever template is specified, defaulting to `index`
-if none was specified. The template gets the following parameters:
+if none was specified. The template gets the following additional objects:
 
 * **`category`**: Information about the [category](#category-object)
 * **`view`**: Information about the [view](#view object)
 
 ### Error pages
 
-Error templates receive an `error_code` parameter to indicate which error occurred;
-otherwise it only gets the default stuff.
+Error templates receive an `error` object to indicate which error occurred;
+otherwise it only gets the default stuff. This object has the following
+properties:
+
+* **`code`**: The associated HTTP error code
+* **`message`**: An explanation of what went wrong
 
 ## Object interface
 
