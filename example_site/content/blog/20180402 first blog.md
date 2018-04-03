@@ -14,7 +14,7 @@ a bit about the history and why I decided to build Yet Another CMS.
 
 ## History
 
-### Pre-cambrian era
+### Pre-Cambrian era
 
 Back in the year 2000 when blogs were still called "web logs" I was pretty active on the
 now-defunct kuro5hin.org. It was a pretty interesting community platform, which
@@ -114,7 +114,7 @@ Projects like [Mastodon](http://joinmastodon.org) and [PeerTube](https://joinpee
 sprung up around protocols like ActivityPub, and people started to remember how the Internet used to be.
 Individuals posting their own stuff to the Internet for other individuals to see.
 
-But none of these projects are focusing on collections of heterogenous content,
+But none of these projects are focusing on collections of heterogeneous content,
 and in the meantime I'd put a lot of thought into how to actually build a site
 that satisfies my needs.
 
@@ -249,6 +249,21 @@ catastrophic. So when I do it I want to make sure I do it *absolutely right*.
 ### Caching
 
 This is pretty easy thanks to [Flask-Cache](https://pythonhosted.org/Flask-Cache/), although there's some subtleties to worry about (especially when ACLs are a thing). So far Publ seems to be pretty lightweight but who knows how that'll change when my sites start getting bigger...
+
+### Comment system
+
+For the foreseeable future I'm fine with using [Disqus](http://disqus.com) for active comment threads, although that has some implications for
+private content and of course it kind of flies in the face of the whole "host everything yourself" thing. But comment systems have *huge* implications on scalability and community effort and so on, and there's so many things that need to be put in to make it comfortable for everyone (for example, users being able to ignore other users).
+
+I feel like Disqus comments for immediate responses and reblogs/mutual commentary are the way to go in general. Maybe that's just because I'm used to that from Tumblr.
+
+Having some means of tracking inbound links to see where external commentary is taking place would be good, I guess. Trackbacks were a miserable failure but tracking `Http-Referer` headers and showing them on the dashboard would probably be enough.
+
+And on that note...
+
+### Dashboard
+
+Having an admin-viewable error log (for things like content ingest errors). Having stats tracking for entry views, external referrals, analytics in general. These would be good things to have, and shouldn't be too hard to add in. Although scaling is always a concern, especially where analytics are involved.
 
 ## Summary
 
