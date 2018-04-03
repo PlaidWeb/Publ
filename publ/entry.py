@@ -44,6 +44,13 @@ class Entry:
         self._record = record   # index record
         self._message = None    # actual message payload, lazy-loaded
 
+        # permalink is always local (ignoring redirections)
+        # (although it's not very 'permanent' is it?)
+        self.permalink = flask.url_for('entry',
+            category=record.category,
+            entry_id=record.id,
+            slug_text=record.slug_text)
+
     ''' Ensure the message payload is loaded '''
     def _load(self):
         if not self._message:

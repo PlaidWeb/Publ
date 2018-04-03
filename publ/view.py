@@ -32,8 +32,6 @@ future - whether to show entries from the future
 class View:
     def __init__(self, spec=None):
         self.spec = spec or {}
-        for k,v in spec.items():
-            print("{}='{}'".format(k,v))
 
         # primarily restrict by publication status
         if self.spec.get('future', False):
@@ -52,14 +50,20 @@ class View:
 
         # # restrict by category
         if 'category' in self.spec:
-            cat_where = (model.Entry.category == self.spec['category'])
-            if self.spec.get('recurse', False):
-                cat_where = cat_where | (model.Entry.category % (self.spec['category'] + '/%'))
-            where = where & cat_where
+            path = str(self.spec['category'])
+            recurse = self.spec.get('recurse', False)
+
+            cat_where = (model.Entry.category == path)
+            # Don't add the clasue if path is empty and we're recursing -
+            if path or not recurse:
+                if recurse:
+                    # We're recursing and aren't in /, so add the prefix clause
+                    cat_where = cat_where | (model.Entry.category.startswith(path + '/'))
+                # We need to restrict
+                where = where & cat_where
 
         # TODO sorting
         self.query = model.Entry.select().where(where)
-        print(self.query.sql())
 
     def __getattr__(self, name):
         if name == 'entries':

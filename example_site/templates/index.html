@@ -8,13 +8,38 @@
 
 <h1>Publ</h1>
 
-<p>Welcome to Publ! This site is still under construction, but we have the following articles:</p>
+<p>Welcome to Publ!</p>
+
+{% if view.entries %}
+<div class="entries"><h2>Articles at this level:</h2>
 
 <ul>
     {% for entry in view.entries %}
     <li><a href="{{entry.link}}">{{entry.title}}</a></li>
     {% endfor %}
 </ul>
+</div>
+{% endif %}
+
+{% if category.subcats %}
+<div class="subcats"><h2>Subcategories:</h2>
+
+    <ul>
+    {% for subcat in category.subcats recursive %}
+        <li><a href="{{url_for('category', category=subcat)}}">{{subcat.basename}}</a>
+        {% if subcat.subcats %}
+        <ul>{{ loop(subcat.subcats)}}</ul>
+        {% endif %}</li>
+    {% endfor %}
+    </ul>
+
+</div>
+{% endif %}
+
+{% if category.parent %}
+<div class="parent"><a href="{{url_for('category', category=category.parent)}}">Up one level</a></div>
+{% endif %}
+
 
 <p><a href="http://github.com/fluffy-critter/Publ">publ@github</a></p>
 </body></html>

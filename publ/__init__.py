@@ -1,4 +1,4 @@
-from . import rendering, model, index
+from . import rendering, model, index, view
 
 model = model
 index = index
@@ -19,3 +19,5 @@ def setup(app):
     '/<path:category>/<int:entry_id>-<slug_text>',
     ]:
         app.add_url_rule(route, 'entry', rendering.render_entry)
+
+    app.jinja_env.globals.update(get_view=view.get_view)
