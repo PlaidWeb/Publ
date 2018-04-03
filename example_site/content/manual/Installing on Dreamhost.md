@@ -63,10 +63,10 @@ Next, I installed Publ by doing a `git clone` from github and then moving its fi
 Then I copied `config.py.dist` to `config.py` and changed `server_name` as appropriate (namely set it to `"publ.beesbuzz.biz"`),
 and ran `./setup.sh`.
 
-Finally, to get the static content visible I symlinked it into Dreamhost's `public` directory:
+Finally, to get the static content visible I symlinked it into Dreamhost's `public` directory: (this isn't strictly necessary but it helps with performance)
 
     $ cd public
-    $ ln -s ../example_site/static .
+    $ ln -sf ../example_site/static .
 
 At this point I had Publ working with the default site!
 
