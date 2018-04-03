@@ -6,6 +6,9 @@ from dateutil import tz
 timezone = tz.tzlocal()
 # timezone = 'US/Pacific'
 
+# Hosted site domain
+server_name = 'PLEASE_SET_ME'
+
 # Where static files come from
 static_directory = 'example_site/static'
 

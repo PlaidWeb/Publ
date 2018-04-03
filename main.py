@@ -18,6 +18,7 @@ app = flask.Flask(__name__,
     static_folder=config.static_directory,
     static_path=config.static_path,
     template_folder=config.template_directory)
+app.config['SERVER_NAME'] = config.server_name
 
 publ.setup(app)
 
