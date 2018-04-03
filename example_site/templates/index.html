@@ -1,1 +1,20 @@
-foobar
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Publ CMS</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
+</head>
+<body>
+
+<h1>Publ</h1>
+
+<p>Welcome to Publ! This site is still under construction, but we have the following articles:</p>
+
+<ul>
+    {% for entry in view.entries %}
+    <li><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
+</ul>
+
+<p><a href="http://github.com/fluffy-critter/Publ">publ@github</a></p>
+</body></html>

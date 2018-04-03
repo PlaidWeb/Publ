@@ -23,12 +23,9 @@ class BaseModel(Model):
 
 class PublishStatus(Enum):
     DRAFT = 0
-    PUBLISHED = 1
-    HIDDEN = 2
-
-    @property
-    def is_visible(self):
-        return self == PublishStatus.PUBLISHED
+    HIDDEN = 1
+    PUBLISHED = 2
+    SCHEDULED = 3
 
     @staticmethod
     class Field(IntegerField):

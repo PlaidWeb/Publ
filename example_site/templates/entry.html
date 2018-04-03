@@ -5,10 +5,14 @@
     <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
 </head>
 <body>
-<h1>{{entry['title']}}</h1>
+<h1>{{entry.title}}</h1>
 
     <div class="content">
-        {{entry.body | safe}}
+        {% if entry.body %}
+        <div class="preamble">
+            {{entry.body | safe}}
+        </div>
+        {% endif %}
         {% if entry.more %}
         <div class="more"><a name="more"></a>
             {{entry.more | safe}}

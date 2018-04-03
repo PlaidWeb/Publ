@@ -8,6 +8,7 @@ import arrow
 import email
 import uuid
 import tempfile
+import flask
 
 import config
 
@@ -35,8 +36,8 @@ class EntryLink(utils.SelfStrCall):
 
         return flask.url_for('entry',
             category=self._record.category,
-            id=self._record.id,
-            slug=self._record.slug_text)
+            entry_id=self._record.id,
+            slug_text=self._record.slug_text)
 
 class Entry:
     def __init__(self, record):
@@ -90,6 +91,11 @@ def make_slug(title):
     # TODO this should probably handle things other than English ASCII...
     return re.sub(r"[^a-zA-Z0-9]+", r"-", title.strip())
 
+''' Attempt to guess the title from the filename '''
+def guess_title(basename):
+    base,_ = os.path.splitext(basename)
+    return re.sub(r'[ _-]+', r' ', base).title()
+
 def scan_file(fullpath, relpath, assign_id):
     ''' scan a file and put it into the index '''
     with open(fullpath, 'r') as file:
@@ -101,14 +107,17 @@ def scan_file(fullpath, relpath, assign_id):
 
     fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
 
+    basename = os.path.basename(relpath)
+    title = entry['title'] or guess_title(basename)
+
     values = {
         'file_path': fullpath,
         'category': entry.get('Category', os.path.dirname(relpath)),
-        'status': model.PublishStatus[entry.get('Status', 'PUBLISHED').upper()],
+        'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()],
         'entry_type': model.EntryType[entry.get('Type', 'ENTRY').upper()],
-        'slug_text': make_slug(entry['Slug-Text'] or entry['Title'] or os.path.basename(relpath)),
+        'slug_text': make_slug(entry['Slug-Text'] or title),
         'redirect_url': entry['Redirect-To'],
-        'title': entry['Title'],
+        'title': title,
     }
 
     if 'Date' in entry:
