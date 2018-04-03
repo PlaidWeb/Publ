@@ -5,12 +5,6 @@ from . import model
 from flask import url_for
 
 def set_alias(path, entry=None, url=None):
-    if path[0] == '!':
-        # We want to delete this redirection
-        realpath = path[1:]
-        model.PathAlias.delete(model.PathAlias.path == realpath).execute()
-        return
-
     record, created = model.PathAlias.get_or_create(
         path=path,
         defaults={
@@ -21,6 +15,9 @@ def set_alias(path, entry=None, url=None):
         record.redirect_entry = entry
         record.redirect_url = url
         record.save()
+
+def remove_alias(path):
+    model.PathAlias.delete().where(model.PathAlias.path == path).execute()
 
 def get_redirect(paths):
     if type(paths) == str:

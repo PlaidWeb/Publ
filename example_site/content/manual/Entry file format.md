@@ -27,7 +27,8 @@ Here is what an entry might look like:
 
 Headers are, more or less, a series of lines like:
 
-> `Header-Name: Header-Value`
+    Header-Name: Header-Value
+    Another-Header-Name: Header-Value
 
 followed by a blank line. You can define whatever headers you want for your
 templates; the following headers are what Publ itself uses:
@@ -102,22 +103,24 @@ templates; the following headers are what Publ itself uses:
     if you're migrating from a legacy site and you have a URL like `http://example.com/blog/0012345.php`
     you can set a header like:
 
-    > `Path-Alias: /blog/0012345.php`
+        Path-Alias: /blog/0012345.php
 
     Any number of these may be added to any given URL.
 
     For example, this entry has a `Path-Alias` of [`/entry-format`](/entry-format).
 
-    **Note:** If you remove a `Path-Alias` header from an entry in the future,
-    it may continue to redirect to the entry until something else declares the
-    same alias. If you would like to remove a previous `Path-Alias` declaration,
-    prepend the URL with a `!` character, for example:
-
-    > `Path-Alias: !/some/old/url/5-oops`
-
     **Note:** A path-alias will never override another entry at its canonical URL;
     however, it can potentially override any other kind of URL, including URLs for
     category views and non-canonical entry URLs.
+
+* **`Path-Unalias`**: Remove an old path alias
+
+    If you accidentally set a path-alias or want to remove it, rather than just deleting
+    the `Path-Alias` header you should change it to a `Path-Unalias` (or add that header to
+    another entry). This way you can ensure that the path alias will be removed from the
+    index.
+
+        Path-Unalias: /some/old/url/5-oops
 
 * **`UUID`**: A globally-unique identifier for the entry
 
@@ -139,4 +142,4 @@ as well as some Publ-specific tags for things like cuts, image renditions, and g
 
 ### Custom tags
 
-* `~~~~~`: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
+* **`~~~~~`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)

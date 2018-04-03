@@ -156,6 +156,8 @@ def scan_file(fullpath, relpath, assign_id):
     # add other relationships to the index
     for alias in entry.get_all('Path-Alias', []):
         path_alias.set_alias(alias, entry=record)
+    for alias in entry.get_all('Path-Unalias', []):
+        path_alias.remove_alias(alias)
 
     if fixup_needed:
         with tempfile.NamedTemporaryFile('w', delete=False) as file:
