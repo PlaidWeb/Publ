@@ -66,12 +66,15 @@ def render_category(category='', template='index'):
 
     tmpl = map_template(category, template)
 
-    # if tmpl is None this might actually be a malformed category URL
     if not tmpl:
+       # this might actually be a malformed category URL
         test_path = os.path.join(category,template)
         record = model.Entry.get_or_none(model.Entry.category == test_path)
         if record:
             return redirect(url_for('category',category=test_path))
+
+        # nope, we just don't know what this is
+        return render_error(category, 404)
 
     # TODO we might want the category object to be able to provide additional defaults
     view_obj = View({
