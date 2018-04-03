@@ -113,6 +113,8 @@ The `entry` object has the following methods/properties:
     **Note:** If this entry is a redirection, this link refers to the redirect
     target.
 
+* **`last_modified`**: A last-modified time for this entry (useful for feeds)
+
 Functionality to come:
 
 * Previous/next entry within the same category
