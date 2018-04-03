@@ -246,6 +246,10 @@ providers as well.
 Supporting ACLs seems pretty straightforward but it's also something that's easy to mess up, and a mess-up can be
 catastrophic. So when I do it I want to make sure I do it *absolutely right*.
 
+### Caching
+
+This is pretty easy thanks to [Flask-Cache](https://pythonhosted.org/Flask-Cache/), although there's some subtleties to worry about (especially when ACLs are a thing). So far Publ seems to be pretty lightweight but who knows how that'll change when my sites start getting bigger...
+
 ## Summary
 
 Anyway. I have a lot of plans for this system, and this is just the beginning.
