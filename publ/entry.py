@@ -72,7 +72,7 @@ class Entry:
 
             self.link = EntryLink(self._record)
 
-            self.last_modified = arrow.get(os.stat(record.file_path).st_mtime)
+            self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime)
 
             return True
         return False
