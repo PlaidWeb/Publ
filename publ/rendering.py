@@ -45,7 +45,7 @@ def map_template(orig_path, template_list):
 def get_redirect():
     return path_alias.get_redirect([request.full_path, request.path])
 
-def render_error(category, *error_codes):
+def render_error(category, error_message, *error_codes):
     error_code = error_codes[0]
 
     template_list = [str(code) for code in error_codes]
@@ -53,7 +53,7 @@ def render_error(category, *error_codes):
 
     template = map_template(category, template_list)
     if template:
-        return render_template(template, error=error_code), error_code
+        return render_template(template, error={'code':error_code, 'message':error_message}), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
@@ -63,6 +63,15 @@ def render_category(category='', template='index'):
     redir = get_redirect()
     if redir:
         return redirect(redir)
+
+    # Forbidden template types
+    if template in ['entry', 'error']:
+        return render_error(category, 'Unsupported template', 400)
+
+    if category:
+        # See if there's any entries for the view...
+        if not model.Entry.get_or_none((model.Entry.category == category) | (model.Entry.category.startswith(category + '/'))):
+            return render_error(category, 'Category not found', 404)
 
     tmpl = map_template(category, template)
 
@@ -74,9 +83,10 @@ def render_category(category='', template='index'):
             return redirect(url_for('category',category=test_path))
 
         # nope, we just don't know what this is
-        return render_error(category, 404)
+        return render_error(category, 'Template not found', 400)
 
     # TODO we might want the category object to be able to provide additional defaults
+    # Also view restriction will need a precedence chain based on pagination type
     view_obj = View({
         'category': category,
         'date': request.args.get('date')
@@ -100,7 +110,7 @@ def render_entry(entry_id, slug_text='', category=''):
             return redirect(path_redir)
 
         logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
-        return render_error(category, 404)
+        return render_error(category, 'Entry not found', 404)
 
     # see if the file still exists
     if not os.path.isfile(record.file_path):
@@ -111,11 +121,11 @@ def render_entry(entry_id, slug_text='', category=''):
         if path_redirect:
             return redirect(path_redirect)
 
-        return render_error(category, 404)
+        return render_error(category, 'Entry not found', 404)
 
     # Show an access denied error if the entry has been set to draft mode
     if record.status == model.PublishStatus.DRAFT:
-        return render_error(category, 403)
+        return render_error(category, 'Entry not available', 403)
 
     # read the entry from disk
     entry_obj = Entry(record)
@@ -123,7 +133,7 @@ def render_entry(entry_id, slug_text='', category=''):
     # does the entry-id header mismatch? If so the old one is invalid
     if int(entry_obj.get('Entry-ID')) != record.id:
         expire_entry(record)
-        return render_error(category, 404)
+        return render_error(category, 'Entry not found', 404)
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
