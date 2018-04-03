@@ -65,6 +65,9 @@ class View:
         # TODO sorting
         self.query = model.Entry.select().where(where)
 
+        # TODO generate a useful value
+        self.last_modified = arrow.now()
+
     def __getattr__(self, name):
         if name == 'entries':
             return [Entry(e) for e in self.query]

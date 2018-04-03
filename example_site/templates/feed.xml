@@ -6,7 +6,8 @@
     <subtitle>A personal publishing system for the modern web</subtitle>
     <link href="{{ url_for('category',category=category,template='feed',_external=True)}}" rel="self" />
     <link href="{{ url_for('category',category=category,_external=True)}}" />
-    <id>tag:publ.org.blog:master</id>
+    <id>tag:{{request.server_name}},2018-04-01:/{{category.path}}</id>
+    <updated>{{view.last_modified}}</updated>
 
     {% for entry in view.where(recurse=True).entries %}
     <entry>
@@ -25,5 +26,4 @@
         </author>
     </entry>
     {% endfor %}
-
 </feed>

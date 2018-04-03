@@ -1,4 +1,5 @@
 from . import rendering, model, index, view
+import arrow
 
 model = model
 index = index
@@ -20,4 +21,4 @@ def setup(app):
     ]:
         app.add_url_rule(route, 'entry', rendering.render_entry)
 
-    app.jinja_env.globals.update(get_view=view.get_view)
+    app.jinja_env.globals.update(get_view=view.get_view, arrow=arrow)

@@ -162,3 +162,5 @@ The `view` object has the following things on it:
 
     This takes the same arguments as [`get_view()`](#fn-get-view); note that
     if you specify a category this will override the current view's category.
+
+* **`last_modified`**: A last-modified time for this view (useful for feeds)
