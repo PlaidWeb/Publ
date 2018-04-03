@@ -8,6 +8,10 @@ h1, h2, h3, h4 {
     border-bottom: solid black 1px;
 }
 
+h1 {
+    text-shadow: 3px 3px 5px rgba(0,0,0,0.5);
+}
+
 code {
     background: #eee;
     font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
@@ -30,3 +34,18 @@ pre {
     border-bottom: dotted black 1px;
 }
 
+a {
+    color: #700;
+}
+
+a:visited {
+    color: #622;
+}
+
+a:hover {
+    color: #933;
+}
+
+a:active {
+    color: #f77;
+}
