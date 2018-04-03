@@ -1,3 +1,3 @@
 #!/bin/sh
 
-pipenv run ./main.py
+FLASK_DEBUG=1 pipenv run ./main.py

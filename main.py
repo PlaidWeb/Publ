@@ -25,4 +25,4 @@ publ.model.create_tables()
 publ.index.scan_index(config.content_directory)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

@@ -55,14 +55,13 @@ def render_category(category='', template='index'):
 
     tmpl = map_template(category, template)
 
-    category_obj = Category(category)
-
+    # TODO we might want the category object to be able to provide additional defaults
     view_obj = View({
         'category': category,
         'date': request.args.get('date')
         })
 
-    return render_template(tmpl, category=category_obj, view=view_obj)
+    return render_template(tmpl, category=Category(category), view=view_obj)
 
 def expire_entry(record):
     # This entry no longer exists so delete it, and anything that references it
@@ -91,7 +90,7 @@ def render_entry(entry_id, slug_text='', category=''):
         if path_redirect:
             return redirect(path_redirect)
 
-        return render_error(category, 410, 404)
+        return render_error(category, 404)
 
     # Show an access denied error if the entry has been set to draft mode
     if record.status == model.PublishStatus.DRAFT:
@@ -103,7 +102,7 @@ def render_entry(entry_id, slug_text='', category=''):
     # does the entry-id header mismatch? If so the old one is invalid
     if int(entry_obj.get('Entry-ID')) != record.id:
         expire_entry(record)
-        return render_error(category, 410, 404)
+        return render_error(category, 404)
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -124,5 +123,5 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(entry_redirect)
 
     tmpl = map_template(category, 'entry')
-    return render_template(tmpl, entry=entry_obj)
+    return render_template(tmpl, entry=entry_obj, category=Category(category))
 

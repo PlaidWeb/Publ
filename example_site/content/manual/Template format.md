@@ -13,6 +13,14 @@ There are three kinds of page in Publ: entry, category, and error.
 
 TODO: explain how templates are chosen in plain English
 
+Expected templates:
+
+* **`index`**: The default view for a category
+* **`feed`**: The Atom feed for a category
+* **`entry`**: The view for a single entry
+* **`error`**: What to render if an error happens
+    * If present, you can also use templates named for the actual error code (404, 403, etc.)
+
 ### All pages
 
 All template types get the default Flask objects; there is more information about
@@ -59,8 +67,8 @@ if none was specified. The template gets the following parameters:
 
 ### Error pages
 
-Error templates do not receive any additional parameters beyond what all templates
-get.
+Error templates receive an `error_code` parameter to indicate which error occurred;
+otherwise it only gets the default stuff.
 
 ## Object interface
 
@@ -97,9 +105,47 @@ The `entry` object has the following methods/properties:
         </ul>
         {% endif %}
 
+* **`link`**: A link to the entry's individual page
+
+    (TODO: This can take arguments for getting different kinds of links; eventually
+    this should be implemented and documented.)
+
+    **Note:** If this entry is a redirection, this link refers to the redirect
+    target.
+
 ### <a name="category-object"></a>Category object
 
-TODO
+The `category` object provides the following:
+
+* **`path`**: The full path to the category
+
+* **`basename`**: Just the last part of the category name
+
+* **`subcats`**: The direct subcategories of this category
+
+* **`subcats_recursive`**: All subcategories of this category, including recursive
+
+* **`parent`**: The parent category, if any
+
+Example template code for printing out an entire directory structure (flattened):
+
+    <ul>
+    {% for subcat in category.subcats(recurse=True) %}
+    <li>subcat.path</li>
+    {% endfor %}
+    </ul>
+
+Example template code for printing out the directory structure in a nice recursive manner:
+
+    <ul>
+    {%- for subcat in category.subcats recursive %}
+        <li>{{ subcat.basename }}
+        {%- if subcat.subcats -%}
+        <ul>{{ loop(subcat.subcats)}}</ul>
+        {%- endif %}</li>
+    {%- endfor %}
+    </ul>
+
 
 ### <a name="view-object"></a>View object
 
