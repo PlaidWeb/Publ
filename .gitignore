@@ -5,3 +5,4 @@ tmp
 example_site/static/img/
 data
 .DS_Store
+public

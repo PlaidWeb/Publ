@@ -19,7 +19,7 @@ echo "Updating data..."
 #pipenv run python -c "import db; db.create_tables()" || exit $?
 
 # Restart Passenger (at least per Dreamhost's config; TODO is this universal?)
-mkdir -p tmp
+mkdir -p tmp data
 touch tmp/restart.txt
 
 echo "Setup complete."
