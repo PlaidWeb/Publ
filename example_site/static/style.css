@@ -1,9 +1,21 @@
 body {
     background: white;
+    font-family: 'Trebuchet MS', 'Verdana', 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
 }
 
 h1, h2, h3 {
-    font-family: 'Helvetica', 'Liberation Sans', 'Arial';
+    font-family: 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
     border-bottom: solid black 1px;
+}
+
+code {
+    background: #eee;
+    font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
+}
+
+pre {
+    background: #eee;
+    border: dotted black 1px;
+    padding: 1ex;
 }
 
