@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+    <title>Publ</title>
+    <subtitle>A personal publishing system for the modern web</subtitle>
+    <link href="{{ url_for('category',category=category,template='feed')}}" rel="self" />
+    <link href="{{ url_for('category',category=category)}}" />
+    <id>tag:publ.org.blog:master</id>
+
+    {% for entry in view.where(recurse=True).entries %}
+    <entry>
+        <title>{{entry.title}}</title>
+        <link href="{{url_for('entry',entry_id=entry.id,_external=_true)}}" rel="alternate" type="text/html" />
+        <updated>{{entry.last_modified.isoformat()}}</updated>
+        <id>urn:uuid:{{entry.uuid}}</id>
+        <content type="html">
+            {{entry.body}}
+            {% if entry.more %}
+            &lt;a href="{{entry.link}}"&gt;Read more...&lt;/a&gt;
+            {% endif %}
+        </content>
+        <author>
+            <name>{{entry.author or "fluffy"}}</name>
+        </author>
+    </entry>
+    {% endfor %}
+
+</feed>

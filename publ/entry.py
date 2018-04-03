@@ -44,6 +44,9 @@ class Entry:
         self._record = record   # index record
         self._message = None    # actual message payload, lazy-loaded
 
+        self.date = arrow.get(record.entry_date)
+        self.last_modified = arrow.get(os.stat(record.file_path).st_mtime)
+
         # permalink is always local (ignoring redirections)
         # (although it's not very 'permanent' is it?)
         self.permalink = flask.url_for('entry',

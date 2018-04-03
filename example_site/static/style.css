@@ -3,7 +3,7 @@ body {
     font-family: 'Trebuchet MS', 'Verdana', 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
     font-family: 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
     border-bottom: solid black 1px;
 }
@@ -17,5 +17,16 @@ pre {
     background: #eee;
     border: dotted black 1px;
     padding: 1ex;
+}
+
+#nav {
+    font-style: italic;
+}
+
+.posted {
+    font-size: small;
+    font-style: italic;
+    margin: 0;
+    border-bottom: dotted black 1px;
 }
 

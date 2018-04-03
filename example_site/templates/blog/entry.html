@@ -6,10 +6,9 @@
 </head>
 <body>
 <h1>{{entry.title}}</h1>
-
-    <div id="nav">
-    <a href="{{url_for('category',category=category)}}">back to {{category.basename}}</a>
-    </div>
+<div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
+    {% if entry.author %}by {{entry.author}}{% endif %}
+</div>
 
     <div class="content">
         {% if entry.body %}
@@ -24,5 +23,11 @@
         {% endif %}
 
     </div>
+
+
+    <div id="nav">
+    <a href="{{url_for('category',category=category)}}">back to {{category.basename}}</a>
+    </div>
+
 </body>
 </html>

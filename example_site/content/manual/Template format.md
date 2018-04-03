@@ -113,6 +113,11 @@ The `entry` object has the following methods/properties:
     **Note:** If this entry is a redirection, this link refers to the redirect
     target.
 
+Functionality to come:
+
+* Previous/next entry within the same category
+* Previous/next entry within a specific category
+
 ### <a name="category-object"></a>Category object
 
 The `category` object provides the following:
