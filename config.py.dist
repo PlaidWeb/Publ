@@ -6,8 +6,8 @@ from dateutil import tz
 timezone = tz.tzlocal()
 # timezone = 'US/Pacific'
 
-# Hosted site domain
-server_name = 'PLEASE_SET_ME'
+# Hosted site domain; set this to your actual web domain if you want absolute links to work right
+server_name = None
 
 # Where static files come from
 static_directory = 'example_site/static'
@@ -20,12 +20,6 @@ template_directory = 'example_site/templates'
 
 # Where our site content lives
 content_directory = 'example_site/content'
-
-# Where image renditions get saved out
-image_rendition_directory = 'example_site/static/img'
-
-# The URL that maps to the root of image_rendition_directory
-image_rendition_root = '/static/img'
 
 # In-memory database; fastest but most memory-intensive
 # also for some reason peewee keeps dropping it? WTF
