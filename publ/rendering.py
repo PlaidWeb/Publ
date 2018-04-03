@@ -3,7 +3,7 @@
 
 import os
 import logging
-from flask import request, redirect, render_template, send_from_directory, url_for
+from flask import request, redirect, render_template, send_from_directory, url_for, make_response
 from . import path_alias, model
 from .entry import Entry
 from .category import Category
@@ -53,7 +53,7 @@ def render_error(category, *error_codes):
 
     template = map_template(category, template_list)
     if template:
-        return render_template(template, error=error_code, mimetype=mimetype(template)), error_code
+        return render_template(template, error=error_code), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
@@ -79,7 +79,7 @@ def render_category(category='', template='index'):
         'date': request.args.get('date')
         })
 
-    return render_template(tmpl, category=Category(category), view=view_obj, mimetype=mimetype(template))
+    return render_template(tmpl, category=Category(category), view=view_obj), { 'Content-Type': mimetype(tmpl) }
 
 def expire_entry(record):
     # This entry no longer exists so delete it, and anything that references it
