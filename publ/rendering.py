@@ -85,8 +85,7 @@ def render_category(category='', template='index'):
         # nope, we just don't know what this is
         return render_error(category, 'Template not found', 400)
 
-    # TODO we might want the category object to be able to provide additional defaults
-    # Also view restriction will need a precedence chain based on pagination type
+    # TODO https://github.com/fluffy-critter/Publ/issues/13
     view_obj = View({
         'category': category,
         'date': request.args.get('date')
@@ -148,6 +147,5 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(entry_redirect)
 
     tmpl = map_template(category, 'entry')
-    # TODO is there ever a reason to specify entry mimetype? probably not?
     return render_template(tmpl, entry=entry_obj, category=Category(category))
 

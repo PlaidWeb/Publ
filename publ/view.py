@@ -6,7 +6,7 @@ from .entry import Entry
 import arrow
 
 '''
-TODO: figure out the actual API
+TODO: figure out the actual API; https://github.com/fluffy-critter/Publ/issues/13
 
 expected view specs:
 
@@ -48,7 +48,7 @@ class View:
                 )
             )
 
-        # # restrict by category
+        # restrict by category
         if 'category' in self.spec:
             path = str(self.spec['category'])
             recurse = self.spec.get('recurse', False)
@@ -62,10 +62,10 @@ class View:
                 # We need to restrict
                 where = where & cat_where
 
-        # TODO sorting
+        # TODO https://github.com/fluffy-critter/Publ/issues/13 sorting
         self.query = model.Entry.select().where(where)
 
-        # TODO generate a useful value
+        # TODO https://github.com/fluffy-critter/Publ/issues/17 generate a useful value
         self.last_modified = arrow.now()
 
     def __getattr__(self, name):

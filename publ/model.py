@@ -46,7 +46,7 @@ class EntryType(Enum):
 
 class FileMTime(BaseModel):
     file_path = CharField(unique=True)
-    stat_mtime = IntegerField()  # TODO investigate if this is Y2k38-ready
+    stat_mtime = IntegerField()  # At least on SQLite, this is Y2k38-ready
 
 class Entry(BaseModel):
     file_path = CharField()

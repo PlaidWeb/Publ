@@ -85,7 +85,7 @@ configure static content on its own subdomain. The way to do that would be by se
 
 And then in the `config.py` you'd set `static_path` to point to your CDN domain (`static.example.com` in this example).
 
-TODO: Fix this up when image renditions are an actual thing
+TODO: Fix this up when image renditions are an actual thing ([issue 9](http://github.com/fluffy-critter/Publ/issues/9))
 
 ## Upgrading the code
 

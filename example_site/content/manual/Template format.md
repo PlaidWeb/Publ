@@ -11,7 +11,7 @@ There are three kinds of page in Publ: entry, category, and error.
 
 ## Template mapping
 
-TODO: explain how templates are chosen in plain English
+TODO: explain how templates are chosen in plain English ([issue 10](https://github.com/fluffy-critter/Publ/issues/10))
 
 Expected templates:
 
@@ -52,7 +52,7 @@ The following additional things are provided to the request context:
         * `True`: Include future entries
         * `False`: Do not include future entries (default)
 
-    * (TODO: date, pagination, sorting, tags, etc.)
+    * ([TODO](https://github.com/fluffy-critter/Publ/issues/13): date, pagination, sorting, tags, etc.)
 
 
 
@@ -93,7 +93,7 @@ The `entry` object has the following methods/properties:
     These properties can be used directly, or they can be used as functions
     which affect the content rendering. For example:
 
-    (TODO: actually figure out what the arguments will be; this will be stuff
+    ([TODO](https://github.com/fluffy-critter/Publ/issues/9): actually figure out what the arguments will be; this will be stuff
     like image renditions, auto-excerpts, etc.)
 
 * All headers on the [entry file](/entry-format) are available
@@ -118,7 +118,7 @@ The `entry` object has the following methods/properties:
 
 * **`link`**: A link to the entry's individual page
 
-    (TODO: This can take arguments for getting different kinds of links; eventually
+    ([TODO](https://github.com/fluffy-critter/Publ/issues/15): This can take arguments for getting different kinds of links; eventually
     this should be implemented and documented.)
 
     **Note:** If this entry is a redirection, this link refers to the redirect

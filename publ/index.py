@@ -65,7 +65,6 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
 
     def on_moved(self, event):
         logger.debug("file moved: %s -> %s", event.src_path, event.dest_path)
-        ## TODO we should ignore this if it's a fixup .tmp file
         if not event.is_directory:
             self.update_file(event.dest_path)
 
