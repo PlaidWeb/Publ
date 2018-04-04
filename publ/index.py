@@ -82,7 +82,9 @@ def background_scan(content_dir):
             observer = watchdog.observers.Observer()
         watchdirs.add(content_dir)
         observer.schedule(IndexWatchdog(content_dir), content_dir, recursive=True)
+        logging.info("Watching %s for changes", content_dir)
         if start_observer:
+            logging.info("Starting observer %s", observer)
             observer.start()
 
 ''' scans the specified directory for content to ingest '''
