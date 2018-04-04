@@ -5,13 +5,12 @@ from peewee import *
 import playhouse.db_url
 from enum import Enum
 import uuid
+import threading
 
 import config
 
 database = playhouse.db_url.connect(config.database)
-
-def atomic():
-    return database.atomic()
+lock = threading.Lock()
 
 ''' Boilerplate for schema migration '''
 

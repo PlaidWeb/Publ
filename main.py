@@ -10,7 +10,7 @@ import logging
 
 import flask
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 logging.info("Setting up")
 
@@ -25,6 +25,7 @@ publ.setup(app)
 def scan_index():
     publ.model.create_tables()
     publ.index.scan_index(config.content_directory)
+    publ.index.background_scan(config.content_directory)
 
 scan_index()
 

@@ -8,10 +8,14 @@ from . import model
 import arrow
 import watchdog.observers
 import watchdog.events
+import flask
 
 logger = logging.getLogger(__name__)
 
 ENTRY_TYPES = ['.md', '.htm', '.html']
+
+observer = None
+watchdirs = set()
 
 def scan_file(fullpath, relpath, assign_id):
     _,ext = os.path.splitext(fullpath)
@@ -65,10 +69,26 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         if not event.is_directory:
             self.update_file(event.dest_path)
 
+    def on_deleted(self, event):
+        logger.debug("File deleted: %s", event.src_path)
+        if not event.is_directory:
+            self.update_file(event.src_path)
+
+def background_scan(content_dir):
+    global observer
+    global watchdirs
+
+    if not content_dir in watchdirs:
+        start_observer = not observer
+        if start_observer:
+            observer = watchdog.observers.Observer()
+        watchdirs.add(content_dir)
+        observer.schedule(IndexWatchdog(content_dir), content_dir, recursive=True)
+        if start_observer:
+            observer.start()
+
 ''' scans the specified directory for content to ingest '''
 def scan_index(content_dir):
-    global observers
-
     fixups = []
     for root, _, files in os.walk(content_dir, followlinks=True):
         for file in files:
@@ -93,10 +113,3 @@ def scan_index(content_dir):
             logger.info("Fixed up %s", fullpath)
         else:
             logger.warning("Couldn't fix up %s", fullpath)
-
-    # watch the directory for future changes
-    observer = watchdog.observers.Observer()
-    observer.schedule(IndexWatchdog(content_dir), content_dir, recursive=True)
-    observer.start()
-    # This thread seems to be cleanly shut down even from the dev server, so
-    # let's not worry about cleanup
