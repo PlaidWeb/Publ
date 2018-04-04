@@ -22,8 +22,12 @@ app.config['SERVER_NAME'] = config.server_name
 
 publ.setup(app)
 
-publ.model.create_tables()
-publ.index.scan_index(config.content_directory)
+def scan_index():
+    publ.model.create_tables()
+    publ.index.scan_index(config.content_directory)
+
+scan_index()
 
 if __name__ == "__main__":
     app.run()
+

@@ -3,6 +3,7 @@
 
 import markdown
 import os
+import shutil
 import re
 import arrow
 import email
@@ -163,6 +164,6 @@ def scan_file(fullpath, relpath, assign_id):
         with tempfile.NamedTemporaryFile('w', delete=False) as file:
             tmpfile = file.name
             file.write(str(entry))
-        os.replace(tmpfile, fullpath)
+        shutil.move(tmpfile, fullpath)
 
     return record
