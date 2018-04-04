@@ -25,6 +25,8 @@ else:
 
 logging.info("Setting up")
 
+# TODO https://github.com/fluffy-critter/Publ/issues/20
+# move to app.config.from_object
 app = flask.Flask(__name__,
     static_folder=config.static_directory,
     static_path=config.static_path,
