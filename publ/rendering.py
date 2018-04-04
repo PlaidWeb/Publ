@@ -5,7 +5,7 @@ import os
 import logging
 from flask import request, redirect, render_template, send_from_directory, url_for, make_response
 from . import path_alias, model
-from .entry import Entry
+from .entry import Entry, expire_record
 from .category import Category
 from .view import View
 
@@ -94,12 +94,6 @@ def render_category(category='', template='index'):
 
     return render_template(tmpl, category=Category(category), view=view_obj), { 'Content-Type': mimetype(tmpl) }
 
-def expire_entry(record):
-    # This entry no longer exists so delete it, and anything that references it
-    # SQLite doesn't support cascading deletes so let's just clean up manually
-    model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
-    record.delete_instance(recursive=True)
-
 def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
@@ -132,7 +126,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     # does the entry-id header mismatch? If so the old one is invalid
     if int(entry_obj.get('Entry-ID')) != record.id:
-        expire_entry(record)
+        expire_record(record)
         return render_error(category, 'Entry not found', 404)
 
     # check if the canonical URL matches

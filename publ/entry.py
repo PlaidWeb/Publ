@@ -58,8 +58,11 @@ class Entry:
     def _load(self):
         if not self._message:
             filepath = self._record.file_path
-            with open(filepath, 'r') as file:
-                self._message = email.message_from_file(file)
+            try:
+                with open(filepath, 'r') as file:
+                    self._message = email.message_from_file(file)
+            except FileNotFoundError:
+                expire_record(self._record)
 
             body, _, more = self._message.get_payload().partition('\n~~~~~\n')
 
@@ -167,3 +170,11 @@ def scan_file(fullpath, relpath, assign_id):
         shutil.move(tmpfile, fullpath)
 
     return record
+
+def expire_record(record):
+    # This entry no longer exists so delete it, and anything that references it
+    # SQLite doesn't support cascading deletes so let's just clean up manually
+    model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
+    record.delete_instance(recursive=True)
+
+
