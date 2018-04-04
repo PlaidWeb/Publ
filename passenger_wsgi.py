@@ -35,11 +35,19 @@ if sys.executable != INTERP:
 sys.path.append(os.getcwd())
 
 # load the app
-import main
+import main, time
+
+last_scan = None
 
 # hackish way to make Passenger urldecode the same way WSGI does
 import urllib.parse
 def application(environ, start_response):
+    # Dreamhost hack - apparently the watchdog thread is getting killed (TODO: figure out why and if there's a fix)
+    global last_scan
+    now = time.time()
+    if not last_scan or now - last_scan > 30:
+        main.scan_index()
+
     environ["PATH_INFO"] = urllib.parse.unquote(environ["PATH_INFO"])
     return main.app(environ, start_response)
 
