@@ -3,22 +3,22 @@ Date: 2018-04-03 16:24:37-07:00
 Entry-ID: 328
 UUID: 4dea4c3b-c6ec-4dc0-9f40-b27a91128a60
 
-## Installing Publ
+## Installing Publ locally
 
 You'll need Python 3 (at least version 3.6) and `pipenv` to be installed.
 On macOS this is pretty straightforward; after installing [Homebrew](https://brew.sh) you can install these things with:
 
-    $ brew install python3.6
-    $ pip3 install --user pipenv
+    $ brew install python
+    $ pip install --user pipenv
 
 and then add the following line to your login script (usually `~/.bash_profile`):
 
-    export PATH=$HOME/Library/Python/3.6/bin/:$PATH
+    export PATH=$HOME/Library/Python/3.6/bin:$PATH
 
 Now when you open a new terminal you should have pipenv and python3 on your path:
 
     $ which pipenv
-    /Users/fluffy/Library/Python/3.6/bin//pipenv
+    /Users/fluffy/Library/Python/3.6/bin/pipenv
     $ which python3
     /usr/local/bin/python3
     $ python3 --version
@@ -72,3 +72,5 @@ you can try deploying there; I have a very basic guide for [installing on Dreamh
 Wherever you end up deploying, you'll need to set your `config.py` values to point to your actual site files and domain name.
 
 If you do end up using Publ, please let me know so that I can check it out -- and maybe add it to a list of featured sites!
+
+[TODO](https://github.com/fluffy-critter/Publ/issues/20): Figure out how to best do a Heroku deployment

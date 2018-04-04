@@ -257,7 +257,7 @@ private content and of course it kind of flies in the face of the whole "host ev
 
 I feel like Disqus comments for immediate responses and reblogs/mutual commentary are the way to go in general. Maybe that's just because I'm used to that from Tumblr.
 
-Having some means of tracking inbound links to see where external commentary is taking place would be good, I guess. Trackbacks were a miserable failure but tracking `Http-Referer` headers and showing them on the dashboard would probably be enough.
+Having some means of tracking inbound links to see where external commentary is taking place would be good, I guess. Trackbacks were a miserable failure but tracking HTTP `Referer` [sic] headers and showing them on the dashboard would probably be enough.
 
 And on that note...
 
