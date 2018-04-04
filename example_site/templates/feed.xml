@@ -16,10 +16,12 @@
         <updated>{{entry.last_modified.isoformat()}}</updated>
         <id>urn:uuid:{{entry.uuid}}</id>
         <content type="html">
-            {{entry.body}}
+<![CDATA[
+            {{entry.body|safe}}
             {% if entry.more %}
-            &lt;a href="{{entry.link}}"&gt;Read more...&lt;/a&gt;
+            <a href="{{entry.link}}">Read more...</a>
             {% endif %}
+]]>
         </content>
         <author>
             <name>{{entry.author or "fluffy"}}</name>
