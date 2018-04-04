@@ -52,6 +52,8 @@ The following additional things are provided to the request context:
         * `True`: Include future entries
         * `False`: Do not include future entries (default)
 
+    * **`limit`**: Limit to a maximum number of entries
+
     * ([TODO](https://github.com/fluffy-critter/Publ/issues/13): date, pagination, sorting, tags, etc.)
 
 
@@ -156,12 +158,12 @@ Example template code for printing out an entire directory structure (flattened)
 Example template code for printing out the directory structure in a nice recursive manner:
 
     <ul>
-    {%- for subcat in category.subcats recursive %}
+    {% for subcat in category.subcats recursive %}
         <li>{{ subcat.basename }}
-        {%- if subcat.subcats -%}
+        {% if subcat.subcats %}
         <ul>{{ loop(subcat.subcats)}}</ul>
-        {%- endif %}</li>
-    {%- endfor %}
+        {% endif %}</li>
+    {% endfor %}
     </ul>
 
 
@@ -171,9 +173,14 @@ The `view` object has the following things on it:
 
 * **`entries`**: A list of all of the entries that are visible in this view
 
-* **`where(...)`**: Create another view based on this view
-
-    This takes the same arguments as [`get_view()`](#fn-get-view); note that
-    if you specify a category this will override the current view's category.
-
 * **`last_modified`**: A last-modified time for this view (useful for feeds)
+
+* **`spec`**: The view's specification (category, limits, date range, etc.)
+
+It also takes arguments to further refine the view, using the same arguments
+as [`get_view()`](#fn-get-view); for example:
+
+    {% for entry in view(limit=10) %}{{entry.title}}{% endfor %}
+
+Note that if you specify a category this will override the current view's category.
+
