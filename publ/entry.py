@@ -10,12 +10,15 @@ import email
 import uuid
 import tempfile
 import flask
+import logging
 
 import config
 
 from . import model
 from . import path_alias
 from . import utils
+
+logger = logging.getLogger(__name__)
 
 class MarkdownText(utils.SelfStrCall):
     def __init__(self, text):
@@ -111,70 +114,85 @@ def guess_title(basename):
     base,_ = os.path.splitext(basename)
     return re.sub(r'[ _-]+', r' ', base).title()
 
+''' scan a file and put it into the index '''
 def scan_file(fullpath, relpath, assign_id):
-    ''' scan a file and put it into the index '''
-    with open(fullpath, 'r') as file:
-        entry = email.message_from_file(file)
+    try:
+        with open(fullpath, 'r') as file:
+            entry = email.message_from_file(file)
+    except FileNotFoundError:
+        # The file doesn't exist, so remove it from the index
+        record = model.Entry.get_or_none(file_path=fullpath)
+        if record:
+            expire_record(record)
+        return
 
-    entry_id = entry['Entry-ID']
-    if entry_id == None and not assign_id:
-        return False
+    with model.lock:
+        if 'Entry-ID' in entry:
+            entry_id = int(entry['Entry-ID'])
+        elif not assign_id:
+            return False
+        else:
+            entry_id = None
 
-    fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
+        fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
 
-    basename = os.path.basename(relpath)
-    title = entry['title'] or guess_title(basename)
+        basename = os.path.basename(relpath)
+        title = entry['title'] or guess_title(basename)
 
-    values = {
-        'file_path': fullpath,
-        'category': entry.get('Category', os.path.dirname(relpath)),
-        'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()],
-        'entry_type': model.EntryType[entry.get('Type', 'ENTRY').upper()],
-        'slug_text': make_slug(entry['Slug-Text'] or title),
-        'redirect_url': entry['Redirect-To'],
-        'title': title,
-    }
+        values = {
+            'file_path': fullpath,
+            'category': entry.get('Category', os.path.dirname(relpath)),
+            'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()],
+            'entry_type': model.EntryType[entry.get('Type', 'ENTRY').upper()],
+            'slug_text': make_slug(entry['Slug-Text'] or title),
+            'redirect_url': entry['Redirect-To'],
+            'title': title,
+        }
 
-    if 'Date' in entry:
-        entry_date = arrow.get(entry['Date'])
-    else:
-        entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
-        entry['Date'] = entry_date.format()
-    values['entry_date'] = entry_date.datetime
+        if 'Date' in entry:
+            entry_date = arrow.get(entry['Date'])
+        else:
+            entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
+            entry['Date'] = entry_date.format()
+        values['entry_date'] = entry_date.datetime
 
-    if entry_id != None:
-        record, created = model.Entry.get_or_create(id=entry_id, defaults=values)
-    else:
-        record, created = model.Entry.get_or_create(file_path=fullpath, defaults=values)
+        if entry_id != None:
+            logger.debug("creating %s with id %d", fullpath, entry_id)
+            record, created = model.Entry.get_or_create(id=entry_id, defaults=values)
+        else:
+            logger.debug("creating %s with new id", fullpath)
+            record, created = model.Entry.get_or_create(file_path=fullpath, defaults=values)
 
-    if not created:
-        record.update(**values).where(model.Entry.id == record.id).execute()
+        if not created:
+            logger.debug("Reusing existing entry %d", record.id)
+            record.update(**values).where(model.Entry.id == record.id).execute()
 
-    # Update the entry ID
-    del entry['Entry-ID']
-    entry['Entry-ID'] = str(record.id)
+        # Update the entry ID
+        del entry['Entry-ID']
+        entry['Entry-ID'] = str(record.id)
 
-    if not 'UUID' in entry:
-        entry['UUID'] = str(uuid.uuid4())
+        if not 'UUID' in entry:
+            entry['UUID'] = str(uuid.uuid4())
 
-    # add other relationships to the index
-    for alias in entry.get_all('Path-Alias', []):
-        path_alias.set_alias(alias, entry=record)
-    for alias in entry.get_all('Path-Unalias', []):
-        path_alias.remove_alias(alias)
+        # add other relationships to the index
+        for alias in entry.get_all('Path-Alias', []):
+            path_alias.set_alias(alias, entry=record)
+        for alias in entry.get_all('Path-Unalias', []):
+            path_alias.remove_alias(alias)
 
-    if fixup_needed:
-        with tempfile.NamedTemporaryFile('w', delete=False) as file:
-            tmpfile = file.name
-            file.write(str(entry))
-        shutil.move(tmpfile, fullpath)
+        if fixup_needed:
+            with tempfile.NamedTemporaryFile('w', delete=False) as file:
+                tmpfile = file.name
+                file.write(str(entry))
+            shutil.move(tmpfile, fullpath)
 
-    return record
+        return record
 
 def expire_record(record):
-    # This entry no longer exists so delete it, and anything that references it
-    # SQLite doesn't support cascading deletes so let's just clean up manually
-    model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
-    record.delete_instance(recursive=True)
+    with model.lock:
+        # This entry no longer exists so delete it, and anything that references it
+        # SQLite doesn't support cascading deletes so let's just clean up manually
+        model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
+        record.delete_instance(recursive=True)
 
 

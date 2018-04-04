@@ -19,6 +19,7 @@ else:
         '%(asctime)s %(levelname)s: %(message)s '
         '[in %(pathname)s:%(lineno)d]'
     ))
+    log_handler.setLevel(logging.INFO)
     logging.getLogger().addHandler(log_handler)
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,13 @@ last_scan = None
 # hackish way to make Passenger urldecode the same way WSGI does
 import urllib.parse
 def application(environ, start_response):
-    # Dreamhost hack - apparently the watchdog thread is getting killed (TODO: figure out why and if there's a fix)
+    # Dreamhost hack - sometimes watchdog doesn't really work so good
     global last_scan
     now = time.time()
     if not last_scan or now - last_scan > 30:
         main.scan_index()
 
+    # make Passenger interpret PATH_INFO the same way that the WSGI standard does
     environ["PATH_INFO"] = urllib.parse.unquote(environ["PATH_INFO"])
     return main.app(environ, start_response)
 
