@@ -54,7 +54,7 @@ class View:
             recurse = self.spec.get('recurse', False)
 
             cat_where = (model.Entry.category == path)
-            # Don't add the clasue if path is empty and we're recursing -
+            # Don't add the clause if path is empty and we're recursing -
             if path or not recurse:
                 if recurse:
                     # We're recursing and aren't in /, so add the prefix clause
@@ -62,19 +62,27 @@ class View:
                 # We need to restrict
                 where = where & cat_where
 
+        self._where = where
+
         # TODO https://github.com/fluffy-critter/Publ/issues/13 sorting
         self._query = model.Entry.select().where(where).order_by(-model.Entry.entry_date)
 
         if 'limit' in self.spec:
             self._query = self._query.limit(self.spec['limit'])
 
-        # TODO https://github.com/fluffy-critter/Publ/issues/17 generate a useful value
-        self.last_modified = arrow.now()
-
     def __getattr__(self, name):
         if name == 'entries':
             self.entries = [Entry(e) for e in self._query]
             return self.entries
+
+        if name == 'last_modified':
+            # Get the most recent entry in the view
+            try:
+                latest = self._query.order_by(-model.Entry.entry_date)[0]
+                self.last_modified = arrow.get(Entry(latest).last_modified)
+            except IndexError:
+                self.last_modified = arrow.get()
+            return self.last_modified
 
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
