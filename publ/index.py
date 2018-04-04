@@ -44,7 +44,6 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         self.content_dir = content_dir
 
     def update_file(self, fullpath):
-        logger.info("Got update for %s", fullpath)
         relpath = os.path.relpath(fullpath, self.content_dir)
 
         if scan_file(fullpath, relpath, True):
@@ -54,22 +53,22 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
             logger.warning("Couldn't update %s", fullpath)
 
     def on_created(self, event):
-        logger.debug("file created: %s", event.src_path)
+        logger.info("file created: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_modified(self, event):
-        logger.debug("file modified: %s", event.src_path)
+        logger.info("file modified: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_moved(self, event):
-        logger.debug("file moved: %s -> %s", event.src_path, event.dest_path)
+        logger.info("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):
-        logger.debug("File deleted: %s", event.src_path)
+        logger.info("File deleted: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 

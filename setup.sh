@@ -14,12 +14,8 @@ echo "Configuring environment..."
 
 pipenv install
 
-echo "Updating data..."
-#mkdir -p data
-#pipenv run python -c "import db; db.create_tables()" || exit $?
-
 # Restart Passenger (at least per Dreamhost's config)
-mkdir -p tmp data
+mkdir -p tmp
 touch tmp/restart.txt
 
 echo "Setup complete."

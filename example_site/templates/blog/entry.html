@@ -8,6 +8,9 @@
 <h1>{{entry.title}}</h1>
 <div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
     {% if entry.author %}by {{entry.author}}{% endif %}
+    {% if entry.last_modified > entry.date %}
+        <div class="update">Last updated {{entry.last_modified.humanize()}}</div>
+    {% endif %}
 </div>
 
     <div class="content">

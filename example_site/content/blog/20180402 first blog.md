@@ -16,28 +16,31 @@ a bit about the history and why I decided to build Yet Another CMS.
 
 ### Pre-Cambrian era
 
-Back in the year 2000 when blogs were still called "web logs" I was pretty active on the
-now-defunct kuro5hin.org. It was a pretty interesting community platform, which
+Back in the year 2000 (when blogs were still called "web logs" and dinosaurs roamed the earth)
+I was pretty active on
+kuro5hin.org (now defunct). It was a pretty interesting community platform, which
 started out as a news site but eventually turned into a journaling site. It had
-a lot of shared experience and content thereof, and a nice community of camaraderie.
+a lot of shared experience and content thereof, and a nice community of technology enthusiasts.
 
 Then in late 2001 some people flew some planes into some buildings, and suddenly the tone of the site changed.
 
 It was now mostly about politics. And with politics came a lot of... let's say *differing* opinions.
 Which is fine, but some of the debates got pretty heated, and this ended up attracting a bunch of trolls,
-who enjoyed picking at the various scabs of the community. And, meanwhile, I was
-openly trans but not particularly public about it in meatspace, and the influx
-of trolls made for some pretty severe trolling *opportunities* at many peoples'
-expenses; I had a particularly gigantic target on my back.
+who enjoyed picking at the various scabs of the community.
+
+Throughout the early history of the site I was
+open about my gender despite not being particularly public about it in meatspace.
+Due to this I had a particularly gigantic target on my back.
 
 I got doxed.
 
 One of the basic tenets of kuro5hin was that the community should be self-moderating, but
-the community was now overrun by bad actors. Another basic tenet is that nobody should be
+the community was now overrun by bad actors. Another basic tenet wqs that nobody should be
 allowed to delete their own stuff, as it was a "community site" and nobody wanted a "memory
 hole," and meanwhile the only person with the ability to delete anything was the site owner,
 who believed that trying to remove information from the Internet is like "trying to extract
-urine from a pool," so he refused to do anything about the information I wanted taken down.
+urine from a pool," so he refused to do anything about the information I wanted taken down
+since he felt it wouldn't make any difference anyway.
 
 (One particularly *fun* thing was one of the trolls registered an account under my
 then-legal name, and started reposting all of my content under that account. *Fun times.*)
@@ -86,7 +89,7 @@ anyway, so for new sites I just started using those things as appropriate.
 Also, high-DPI displays happened, and I decided I wanted to publish my comics in a high-DPI-compatible
 manner. But no CMSes out there supported this, so, of course, I started hacking it into Movable Type.
 
-You really don't want to see all of the weird moving parts that go behind high-DPI renditions of a single comic.
+You really don't want to see all of the weird moving parts that go behind serving up a single comic.
 
 ### Many walled gardens
 
