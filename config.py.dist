@@ -6,6 +6,12 @@ from dateutil import tz
 timezone = tz.tzlocal()
 # timezone = 'US/Pacific'
 
+# Where to keep log files
+log_directory = 'tmp'
+
+# Where to keep the index database
+data_directory = 'data'
+
 # Hosted site domain; set this to your actual web domain if you want absolute links to work right
 server_name = None
 

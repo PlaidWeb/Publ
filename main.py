@@ -2,15 +2,26 @@
 # Main Publ application
 
 import os
-import markdown
 
 import config
 import publ
-import logging
+import logging, logging.handlers
 
 import flask
 
-logging.basicConfig(level=logging.INFO)
+if not os.path.exists(config.log_directory):
+    os.mkdir(config.log_directory)
+if not os.path.exists(config.data_directory):
+    os.mkdir(config.data_directory)
+
+if os.path.isfile('logging.conf'):
+    logging.config.fileConfig('logging.conf')
+else:
+    logging.basicConfig(level=logging.INFO,
+        handlers=[
+            logging.handlers.TimedRotatingFileHandler('tmp/publ.log'),
+            logging.StreamHandler()
+        ])
 
 logging.info("Setting up")
 
@@ -30,5 +41,5 @@ def scan_index():
 scan_index()
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=os.environ.get('PORT',5000))
 
