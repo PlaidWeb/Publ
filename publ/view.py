@@ -63,17 +63,18 @@ class View:
                 where = where & cat_where
 
         # TODO https://github.com/fluffy-critter/Publ/issues/13 sorting
-        self.query = model.Entry.select().where(where).order_by(-model.Entry.entry_date)
+        self._query = model.Entry.select().where(where).order_by(-model.Entry.entry_date)
 
         if 'limit' in self.spec:
-            self.query = self.query.limit(self.spec['limit'])
+            self._query = self._query.limit(self.spec['limit'])
 
         # TODO https://github.com/fluffy-critter/Publ/issues/17 generate a useful value
         self.last_modified = arrow.now()
 
     def __getattr__(self, name):
         if name == 'entries':
-            return [Entry(e) for e in self.query]
+            self.entries = [Entry(e) for e in self._query]
+            return self.entries
 
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})

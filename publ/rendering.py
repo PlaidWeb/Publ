@@ -7,6 +7,7 @@ from flask import request, redirect, render_template, send_from_directory, url_f
 from . import path_alias, model
 from .entry import Entry, expire_record
 from .category import Category
+from .template import Template
 from .view import View
 
 import config
@@ -22,7 +23,7 @@ extmap = {
 
 def mimetype(template):
     # infer the content-type from the extension
-    _,ext = os.path.splitext(template)
+    _,ext = os.path.splitext(template.filename)
     return extmap.get(ext, 'text/html')
 
 def map_template(orig_path, template_list):
@@ -34,8 +35,9 @@ def map_template(orig_path, template_list):
         while path != None:
             for extension in ['', '.html', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
-                if os.path.isfile(os.path.join(config.template_directory, candidate)):
-                    return candidate
+                file_path = os.path.join(config.template_directory, candidate)
+                if os.path.isfile(file_path):
+                    return Template(template, candidate, file_path)
             parent = os.path.dirname(path)
             if parent != path:
                 path = parent
@@ -53,7 +55,10 @@ def render_error(category, error_message, *error_codes):
 
     template = map_template(category, template_list)
     if template:
-        return render_template(template, error={'code':error_code, 'message':error_message}), error_code
+        return render_template(
+            template.filename,
+            error={'code':error_code, 'message':error_message},
+            template=template), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
@@ -91,7 +96,10 @@ def render_category(category='', template='index'):
         'date': request.args.get('date')
         })
 
-    return render_template(tmpl, category=Category(category), view=view_obj), { 'Content-Type': mimetype(tmpl) }
+    return render_template(tmpl.filename,
+        category=Category(category),
+        view=view_obj,
+        template=tmpl), { 'Content-Type': mimetype(tmpl) }
 
 def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
@@ -147,5 +155,8 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(entry_redirect)
 
     tmpl = map_template(category, 'entry')
-    return render_template(tmpl, entry=entry_obj, category=Category(category))
+    return render_template(tmpl.filename,
+        entry=entry_obj,
+        category=Category(category),
+        template=tmpl)
 
