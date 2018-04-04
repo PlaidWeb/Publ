@@ -25,7 +25,8 @@ class MarkdownText(utils.SelfStrCall):
         self._text = text
 
     def __call__(self):
-        # TODO instance parser with image rendition support with args specified here
+        # TODO https://github.com/fluffy-critter/Publ/issues/9
+        # instance parser with image rendition support with args specified here
         return markdown.markdown(self._text)
 
 ''' Link for an entry; defaults to an individual page '''
@@ -34,7 +35,8 @@ class EntryLink(utils.SelfStrCall):
         self._record = record
 
     def __call__(self):
-        # TODO add arguments for category/view, shortlink, etc.
+        # TODO https://github.com/fluffy-critter/Publ/issues/15
+        # add arguments for category/view, shortlink, etc.
         if self._record.redirect_url:
             return self._record.redirect_url
 
@@ -106,7 +108,8 @@ class Entry:
 
 ''' convert a title into a URL-friendly slug '''
 def make_slug(title):
-    # TODO this should probably handle things other than English ASCII...
+    # TODO https://github.com/fluffy-critter/Publ/issues/16
+    # this should probably handle things other than English ASCII...
     return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ','-')
 
 ''' Attempt to guess the title from the filename '''
