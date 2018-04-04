@@ -6,19 +6,21 @@ import playhouse.db_url
 from enum import Enum
 import uuid
 import threading
+import logging
 
 import config
 
 database = playhouse.db_url.connect(config.database)
 lock = threading.Lock()
 
-''' Boilerplate for schema migration '''
+logger = logging.getLogger(__name__)
+
+''' Schema version; bump this whenever an existing table changes '''
+schema_version = 1
 
 class BaseModel(Model):
     class Meta:
         database = database
-
-''' Our types '''
 
 class PublishStatus(Enum):
     DRAFT = 0
@@ -43,6 +45,11 @@ class EntryType(Enum):
             return value.value
         def python_value(self,value):
             return EntryType(value)
+
+class Global(BaseModel):
+    key = CharField(unique=True)
+    int_value = IntegerField(null=True)
+    str_value = CharField(null=True)
 
 class FileMTime(BaseModel):
     file_path = CharField(unique=True)
@@ -78,6 +85,7 @@ class Image(BaseModel):
 ''' Table management '''
 
 all_types = [
+    Global,
     FileMTime,
     Entry,
     PathAlias,
@@ -85,4 +93,21 @@ all_types = [
 ]
 
 def create_tables():
+    rebuild = False
+    try:
+        cur_version = Global.get(key='schema_version').int_value
+        logger.info("Current schema version: %s", cur_version)
+        rebuild = cur_version != schema_version
+    except Exception:
+        logger.info("Schema version missing")
+        rebuild = True
+
+    if rebuild:
+        logger.info("Updating database schema")
+        database.drop_tables(all_types)
+
     database.create_tables(all_types)
+
+    version_record, created = Global.get_or_create(key='schema_version')
+    version_record.int_value = schema_version
+    version_record.save()
