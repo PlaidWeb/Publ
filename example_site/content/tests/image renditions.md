@@ -17,4 +17,4 @@ Local image:
 
 Gallery:
 
-![@format="jpg"|maxwidth=240](lewi-1.png,lewi-2.png,lewi-3.png)
+![@format="jpg"|width=240](lewi-1.png,lewi-2.png,lewi-3.png)
