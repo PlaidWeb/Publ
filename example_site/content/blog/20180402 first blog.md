@@ -7,7 +7,8 @@ This is the first blog entry on Publ! It's pretty exciting to finally have this
 posted.
 
 Publ is a system I've been thinking about building for quite a long time, and over
-the last few years it's been occupying the back of my mind for a while. Let's talk
+the last few years it's been occupying an especially high-priority slot in the back of my mind.
+Let's talk
 a bit about the history and why I decided to build Yet Another CMS.
 
 .....
