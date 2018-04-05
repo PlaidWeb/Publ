@@ -33,7 +33,7 @@ Even in the end the unit tests didn't manage to build, but the install process w
 Then I had to add Python to my environment; I did so by adding the following lines to my `~/.bash_profile`:
 
     # python3
-    export PATH=$HOME/opt/python-3.6.4/bin:$HOME/.local/bin:$PATH
+    export PATH=$HOME/opt/python-3.6.5/bin:$HOME/.local/bin:$PATH
 
 and then also ran that line directly to get python3 in my path. Then finally I could install pipenv via:
 
