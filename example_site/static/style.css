@@ -74,7 +74,7 @@ pre {
 
 #nav ul {
     list-style-type: none;
-    padding-left: 1em;
+    padding: 0 1em;
 }
 
 #nav li.github:before { content: "⎋ "; }

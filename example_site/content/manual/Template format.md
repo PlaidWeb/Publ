@@ -52,6 +52,20 @@ The following additional things are provided to the request context:
 
     * **`limit`**: Limit to a maximum number of entries
 
+    * **`entry_type`**: Limit to entries with a specific [`Entry-Type`](/entry-format#entry-type) header
+    * **`entry_type_not`**: Limit to entries which do NOT match a specific entry type
+
+        These can be a single string, or it can be an array of strings. Note that
+        these are case-sensitive (i.e. `"PaGe"` and `"pAgE"` are two different types).
+
+        * `get_view(entry_type='page')` - only get entries of type "page"
+        * `get_view(entry_type_not='page')` - only get entries which AREN'T of type "page"
+        * `get_view(entry_type=['news','comic'])` - get entries which are of type 'news' or 'comic'
+        * `get_view(entry_type_not=['news','comic'])` - get entries of all types except 'news' or 'comic'
+
+        Mixing `entry_type` and `entry_type_not` results in undefined behavior, not that it makes
+        any sense anyway.
+
     * ([TODO](https://github.com/fluffy-critter/Publ/issues/13): date, pagination, sorting, tags, etc.)
 
 * **`static`**: Build a link to a static resource. The first argument is the path within the static
@@ -170,7 +184,7 @@ The `category` object provides the following:
 
 * **`subcats`**: The direct subcategories of this category
 
-* **`subcats_recursive`**: All subcategories of this category, including recursive
+* **`subcats_recursive`**: All subcategories below this category
 
 * **`parent`**: The parent category, if any
 

@@ -79,17 +79,6 @@ templates; the following headers are what Publ itself uses:
 
     **Default value:** `SCHEDULED`
 
-* **`Type`**: The sort of entry that this is
-
-    Allowed values:
-
-    * `ENTRY`: A normal entry that exists within the flow of time
-    * `PAGE`: An entry that represents a static page
-
-    **Default value:** `ENTRY`
-
-    **Note**: In the future this will probably be deprecated in favor of the tagging system
-
 * **`Slug-Text`**: The human-readable part of the URL
 
     In some circles this is known as "SEO text."
@@ -114,7 +103,8 @@ templates; the following headers are what Publ itself uses:
 
     Any number of these may be added to any given URL.
 
-    For example, this entry has a `Path-Alias` of [`/entry-format`](/entry-format).
+    For example, this entry has a `Path-Alias` of [`/entry-format`](/entry-format),
+    and the template format page can be similarly reached at [`/template-format`](/template-format).
 
     **Note:** A path-alias will never override another entry at its canonical URL;
     however, it can potentially override any other kind of URL, including URLs for
@@ -136,6 +126,12 @@ templates; the following headers are what Publ itself uses:
 
     It is *highly recommended* that this be unique across all entries.
 
+* <a name="entry-type"></a>**`Entry-Type`**: An arbitrary string which you can use to define an entry type
+
+    This exists purely so that you can differentiate entry types however you want;
+    with this you can, for example, set up something similar to what WordPress and
+    Tumblr call "page"-type content (to show up in a fixed navigation sidebar or the like).
+
 ## Entry content
 
 After the headers, you can have entry content; if the file has a `.htm` or `.html`
@@ -150,3 +146,5 @@ as well as some Publ-specific tags for things like cuts, image renditions, and g
 ### Custom tags
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
+
+    **Note**: There needs to be something before the cut. This may be fixed in the future.

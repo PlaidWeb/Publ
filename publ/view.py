@@ -62,6 +62,20 @@ class View:
                 # We need to restrict
                 where = where & cat_where
 
+        if 'entry_type' in self.spec:
+            entry_type = self.spec['entry_type']
+            if type(entry_type) == str:
+                where = where & (model.Entry.entry_type == entry_type)
+            else:
+                where = where & (model.Entry.entry_type << entry_type)
+
+        if 'entry_type_not' in self.spec:
+            entry_type = self.spec['entry_type_not']
+            if type(entry_type) == str:
+                where = where & (model.Entry.entry_type != entry_type)
+            else:
+                where = where & (model.Entry.entry_type.not_in(entry_type))
+
         self._where = where
 
         # TODO https://github.com/fluffy-critter/Publ/issues/13 sorting
