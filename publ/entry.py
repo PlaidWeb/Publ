@@ -105,12 +105,35 @@ class Entry:
 
     ''' attribute getter, to convert attributes to index and payload lookups '''
     def __getattr__(self, name):
+        if name == 'previous':
+            # Get the previous entry in the same category (by date)
+            sibling = model.Entry.select().where(
+                (model.Entry.category == self._record.category) & (
+                    (model.Entry.entry_date < self._record.entry_date) | (
+                        (model.Entry.entry_date == self._record.entry_date) & (model.Entry.id < self._record.id)
+                    )
+                )).order_by(-model.Entry.entry_date).limit(1)
+            self.previous = sibling.count() and Entry(sibling[0]) or None
+            return self.previous
+
+        if name == 'next':
+            # Get the next entry in the same category (by date)
+            sibling = model.Entry.select().where(
+                (model.Entry.category == self._record.category) & (
+                    (model.Entry.entry_date > self._record.entry_date) | (
+                        (model.Entry.entry_date == self._record.entry_date) & (model.Entry.id > self._record.id)
+                    )
+                )).order_by(model.Entry.entry_date).limit(1)
+            self.previous = sibling.count() and Entry(sibling[0]) or None
+            return self.previous
+
         if hasattr(self._record, name):
             return getattr(self._record, name)
 
         if self._load():
             # We just loaded which modifies our own attrs, so rerun the default logic
             return getattr(self, name)
+
         return self._message.get(name)
 
     ''' Get a single header on an entry '''
