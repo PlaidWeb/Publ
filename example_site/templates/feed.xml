@@ -4,15 +4,15 @@
 
     <title>Publ</title>
     <subtitle>A personal publishing system for the modern web</subtitle>
-    <link href="{{ url_for('category',category=category,template='feed',_external=True)}}" rel="self" />
-    <link href="{{ url_for('category',category=category,_external=True)}}" />
+    <link href="{{ category.link(template='feed',absolute=True) }}" rel="self" />
+    <link href="{{ category.link(absolute=True) }}" />
     <id>tag:{{request.host}},{{template.last_modified.format('YYYY-MM-DD')}}:{{category.path or "_all"}}</id>
     <updated>{{view(recurse=True).last_modified.isoformat()}}</updated>
 
     {% for entry in view(recurse=True,limit=50).entries %}
     <entry>
         <title>{{entry.title}}</title>
-        <link href="{{url_for('entry',entry_id=entry.id,_external=_true)}}" rel="alternate" type="text/html" />
+        <link href="{{ entry.permalink(absolute=True) }}" rel="alternate" type="text/html" />
         <updated>{{entry.last_modified.isoformat()}}</updated>
         <id>urn:uuid:{{entry.uuid}}</id>
         <content type="html">

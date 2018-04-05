@@ -1,8 +1,12 @@
-from . import rendering, model, index, view
+from . import rendering, model, index
 import arrow
+import flask
 
 model = model
 index = index
+
+def static_url(path, absolute=False):
+    return flask.url_for('static', filename='path', _external=absolute)
 
 def setup(app):
     for route in [
@@ -21,4 +25,4 @@ def setup(app):
     ]:
         app.add_url_rule(route, 'entry', rendering.render_entry)
 
-    app.jinja_env.globals.update(get_view=view.get_view, arrow=arrow)
+    app.jinja_env.globals.update(get_view=view.get_view, arrow=arrow, static=rendering.static_url)

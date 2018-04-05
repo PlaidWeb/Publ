@@ -11,8 +11,11 @@ class CategoryLink(utils.SelfStrCall):
     def __init__(self, category):
         self.category = category
 
-    def __call__(self, template=''):
-        return url_for('category', category=self.category, template=template)
+    def __call__(self, template='', absolute=False):
+        return url_for('category',
+            category=self.category,
+            template=template,
+            _external=absolute)
 
 class Category:
     def __init__(self, path):

@@ -30,12 +30,6 @@ Expected templates:
 All template types get the default Flask objects; there is more information about
 these on the [Flask templating reference](http://flask.pocoo.org/docs/0.12/templating/).
 
-Of note, the `url_for` method is available. You will probably only want to use
-the `static` endpoint (for serving up static files such as stylesheets), but
-you also have access to the `entry` and `category` endpoints if you need them for
-some reason. (However, you will usually just be using the appropriate methods
-on the objects providced to the template.)
-
 The following additional things are provided to the request context:
 
 * **`arrow`**: The [Arrow](https://arrow.readthedocs.io/en/latest/) time library
@@ -60,7 +54,15 @@ The following additional things are provided to the request context:
 
     * ([TODO](https://github.com/fluffy-critter/Publ/issues/13): date, pagination, sorting, tags, etc.)
 
+* **`static`**: Build a link to a static resource. The first argument is the path within the static
+    resources directory; it also takes the following optional named arguments:
 
+    * **`absolute`**: Whether to force this link to be absolute
+        * `False`: Use a relative link if possible (default)
+        * `True`: Use an absolute link
+
+As a note: while `url_for()` is available, it shouldn't ever be necessary, as all
+the other endpoints are accessible via higher-level wrappers (namely **`static`**, **`category`**, and **`entry`**).
 
 ### Entry pages
 
@@ -124,11 +126,32 @@ The `entry` object has the following methods/properties:
 
 * **`link`**: A link to the entry's individual page
 
-    ([TODO](https://github.com/fluffy-critter/Publ/issues/15): This can take arguments for getting different kinds of links; eventually
-    this should be implemented and documented.)
+    This can take arguments for different kinds of links; for example:
+
+    * **`absolute`**: Whether to format this as an absolute or relative URL
+        * **`False`**: Use a relative link (default)
+        * **`True`**: Use an absolute link
+    * **`expand`**: Whether to expand the URL to include the category and slug text
+        * **`False`**: Use a condensed link
+        * **`True`**: Expand the link to the full entry path (default)
+
+    ([TODO](https://github.com/fluffy-critter/Publ/issues/15))
 
     **Note:** If this entry is a redirection, this link refers to the redirect
     target.
+
+* **`permalink`**: A permanent link to the entry
+
+    This is similar to **`link`** but subtly different; it only accepts the
+    **`absolute`** and **`expand`** arguments, and it never follows a redirection.
+
+    Whether to use an expanded link or not depends on how "permanent" you want your
+    permalink to be; a condensed link will always cause a redirect to the current
+    canonical URL, but an expanded link may go obsolete and still cause a redirection.
+    The expanded link is generally better for SEO, however, and thus it is the default
+    even if it isn't truly "permanent." (But then again, what *is* permanent, anyway?)
+
+    Unlike **`link`** this will never follow a redirection.
 
 * **`last_modified`**: A last-modified time for this entry (useful for feeds)
 
@@ -155,6 +178,9 @@ The `category` object provides the following:
     following arguments:
 
     * **`template`**: Which template to use when rendering the category
+    * **`absolute`**: Whether to format this as an absolute or relative URL
+        * **`False`**: Use a relative link (default)
+        * **`True`**: Use an absolute link
 
 Example template code for printing out an entire directory structure (flattened):
 

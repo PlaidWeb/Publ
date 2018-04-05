@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>{{error.code}} {{error.message}}</title>
-    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
+    <link rel="stylesheet" href="{{ static('style.css') }}" />
 </head>
 <body>
     <h1>{{error.code}} {{error.message}}</h1>

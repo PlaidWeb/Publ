@@ -34,16 +34,29 @@ class EntryLink(utils.SelfStrCall):
     def __init__(self, record):
         self._record = record
 
-    def __call__(self):
+    def __call__(self, absolute=False, expand=True):
         # TODO https://github.com/fluffy-critter/Publ/issues/15
         # add arguments for category/view, shortlink, etc.
         if self._record.redirect_url:
             return self._record.redirect_url
 
         return flask.url_for('entry',
-            category=self._record.category,
             entry_id=self._record.id,
-            slug_text=self._record.slug_text)
+            category=expand and self._record.category or None,
+            slug_text=expand and self._record.slug_text or None,
+            _external=absolute)
+
+''' Permalink for an entry '''
+class EntryPermalink(utils.SelfStrCall):
+    def __init__(self, record):
+        self._record = record
+
+    def __call__(self, absolute=False, expand=True):
+        return flask.url_for('entry',
+            entry_id=self._record.id,
+            category=expand and self._record.category or None,
+            slug_text=expand and self._record.slug_text or None,
+            _external=absolute)
 
 class Entry:
     def __init__(self, record):
@@ -52,12 +65,8 @@ class Entry:
 
         self.date = arrow.get(record.entry_date)
 
-        # permalink is always local (ignoring redirections)
-        # (although it's not very 'permanent' is it?)
-        self.permalink = flask.url_for('entry',
-            category=record.category,
-            entry_id=record.id,
-            slug_text=record.slug_text)
+        self.link = EntryLink(self._record)
+        self.permalink = EntryPermalink(self._record)
 
     ''' Ensure the message payload is loaded '''
     def _load(self):
@@ -71,6 +80,10 @@ class Entry:
 
             body, _, more = self._message.get_payload().partition('\n.....\n')
 
+            # TODO https://github.com/fluffy-critter/Publ/issues/9
+            # Not only will we want to accept args on the markdown path but
+            # we'll want to ignore them on the HTML path (or maybe implement
+            # a VERY basic template processor even for HTML)
             _,ext = os.path.splitext(filepath)
             if ext == '.md':
                 self.body = body and MarkdownText(body) or None
@@ -79,7 +92,6 @@ class Entry:
                 self.body = body and body or None
                 self.more = more and more or None
 
-            self.link = EntryLink(self._record)
 
             self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
