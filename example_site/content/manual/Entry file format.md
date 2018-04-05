@@ -160,3 +160,81 @@ Code highlighting uses the [Pygments](http://pygments.org) library, which suppor
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
 
+### <a name="image-renditions"></a>Image renditions
+
+Publ extends the standard Markdown image tag (`![](imageFile)`) syntax with some added features for
+generating display-resolution-independent renditions and [Lightbox](http://lokeshdhakar.com/projects/lightbox2/) galleries. The syntax looks like this:
+
+* A single image:
+
+    ```markdown
+    ![@configuration](image_specification)
+    ```
+
+* A gallery:
+
+    ```markdown
+    ![@configuration](image1_specification,
+        image2_specification,
+        ...)
+    ```
+
+A configuration is a string of configuration names and values, separated by `|` characters. For example,
+
+```
+minWidth=200|maxWidth=800|alt="photo"|title="French Riviera"
+```
+
+An image specification is an image file, optionally followed by a `|` and a configuration. Newlines are optional. For example,
+
+```
+DSC_00235.jpg,
+DSC_00236.jpg|title="Look at the birb!",
+sales_brochure.png|format="jpg"
+```
+
+So, here are some examples of how to format some images:
+
+```
+![@](comic-1.jpg|title="Here is the snarky popup text")
+
+![@format="jpg"](slide_1.png, slide_2.png, slide_3.jpg)
+```
+
+The configuration is nested; default values are provided by [the template](/template-format#image-renditions),
+options provided in the `[@configuration]` part override the template, and options provided in the image specs
+override the template and the configuration.
+
+For a full list of the configurations available, please see the manual entry on [image renditions](/image-renditions).
+
+Image files themselves are resolved in the following order:
+
+1. Relative to the entry file
+2. Relative to the entry category in the content directory
+3. Relative to the entry file's path remapped to the image directory
+3. Relative to the entry category in the configured image directory
+3. Absolute path in the configured image directory
+
+So, for example, if content directory is `content/entries` and your entry is in
+`content/entries/photos/my vacation/vacation.md` but indicates a category of `photos`,
+and you have your image directory set to `content/images`,
+an image called `DSC_12345.jpg` will be looked up in the following order:
+
+1. `content/entries/photos/my vacation/DSC_12345.jpg`
+2. `content/entries/photos/DSC_12345.jpg`
+3. `content/images/photos/my vacation/DSC_12345.jpg`
+3. `content/images/photos/DSC_12345.jpg`
+4. `content/images/DSC_12345.jpg`
+
+Relative paths will also be interpreted; if the filename is `../IMG_4847.jpg` the
+search order will be:
+
+1. `content/entries/photos/IMG_4847.jpg`
+2. `content/entries/IMG_4847.jpg`
+3. `content/images/photos/IMG_4847.jpg`
+3. `content/images/IMG_4847.jpg`
+4. `content/images/IMG_4847.jpg` (path sanitization prevents you from accidentally escaping each directory)
+
+This approach allows for greater flexibility in how you manage your images; the simple
+case is that the files simply live in the same directory as the entry file, and in more complex cases
+things work in a hopefully-intuitive manner.
