@@ -1,5 +1,8 @@
 Title: Image renditions
 Path-Alias: /image-renditions
+Date: 2018-04-05 02:12:57-07:00
+Entry-ID: 335
+UUID: 8d3fa7ba-db5e-4661-bfd8-e3ee25684790
 
 How to configure images and galleries for display
 

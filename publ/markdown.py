@@ -20,7 +20,7 @@ class MyHtmlRenderer(misaka.HtmlRenderer):
 
         cfg=alt
         image_spec = '{}{}'.format(raw_url, title and ' "{}"'.format(title))
-        return "cfg={} image_spec={}".format(cfg, image_spec)
+        return "<span class=\"error\">Image renditions not yet implemented <!-- cfg={} image_spec={} --></span>".format(cfg, image_spec)
 
     def blockcode(self, text, lang):
         print("blockcode", text, lang)
