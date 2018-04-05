@@ -113,10 +113,7 @@ The `entry` object has the following methods/properties:
 * **`body`** and **`more`**: The text above and below the fold, respectively
 
     These properties can be used directly, or they can be used as functions
-    which affect the content rendering. For example:
-
-    ([TODO](https://github.com/fluffy-critter/Publ/issues/9): actually figure out what the arguments will be; this will be stuff
-    like image renditions, auto-excerpts, etc.)
+    which affect the content rendering, for example for [image renditions](/image-renditions).
 
 * All headers on the [entry file](/entry-format) are available
 
