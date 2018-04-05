@@ -15,7 +15,7 @@ class MyHtmlRenderer(misaka.HtmlRenderer):
         super().__init__()
 
     def image(self,raw_url,title,alt):
-        if not alt.startswith('img|') and not alt.startswith('gallery|'):
+        if not alt.startswith('@') and not alt.startswith('%'):
             return '<img src="{}" alt="{}" title="{}">'.format(raw_url, alt, title)
 
         cfg=alt
