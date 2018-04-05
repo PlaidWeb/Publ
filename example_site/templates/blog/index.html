@@ -9,24 +9,42 @@
 
 <h1>Publ Blog</h1>
 
-<div class="entries">
+<div id="nav" class="sidebar">
 
-    {% for entry in view(recurse=True,limit=10).entries %}
-<div class="entry"><h2><a href="{{entry.link}}">{{entry.title}}</a></h2>
-<div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
-    {% if entry.author %}by {{entry.author}}{% endif %}
-</div>
+    <h2>Navigation</h2>
 
-    {{entry.body|safe}}
-    {% if entry.more %}
-    <div class="keepreading"><a href="{{entry.link}}">Keep reading...</a></div>
+    <ul>
+    {% if category.parent %}
+    <li><a href="{{category.parent.link}}">⬆︎ Up one level</a></li>
     {% endif %}
-</div>
-    {% endfor %}
 
-{% if category.parent %}
-<div class="parent"><a href="{{url_for('category', category=category.parent)}}">Up one level</a></div>
-{% endif %}
+    {% for subcat in category.subcats %}
+    <li><a href="{{subcat.link}}">{{subcat.basename}}</a></li>
+    {% endfor %}
+    </ul>
+
+</div>
+
+<div id="content">
+    <div class="entries">
+
+        {% for entry in view(recurse=True,limit=10).entries %}
+        <div class="entry">
+            <h2><a href="{{entry.link}}">{{entry.title}}</a></h2>
+            <div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
+                {% if entry.author %}by {{entry.author}}{% endif %}
+            </div>
+
+            {{entry.body|safe}}
+
+            {% if entry.more %}
+            <div class="keep-reading"><a href="{{entry.link}}">Keep reading...</a></div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+</div>
+
 
 
 <p><a href="http://github.com/fluffy-critter/Publ">publ@github</a></p>

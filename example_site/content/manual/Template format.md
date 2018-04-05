@@ -4,6 +4,10 @@ Date: 2018-04-02 18:03:58-07:00
 Entry-ID: 324
 UUID: cbb977df-7902-4621-af9b-36ab44401748
 
+A guide to building templates for Publ
+
+.....
+
 Publ templates use the [Jinja2](http://jinja.pocoo.org) templating system; please
 see its references for the general syntax of template files.
 
@@ -146,6 +150,11 @@ The `category` object provides the following:
 * **`subcats_recursive`**: All subcategories of this category, including recursive
 
 * **`parent`**: The parent category, if any
+
+* **`link`**: The link to the category; callable as a function which takes the
+    following arguments:
+
+    * **`template`**: Which template to use when rendering the category
 
 Example template code for printing out an entire directory structure (flattened):
 

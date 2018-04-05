@@ -14,7 +14,7 @@ This is an incredibly basic test entry.
 
 Well, I dunno.
 
-~~~~~
+.....
 But here is stuff below the cut. whee cut.
 
 Also here is a link to [entry 301](301)

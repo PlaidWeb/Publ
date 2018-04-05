@@ -1,16 +1,16 @@
-Title: The first weblog entry for and using Publ!
+Title: The first weblog entry about (and using) Publ!
 Date: 2018-04-03 09:00:00-07:00
 Entry-ID: 325
 UUID: e0f0ac51-9ef6-4a52-a87a-9847f60600bb
 
-This is the first blog entry for Publ! It's pretty exciting to finally have this
+This is the first blog entry on Publ! It's pretty exciting to finally have this
 posted.
 
 Publ is a system I've been thinking about building for quite a long time, and over
 the last few years it's been occupying the back of my mind for a while. Let's talk
 a bit about the history and why I decided to build Yet Another CMS.
 
-~~~~~
+.....
 
 ## History
 

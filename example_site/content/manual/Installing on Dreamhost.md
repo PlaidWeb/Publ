@@ -8,7 +8,7 @@ Unfortunately, getting the python3 environment working isn't so easy.
 
 Here is more or less what I had to do to get that going.
 
-~~~~~
+.....
 
 ## Building Python3
 

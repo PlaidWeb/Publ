@@ -1,45 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Publ CMS</title>
+    <title>Publ Blog</title>
     <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
     <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
 </head>
 <body>
 
-<h1>Publ</h1>
+<h1>Publ: {{category.name and category.name.title() or "Yet another site generator"}}</h1>
 
-<p>Welcome to Publ!</p>
+<div id="nav" class="sidebar">
 
-{% if view.entries %}
-<div class="entries"><h2>Articles at this level:</h2>
-
-<ul>
-    {% for entry in view.entries %}
-    <li><a href="{{entry.link}}">{{entry.title}}</a></li>
-    {% endfor %}
-</ul>
-</div>
-{% endif %}
-
-{% if category.subcats %}
-<div class="subcats"><h2>Subcategories:</h2>
+    <h2>Navigation</h2>
 
     <ul>
-    {% for subcat in category.subcats recursive %}
-        <li><a href="{{url_for('category', category=subcat)}}">{{subcat.basename}}</a>
-        {% if subcat.subcats %}
-        <ul>{{ loop(subcat.subcats)}}</ul>
-        {% endif %}</li>
+    {% if category.parent %}
+    <li><a href="{{category.parent.link}}">⬆︎ Up one level</a></li>
+    {% endif %}
+
+    {% for subcat in category.subcats %}
+    <li><a href="{{subcat.link}}">{{subcat.basename}}</a></li>
     {% endfor %}
     </ul>
 
 </div>
-{% endif %}
 
-{% if category.parent %}
-<div class="parent"><a href="{{url_for('category', category=category.parent)}}">Up one level</a></div>
-{% endif %}
+<div id="content">
+    <div class="entries">
+
+        {% for entry in view(limit=10).entries %}
+        <h2>
+            {%- if entry.more %}<a href="{{entry.link}}">{% endif -%}
+            {{entry.title}}
+            {%- if entry.more %}</a>{% endif -%}
+        </h2>
+
+        {{entry.body|safe}}
+
+        {% endfor %}
+
+</div>
+
 
 
 <p><a href="http://github.com/fluffy-critter/Publ">publ@github</a></p>
