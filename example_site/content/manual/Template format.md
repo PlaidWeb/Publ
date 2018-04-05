@@ -130,13 +130,15 @@ The `entry` object has the following methods/properties:
     will print out all of the `Tag` headers in an unordered list, but only
     if there are any `Tag` headers:
 
-        {% if entry.Tag %}
-        <ul>
-            {% for tag in entry.get_all('Tag') %}
-            <li>{{ tag }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+    ```jinja
+    {% if entry.Tag %}
+    <ul>
+        {% for tag in entry.get_all('Tag') %}
+        <li>{{ tag }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    ```
 
 * **`link`**: A link to the entry's individual page
 
@@ -206,23 +208,26 @@ The `category` object provides the following:
 
 Example template code for printing out an entire directory structure (flattened):
 
-    <ul>
-    {% for subcat in category.subcats(recurse=True) %}
-    <li>subcat.path</li>
-    {% endfor %}
-    </ul>
+```jinja
+<ul>
+{% for subcat in category.subcats(recurse=True) %}
+<li>subcat.path</li>
+{% endfor %}
+</ul>
+```
 
 Example template code for printing out the directory structure in a nice recursive manner:
 
-    <ul>
-    {% for subcat in category.subcats recursive %}
-        <li>{{ subcat.basename }}
-        {% if subcat.subcats %}
-        <ul>{{ loop(subcat.subcats)}}</ul>
-        {% endif %}</li>
-    {% endfor %}
-    </ul>
-
+```jinja
+<ul>
+{% for subcat in category.subcats recursive %}
+    <li>{{ subcat.basename }}
+    {% if subcat.subcats %}
+    <ul>{{ loop(subcat.subcats)}}</ul>
+    {% endif %}</li>
+{% endfor %}
+</ul>
+```
 
 ### <a name="view-object"></a>View object
 
@@ -237,7 +242,11 @@ The `view` object has the following things on it:
 It also takes arguments to further refine the view, using the same arguments
 as [`get_view()`](#fn-get-view); for example:
 
-    {% for entry in view(limit=10) %}{{entry.title}}{% endfor %}
+```jinja
+{% for entry in view(limit=10) %}
+    {{entry.title}}
+{% endfor %}
+```
 
 Note that if you specify a category this will override the current view's category.
 

@@ -9,10 +9,11 @@ name = "pypi"
 
 flask = "*"
 requests = "*"
-markdown = "*"
 watchdog = "*"
 peewee = "*"
 arrow = "*"
+misaka = "*"
+pygments = "*"
 
 
 [dev-packages]
