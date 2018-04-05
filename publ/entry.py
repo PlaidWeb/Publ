@@ -81,7 +81,7 @@ class Entry:
 
             self.link = EntryLink(self._record)
 
-            self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime)
+            self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
             return True
         return False

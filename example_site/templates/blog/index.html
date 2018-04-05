@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Publ Blog</title>
+    <title>Publ {{category.basename.title()}}</title>
     <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
     <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
 </head>
@@ -15,12 +15,14 @@
 
     <ul>
     {% if category.parent %}
-    <li><a href="{{category.parent.link}}">⬆︎ Up one level</a></li>
+    <li class="cat-up"><a href="{{category.parent.link}}">Up one level</a></li>
     {% endif %}
 
     {% for subcat in category.subcats %}
-    <li><a href="{{subcat.link}}">{{subcat.basename}}</a></li>
+    <li class="cat-down"><a href="{{subcat.link}}">{{subcat.basename}}</a></li>
     {% endfor %}
+
+    <li class="github"><a href="http://github.com/fluffy-critter/Publ">Github</a></li>
     </ul>
 
 </div>
@@ -45,7 +47,4 @@
 
 </div>
 
-
-
-<p><a href="http://github.com/fluffy-critter/Publ">publ@github</a></p>
 </body></html>
