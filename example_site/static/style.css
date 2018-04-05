@@ -77,6 +77,13 @@ pre {
     padding-left: 1em;
 }
 
+#nav li.github:before { content: "⎋ "; }
+#nav li.cat-up:before { content: "⬆︎ "; }
+#nav li.cat-down:before { content: "➡︎ "; }
+#nav li.cat-back:before { content: "⬅︎ "; }
+#nav li.entry-prev:before { content: "← "; }
+#nav li.entry-next:before { content: "→ "; }
+
 #nav li {
     text-indent: -2em;
     padding-left: 2em;

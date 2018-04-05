@@ -3,12 +3,14 @@ Date: 2018-04-03 02:22:07-07:00
 Entry-ID: 326
 UUID: 45e36baf-9c9a-40bf-9af7-1cbacefda9bd
 
+A quick guide to getting Publ running on Dreamhost's Passenger environment
+
+.....
+
 Dreamhost is kinda-sorta straightforward, once you have a python3 environment working.
 Unfortunately, getting the python3 environment working isn't so easy.
 
 Here is more or less what I had to do to get that going.
-
-.....
 
 ## Building Python3
 

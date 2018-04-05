@@ -12,20 +12,19 @@
     <h2>Navigation</h2>
 
     <ul>
-    {% if category.parent %}
-    <li><a href="{{category.parent.link}}">⬆︎ Up one level</a></li>
-    {% endif %}
-
-    <li><a href="{{category.link}}">⬅︎ Back to {{category.basename}}</a></li>
+    <li class="cat-back"><a href="{{category.link}}">Back to {{category.basename}}</a></li>
 
     {% if entry.previous %}
-    <li><a href="{{entry.previous.link}}">← Previous entry: {{entry.previous.title}}</a></li>
+    <li class="entry-prev"><a href="{{entry.previous.link}}">Previous entry: {{entry.previous.title}}</a></li>
     {% endif %}
 
     {% if entry.next %}
-    <li><a href="{{entry.next.link}}">→ Next entry: {{entry.next.title}}</a></li>
+    <li class="entry-next"><a href="{{entry.next.link}}">Next entry: {{entry.next.title}}</a></li>
     {% endif %}
+
+    <li class="github"><a href="http://github.com/fluffy-critter/Publ">Github</a></li>
     </ul>
+
 
 </div>
 
