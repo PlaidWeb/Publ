@@ -169,6 +169,14 @@ The `entry` object has the following methods/properties:
 
 * **`last_modified`**: A last-modified time for this entry (useful for feeds)
 
+* **`next`**: The next entry in the category (by date)
+* **`previous`**: The previous entry in the category (by date)
+
+    These let you provide simple links between entries within a category.
+
+    [TODO](https://github.com/fluffy-critter/Publ/issues/14): Also support filtering
+    on these links (e.g. same entry type, specific category, etc.)
+
 Functionality to come:
 
 * Previous/next entry within the same category
