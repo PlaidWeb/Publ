@@ -79,6 +79,11 @@ class Entry:
                 expire_record(self._record)
 
             body, _, more = self._message.get_payload().partition('\n.....\n')
+            if not more and body.startswith('.....\n'):
+                # The entry began with a cut, which failed to parse.
+                # This rule is easier/faster than dealing with a regex from hell.
+                more = body[6:]
+                body = ''
 
             # TODO https://github.com/fluffy-critter/Publ/issues/9
             # Not only will we want to accept args on the markdown path but
@@ -158,7 +163,7 @@ def scan_file(fullpath, relpath, assign_id):
             'file_path': fullpath,
             'category': entry.get('Category', os.path.dirname(relpath)),
             'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()],
-            'entry_type': model.EntryType[entry.get('Type', 'ENTRY').upper()],
+            'entry_type': entry.get('Entry-Type', ''),
             'slug_text': make_slug(entry['Slug-Text'] or title),
             'redirect_url': entry['Redirect-To'],
             'title': title,

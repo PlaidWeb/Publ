@@ -34,7 +34,7 @@ class Category:
         else:
             subcat_query = subcat_query.where(model.Entry.category != path)
 
-        self._subcats_recursive = subcat_query
+        self._subcats_recursive = subcat_query.order_by(model.Entry.category)
         self._subcats = None
 
         self.link = CategoryLink(self.path)

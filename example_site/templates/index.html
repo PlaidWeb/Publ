@@ -23,6 +23,10 @@
     {% endfor %}
 
     <li class="github"><a href="http://github.com/fluffy-critter/Publ">Github</a></li>
+
+    {% for entry in view(entry_type='sidebar').entries %}
+    <li class="sblink"><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
     </ul>
 
 </div>
@@ -30,7 +34,7 @@
 <div id="content">
     <div class="entries">
 
-        {% for entry in view(limit=10).entries %}
+        {% for entry in view(limit=10,entry_type_not='sidebar').entries %}
         <h2>
             {%- if entry.more %}<a href="{{entry.link}}">{% endif -%}
             {{entry.title}}

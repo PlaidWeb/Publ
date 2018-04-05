@@ -16,7 +16,7 @@ lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
 ''' Schema version; bump this whenever an existing table changes '''
-schema_version = 1
+schema_version = 2
 
 class BaseModel(Model):
     class Meta:
@@ -35,17 +35,6 @@ class PublishStatus(Enum):
         def python_value(self,value):
             return PublishStatus(value)
 
-class EntryType(Enum):
-    ENTRY = 0
-    PAGE = 1
-
-    @staticmethod
-    class Field(IntegerField):
-        def db_value(self,value):
-            return value.value
-        def python_value(self,value):
-            return EntryType(value)
-
 class Global(BaseModel):
     key = CharField(unique=True)
     int_value = IntegerField(null=True)
@@ -59,15 +48,15 @@ class Entry(BaseModel):
     file_path = CharField()
     category = CharField()
     status = PublishStatus.Field()
-    entry_type = EntryType.Field()
     entry_date = DateTimeField()
     slug_text = CharField()
+    entry_type = CharField()
     redirect_url = CharField(null=True)
     title = CharField(null=True)
 
     class Meta:
         indexes = (
-            (('entry_type', 'category', 'entry_date'), False),
+            (('category', 'entry_type', 'entry_date'), False),
         )
 
 class PathAlias(BaseModel):
