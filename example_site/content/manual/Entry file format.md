@@ -151,5 +151,3 @@ as well as some Publ-specific tags for things like cuts, image renditions, and g
 ### Custom tags
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
-
-    **Note**: There needs to be something before the cut. This may be fixed in the future.
