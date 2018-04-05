@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>{{entry['title'] | safe}}</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+    <link rel="stylesheet" href="{{ static('style.css') }}">
 </head>
 <body>
 <h1><a href="{{category.link}}">Publ: {{category.basename.title() }}</a></h1>

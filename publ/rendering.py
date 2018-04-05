@@ -43,6 +43,9 @@ def map_template(orig_path, template_list):
             else:
                 path = None
 
+def static_url(path, absolute=False):
+    return url_for('static', filename=path, _external=absolute)
+
 def get_redirect():
     return path_alias.get_redirect([request.full_path, request.path])
 
