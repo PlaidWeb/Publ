@@ -3,6 +3,10 @@ Date: 2018-04-03 16:24:37-07:00
 Entry-ID: 328
 UUID: 4dea4c3b-c6ec-4dc0-9f40-b27a91128a60
 
+A guide to starting with Publ.
+
+.....
+
 ## Installing Publ locally
 
 You'll need Python 3 (at least version 3.6) and `pipenv` to be installed.

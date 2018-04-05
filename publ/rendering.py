@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 # mapping from template extension to MIME type; probably could be better
 extmap = {
-    '.html': 'text/html',
     '.xml': 'application/xml',
     '.json': 'application/json'
 }
@@ -24,7 +23,7 @@ extmap = {
 def mimetype(template):
     # infer the content-type from the extension
     _,ext = os.path.splitext(template.filename)
-    return extmap.get(ext, 'text/html')
+    return extmap.get(ext, 'text/html; charset=utf-8')
 
 def map_template(orig_path, template_list):
     if type(template_list) == str:
@@ -155,8 +154,11 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(entry_redirect)
 
     tmpl = map_template(category, 'entry')
+    if not tmpl:
+        return render_error(category, 'Entry template not found', 400)
+
     return render_template(tmpl.filename,
         entry=entry_obj,
         category=Category(category),
-        template=tmpl)
+        template=tmpl), { 'Content-Type': mimetype(tmpl) }
 

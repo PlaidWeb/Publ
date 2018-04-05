@@ -4,6 +4,10 @@ Entry-ID: 322
 UUID: 9b03da44-da6a-46a7-893a-d4ecbe813681
 Path-Alias: /entry-format
 
+A guide to writing page content for Publ
+
+.....
+
 ## Overall format
 
 Publ entries are files saved as `.md` or `.html` in your content directory. An
@@ -18,7 +22,7 @@ Here is what an entry might look like:
 
     Hi, this is my first blog entry. I guess I don't have a lot to say.
 
-    ~~~~~
+    .....
 
     Well, maybe a *little* more.
 
@@ -145,4 +149,4 @@ as well as some Publ-specific tags for things like cuts, image renditions, and g
 
 ### Custom tags
 
-* **`~~~~~`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
+* **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)

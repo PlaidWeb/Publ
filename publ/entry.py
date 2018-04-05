@@ -69,7 +69,7 @@ class Entry:
             except FileNotFoundError:
                 expire_record(self._record)
 
-            body, _, more = self._message.get_payload().partition('\n~~~~~\n')
+            body, _, more = self._message.get_payload().partition('\n.....\n')
 
             _,ext = os.path.splitext(filepath)
             if ext == '.md':

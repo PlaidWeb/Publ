@@ -3,8 +3,16 @@
 
 from . import model
 from . import utils
+from flask import url_for
 
 import os
+
+class CategoryLink(utils.SelfStrCall):
+    def __init__(self, category):
+        self.category = category
+
+    def __call__(self, template=''):
+        return url_for('category', category=self.category, template=template)
 
 class Category:
     def __init__(self, path):
@@ -25,6 +33,8 @@ class Category:
 
         self._subcats_recursive = subcat_query
         self._subcats = None
+
+        self.link = CategoryLink(self.path)
 
     def __str__(self):
         return self.path
