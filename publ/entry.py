@@ -16,21 +16,13 @@ import config
 
 from . import model
 from . import path_alias
-from . import utils
+from .markdown import MarkdownText
+from .utils import SelfStrCall
 
 logger = logging.getLogger(__name__)
 
-class MarkdownText(utils.SelfStrCall):
-    def __init__(self, text):
-        self._text = text
-
-    def __call__(self):
-        # TODO https://github.com/fluffy-critter/Publ/issues/9
-        # instance parser with image rendition support with args specified here
-        return markdown.markdown(self._text)
-
 ''' Link for an entry; defaults to an individual page '''
-class EntryLink(utils.SelfStrCall):
+class EntryLink(SelfStrCall):
     def __init__(self, record):
         self._record = record
 
@@ -47,7 +39,7 @@ class EntryLink(utils.SelfStrCall):
             _external=absolute)
 
 ''' Permalink for an entry '''
-class EntryPermalink(utils.SelfStrCall):
+class EntryPermalink(SelfStrCall):
     def __init__(self, record):
         self._record = record
 

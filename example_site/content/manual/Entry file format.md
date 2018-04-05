@@ -16,23 +16,26 @@ known as a "cut").
 
 Here is what an entry might look like:
 
-    Title: My first blog entry
-    Date: 2018/01/04 12:34PM
-    Category: /blog/random
+```rfc2822
+Title: My first blog entry
+Date: 2018/01/04 12:34PM
+Category: /blog/random
 
-    Hi, this is my first blog entry. I guess I don't have a lot to say.
+Hi, this is my first blog entry. I guess I don't have a lot to say.
 
-    .....
+.....
 
-    Well, maybe a *little* more.
-
+Well, maybe a *little* more.
+```
 
 ## Headers
 
 Headers are, more or less, a series of lines like:
 
-    Header-Name: Header-Value
-    Another-Header-Name: Header-Value
+```rfc2822
+Header-Name: Header-Value
+Another-Header-Name: Header-Value
+```
 
 followed by a blank line. (At present, Publ actually uses Python's RFC2822 parser, so in theory you should be able
 to do line continuations if that's necessary for some reason.)
@@ -99,7 +102,9 @@ templates; the following headers are what Publ itself uses:
     if you're migrating from a legacy site and you have a URL like `http://example.com/blog/0012345.php`
     you can set a header like:
 
-        Path-Alias: /blog/0012345.php
+    ```
+    Path-Alias: /blog/0012345.php
+    ```
 
     Any number of these may be added to any given URL.
 
@@ -117,7 +122,9 @@ templates; the following headers are what Publ itself uses:
     another entry). This way you can ensure that the path alias will be removed from the
     index.
 
-        Path-Unalias: /some/old/url/5-oops
+    ```
+    Path-Unalias: /some/old/url/5-oops
+    ```
 
 * **`UUID`**: A globally-unique identifier for the entry
 
@@ -143,11 +150,13 @@ After the headers, you can have entry content; if the file has a `.htm` or `.htm
 extension it will just render as plain HTML, but with a `.md` extension it will
 render as [Markdown](https://en.wikipedia.org/wiki/Markdown).
 
-Publ supports the standard Markdown syntax (as provided by the [Python reference
-implementation](https://python-markdown.github.io)). The plan is to eventually
-add support for [GitHub-flavored markdown](https://guides.github.com/features/mastering-markdown/),
+Publ supports [GitHub-flavored markdown](https://guides.github.com/features/mastering-markdown/),
 as well as some Publ-specific tags for things like cuts, image renditions, and galleries.
+
+Code highlighting uses the [Pygments](http://pygments.org) library, which supports
+[a rather large list of syntaxes](http://pygments.org/docs/lexers/).
 
 ### Custom tags
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
+
