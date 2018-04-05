@@ -132,6 +132,11 @@ templates; the following headers are what Publ itself uses:
     with this you can, for example, set up something similar to what WordPress and
     Tumblr call "page"-type content (to show up in a fixed navigation sidebar or the like).
 
+    Note that this is intended for affecting the layout/structure of the site, and
+    if you set more than one, only one of them will be used (and which one is undefined).
+    In the future there will be a [content tagging system](https://github.com/fluffy-critter/Publ/issues/22)
+    which will allow for filtering entries based on content tags.
+
 ## Entry content
 
 After the headers, you can have entry content; if the file has a `.htm` or `.html`
