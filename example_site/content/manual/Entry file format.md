@@ -16,7 +16,7 @@ known as a "cut").
 
 Here is what an entry might look like:
 
-```rfc2822
+```publ
 Title: My first blog entry
 Date: 2018/01/04 12:34PM
 Category: /blog/random
@@ -32,7 +32,7 @@ Well, maybe a *little* more.
 
 Headers are, more or less, a series of lines like:
 
-```rfc2822
+```publ
 Header-Name: Header-Value
 Another-Header-Name: Header-Value
 ```

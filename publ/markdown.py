@@ -5,9 +5,13 @@ import misaka
 import flask
 from . import utils
 
-import pygments
-import pygments.formatters
-import pygments.lexers
+# import pygments
+# import pygments.formatters
+# import pygments.lexers
+
+# class PublEntryLexer(pygments.lexer.RegexLexer):
+#     name = 'PublEntry',
+#     aliases = ['publ']
 
 
 class MyHtmlRenderer(misaka.HtmlRenderer):

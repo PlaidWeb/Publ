@@ -5,9 +5,6 @@ import flask
 model = model
 index = index
 
-def static_url(path, absolute=False):
-    return flask.url_for('static', filename='path', _external=absolute)
-
 def setup(app):
     for route in [
     '/',
