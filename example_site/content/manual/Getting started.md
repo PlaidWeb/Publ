@@ -7,39 +7,57 @@ A guide to starting with Publ.
 
 .....
 
-## Installing Publ locally
+## Installing system requirements
 
-You'll need Python 3 (at least version 3.6) and `pipenv` to be installed.
+You'll need Python 3 (at least version 3.6) and [`pipenv`](https://docs.pipenv.org) to be installed.
+
+### macOS
+
 On macOS this is pretty straightforward; after installing [Homebrew](https://brew.sh) you can install these things with:
 
-    $ brew install python
-    $ pip install --user pipenv
+```bash
+brew install python pipenv
+```
 
 and then add the following line to your login script (usually `~/.bash_profile`):
 
-    export PATH=$HOME/Library/Python/3.6/bin:$PATH
+```bash
+export PATH=$HOME/Library/Python/3.6/bin:$PATH
+```
+
+### Other platforms
+
+This should also be possible to do on Linux and Windows; if anyone would like to share how to do it, please [open an issue](http://github.com/fluffy-critter/Publ/issues/new)!
+
+## Obtaining Publ
 
 Now when you open a new terminal you should have pipenv and python3 on your path:
 
-    $ which pipenv
-    /Users/fluffy/Library/Python/3.6/bin/pipenv
-    $ which python3
-    /usr/local/bin/python3
-    $ python3 --version
-    Python 3.6.4
+```bash
+# which pipenv
+/Users/fluffy/Library/Python/3.6/bin/pipenv
+# which python3
+/usr/local/bin/python3
+# python3 --version
+Python 3.6.5
+```
 
 The next thing to do is to clone a copy of Publ into your own workspace, e.g.
 
-    $ git clone https://github.com/fluffy-critter/Publ
+```bash
+git clone https://github.com/fluffy-critter/Publ
+```
 
 After that you can simply do:
 
-    $ cd Publ
-    $ cp config.py.dist config.py
-    $ ./setup.sh
-    $ ./run.sh
+```bash
+cd Publ
+cp config.py.dist config.py
+./setup.sh
+./run.sh
+```
 
-and now you should have the sample site -- namely, an instance of this website -- running on `localhost:5000`.
+and now you should have the sample site -- namely, an instance of this website -- running on `[localhost:5000](http://localhost:5000)`.
 
 ## Making your own site
 
