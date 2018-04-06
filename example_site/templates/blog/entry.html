@@ -34,7 +34,7 @@
             <h2>{{entry.title}}</h2>
             <div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
                 {% if entry.author %}by {{entry.author}}{% endif %}
-                {% if entry.last_modified > entry.date %}
+                {% if entry.last_modified > entry.date and entry.last_modified.humanize() != entry.date.humanize() %}
                     <div class="update">Last updated {{entry.last_modified.humanize()}}</div>
                 {% endif %}
             </div>
