@@ -156,8 +156,8 @@ for that purpose, it would be fairly straightforward to create a tool that maps 
 filesystem to an online editor view. (For bonus points it could also check changes into git and
 otherwise synchronize them upstream.)
 
-Republishing content is a matter of building a tool that handles external content -- possibly via RSS/atom, possibly
-via parsing external HTML markup -- and produces entries for Publ to consume. This could be syndicated via
+Republishing content is a matter of building a tool that handles external content – possibly via RSS/atom, possibly
+via parsing external HTML markup — and produces entries for Publ to consume. This could be syndicated via
 cron job. This could be pushed in via ActivityPub or some other webhook-type functionality. This could be a web-based
 tool where you point it at some random blog entry and go "reblog" and it generates a Publ entry for you
 to put wherever you want it.
@@ -186,7 +186,7 @@ categories. Hopefully I'll also have an Atom feed wired up at some point (all of
 
 There's actually a lot going on under the hood though. The main thing is that the site
 has a dynamic content index, which is backed by the filesystem. Any change you make to
-an entry -- including moving it, renaming it, changing its category, hiding it, or deleting it -- is immediately
+an entry — including moving it, renaming it, changing its category, hiding it, or deleting it — is immediately
 reflected in the database.
 
 Well, deletion isn't, but that'd be easy to add. I guess I should add it.

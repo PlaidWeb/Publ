@@ -5,8 +5,8 @@ Entry-ID: 338
 
 So, I have a problem where when I really get into a project I start to work
 myself to death on it. Perhaps not *literally*, but enough so that my limbic
-system thinks I'm dying. Last night I had a panic attack -- my first in quite
-some time -- due to me having pushed myself too hard.
+system thinks I'm dying. Last night I had a panic attack — my first in quite
+some time — due to me having pushed myself too hard.
 
 Fortunately this project is getting to a point where I can slow down my
 development, which is pretty necessary for my sanity and long-term survival!
@@ -69,7 +69,7 @@ do that manually, right?
 That said, the way Misaka implements the Hoedown renderer specification means
 that any of its tag extensions *could* be used as a hook for some other custom
 functionality. So maybe ==highlighting== could be replaced... or, heck, it's not
-out of the question to simply extend the `[link](syntax)` for "please embed this" --
+out of the question to simply extend the `[link](syntax)` for "please embed this" —
 maybe in the future, writing code like `[@embed](http://http://music.sockpuppet.us/track/a-better-day)`
 would render like
 
@@ -79,7 +79,7 @@ instead.
 
 The more I think about this (thanks, all you
 [rubber ducks](https://en.wikipedia.org/wiki/Rubber_duck_debugging) out there!]
-the more I like this -- it's in keeping with the mentality of simply extending things in an
+the more I like this — it's in keeping with the mentality of simply extending things in an
 intuitive, humane way, right?
 
 So, yeah, let me just state for the record that I am pretty sure that embeds
@@ -88,4 +88,4 @@ be a really useful extension for Publ to express.
 
 Got comments on this proposal? Talk about it on [the open issue](https://github.com/fluffy-critter/Publ/issues/26)!
 
-Anyway, I'm going to bed before I work myself into another panic attack. Goodnight, y'all!
+Anyway, I'm going to bed before I work myself into anothpanic attack. Goodnight, y'all!
