@@ -57,7 +57,7 @@ cp config.py.dist config.py
 ./run.sh
 ```
 
-and now you should have the sample site -- namely, an instance of this website -- running on `[localhost:5000](http://localhost:5000)`.
+and now you should have the sample site — namely, an instance of this website — running on `[localhost:5000](http://localhost:5000)`.
 
 ## Making your own site
 
@@ -93,6 +93,6 @@ you can try deploying there; I have a very basic guide for [installing on Dreamh
 
 Wherever you end up deploying, you'll need to set your `config.py` values to point to your actual site files and domain name.
 
-If you do end up using Publ, please let me know so that I can check it out -- and maybe add it to a list of featured sites!
+If you do end up using Publ, please let me know so that I can check it out — and maybe add it to a list of featured sites!
 
 [TODO](https://github.com/fluffy-critter/Publ/issues/20): Figure out how to best do a Heroku deployment
