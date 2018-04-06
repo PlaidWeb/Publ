@@ -14,7 +14,18 @@ import pygments.lexers
 #     aliases = ['publ']
 
 
-class MyHtmlRenderer(misaka.HtmlRenderer):
+enabled_extensions = (
+    misaka.EXT_FENCED_CODE |
+    misaka.EXT_TABLES |
+    misaka.EXT_FOOTNOTES |
+    misaka.EXT_STRIKETHROUGH |
+    misaka.EXT_HIGHLIGHT |
+    misaka.EXT_MATH |
+    misaka.EXT_MATH_EXPLICIT |
+    0)
+
+
+class HtmlRenderer(misaka.HtmlRenderer):
     def __init__(self):
         super().__init__()
 
@@ -44,6 +55,6 @@ class MarkdownText(utils.SelfStrCall):
         self._text = text
 
     def __call__(self, **kwargs):
-        md = misaka.Markdown(MyHtmlRenderer(*kwargs), extensions=misaka.EXT_FENCED_CODE)
+        md = misaka.Markdown(HtmlRenderer(*kwargs), extensions=enabled_extensions)
         return md(self._text)
 
