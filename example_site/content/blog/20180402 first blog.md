@@ -57,8 +57,8 @@ for a lot of things. Especially if all of your content is uniform.
 
 I wanted to have more and more stuff managed by a high-level CMS on my site, which
 I hacked together with multiple sites on a single domain, with some shoddy glue to
-keep it all together. In 2004 I integrated the phpBB forum engine with Movable Type
-to use it as a comment system.
+keep it all together. In 2003 I integrated the phpBB forum engine with Movable Type
+to use it as a comment system. it worked *okay* but it wasn't great.
 
 In 2004 I worked for a game company and wanted to keep blogging but didn't want
 everything to be world-readable, so I hacked access control into my blog templates
