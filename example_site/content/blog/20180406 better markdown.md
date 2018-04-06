@@ -83,7 +83,7 @@ the more I like this — it's in keeping with the mentality of simply extending 
 intuitive, humane way, right?
 
 So, yeah, let me just state for the record that I am pretty sure that embeds
-will be handled via `[@embed|arg1|arg2|...](link goes here)` and that this will
+will be handled via `[@embed|arg1,arg2,...](link goes here)` and that this will
 be a really useful extension for Publ to express.
 
 Got comments on this proposal? Talk about it on [the open issue](https://github.com/fluffy-critter/Publ/issues/26)!
