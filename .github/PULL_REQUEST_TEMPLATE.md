@@ -17,9 +17,9 @@ For more information, see the `CONTRIBUTING` guide.
 ## Developer/user impact
 
 <!--
- Does this change affect any existing behavior or the way that users deploy
- their sites? If so, please describe these changes and how a user might need
- to act in response.
+ Does this change affect any existing templating behavior or the way that users
+ deploy their sites? If so, please describe these changes and how a user might
+ need to respond.
 -->
 
 ## Test plan

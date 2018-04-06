@@ -1,6 +1,7 @@
 ## Expected Behavior
 <!--- If you're describing a bug, tell us what should happen -->
 <!--- If you're suggesting a change/improvement, tell us how it should work -->
+<!--- Either way, please set the appropriate labels on the item -->
 
 ## Current Behavior
 <!--- If describing a bug, tell us what happens instead of the expected behavior -->
