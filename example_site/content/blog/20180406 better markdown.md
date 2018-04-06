@@ -1,6 +1,7 @@
 Title: Better Markdown, trying to pace myself
-Entry-ID: 338
 UUID: 94513c68-87e7-42a8-8957-352a896a0a82
+Date: 2018-04-06 01:15:50-07:00
+Entry-ID: 338
 
 So, I have a problem where when I really get into a project I start to work
 myself to death on it. Perhaps not *literally*, but enough so that my limbic
