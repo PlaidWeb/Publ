@@ -96,7 +96,7 @@ templates; the following headers are what Publ itself uses:
 
     This will also override the entry's permalink.
 
-* **`Path-Alias`**: An alternate path to this entry
+* <a name="path-alias"></a>**`Path-Alias`**: An alternate path to this entry
 
     This is useful for redirecting old, non-Publ URLs to this entry. For example,
     if you're migrating from a legacy site and you have a URL like `http://example.com/blog/0012345.php`
