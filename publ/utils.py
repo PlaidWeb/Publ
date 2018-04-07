@@ -25,11 +25,11 @@ class CallableProxy:
             self._hasDefault = True
         return self._default
 
-    def __call__(self,**kwargs):
+    def __call__(self,*args,**kwargs):
         # Always cache a call that takes no extra args
-        if not kwargs:
+        if not args and not kwargs:
             return self._get_default()
-        return self._func(**kwargs)
+        return self._func(*args,**kwargs)
 
     def __getattr__(self,name):
         return getattr(self._get_default(), name)
