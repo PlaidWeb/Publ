@@ -17,7 +17,7 @@ import config
 from . import model, queries
 from . import path_alias
 from .markdown import MarkdownText
-from .utils import SelfStrCall
+from .utils import SelfStrCall, CallableProxy
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,9 @@ class Entry:
 
         self.link = EntryLink(self._record)
         self.permalink = EntryPermalink(self._record)
+
+        self.next = CallableProxy(self._next)
+        self.previous = CallableProxy(self._previous)
 
     ''' Ensure the message payload is loaded '''
     def _load(self):
@@ -128,22 +131,28 @@ class Entry:
         return query.count() and Entry(query[0]) or None
 
     ''' Get the previous item in any particular category '''
-    def previous_in(self,category=None,recurse=True):
-        if category == None:
-            category = self._record.category
+    def _previous(self,**kwargs):
+        spec = {
+            'category': self._record.category,
+            'recurse': 'category' in kwargs
+        }
+        spec.update(kwargs)
+
         return self._get_sibling(model.Entry.select().where(
-            queries.where_entry_visible &
-            queries.where_entry_category(category,recurse) &
+            queries.build_query(spec) &
             queries.where_before_entry(self._record)
             ).order_by(-model.Entry.entry_date))
 
     ''' Get the next item in any particular category '''
-    def next_in(self,category=None,recurse=True):
-        if category == None:
-            category = self._record.category
+    def _next(self,**kwargs):
+        spec = {
+            'category': self._record.category,
+            'recurse': 'category' in kwargs
+        }
+        spec.update(kwargs)
+
         return self._get_sibling(model.Entry.select().where(
-            queries.where_entry_visible &
-            queries.where_entry_category(category,recurse) &
+            queries.build_query(spec) &
             queries.where_after_entry(self._record)
             ).order_by(model.Entry.entry_date))
 

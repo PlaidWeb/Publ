@@ -22,8 +22,8 @@
     <li class="entry-next"><a href="{{entry.next.link}}">Next entry: {{entry.next.title}}</a></li>
     {% endif %}
 
-    {% set prev_test = entry.previous_in(category='tests',recurse=True) %}
-    {% set next_test = entry.next_in(category='tests',recurse=True) %}
+    {% set prev_test = entry.previous(category='tests',entry_type_not='sidebar',recurse=True) %}
+    {% set next_test = entry.next(category='tests',entry_type_not='sidebar',recurse=True) %}
 
     {% if prev_test %}
     <li class="entry-prev"><a href="{{prev_test.link}}">Previous test: {{prev_test.title}}</a></li>
