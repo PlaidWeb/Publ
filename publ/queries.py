@@ -45,3 +45,39 @@ def where_after_entry(entry):
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id > entry.id)
     )
+
+''' Where clauses for entry type inclusion '''
+def where_entry_type(entry_type):
+    if type(entry_type) == str:
+        return (model.Entry.entry_type == entry_type)
+    else:
+        return (model.Entry.entry_type << entry_type)
+
+''' Where clauses for entry type exclusion '''
+def where_entry_type_not(entry_type):
+    if type(entry_type) == str:
+        return (model.Entry.entry_type != entry_type)
+    else:
+        return (model.Entry.entry_type.not_in(entry_type))
+
+''' Generate a full where clause based on a restriction specification '''
+def build_query(spec):
+    # primarily restrict by publication status
+    if spec.get('future', False):
+        where = where_entry_visible_future
+    else:
+        where = where_entry_visible
+
+    # restrict by category
+    if 'category' in spec:
+        path = str(spec['category'])
+        recurse = spec.get('recurse', False)
+        where = where & where_entry_category(path, recurse)
+
+    if 'entry_type' in spec:
+        where = where & where_entry_type(spec['entry_type'])
+
+    if 'entry_type_not' in spec:
+        where = where & where_entry_type_not(spec['entry_type_not'])
+
+    return where

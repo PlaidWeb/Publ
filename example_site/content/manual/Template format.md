@@ -168,35 +168,33 @@ The `entry` object has the following methods/properties:
 
 * **`last_modified`**: A last-modified time for this entry (useful for feeds)
 
-* **`next`**: The next entry in the category (by date)
-* **`previous`**: The previous entry in the category (by date)
+* **`next`**: The next entry (ordered by date)
 
-    These let you provide simple links between entries within a category.
+    This can also take the same arguments as [`get_view()`](#fn-get-view), with the following differences:
 
-* **`next_in`**: The next entry in a category relative to this one. This takes
-    the following parameters:
+    * `limit` has no effect
+    * If `category` is unspecified, it defaults to the entry's category
+    * If `category` is specified, `recurse` defaults to `True`
 
-    * **`category`**: Which category to search in (defaults to the same as this entry)
-    * **`recurse`**: Whether to include subcategories
-        * **`False`**: Use the exact category
-        * **`True`**: Include subcategories (default)
-
-    For example:
+    Examples:
 
     ```jinja
-    {% set next_comic = entry.next_in('comics') %}
+    <!-- link to the next entry in the category -->
+    {% if entry.next %}
+    <a href="{{ entry.next.link }}">{{ entry.next.title }}</a>
+    {% endif %}
+
+    <!-- link to the next entry in the entire 'comics' section where the type isn't 'news' or 'recap' -->
+    {% set next_comic = entry.next(category='comics',entry_type_not=['news','recap']) %}
     {% if next_comic %}
-    <a href="{{next_comic.link}}">{{next_comic.title}}</a>
+    <a href="{{ next_comic.link }}">{{ next_comic.title }}</a>
     {% endif %}
     ```
 
-* **`previous_in`**: The previous entry in a category relative to this one. This
-    takes the following parameters:
 
-    * **`category`**: Which category to search in (defaults to the same as this entry)
-    * **`recurse`**: Whether to include subcategories
-        * **`False`**: Use the exact category
-        * **`True`**: Include subcategories (default)
+* **`previous`**: The previous entry (ordered by date)
+
+    This takes the same arguments as `next`.
 
 ### <a name="category-object"></a>Category object
 
