@@ -97,7 +97,6 @@ class Entry:
                 self.body = body and HtmlText(body) or None
                 self.more = more and HtmlText(more) or None
 
-
             self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
             return True
@@ -107,23 +106,13 @@ class Entry:
     def __getattr__(self, name):
         if name == 'previous':
             # Get the previous entry in the same category (by date)
-            sibling = model.Entry.select().where(
-                queries.where_entry_visible &
-                queries.where_entry_category(self._record.category) &
-                queries.where_before_entry(self._record)
-                ).order_by(-model.Entry.entry_date).limit(1)
-            self.previous = sibling.count() and Entry(sibling[0]) or None
+            self.previous = self.previous_in(self._record.category,False)
             return self.previous
 
         if name == 'next':
             # Get the next entry in the same category (by date)
-            sibling = model.Entry.select().where(
-                queries.where_entry_visible &
-                queries.where_entry_category(self._record.category) &
-                queries.where_after_entry(self._record)
-                ).order_by(model.Entry.entry_date).limit(1)
-            self.previous = sibling.count() and Entry(sibling[0]) or None
-            return self.previous
+            self.next = self.next_in(self._record.category,False)
+            return self.next
 
         if hasattr(self._record, name):
             return getattr(self._record, name)
@@ -133,6 +122,30 @@ class Entry:
             return getattr(self, name)
 
         return self._message.get(name)
+
+    def _get_sibling(self,query):
+        query = query.limit(1)
+        return query.count() and Entry(query[0]) or None
+
+    ''' Get the previous item in any particular category '''
+    def previous_in(self,category=None,recurse=True):
+        if category == None:
+            category = self._record.category
+        return self._get_sibling(model.Entry.select().where(
+            queries.where_entry_visible &
+            queries.where_entry_category(category,recurse) &
+            queries.where_before_entry(self._record)
+            ).order_by(-model.Entry.entry_date))
+
+    ''' Get the next item in any particular category '''
+    def next_in(self,category=None,recurse=True):
+        if category == None:
+            category = self._record.category
+        return self._get_sibling(model.Entry.select().where(
+            queries.where_entry_visible &
+            queries.where_entry_category(category,recurse) &
+            queries.where_after_entry(self._record)
+            ).order_by(model.Entry.entry_date))
 
     ''' Get a single header on an entry '''
     def get(self, name):

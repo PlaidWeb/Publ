@@ -173,13 +173,30 @@ The `entry` object has the following methods/properties:
 
     These let you provide simple links between entries within a category.
 
-    [TODO](https://github.com/fluffy-critter/Publ/issues/14): Also support filtering
-    on these links (e.g. same entry type, specific category, etc.)
+* **`next_in`**: The next entry in a category relative to this one. This takes
+    the following parameters:
 
-Functionality to come:
+    * **`category`**: Which category to search in (defaults to the same as this entry)
+    * **`recurse`**: Whether to include subcategories
+        * **`False`**: Use the exact category
+        * **`True`**: Include subcategories (default)
 
-* Previous/next entry within the same category
-* Previous/next entry within a specific category
+    For example:
+
+    ```jinja
+    {% set next_comic = entry.next_in('comics') %}
+    {% if next_comic %}
+    <a href="{{next_comic.link}}">{{next_comic.title}}</a>
+    {% endif %}
+    ```
+
+* **`previous_in`**: The previous entry in a category relative to this one. This
+    takes the following parameters:
+
+    * **`category`**: Which category to search in (defaults to the same as this entry)
+    * **`recurse`**: Whether to include subcategories
+        * **`False`**: Use the exact category
+        * **`True`**: Include subcategories (default)
 
 ### <a name="category-object"></a>Category object
 
