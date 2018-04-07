@@ -38,7 +38,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return "<span class=\"error\">Image renditions not yet implemented <!-- cfg={} image_spec={} --></span>".format(cfg, image_spec)
 
     def blockcode(self, text, lang):
-        print("blockcode", text, lang)
         try:
             lexer = pygments.lexers.get_lexer_by_name(lang, stripall=True)
         except pygments.lexers.ClassNotFound:
