@@ -22,4 +22,6 @@ def setup(app):
     ]:
         app.add_url_rule(route, 'entry', rendering.render_entry)
 
+    app.add_url_rule('/<path:path>.PUBL_PATHALIAS', 'path_alias', rendering.render_path_alias)
+
     app.jinja_env.globals.update(get_view=view.get_view, arrow=arrow, static=rendering.static_url)

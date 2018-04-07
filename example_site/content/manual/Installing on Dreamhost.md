@@ -84,8 +84,21 @@ ln -sf ../example_site/static .
 
 At this point I had Publ working with the default site!
 
-If you want to run your own site you will of course want to point the `config.py` values to the appropriate places,
-and
+If you want to run your own site you will of course want to point the `config.py` values to the appropriate places.
+
+## Using Path-Alias to redirect old PHP URLs
+
+Dreamhost has (as of 2018/04/06) a [misconfiguration in Passenger](https://github.com/fluffy-critter/Publ/issues/19) which prevents `Path-Alias` to work on legacy PHP URLs. However, there is a simple workaround;
+simply create a `public/.htaccess` file which contains the following lines:
+
+```htaccess
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*\.php)$ /$1.PUBL_PATHALIAS [L]
+```
+
+This will redirect any request to a non-existent PHP script to a special URL routing rule that
+tells Publ to treat it as a path-alias immediately.
+
 
 ## Things left to set up
 
