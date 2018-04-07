@@ -8,6 +8,46 @@ about contributing to it.
 First, please familiarize yourself with the [code of conduct](CODE_OF_CONDUCT.md),
 as it sets out general guidelines for interactions.
 
+## Usability principles
+
+* All URLs should be humane. A user of the site should be able to look at a URL and understand what it means.
+    A user should also be able to modify the URL and get an expected result.
+    Hand-written URLs are still useful.
+
+* Pagination should be stable.
+
+    The number of entries that have been added to a site ever since the page
+    was snapshotted or indexed should not affect a paginated URL from displaying
+    the same content as it had at the time of snapshot (assuming content hasn't
+    been reordered, added, or changed since then, of course).
+
+    As a point of comparison, Tumblr paginates with `/page/N` suffixes; if someone finds and saves
+    a page like, say, [http://tumblr.beesbuzz.biz/page/5](http://tumblr.beesbuzz.biz/page/5)
+    because they like a piece of content that was on it, if they come back later the
+    content will have probably disappeared from that page. This is especially bad
+    for many of the webcomics hosted there.
+
+    Essentially, users shouldn't have to understand the difference between
+    a category page and an entry permalink to share content with their friends
+    or future selves.
+
+* Templates should be writeable by people who aren't programmers.
+
+    Throughout the code there is a common pattern where things derive from
+    `SelfStrCall`, a wrapper which allows a string value to also take additional
+    function parameters. This is bad Python practice, but it makes for more
+    sensible/intuitive template functionality.
+
+    It's how you can do things like
+    `{{entry.body}}` vs `{{entry.body(formatArgs)}}` without people needing to
+    remember to use `()` everywhere. It also keeps things more consistent to
+    write, as users won't have to think about whether something is a property
+    or a function — why should they even have to know what those things are?
+
+    (That said, if there's a more Pythonic approach to handling this use
+    case, please feel free to [open an issue](http://github.com/fluffy-critter/Publ/issues/new/)
+    or, better yet, implement a change and submit a pull request!)
+
 ## What to be familiar with
 
 This project is built using Python 3, [Flask](http://flask.pocoo.org), and
@@ -19,12 +59,13 @@ interact with is Markdown, specifically the flavor expressed by
 ## Code quality
 
 Here are some guidelines to how I would like any set of commits to be. (I
-fully realize that I myself haven't always held myself to these standards!)
+fully realize that I myself haven't always held myself to these standards — not
+to mention I'm still learning Python myself!)
 
 ###  Documentability
 
-Any checkin that has a TODO should also reference an issue that reflects the
-TODO. The issue should be clear, contain some ideas about how things would be
+Any comment that has a TODO should also reference an issue for resolving it.
+The issue should be clear, contain some ideas about how things would be
 implemented, how it would fit in, what the requirements for completion of the
 issue is, and so on.
 
