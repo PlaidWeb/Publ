@@ -86,10 +86,25 @@ At this point I had Publ working with the default site!
 
 If you want to run your own site you will of course want to point the `config.py` values to the appropriate places.
 
-## Using Path-Alias to redirect old PHP URLs
+## Migrating a legacy site
 
-Dreamhost has (as of 2018/04/06) a [misconfiguration in Passenger](https://github.com/fluffy-critter/Publ/issues/19) which prevents `Path-Alias` to work on legacy PHP URLs. However, there is a simple workaround;
-simply create a `public/.htaccess` file which contains the following lines:
+If you have an older site that you want to move over to Publ, you don't have to do it all at once.
+Dreamhost's Passenger configuration puts an "overlay" of the `public/` directory on top of the
+Passenger application; so, you can change your site configuration to enable Passenger, and then move your
+existing content into the `public/` directory under the domain name, and it will continue to be served up.
+
+Then, as you add content into Publ, you can [add `Path-Alias` headers to your entries](/entry-format#path-alias)
+to map legacy URLs to your new URL scheme. (You can also put such redirections into your `.htaccess` in the form
+of `RewriteRule` but this is a lot easier to manage and gives better performance.)
+
+Currently Publ can only map single paths to entries, but there is [planned functionality](https://github.com/fluffy-critter/Publ/issues/11) for more robust path-mapping which will also support category views and the like.
+Using `RewriteRule` from `.htaccess` can also cover this use case, although moving the path mapping into Publ
+means that this will continue to work even after you've moved away from Apache or Dreamhost (as e.g. nginx and Heroku don't support `.htaccess`).
+
+### Using Path-Alias to redirect old PHP URLs
+
+Dreamhost has (as of 2018/04/06) a [misconfiguration in Passenger](https://github.com/fluffy-critter/Publ/issues/19) which prevents `Path-Alias` from working correctly on legacy PHP URLs out of the box. However, there is a simple workaround;
+create a `public/.htaccess` file which contains the following lines:
 
 ```htaccess
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -98,7 +113,6 @@ RewriteRule ^(.*\.php)$ /$1.PUBL_PATHALIAS [L]
 
 This will redirect any request to a non-existent PHP script to a special URL routing rule that
 tells Publ to treat it as a path-alias immediately.
-
 
 ## Things left to set up
 
