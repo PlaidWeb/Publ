@@ -14,7 +14,7 @@ import logging
 
 import config
 
-from . import model
+from . import model, queries
 from . import path_alias
 from .markdown import MarkdownText
 from .utils import SelfStrCall
@@ -49,6 +49,14 @@ class EntryPermalink(SelfStrCall):
             category=expand and self._record.category or None,
             slug_text=expand and self._record.slug_text or None,
             _external=absolute)
+
+''' Callable Passthrough for HTML entries '''
+class HtmlText(SelfStrCall):
+    def __init__(self, html):
+        self._html = html
+
+    def __call__(self, **kwargs):
+        return self._html
 
 class Entry:
     def __init__(self, record):
@@ -86,8 +94,8 @@ class Entry:
                 self.body = body and MarkdownText(body) or None
                 self.more = more and MarkdownText(more) or None
             else:
-                self.body = body and body or None
-                self.more = more and more or None
+                self.body = body and HtmlText(body) or None
+                self.more = more and HtmlText(more) or None
 
 
             self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
@@ -100,22 +108,20 @@ class Entry:
         if name == 'previous':
             # Get the previous entry in the same category (by date)
             sibling = model.Entry.select().where(
-                (model.Entry.category == self._record.category) & (
-                    (model.Entry.entry_date < self._record.entry_date) | (
-                        (model.Entry.entry_date == self._record.entry_date) & (model.Entry.id < self._record.id)
-                    )
-                )).order_by(-model.Entry.entry_date).limit(1)
+                queries.where_entry_visible &
+                queries.where_entry_category(self._record.category) &
+                queries.where_before_entry(self._record)
+                ).order_by(-model.Entry.entry_date).limit(1)
             self.previous = sibling.count() and Entry(sibling[0]) or None
             return self.previous
 
         if name == 'next':
             # Get the next entry in the same category (by date)
             sibling = model.Entry.select().where(
-                (model.Entry.category == self._record.category) & (
-                    (model.Entry.entry_date > self._record.entry_date) | (
-                        (model.Entry.entry_date == self._record.entry_date) & (model.Entry.id > self._record.id)
-                    )
-                )).order_by(model.Entry.entry_date).limit(1)
+                queries.where_entry_visible &
+                queries.where_entry_category(self._record.category) &
+                queries.where_after_entry(self._record)
+                ).order_by(model.Entry.entry_date).limit(1)
             self.previous = sibling.count() and Entry(sibling[0]) or None
             return self.previous
 

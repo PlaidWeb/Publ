@@ -36,7 +36,7 @@
 
         {% for entry in view(limit=10,entry_type_not='sidebar').entries %}
         <h2>
-            {%- if entry.more %}<a href="{{entry.link}}">{% endif -%}
+            {%- if entry.more or entry['redirect-to'] %}<a href="{{entry.link}}">{% endif -%}
             {{entry.title}}
             {%- if entry.more %}</a>{% endif -%}
         </h2>
