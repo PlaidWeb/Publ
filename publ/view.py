@@ -1,7 +1,7 @@
 # view.py
 # A view of entries
 
-from . import model, utils
+from . import model, utils, queries
 from .entry import Entry
 import arrow
 
@@ -35,32 +35,15 @@ class View:
 
         # primarily restrict by publication status
         if self.spec.get('future', False):
-            where = (
-                (model.Entry.status == PublishStatus.PUBLISHED) |
-                (model.Entry.status == PublishStatus.SCHEDULED)
-            )
+            where = queries.where_entry_visible_future
         else:
-            where = (
-                (model.Entry.status == model.PublishStatus.PUBLISHED) |
-                (
-                    (model.Entry.status == model.PublishStatus.SCHEDULED) &
-                    (model.Entry.entry_date < arrow.now().datetime)
-                )
-            )
+            where = queries.where_entry_visible
 
         # restrict by category
         if 'category' in self.spec:
             path = str(self.spec['category'])
             recurse = self.spec.get('recurse', False)
-
-            cat_where = (model.Entry.category == path)
-            # Don't add the clause if path is empty and we're recursing -
-            if path or not recurse:
-                if recurse:
-                    # We're recursing and aren't in /, so add the prefix clause
-                    cat_where = cat_where | (model.Entry.category.startswith(path + '/'))
-                # We need to restrict
-                where = where & cat_where
+            where = where & queries.where_entry_category(path, recurse)
 
         if 'entry_type' in self.spec:
             entry_type = self.spec['entry_type']
