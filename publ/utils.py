@@ -5,7 +5,7 @@
 '''
 A utility class for template handlers; turns the stringify operator into a call
 
-This should probably be rewritten to take a callable as the init param instead
+TODO: get rid of it since we don't really need it anymore. https://github.com/fluffy-critter/Publ/issues/29
 '''
 class SelfStrCall:
     def __str__(self):
@@ -25,11 +25,11 @@ class CallableProxy:
             self._hasDefault = True
         return self._default
 
-    def __call__(self,**kwargs):
+    def __call__(self,*args,**kwargs):
         # Always cache a call that takes no extra args
-        if not kwargs:
+        if not args and not kwargs:
             return self._get_default()
-        return self._func(**kwargs)
+        return self._func(*args,**kwargs)
 
     def __getattr__(self,name):
         return getattr(self._get_default(), name)
@@ -39,3 +39,6 @@ class CallableProxy:
 
     def __len__(self):
         return self._get_default() and 1 or 0
+
+    def __str__(self):
+        return str(self._get_default())
