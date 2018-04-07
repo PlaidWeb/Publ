@@ -65,6 +65,12 @@ def render_error(category, error_message, *error_codes):
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
 
+def render_path_alias(path):
+    redir = path_alias.get_redirect('/' + path)
+    if not redir:
+        return render_error('', 'Path redirection not found', 404)
+    return redirect(redir)
+
 def render_category(category='', template='index'):
     # See if this is an aliased path
     redir = get_redirect()

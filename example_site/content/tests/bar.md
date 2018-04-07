@@ -20,7 +20,5 @@ But here is stuff below the cut. whee cut.
 Also here is a link to [entry 301](301)
 
 This entry is also available with a [path alias](/some-old-url.html).
-It should also be available with [a different path alias](/some-old-url.php)
-but there is a bug on Dreamhost's PAssenger setup that I am waiting to
-hear back on.
-
+It should also be available with [a different path alias](/some-old-url.php).
+Here is also [a path alias that works around a Dreamhost bug](/some-old-url.php.PUBL_PATHALIAS).
