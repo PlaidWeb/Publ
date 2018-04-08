@@ -48,12 +48,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return pygments.highlight(text, lexer, formatter)
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(flask.escape(text.strip()))
 
-
-class MarkdownText(utils.SelfStrCall):
-    def __init__(self, text):
-        self._text = text
-
-    def __call__(self, **kwargs):
-        md = misaka.Markdown(HtmlRenderer(*kwargs), extensions=enabled_extensions)
-        return md(self._text)
+def format(text):
+    # TODO add image rendition config http://github.com/fluffy-critter/Publ/issues/9
+    md = misaka.Markdown(HtmlRenderer(), extensions=enabled_extensions)
+    return md(text)
 
