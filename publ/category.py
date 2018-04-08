@@ -40,14 +40,14 @@ class Category:
     ''' Lazily bind related objects '''
     def __getattr__(self, name):
         if name == 'parent':
-            self.parent = (self._parent != None) and Category(self._parent) or None
+            self.parent = Category(self._parent) if (self._parent != None) else None
             return self.parent
 
         if name == 'subcats':
             # get all the subcategories, with only the first subdir added
 
             # number of path components to ingest
-            parts = self.path and len(self.path.split('/')) + 1 or 1
+            parts = len(self.path.split('/')) + 1 if self.path else 1
 
             # get the subcategories
             subcats = [e.category for e in self._subcats_recursive]

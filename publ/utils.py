@@ -33,7 +33,7 @@ class CallableProxy:
         return not not self._get_default()
 
     def __len__(self):
-        return self._get_default() and 1 or 0
+        return 1 if self._get_default() else 0
 
     def __str__(self):
         return str(self._get_default())

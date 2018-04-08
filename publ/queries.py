@@ -69,8 +69,8 @@ def build_query(spec):
         where = where_entry_visible
 
     # restrict by category
-    if 'category' in spec:
-        path = str(spec['category'])
+    if 'category' in spec or 'recurse' in spec:
+        path = str(spec.get('category', ''))
         recurse = spec.get('recurse', False)
         where = where & where_entry_category(path, recurse)
 
