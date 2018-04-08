@@ -51,8 +51,8 @@ class Entry:
     def _permalink(self, absolute=False, expand=True):
         return flask.url_for('entry',
             entry_id=self._record.id,
-            category=expand and self._record.category or None,
-            slug_text=expand and self._record.slug_text or None,
+            category=self._record.category if expand else None,
+            slug_text=self._record.slug_text if expand else None,
             _external=absolute)
 
     ''' Ensure the message payload is loaded '''
@@ -78,15 +78,16 @@ class Entry:
             # a VERY basic template processor even for HTML)
             _,ext = os.path.splitext(filepath)
             is_markdown = ext == '.md'
-            self.body = body and CallableProxy(self._get_markup, body, is_markdown) or None
-            self.more = more and CallableProxy(self._get_markup, more, is_markdown) or None
+            self.body = CallableProxy(self._get_markup, body or '', is_markdown)
+            self.more = CallableProxy(self._get_markup, more or '', is_markdown)
 
             self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
             return True
         return False
 
-    def _get_markup(self, text, is_markdown, **kwargs):
+    @staticmethod
+    def _get_markup(text, is_markdown, **kwargs):
         if is_markdown:
             return flask.Markup(markdown.format(text), **kwargs)
         return flask.Markup(text)
@@ -114,7 +115,7 @@ class Entry:
 
     def _get_sibling(self,query):
         query = query.limit(1)
-        return query.count() and Entry(query[0]) or None
+        return Entry(query[0]) if query.count() else None
 
     ''' Get the previous item in any particular category '''
     def _previous(self,**kwargs):
