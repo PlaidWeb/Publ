@@ -16,47 +16,10 @@ import config
 
 from . import model, queries
 from . import path_alias
-from .markdown import MarkdownText
-from .utils import SelfStrCall, CallableProxy
+from . import markdown
+from .utils import CallableProxy
 
 logger = logging.getLogger(__name__)
-
-''' Link for an entry; defaults to an individual page '''
-class EntryLink(SelfStrCall):
-    def __init__(self, record):
-        self._record = record
-
-    def __call__(self, absolute=False, expand=True):
-        # TODO https://github.com/fluffy-critter/Publ/issues/15
-        # add arguments for category/view, shortlink, etc.
-        if self._record.redirect_url:
-            return self._record.redirect_url
-
-        return flask.url_for('entry',
-            entry_id=self._record.id,
-            category=expand and self._record.category or None,
-            slug_text=expand and self._record.slug_text or None,
-            _external=absolute)
-
-''' Permalink for an entry '''
-class EntryPermalink(SelfStrCall):
-    def __init__(self, record):
-        self._record = record
-
-    def __call__(self, absolute=False, expand=True):
-        return flask.url_for('entry',
-            entry_id=self._record.id,
-            category=expand and self._record.category or None,
-            slug_text=expand and self._record.slug_text or None,
-            _external=absolute)
-
-''' Callable Passthrough for HTML entries '''
-class HtmlText(SelfStrCall):
-    def __init__(self, html):
-        self._html = html
-
-    def __call__(self, **kwargs):
-        return self._html
 
 class Entry:
     def __init__(self, record):
@@ -65,11 +28,32 @@ class Entry:
 
         self.date = arrow.get(record.entry_date)
 
-        self.link = EntryLink(self._record)
-        self.permalink = EntryPermalink(self._record)
+        self.link = CallableProxy(self._link)
+        self.permalink = CallableProxy(self._permalink)
 
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
+
+    ''' get a link to the entry, potentially pre-redirected '''
+    def _link(self, **kwargs):
+        if self._record.redirect_url:
+            return self._record.redirect_url
+
+        # TODO https://github.com/fluffy-critter/Publ/issues/15
+        # if 'category' in kwargs or 'template' in kwargs:
+        #     return flask.get_url('category',
+        #         template=kwargs.get('template', ''),
+        #         category=kwargs.get('category', self._record.category,
+        #         start=self._record.id))
+
+        return self._permalink(**kwargs)
+
+    def _permalink(self, absolute=False, expand=True):
+        return flask.url_for('entry',
+            entry_id=self._record.id,
+            category=expand and self._record.category or None,
+            slug_text=expand and self._record.slug_text or None,
+            _external=absolute)
 
     ''' Ensure the message payload is loaded '''
     def _load(self):
@@ -93,17 +77,19 @@ class Entry:
             # we'll want to ignore them on the HTML path (or maybe implement
             # a VERY basic template processor even for HTML)
             _,ext = os.path.splitext(filepath)
-            if ext == '.md':
-                self.body = body and MarkdownText(body) or None
-                self.more = more and MarkdownText(more) or None
-            else:
-                self.body = body and HtmlText(body) or None
-                self.more = more and HtmlText(more) or None
+            is_markdown = ext == '.md'
+            self.body = body and CallableProxy(self._get_markup, body, is_markdown) or None
+            self.more = more and CallableProxy(self._get_markup, more, is_markdown) or None
 
             self.last_modified = arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
             return True
         return False
+
+    def _get_markup(self, text, is_markdown, **kwargs):
+        if is_markdown:
+            return flask.Markup(markdown.format(text), **kwargs)
+        return flask.Markup(text)
 
     ''' attribute getter, to convert attributes to index and payload lookups '''
     def __getattr__(self, name):

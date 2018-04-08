@@ -7,16 +7,6 @@ from flask import url_for
 
 import os
 
-class CategoryLink(utils.SelfStrCall):
-    def __init__(self, category):
-        self.category = category
-
-    def __call__(self, template='', absolute=False):
-        return url_for('category',
-            category=self.category,
-            template=template,
-            _external=absolute)
-
 class Category:
     def __init__(self, path):
         self.path = path
@@ -36,7 +26,13 @@ class Category:
 
         self._subcats_recursive = subcat_query.order_by(model.Entry.category)
 
-        self.link = CategoryLink(self.path)
+        self.link = utils.CallableProxy(self._link)
+
+    def _link(self, template='', absolute=False):
+        return url_for('category',
+            category=self.path,
+            template=template,
+            _external=absolute)
 
     def __str__(self):
         return self.path
@@ -63,10 +59,10 @@ class Category:
             subcats = {'/'.join(c) for c in subcats}
 
             # convert to a bunch of Category objects and bind to the Category
-            self.subcats = [Category(c) for c in subcats]
+            self.subcats = [Category(c) for c in sorted(subcats)]
             return self.subcats
 
         if name == 'subcats_recursive':
             # convert the recursive subcats query to a property
-            self.subcats_recursive = [Category(e.category) for e in self._subcats_recursive]
+            self.subcats_recursive = [Category(e.category) for e in sorted(self._subcats_recursive)]
             return self.subcats_recursive
