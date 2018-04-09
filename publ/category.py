@@ -12,11 +12,7 @@ class Category:
         self.path = path
         self.basename = os.path.basename(path)
 
-        # the falsiness of '' makes this hard to express as a one-liner
-        if path == '':
-            self._parent = None
-        else:
-            self._parent = os.path.dirname(path)
+        self._parent = os.path.dirname(path) if path else None
 
         subcat_query = model.Entry.select(model.Entry.category).distinct()
         if path:
