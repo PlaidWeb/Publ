@@ -35,8 +35,7 @@ app.config['SERVER_NAME'] = config.server_name
 
 @app.after_request
 def set_cache_expiry(r):
-    r.headers["Expires"] = "5"
-    r.headers['Cache-Control'] = 'public, max-age=5'
+    r.headers['Cache-Control'] = 'public, max-age=300'
     return r
 
 
