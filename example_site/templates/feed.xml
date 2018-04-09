@@ -17,7 +17,7 @@
         <id>urn:uuid:{{entry.uuid}}</id>
         <content type="html">
 <![CDATA[
-            {{entry.body|safe}}
+            {{entry.body}}
             {% if entry.more %}
             <a href="{{entry.link}}">Read more...</a>
             {% endif %}
