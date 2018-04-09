@@ -13,8 +13,8 @@ External image:
 
 Local image:
 
-![@](lewi-53.png|format="jpg")
+![@here is some alt text(arg1="foo")](lewi-53.png(format="jpg") "test single image")
 
 Gallery:
 
-![@format="jpg"|width=240](lewi-1.png,lewi-2.png,lewi-3.png)
+![@(more alt text)](lewi-1.png "test 1" | lewi-2.png "test 2" | lewi-3.png)

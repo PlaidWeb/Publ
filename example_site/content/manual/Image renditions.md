@@ -8,9 +8,8 @@ How to configure images and galleries for display
 
 .....
 
-## Important note
 
-This is a [very rough draft and is not yet implemented](https://github.com/fluffy-critter/Publ/issues/9).
+==**Note:** This is a [very rough draft and is not yet implemented](https://github.com/fluffy-critter/Publ/issues/9).==
 
 ## Image rendition support
 
@@ -76,7 +75,7 @@ These options drive the behavior of image sets for use with [lightbox.js](http:/
 
 `index.html` and `entry.html`:
 
-This will treat source images as being 3x screen resolution, the source image as being at 3x the resolution of the screen, make images size to no wider than 960 pixels, force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
+This will treat source images as being 3x screen resolution, make images size to no wider than 960 pixels, force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
 
 ```jinja
 {{ entry.body(
@@ -109,13 +108,13 @@ of the image (making for a useful non-punchline-destroying excerpt).
 In the above example, if you have a comic that is provided at screen resolution to begin with (such as guest art) you can override the default scaling with e.g.:
 
 ```markdown
-![@scale=1|title="Look at this amazing guest comic!"](guest-comic.png)
+![](guest-comic.png#(scale=1) "Amazing guest comic!")
 ```
 
 Or if there's one you want to force to a specific size:
 
 ```markdown
-![@scale=1,width=960,height=480](special-comic.jpg)
+![](special-comic.jpg#(scale=1,width=960,height=480))
 ```
 
 ### A photo gallery
