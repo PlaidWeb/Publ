@@ -33,6 +33,13 @@ app = flask.Flask(__name__,
     template_folder=config.template_directory)
 app.config['SERVER_NAME'] = config.server_name
 
+@app.after_request
+def set_cache_expiry(r):
+    r.headers["Expires"] = "5"
+    r.headers['Cache-Control'] = 'public, max-age=5'
+    return r
+
+
 publ.setup(app)
 
 def scan_index():
