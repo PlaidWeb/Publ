@@ -137,6 +137,10 @@ properties:
 
 * **`code`**: The associated HTTP error code
 * **`message`**: An explanation of what went wrong
+* **`exception`**: In the case of an internal error, this will be an object with the following properties:
+    * **`type`**: The human-readable type of exception (`IOError`, `ValueError`, etc.)
+    * **`str`**: The human-readable exception string
+    * **`args`**: Further information passed to the exception constructor
 
 ## Object interface
 
