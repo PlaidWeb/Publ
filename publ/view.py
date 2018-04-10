@@ -99,8 +99,8 @@ class View:
 
         if name == 'newest' or name == 'oldest':
             entries = self.entries
-            first = entries[0]
-            last = entries[-1]
+            first = entries[0] if entries else None
+            last = entries[-1] if entries else None
             if self._order_by == 'newest':
                 self.newest, self.oldest = first, last
             elif self._order_by == 'oldest':
