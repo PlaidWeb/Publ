@@ -99,9 +99,11 @@ def render_category(category='', template='index'):
         return render_error(category, 'Template not found', 400)
 
     # TODO https://github.com/fluffy-critter/Publ/issues/13
+    flat_args = {}
     view_obj = View({
         'category': category,
-        'date': request.args.get('date')
+        ## unfortunately **request.args doesn't work for some reason
+        **{k:v for k,v in request.args.items()}
         })
 
     return render_template(tmpl.filename,
