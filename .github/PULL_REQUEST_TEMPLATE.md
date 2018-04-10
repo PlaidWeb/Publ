@@ -1,7 +1,11 @@
+<!--
+
 Thank you for submitting a pull request! Please provide enough information so
 that we may review it.
 
 For more information, see the `CONTRIBUTING` guide.
+
+-->
 
 ## Summary
 
