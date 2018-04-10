@@ -83,7 +83,8 @@ def render_category(category='', template='index'):
 
     if category:
         # See if there's any entries for the view...
-        if not model.Entry.get_or_none((model.Entry.category == category) | (model.Entry.category.startswith(category + '/'))):
+        if not model.Entry.get_or_none((model.Entry.category == category) |
+            (model.Entry.category.startswith(category + '/'))):
             return render_error(category, 'Category not found', 404)
 
     tmpl = map_template(category, template)
@@ -98,14 +99,12 @@ def render_category(category='', template='index'):
         # nope, we just don't know what this is
         return render_error(category, 'Template not found', 400)
 
-    # TODO https://github.com/fluffy-critter/Publ/issues/13
-    flat_args = {}
-    view_obj = View({
-        'category': category,
-        ## unfortunately **request.args doesn't work for some reason
-        **{k:v for k,v in request.args.items()}
-        })
+    view_spec = {'category': category}
+    for key in ['date', 'last', 'first', 'before', 'after']:
+        if key in request.args:
+            view_spec[key] = request.args[key]
 
+    view_obj = View(view_spec)
     return render_template(tmpl.filename,
         category=Category(category),
         view=view_obj,

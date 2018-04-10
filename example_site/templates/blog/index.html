@@ -30,7 +30,13 @@
 <div id="content">
     <div class="entries">
 
-        {% for entry in view(recurse=True,limit=5).entries %}
+        {% set flow = view(recurse=True,limit=5) %}
+
+        {% if flow.previous %}
+        <div class="nav"><a rel="previous" href="{{flow.previous.link}}">« Previous page</a>
+        {% endif %}
+
+        {% for entry in flow.entries %}
         <div class="entry">
             <h2><a href="{{entry.link}}">{{entry.title}}</a></h2>
             <div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
@@ -44,6 +50,11 @@
             {% endif %}
         </div>
         {% endfor %}
+
+        {% if flow.next %}
+        <div class="nav"><a rel="next" href="{{flow.next.link}}">Next page »</a>
+        {% endif %}
+
 
 </div>
 
