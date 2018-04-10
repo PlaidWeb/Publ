@@ -97,25 +97,28 @@ class View:
             self.previous, self.next = self._get_pagination()
             return getattr(self, name)
 
+        if name == 'newest' or name == 'oldest':
+            entries = self.entries
+            first = entries[0]
+            last = entries[-1]
+            if self._order_by == 'newest':
+                self.newest, self.oldest = first, last
+            elif self._order_by == 'oldest':
+                self.newest, self.oldest = last, first
+            else:
+                raise ValueError('newest/oldest not supported on sort type {}'.format(self._order_by))
+            return getattr(self, name)
+
     ''' Returns the views (if any) for the previous or next page, in that order
 
     Note: "next page" is in terms of display order; newest first means next = older
     '''
     def _get_pagination(self):
-        if not self.entries or not len(self.entries):
-            return None, None
-
-        if self._order_by == 'newest':
-            newest = self.entries[0]
-            oldest = self.entries[-1]
-        elif self._order_by == 'oldest':
-            oldest = self.entries[0]
-            newest = self.entries[-1]
-        else:
-            raise ValueError('pagination not supported on sort type {}'.format(self._order_by))
-
-        oldest_neighbor = oldest.previous
-        newest_neighbor = newest.next
+        # TODO https://github.com/fluffy-critter/Publ/issues/35
+        oldest = self.oldest
+        newest = self.newest
+        oldest_neighbor = self.oldest.previous if oldest else None
+        newest_neighbor = self.newest.next if newest else None
 
         base = self._spec_filtered()
 
