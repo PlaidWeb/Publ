@@ -210,7 +210,7 @@ The `category` object provides the following:
 
 * **`parent`**: The parent category, if any
 
-* **`link`**: The link to the category; callable as a function which takes the
+* **`link`**: The link to the category; optionally takes the
     following arguments:
 
     * **`template`**: Which template to use when rendering the category
@@ -250,6 +250,17 @@ The `view` object has the following things on it:
 * **`last_modified`**: A last-modified time for this view (useful for feeds)
 
 * **`spec`**: The view's specification (category, limits, date range, etc.)
+
+* **`previous`**: The view of previous entries
+
+* **`next`**: The view of next entries
+
+* **`link`**: The link to this view; optionally takes the following arguments:
+
+    * **`template`**: Which template to use (defaults to the index template)
+    * **`absolute`**: Whether the URL should be absolute or relative
+        * **`False`**: Use a relative URL (default)
+        * **`True`**: Use an absolute URL
 
 It also takes arguments to further refine the view, using the same arguments
 as [`get_view()`](#fn-get-view); for example:

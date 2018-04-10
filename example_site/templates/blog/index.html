@@ -30,7 +30,7 @@
 <div id="content">
     <div class="entries">
 
-        {% for entry in view(recurse=True,limit=10).entries %}
+        {% for entry in view(recurse=True,limit=5).entries %}
         <div class="entry">
             <h2><a href="{{entry.link}}">{{entry.title}}</a></h2>
             <div class="posted">Posted {{entry.date.format('dddd, MMMM D')}} at {{entry.date.format('h:mm A')}} ({{entry.date.humanize()}})
