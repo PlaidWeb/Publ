@@ -1,5 +1,7 @@
-Title: Template format
+Title: Template API
 Path-Alias: /template-format
+Path-Alias: /template-api
+Path-Alias: /api
 Date: 2018-04-02 18:03:58-07:00
 Entry-ID: 324
 UUID: cbb977df-7902-4621-af9b-36ab44401748
@@ -75,6 +77,10 @@ The following additional things are provided to the request context:
     * **`before`**: Limit the view to only entries which came before the specified entry
     * **`after`**: Limit the view to only entries which came after the specified entry
 
+    * **`order`**: What order to provide the entries in; one of:
+        * **`oldest`**: Oldest-first
+        * **`newest`**: Newest-first (default)
+
 * **`static`**: Build a link to a static resource. The first argument is the path within the static
     resources directory; it also takes the following optional named arguments:
 
@@ -144,11 +150,13 @@ The `entry` object has the following methods/properties:
     These properties can be used directly, or they can take parameters,
     for example for [image renditions](/image-renditions).
 
+* **`date`**: The creation date and time of the entry
+
 * All headers on the [entry file](/entry-format) are available
 
-    These can be accessed either with `entry.header` or `entry['header']`. If
+    These can be accessed either with `entry.header` or `entry.get('header')`. If
     there is a `-` character in the header name you have to use the second
-    format, e.g. `entry['some-header']`.
+    format, e.g. `entry.get('some-header')`.
 
     If there is more than one header of that name, this will only retrieve
     one of them (and which one isn't defined); if you want to get all of them
