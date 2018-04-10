@@ -80,9 +80,6 @@ def where_entry_date(datespec):
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
-    print('date', date, interval)
-    print('range', start_date, end_date)
-
     return ((model.Entry.entry_date >= start_date.datetime) &
         (model.Entry.entry_date <= end_date.datetime))
 

@@ -99,6 +99,9 @@ pre {
     border-bottom: solid black 1px;
 }
 
+.nav a.previous:before { content: '« '; }
+.nav a.next:after { content: ' »'; }
+
 a {
     color: #700;
 }

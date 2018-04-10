@@ -6,30 +6,6 @@ from .entry import Entry
 import arrow
 import flask
 
-'''
-TODO: figure out the actual API; https://github.com/fluffy-critter/Publ/issues/13
-
-expected view specs:
-
-limit - number of entries to limit to
-category - top-level category to retrieve
-recurse - whether to recurse into subcategories
-date - date spec for the view, one of:
-    YYYY - just the year
-    YYYYMM - year and month
-    YYYYMMDD - year/month/day
-    YYYY_WW - year/week
-start_entry - the first entry to show (in the sort order)
-last_entry - the last entry to show (in the sort order)
-prev_entry - show entries after this one (in the sort order)
-next_entry - show entries prior to this one (in the sort order)
-sort - sorting spec, at the very least:
-    newest
-    oldest
-    title
-future - whether to show entries from the future
-'''
-
 ''' Prioritization list for page/offset/whatever '''
 offset_priority = ['date', 'last', 'first', 'before', 'after']
 
@@ -41,23 +17,25 @@ NOTE: date appears in here too so that if it appears as an offset it overrides t
 pagination_priority = ['date', 'limit']
 
 class View:
-    def __init__(self, spec=None):
+    def __init__(self, input_spec=None):
         # filter out any priority override things
-        self.spec = {k:v for k,v in spec.items() if k not in offset_priority and k not in pagination_priority}
+        spec = {k:v for k,v in input_spec.items() if k not in offset_priority and k not in pagination_priority}
 
         # pull in the first offset type that appears
         for offset in offset_priority:
-            if offset in spec:
-                self.spec[offset] = spec[offset]
+            if offset in input_spec:
+                spec[offset] = input_spec[offset]
                 break
 
         # pull in the first page type that appears
         for pagination in pagination_priority:
-            if pagination in spec:
-                self.spec[pagination] = spec[pagination]
+            if pagination in input_spec:
+                spec[pagination] = input_spec[pagination]
                 break
 
-        self._where = queries.build_query(self.spec)
+        self.spec = spec
+
+        self._where = queries.build_query(spec)
 
         self._query = model.Entry.select().where(self._where)
 
@@ -119,25 +97,28 @@ class View:
             self.previous, self.next = self._get_pagination()
             return getattr(self, name)
 
+        if name == 'newest' or name == 'oldest':
+            entries = self.entries
+            first = entries[0]
+            last = entries[-1]
+            if self._order_by == 'newest':
+                self.newest, self.oldest = first, last
+            elif self._order_by == 'oldest':
+                self.newest, self.oldest = last, first
+            else:
+                raise ValueError('newest/oldest not supported on sort type {}'.format(self._order_by))
+            return getattr(self, name)
+
     ''' Returns the views (if any) for the previous or next page, in that order
 
     Note: "next page" is in terms of display order; newest first means next = older
     '''
     def _get_pagination(self):
-        if not self.entries or not len(self.entries):
-            return None, None
-
-        if self._order_by == 'newest':
-            newest = self.entries[0]
-            oldest = self.entries[-1]
-        elif self._order_by == 'oldest':
-            oldest = self.entries[0]
-            newest = self.entries[-1]
-        else:
-            raise ValueError('pagination not supported on sort type {}'.format(self._order_by))
-
-        oldest_neighbor = oldest.previous
-        newest_neighbor = newest.next
+        # TODO https://github.com/fluffy-critter/Publ/issues/35
+        oldest = self.oldest
+        newest = self.newest
+        oldest_neighbor = self.oldest.previous if oldest else None
+        newest_neighbor = self.newest.next if newest else None
 
         base = self._spec_filtered()
 

@@ -304,6 +304,9 @@ The `view` object has the following things on it:
         * **`False`**: Use a relative URL (default)
         * **`True`**: Use an absolute URL
 
+* **`newest`**: The newest entry in the view
+* **`oldest`**: The oldest entry in the view
+
 It also takes arguments to further refine the view, using the same arguments
 as [`get_view()`](#fn-get-view); for example:
 
