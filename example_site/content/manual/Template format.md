@@ -239,8 +239,6 @@ The `category` object provides the following:
         * **`False`**: Only include direct subcategories (default)
         * **`True`**: Include all subcategories
 
-* **`subcats_recursive`**: All subcategories below this category
-
 * **`parent`**: The parent category, if any
 
 * **`link`**: The link to the category; optionally takes the
