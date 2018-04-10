@@ -50,7 +50,7 @@ The following additional things are provided to the request context:
         * `True`: Include future entries
         * `False`: Do not include future entries (default)
 
-    * **`limit`**: Limit to a maximum number of entries
+    * **`limit`**: Limit to a maximum number of entries. This is overridden by `date` (below).
 
     * **`entry_type`**: Limit to entries with a specific [`Entry-Type`](/entry-format#entry-type) header
     * **`entry_type_not`**: Limit to entries which do NOT match a specific entry type
@@ -66,7 +66,14 @@ The following additional things are provided to the request context:
         Mixing `entry_type` and `entry_type_not` results in undefined behavior, not that it makes
         any sense anyway.
 
-    * ([TODO](https://github.com/fluffy-critter/Publ/issues/13): date, pagination, sorting, tags, etc.)
+    * **`date`**: Limit to entries on a specified date; this can be of the format `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`.
+
+        If this is set, this overrides the `limit` parameter.
+
+    * **`last`**: Limit the view such to none newer than the specified entry (by id or object)
+    * **`first`**: Limit the view such to none older than the specified entry
+    * **`before`**: Limit the view to only entries which came before the specified entry
+    * **`after`**: Limit the view to only entries which came after the specified entry
 
 * **`static`**: Build a link to a static resource. The first argument is the path within the static
     resources directory; it also takes the following optional named arguments:
@@ -92,7 +99,29 @@ Categories are rendered with whatever template is specified, defaulting to `inde
 if none was specified. The template gets the following additional objects:
 
 * **`category`**: Information about the [category](#category-object)
-* **`view`**: Information about the [view](#view object)
+* **`view`**: The default [view](#view object) for this category. It is equivalent to calling `get_view`
+    with the following arguments:
+
+    * `category`: This category
+    * `recurse`: `False`
+    * `date`, `first`, `last`, `before`, `after`: set by the URL query parameters
+
+    <a name="pagination"></a>The intention is that `view` will be used as a basis
+    for another more specific view; for example,
+    the following will give you 10 entries at a time, with appropriate previous/next links:
+
+    ```jinja
+    {% set paged_view = view(limit=10) %}
+    {% for entry in paged_view.entries %}
+        <!-- render entry -->
+    {% endfor %}
+    {% if paged_view.previous %}
+        <a href="{{paged_view.previous.link}}">Previous page</a>
+    {% endif %}
+    {% if paged_view.next %}
+        <a href="{{paged_view.next.link}}">Next page</a>
+    {% endif %}
+    ```
 
 ### Error pages
 
@@ -112,8 +141,8 @@ The `entry` object has the following methods/properties:
 * **`id`**: The numerical entry ID
 * **`body`** and **`more`**: The text above and below the fold, respectively
 
-    These properties can be used directly, or they can be used as functions
-    which affect the content rendering, for example for [image renditions](/image-renditions).
+    These properties can be used directly, or they can take parameters,
+    for example for [image renditions](/image-renditions).
 
 * All headers on the [entry file](/entry-format) are available
 
@@ -147,8 +176,6 @@ The `entry` object has the following methods/properties:
     * **`expand`**: Whether to expand the URL to include the category and slug text
         * **`False`**: Use a condensed link
         * **`True`**: Expand the link to the full entry path (default)
-
-    ([TODO](https://github.com/fluffy-critter/Publ/issues/15))
 
     **Note:** If this entry is a redirection, this link refers to the redirect
     target.
@@ -204,7 +231,13 @@ The `category` object provides the following:
 
 * **`basename`**: Just the last part of the category name
 
-* **`subcats`**: The direct subcategories of this category
+* **`subcats`**: The subcategories of this category. Takes the following argument:
+
+    * **`recurse`**: Whether to include the subcategories of the subcategories, and their subcategories
+        and so on. Possible values:
+
+        * **`False`**: Only include direct subcategories (default)
+        * **`True`**: Include all subcategories
 
 * **`subcats_recursive`**: All subcategories below this category
 
@@ -249,11 +282,14 @@ The `view` object has the following things on it:
 
 * **`last_modified`**: A last-modified time for this view (useful for feeds)
 
-* **`spec`**: The view's specification (category, limits, date range, etc.)
+* **`spec`**: The view's specification (category, limits, date, etc.)
 
-* **`previous`**: The view of previous entries
+    This is in the form of the arguments that would be passed to `get_view` to
+    obtain this view.
 
-* **`next`**: The view of next entries
+* **`previous`**: The previous page's view
+
+* **`next`**: The next page's view
 
 * **`link`**: The link to this view; optionally takes the following arguments:
 
@@ -273,3 +309,4 @@ as [`get_view()`](#fn-get-view); for example:
 
 Note that if you specify a category this will override the current view's category.
 
+See the [explanation on category pagination](#pagination) to see how to use `next` and `previous`.
