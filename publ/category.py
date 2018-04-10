@@ -24,6 +24,8 @@ class Category:
 
         self.link = utils.CallableProxy(self._link)
 
+        self.subcats = utils.CallableProxy(self._get_subcats)
+
     def _link(self, template='', absolute=False):
         return url_for('category',
             category=self.path,
@@ -39,26 +41,23 @@ class Category:
             self.parent = Category(self._parent) if (self._parent != None) else None
             return self.parent
 
-        if name == 'subcats':
-            # get all the subcategories, with only the first subdir added
+    def _get_subcats(self, recurse=False):
+        if recurse:
+            return [Category(e.category) for e in self._subcats_recursive]
 
-            # number of path components to ingest
-            parts = len(self.path.split('/')) + 1 if self.path else 1
+        # get all the subcategories, with only the first subdir added
 
-            # get the subcategories
-            subcats = [e.category for e in self._subcats_recursive]
+        # number of path components to ingest
+        parts = len(self.path.split('/')) + 1 if self.path else 1
 
-            # convert them into separated pathlists with only 'parts' parts
-            subcats = [c.split('/')[:parts] for c in subcats]
+        # get the subcategories
+        subcats = [e.category for e in self._subcats_recursive]
 
-            # join them back into a path, and make unique
-            subcats = {'/'.join(c) for c in subcats}
+        # convert them into separated pathlists with only 'parts' parts
+        subcats = [c.split('/')[:parts] for c in subcats]
 
-            # convert to a bunch of Category objects and bind to the Category
-            self.subcats = [Category(c) for c in sorted(subcats)]
-            return self.subcats
+        # join them back into a path, and make unique
+        subcats = {'/'.join(c) for c in subcats}
 
-        if name == 'subcats_recursive':
-            # convert the recursive subcats query to a property
-            self.subcats_recursive = [Category(e.category) for e in sorted(self._subcats_recursive)]
-            return self.subcats_recursive
+        # convert to a bunch of Category objects and bind to the Category
+        return [Category(c) for c in sorted(subcats)]

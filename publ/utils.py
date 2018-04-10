@@ -41,6 +41,9 @@ class CallableProxy:
     def __str__(self):
         return str(self._get_default())
 
+    def __iter__(self):
+        return self._get_default().__iter__()
+
 '''
 Parse a date expression into a tuple:
 
