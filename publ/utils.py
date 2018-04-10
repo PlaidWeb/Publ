@@ -50,7 +50,7 @@ Parse a date expression into a tuple:
 (start_date, span_type, span_format)
 '''
 def parse_date(datestr):
-    match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?', datestr)
+    match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?$', datestr)
     if not match:
         return (arrow.get(datestr), 'day', 'YYYY-MM-DD')
 
