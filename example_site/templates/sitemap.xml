@@ -5,7 +5,7 @@
     <url>
         <loc>{{category.link(absolute=True)}}</loc>
     </url>
-{%- for cat in category.subcats_recursive %}
+{%- for cat in category.subcats(recurse=True) %}
     <url>
         <loc>{{cat.link(absolute=True)}}</loc>
     </url>

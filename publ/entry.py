@@ -39,13 +39,6 @@ class Entry:
         if self._record.redirect_url:
             return self._record.redirect_url
 
-        # TODO https://github.com/fluffy-critter/Publ/issues/15
-        # if 'category' in kwargs or 'template' in kwargs:
-        #     return flask.get_url('category',
-        #         template=kwargs.get('template', ''),
-        #         category=kwargs.get('category', self._record.category,
-        #         start=self._record.id))
-
         return self._permalink(**kwargs)
 
     def _permalink(self, absolute=False, expand=True):
