@@ -49,9 +49,11 @@ def static_url(path, absolute=False):
 def get_redirect():
     return path_alias.get_redirect([request.full_path, request.path])
 
-def render_error(category, error_message, *error_codes):
-    error_code = error_codes[0]
+def render_error(category, error_message, error_codes, exception=None):
+    if type(error_codes) == int:
+        error_codes = [error_codes]
 
+    error_code = error_codes[0]
     template_list = [str(code) for code in error_codes]
     template_list.append('error')
 
@@ -60,10 +62,19 @@ def render_error(category, error_message, *error_codes):
         return render_template(
             template.filename,
             error={'code':error_code, 'message':error_message},
+            exception=exception,
             template=template), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
+
+def render_exception(error):
+    _,_,category = str.partition(request.path, '/')
+    return render_error(category, "Exception occurred", 500, exception={
+        'type': type(error).__name__,
+        'str': str(error),
+        'args': error.args
+        })
 
 def render_path_alias(path):
     redir = path_alias.get_redirect('/' + path)
