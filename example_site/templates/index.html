@@ -33,6 +33,15 @@
 
 <div id="content">
     <div class="entries">
+        {% set entries = view(entry_type_not='sidebar',limit=5) %}
+
+        {% if entries.previous %}
+        <a href="{{entries.previous.link}}">Previous entries</a>
+        {% endif %}
+
+        {% if entries.next %}
+        <a href="{{entries.next.link}}">Next entries</a>
+        {% endif %}
 
         {% for entry in view(entry_type_not='sidebar').entries %}
         <h2>

@@ -94,8 +94,6 @@ def get_entry(entry):
 
 ''' Generate a full where clause based on a restriction specification '''
 def build_query(spec):
-    print(spec)
-
     # primarily restrict by publication status
     if spec.get('future', False):
         where = where_entry_visible_future
