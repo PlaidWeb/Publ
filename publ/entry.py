@@ -122,7 +122,7 @@ class Entry:
         return self._get_sibling(model.Entry.select().where(
             queries.build_query(spec) &
             queries.where_before_entry(self._record)
-            ).order_by(-model.Entry.entry_date))
+            ).order_by(-model.Entry.entry_date, -model.Entry.id))
 
     ''' Get the next item in any particular category '''
     def _next(self,**kwargs):
@@ -132,10 +132,11 @@ class Entry:
         }
         spec.update(kwargs)
 
-        return self._get_sibling(model.Entry.select().where(
-            queries.build_query(spec) &
-            queries.where_after_entry(self._record)
-            ).order_by(model.Entry.entry_date))
+        return self._get_sibling(
+            model.Entry.select().where(
+                queries.build_query(spec) &
+                queries.where_after_entry(self._record)
+            ).order_by(model.Entry.entry_date, model.Entry.id))
 
     ''' Get a single header on an entry '''
     def get(self, name):
@@ -189,14 +190,17 @@ def scan_file(fullpath, relpath, assign_id):
 
         fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
 
+        # Do we need to assign a new ID?
         if not entry_id:
             if not assign_id:
+                # We're not assigning IDs yet
                 return False
 
             # Generate an ID randomly. Experiments find that this approach
             # averages around 0.25 collisions per ID generated while keeping the
-            # entry ID reasonably short.
-            limit = model.Entry.select().count()*5 + 100
+            # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
+            # per ID.
+            limit = model.Entry.select().count()*5 + 10
             entry_id = random.randint(1, limit)
             while model.Entry.get_or_none(model.Entry.id == entry_id):
                 entry_id = random.randint(1, limit)
