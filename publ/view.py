@@ -44,11 +44,9 @@ class View:
 
         self._order_by = spec.get('order', 'newest')
         if self._order_by == 'newest':
-            self._order = -model.Entry.entry_date
-            self._reverse = model.Entry.entry_date
+            self._order = [-model.Entry.entry_date, -model.Entry.id]
         elif self._order_by == 'oldest':
-            self._order = model.Entry.entry_date
-            self._reverse = -model.Entry.entry_date
+            self._order = [model.Entry.entry_date, model.Entry.id]
         else:
             raise ValueError("Unknown sort order '{}'".format(sort_order))
 
@@ -81,7 +79,7 @@ class View:
 
     def __getattr__(self, name):
         if name == 'entries':
-            self.entries = [Entry(e) for e in self._query.order_by(self._order)]
+            self.entries = [Entry(e) for e in self._query.order_by(*self._order)]
             return self.entries
 
         if name == 'last_modified':
