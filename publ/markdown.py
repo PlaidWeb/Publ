@@ -30,12 +30,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         super().__init__()
 
     def image(self,raw_url,title,alt):
-        if not alt.startswith('@') and not alt.startswith('%'):
-            return '<img src="{}" alt="{}" title="{}">'.format(raw_url, alt, title)
-
         cfg=alt
-        image_spec = '{}{}'.format(raw_url, title and ' "{}"'.format(title))
-        return "<span class=\"error\">Image renditions not yet implemented <!-- cfg={} image_spec={} --></span>".format(cfg, image_spec)
+        image_spec = '{}{}'.format(raw_url, ' "{}"'.format(title) if title else '')
+        return "<span class=\"error\">Image not yet implemented <!-- cfg={} image_spec={} --></span>".format(cfg, image_spec)
 
     def blockcode(self, text, lang):
         try:
