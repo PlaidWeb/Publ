@@ -151,7 +151,8 @@ class Entry:
 ''' convert a title into a URL-friendly slug '''
 def make_slug(title):
     # TODO https://github.com/fluffy-critter/Publ/issues/16
-    # this should probably handle things other than English ASCII...
+    # this should probably handle things other than English ASCII, and also
+    # some punctuation should just be outright removed (quotes/apostrophes/etc)
     return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ','-')
 
 ''' Attempt to guess the title from the filename '''
@@ -223,7 +224,9 @@ def scan_file(fullpath, relpath, assign_id):
         }
 
         if 'Date' in entry:
-            entry_date = arrow.get(entry['Date'])
+            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+            del entry['Date']
+            entry['Date'] = entry_date.format()
         else:
             entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
