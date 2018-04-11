@@ -38,7 +38,8 @@ TODO: templates may also get an `image()` function that allows image renditions 
 * **`scale_min_height`**: The minimum height to target based on scaling
 * **`width`**: The maximum width to target
 * **`height`**: The maximum height to target
-* **`force_size`**: If `True`, don't allow the Markdown processor to override the size settings
+* **`force_width`**: A value to force the width to (intended for templates)
+* **`force_height`**: A value to force the height to (intended for templates)
 * **`resize`**: If both `width` and `height` are specified, how to fit the image into the rectangle if the aspect ratio doesn't match
     * `fit`: Fit the image into the space (default)
     * `fill`: Fill the space with the image, cropping off the sides
@@ -75,7 +76,8 @@ These options drive the behavior of image sets for use with [lightbox.js](http:/
 
 `index.html` and `entry.html`:
 
-This will treat source images as being 3x screen resolution, make images size to no wider than 960 pixels, force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
+This will treat source images as being 3x screen resolution, make images scale to no narrower than 480 pixels and to no wider than 960 pixels,
+force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
 
 ```jinja
 {{ entry.body(
@@ -96,8 +98,8 @@ of the image (making for a useful non-punchline-destroying excerpt).
 ```jinja
 {{ entry.body(link=entry.link(
     absolute=True,
-    width=400,
-    height=400,
+    force_width=400,
+    force_height=400,
     resize="fill",
     fill_crop_x=0,
     fill_crop_y=0,
@@ -108,13 +110,13 @@ of the image (making for a useful non-punchline-destroying excerpt).
 In the above example, if you have a comic that is provided at screen resolution to begin with (such as guest art) you can override the default scaling with e.g.:
 
 ```markdown
-![](guest-comic.png#(scale=1) "Amazing guest comic!")
+![](guest-comic.png{scale=1} "Amazing guest comic!")
 ```
 
 Or if there's one you want to force to a specific size:
 
 ```markdown
-![](special-comic.jpg#(scale=1,width=960,height=480))
+![](special-comic.jpg{scale=1,width=960,height=480})
 ```
 
 ### A photo gallery

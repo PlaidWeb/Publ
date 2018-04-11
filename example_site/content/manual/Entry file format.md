@@ -160,7 +160,7 @@ Code highlighting uses the [Pygments](http://pygments.org) library, which suppor
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
 
-### <a name="image-renditions"></a>Image renditions
+### <a name="image-renditions"></a>Images
 
 ==**Note:** This is a [draft](http://github.com/fluffy-critter/Publ/issues/9).== Both the API and implementation are subject to change.
 
@@ -179,14 +179,14 @@ generating display-resolution-independent renditions and [Lightbox](http://lokes
     ![](image1.jpg "title text" | image2.jpg | image3.jpg "also title text")
     ```
 
-* Images can be configured by adding `#(arguments)` to the filename portion or to the alt text; for example:
+* Images can be configured by adding `{arguments}` to the filename portion or to the alt text; for example:
 
     ```markdown
     <!-- A single image being configured -->
-    ![](image.jpg#(width=320,height=200))
+    ![](image.jpg{width=320,height=200})
 
     <!-- Three images configured to a width of 640, with one of them further overridden -->
-    ![#(width=640)](image1.jpg | image2.jpg#(width=320) | image3.jpg)
+    ![{width=640}](image1.jpg | image2.jpg{width=320} "this one is narrower" | image3.jpg)
     ```
 
 For a full list of the configurations available, please see the manual entry on [image renditions](/image-renditions).
