@@ -32,43 +32,18 @@
 </div>
 
 <div id="content">
-    {% set content = view(entry_type_not='sidebar',limit=5) %}
+<ul>
+{% for entry in entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a></li>
+{% endfor %}
+</ul>
 
-    <div class="nav">
-        {% if content.previous %}
-        <a href="{{content.previous.link}}" class="previous">Previous page</a>
-        {% endif %}
-
-        {% if content.next %}
-        <a href="{{content.next.link}}" class="next">Next page</a>
-        {% endif %}
-    </div>
-
-    <div class="entries">
-
-        {% for entry in content.entries %}
-
-        <h2>
-            {%- if entry.more or entry['redirect-to'] %}<a href="{{entry.link}}">{% endif -%}
-            {{entry.title}}
-            {%- if entry.more %}</a>{% endif -%}
-        </h2>
-
-        {{entry.body}}
-
-        {% endfor %}
-
-    </div>
-
-    <div class="nav">
-        {% if content.previous %}
-        <a href="{{content.previous.link}}" class="previous">Previous page</a>
-        {% endif %}
-
-        {% if content.next %}
-        <a href="{{content.next.link}}" class="next">Next page</a>
-        {% endif %}
-    </div>
+{% if view.previous %}
+<p>Previous: {{view.previous.link(absolute=True)}}</p>
+{% endif %}
+{% if view.next %}
+<p>Next: {{view.next.link(absolute=True)}}</p>
+{%endif %}
 
 </div>
 </body></html>

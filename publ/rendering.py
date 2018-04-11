@@ -49,9 +49,11 @@ def static_url(path, absolute=False):
 def get_redirect():
     return path_alias.get_redirect([request.full_path, request.path])
 
-def render_error(category, error_message, *error_codes):
-    error_code = error_codes[0]
+def render_error(category, error_message, error_codes, exception=None):
+    if type(error_codes) == int:
+        error_codes = [error_codes]
 
+    error_code = error_codes[0]
     template_list = [str(code) for code in error_codes]
     template_list.append('error')
 
@@ -60,10 +62,19 @@ def render_error(category, error_message, *error_codes):
         return render_template(
             template.filename,
             error={'code':error_code, 'message':error_message},
+            exception=exception,
             template=template), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
+
+def render_exception(error):
+    _,_,category = str.partition(request.path, '/')
+    return render_error(category, "Exception occurred", 500, exception={
+        'type': type(error).__name__,
+        'str': str(error),
+        'args': error.args
+        })
 
 def render_path_alias(path):
     redir = path_alias.get_redirect('/' + path)
@@ -83,7 +94,8 @@ def render_category(category='', template='index'):
 
     if category:
         # See if there's any entries for the view...
-        if not model.Entry.get_or_none((model.Entry.category == category) | (model.Entry.category.startswith(category + '/'))):
+        if not model.Entry.get_or_none((model.Entry.category == category) |
+            (model.Entry.category.startswith(category + '/'))):
             return render_error(category, 'Category not found', 404)
 
     tmpl = map_template(category, template)
@@ -98,12 +110,12 @@ def render_category(category='', template='index'):
         # nope, we just don't know what this is
         return render_error(category, 'Template not found', 400)
 
-    # TODO https://github.com/fluffy-critter/Publ/issues/13
-    view_obj = View({
-        'category': category,
-        'date': request.args.get('date')
-        })
+    view_spec = {'category': category}
+    for key in ['date', 'last', 'first', 'before', 'after']:
+        if key in request.args:
+            view_spec[key] = request.args[key]
 
+    view_obj = View(view_spec)
     return render_template(tmpl.filename,
         category=Category(category),
         view=view_obj,
