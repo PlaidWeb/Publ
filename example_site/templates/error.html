@@ -18,6 +18,9 @@
     <li>full_path: <code>{{request.full_path}}</code></li>
     <li>endpoint: <code>{{request.endpoint}}</code></li>
     <li>url_rule: <code>{{request.url_rule}}</code></li>
+{% if exception %}
+    <li>Exception information: {{exception.type}}: {{exception.str}}</li>
+{% endif %}
 </ul>
 
 </body>
