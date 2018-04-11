@@ -11,6 +11,7 @@ import uuid
 import tempfile
 import flask
 import logging
+import random
 
 import config
 
@@ -121,7 +122,7 @@ class Entry:
         return self._get_sibling(model.Entry.select().where(
             queries.build_query(spec) &
             queries.where_before_entry(self._record)
-            ).order_by(-model.Entry.entry_date))
+            ).order_by(-model.Entry.entry_date, -model.Entry.id))
 
     ''' Get the next item in any particular category '''
     def _next(self,**kwargs):
@@ -131,10 +132,11 @@ class Entry:
         }
         spec.update(kwargs)
 
-        return self._get_sibling(model.Entry.select().where(
-            queries.build_query(spec) &
-            queries.where_after_entry(self._record)
-            ).order_by(model.Entry.entry_date))
+        return self._get_sibling(
+            model.Entry.select().where(
+                queries.build_query(spec) &
+                queries.where_after_entry(self._record)
+            ).order_by(model.Entry.entry_date, model.Entry.id))
 
     ''' Get a single header on an entry '''
     def get(self, name):
@@ -149,7 +151,8 @@ class Entry:
 ''' convert a title into a URL-friendly slug '''
 def make_slug(title):
     # TODO https://github.com/fluffy-critter/Publ/issues/16
-    # this should probably handle things other than English ASCII...
+    # this should probably handle things other than English ASCII, and also
+    # some punctuation should just be outright removed (quotes/apostrophes/etc)
     return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ','-')
 
 ''' Attempt to guess the title from the filename '''
@@ -170,14 +173,42 @@ def scan_file(fullpath, relpath, assign_id):
         return
 
     with model.lock:
+        warn_duplicate = False
+
         if 'Entry-ID' in entry:
             entry_id = int(entry['Entry-ID'])
-        elif not assign_id:
-            return False
         else:
             entry_id = None
 
+        # See if we-ve inadvertently duplicated an entry ID
+        if entry_id:
+            other_entry = model.Entry.get_or_none(model.Entry.id == entry_id)
+            if (other_entry
+                and other_entry.file_path != fullpath
+                and os.path.isfile(other_entry.file_path)):
+                warn_duplicate = entry_id
+                entry_id = None
+
         fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
+
+        # Do we need to assign a new ID?
+        if not entry_id:
+            if not assign_id:
+                # We're not assigning IDs yet
+                return False
+
+            # Generate an ID randomly. Experiments find that this approach
+            # averages around 0.25 collisions per ID generated while keeping the
+            # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
+            # per ID.
+            limit = model.Entry.select().count()*5 + 10
+            entry_id = random.randint(1, limit)
+            while model.Entry.get_or_none(model.Entry.id == entry_id):
+                entry_id = random.randint(1, limit)
+
+            if warn_duplicate is not False:
+                logger.warning("Entry '%s' had ID %d, already assigned to '%s'. Reassigned to %d",
+                    fullpath, warn_duplicate, other_entry.file_path, entry_id)
 
         basename = os.path.basename(relpath)
         title = entry['title'] or guess_title(basename)
@@ -193,7 +224,9 @@ def scan_file(fullpath, relpath, assign_id):
         }
 
         if 'Date' in entry:
-            entry_date = arrow.get(entry['Date'])
+            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+            del entry['Date']
+            entry['Date'] = entry_date.format()
         else:
             entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
