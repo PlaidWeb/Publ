@@ -11,6 +11,7 @@ import uuid
 import tempfile
 import flask
 import logging
+import random
 
 import config
 
@@ -170,14 +171,39 @@ def scan_file(fullpath, relpath, assign_id):
         return
 
     with model.lock:
+        warn_duplicate = False
+
         if 'Entry-ID' in entry:
             entry_id = int(entry['Entry-ID'])
-        elif not assign_id:
-            return False
         else:
             entry_id = None
 
+        # See if we-ve inadvertently duplicated an entry ID
+        if entry_id:
+            other_entry = model.Entry.get_or_none(model.Entry.id == entry_id)
+            if (other_entry
+                and other_entry.file_path != fullpath
+                and os.path.isfile(other_entry.file_path)):
+                warn_duplicate = entry_id
+                entry_id = None
+
         fixup_needed = entry_id == None or not 'Date' in entry or not 'UUID' in entry
+
+        if not entry_id:
+            if not assign_id:
+                return False
+
+            # Generate an ID randomly. Experiments find that this approach
+            # averages around 0.25 collisions per ID generated while keeping the
+            # entry ID reasonably short.
+            limit = model.Entry.select().count()*5 + 100
+            entry_id = random.randint(1, limit)
+            while model.Entry.get_or_none(model.Entry.id == entry_id):
+                entry_id = random.randint(1, limit)
+
+            if warn_duplicate is not False:
+                logger.warning("Entry '%s' had ID %d, already assigned to '%s'. Reassigned to %d",
+                    fullpath, warn_duplicate, other_entry.file_path, entry_id)
 
         basename = os.path.basename(relpath)
         title = entry['title'] or guess_title(basename)
