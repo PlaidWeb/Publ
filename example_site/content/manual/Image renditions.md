@@ -19,7 +19,7 @@ See the [entry format article](/entry-format#image-renditions)
 
 ### In templates
 
-Pass thes in as parameters to `entry.body` and/or `entry.more`.
+Pass these in as parameters to `entry.body` and/or `entry.more`.
 
 TODO: templates may also get an `image()` function that allows image renditions to be part of the template itself (not just entries); this will likely allow rendering out both the raw URL and an `<img src>` tag as appropriate.
 
