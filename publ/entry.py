@@ -230,7 +230,7 @@ def scan_file(fullpath, relpath, assign_id):
         else:
             entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
-        values['entry_date'] = entry_date.datetime
+        values['entry_date'] = entry_date.to('utc').datetime
 
         if entry_id != None:
             logger.debug("creating %s with id %d", fullpath, entry_id)
