@@ -16,7 +16,7 @@ lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
 ''' Schema version; bump this whenever an existing table changes '''
-schema_version = 2
+schema_version = 3
 
 class BaseModel(Model):
     class Meta:
