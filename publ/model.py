@@ -16,7 +16,7 @@ lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
 ''' Schema version; bump this whenever an existing table changes '''
-schema_version = 3
+schema_version = 4
 
 class BaseModel(Model):
     class Meta:
@@ -48,7 +48,8 @@ class Entry(BaseModel):
     file_path = CharField()
     category = CharField()
     status = PublishStatus.Field()
-    entry_date = DateTimeField()
+    entry_date = DateTimeField() # UTC-normalized, for queries
+    display_date = DateTimeField() # arbitrary timezone, for display
     slug_text = CharField()
     entry_type = CharField()
     redirect_url = CharField(null=True)
