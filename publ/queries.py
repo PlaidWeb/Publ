@@ -6,19 +6,21 @@ import arrow
 import re
 
 ''' Where clause for currently-visible entries '''
-where_entry_visible = (
-    (model.Entry.status == model.PublishStatus.PUBLISHED) |
-    (
-        (model.Entry.status == model.PublishStatus.SCHEDULED) &
-        (model.Entry.entry_date <= arrow.utcnow().datetime)
+def where_entry_visible():
+    return (
+        (model.Entry.status == model.PublishStatus.PUBLISHED) |
+        (
+            (model.Entry.status == model.PublishStatus.SCHEDULED) &
+            (model.Entry.entry_date <= arrow.utcnow().datetime)
+        )
     )
-)
 
 ''' Where clause for entries visible in the future '''
-where_entry_visible_future = (
-    (model.Entry.status == model.PublishStatus.PUBLISHED) |
-    (model.Entry.status == model.PublishStatus.SCHEDULED)
-)
+def where_entry_visible_future():
+    return (
+        (model.Entry.status == model.PublishStatus.PUBLISHED) |
+        (model.Entry.status == model.PublishStatus.SCHEDULED)
+    )
 
 ''' Where clause for entries in a category '''
 def where_entry_category(category, recurse=False):
@@ -93,9 +95,9 @@ def get_entry(entry):
 def build_query(spec):
     # primarily restrict by publication status
     if spec.get('future', False):
-        where = where_entry_visible_future
+        where = where_entry_visible_future()
     else:
-        where = where_entry_visible
+        where = where_entry_visible()
 
     # restrict by category
     if 'category' in spec or 'recurse' in spec:
