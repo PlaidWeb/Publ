@@ -10,7 +10,7 @@ where_entry_visible = (
     (model.Entry.status == model.PublishStatus.PUBLISHED) |
     (
         (model.Entry.status == model.PublishStatus.SCHEDULED) &
-        (model.Entry.entry_date < arrow.get().datetime)
+        (model.Entry.entry_date <= arrow.utcnow().datetime)
     )
 )
 
