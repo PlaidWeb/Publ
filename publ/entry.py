@@ -180,7 +180,7 @@ def scan_file(fullpath, relpath, assign_id):
         else:
             entry_id = None
 
-        # See if we-ve inadvertently duplicated an entry ID
+        # See if we've inadvertently duplicated an entry ID
         if entry_id:
             other_entry = model.Entry.get_or_none(model.Entry.id == entry_id)
             if (other_entry
@@ -204,18 +204,18 @@ def scan_file(fullpath, relpath, assign_id):
                 entry_id = by_filepath.id
 
         if not entry_id:
-            # We still don't have an ID; it randomly. Experiments find that this approach
+            # We still don't have an ID; generate one randomly. Experiments find that this approach
             # averages around 0.25 collisions per ID generated while keeping the
             # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
             # per ID.
             limit = model.Entry.select().count()*5 + 10
-            generated_id = random.randint(1, limit)
-            while model.Entry.get_or_none(model.Entry.id == generatedid):
-                generated_id = random.randint(1, limit)
+            entry_id = random.randint(1, limit)
+            while model.Entry.get_or_none(model.Entry.id == entry_id):
+                entry_id = random.randint(1, limit)
 
             if warn_duplicate is not False:
-                logger.warning("Entry '%s' had ID %d, already assigned to '%s'. Reassigned to %d",
-                    fullpath, warn_duplicate, other_entry.file_path, generated_id)
+                logger.warning("Entry '%s' had ID %d, which belongs to '%s'. Reassigned to %d",
+                    fullpath, warn_duplicate, other_entry.file_path, entry_id)
 
         basename = os.path.basename(relpath)
         title = entry['title'] or guess_title(basename)
@@ -237,10 +237,11 @@ def scan_file(fullpath, relpath, assign_id):
         else:
             entry_date = arrow.get(os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
+
         values['entry_date'] = entry_date.to('utc').datetime
         values['display_date'] = entry_date.datetime
 
-        logger.debug("creating %s with id %d", fullpath, entry_id)
+        logger.debug("getting entry %s with id %d", fullpath, entry_id)
         record, created = model.Entry.get_or_create(id=entry_id, defaults=values)
 
         if not created:
