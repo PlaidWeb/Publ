@@ -2,7 +2,12 @@
 <html>
 <head>
     <title>{{entry['title'] | safe}}</title>
+
     <link rel="stylesheet" href="{{ static('style.css') }}">
+
+    <!-- Include MathJax to support math rendering -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
 </head>
 <body>
 <h1><a href="{{category.link}}">Publ: {{category.basename.title() }}</a></h1>
