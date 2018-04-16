@@ -1,7 +1,6 @@
 # item.py
 # Functions for handling content items
 
-import markdown
 import os
 import shutil
 import re
