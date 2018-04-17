@@ -1,5 +1,7 @@
 """ Publ entry point """
 
+import time
+
 import arrow
 import flask
 
@@ -37,9 +39,30 @@ def setup(app):
     app.jinja_env.globals.update(
         get_view=view.get_view, arrow=arrow, static=rendering.static_url)
 
+    app.before_request(rescan_index)
+    app.after_request(set_cache_expiry)
+
     cache.init_app(app)
 
     # Scan the index
     model.create_tables()
     index.scan_index(config.content_directory)
     index.background_scan(config.content_directory)
+
+
+last_scan = None
+
+
+def rescan_index():
+    """ Rescan the index if it's been more than a minute since the last scan """
+    global last_scan
+    now = time.time()
+    if not last_scan or now - last_scan > 60:
+        index.scan_index(config.content_directory)
+        last_scan = now
+
+
+def set_cache_expiry(req):
+    """ Set the cache control headers """
+    req.headers['Cache-Control'] = 'public, max-age=300'
+    return req
