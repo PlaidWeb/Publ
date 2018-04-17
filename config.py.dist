@@ -27,6 +27,13 @@ template_directory = 'example_site/templates'
 # Where our site content lives
 content_directory = 'example_site/content'
 
+# Cache; see https://pythonhosted.org/Flask-Cache/ for more information
+cache = {
+    'CACHE_TYPE': 'simple',
+    'CACHE_DEFAULT_TIMEOUT': 300,
+    'CACHE_THRESHOLD': 100
+}
+
 # In-memory database; fastest but most memory-intensive
 # also for some reason peewee keeps dropping it? WTF
 #database = "sqlite:///:memory:"

@@ -1,6 +1,7 @@
-from . import rendering, model, index
+from . import rendering, model, index, caching
 import arrow
 import flask
+from .caching import cache
 
 model = model
 index = index
@@ -28,3 +29,5 @@ def setup(app):
         app.register_error_handler(Exception, rendering.render_exception)
 
     app.jinja_env.globals.update(get_view=view.get_view, arrow=arrow, static=rendering.static_url)
+
+    cache.init_app(app)
