@@ -2,7 +2,7 @@
 # Where the cache lives
 
 import config
-from flask.ext.cache import Cache
+from flask_cache import Cache
 from flask import request
 
 cache = Cache(config=config.cache)
