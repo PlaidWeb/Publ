@@ -11,8 +11,8 @@ import tempfile
 import flask
 import logging
 import random
-
 import config
+import functools
 
 from . import model, queries
 from . import path_alias
@@ -20,6 +20,11 @@ from . import markdown
 from .utils import CallableProxy
 
 logger = logging.getLogger(__name__)
+
+@functools.lru_cache(10)
+def load_message(filepath):
+    with open(filepath, 'r') as file:
+        return email.message_from_file(file)
 
 class Entry:
     def __init__(self, record):
@@ -53,8 +58,7 @@ class Entry:
         if not self._message:
             filepath = self._record.file_path
             try:
-                with open(filepath, 'r') as file:
-                    self._message = email.message_from_file(file)
+                self._message = load_message(filepath)
             except FileNotFoundError:
                 expire_record(self._record)
 
@@ -161,9 +165,10 @@ def guess_title(basename):
 
 ''' scan a file and put it into the index '''
 def scan_file(fullpath, relpath, assign_id):
+    load_message.cache_clear()
+
     try:
-        with open(fullpath, 'r') as file:
-            entry = email.message_from_file(file)
+        entry = load_message(fullpath)
     except FileNotFoundError:
         # The file doesn't exist, so remove it from the index
         record = model.Entry.get_or_none(file_path=fullpath)
@@ -269,10 +274,11 @@ def scan_file(fullpath, relpath, assign_id):
         return record
 
 def expire_record(record):
+    load_message.cache_clear()
+
     with model.lock:
         # This entry no longer exists so delete it, and anything that references it
         # SQLite doesn't support cascading deletes so let's just clean up manually
         model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
         record.delete_instance(recursive=True)
-
 
