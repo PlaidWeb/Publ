@@ -11,6 +11,7 @@ import tempfile
 import flask
 import logging
 import random
+from functools import lru_cache
 
 import config
 
@@ -19,7 +20,14 @@ from . import path_alias
 from . import markdown
 from .utils import CallableProxy
 
+from .caching import cache
+
 logger = logging.getLogger(__name__)
+
+@cache.memoize()
+def load_message(filepath):
+    with open(filepath, 'r') as file:
+        return email.message_from_file(file)
 
 class Entry:
     def __init__(self, record):
@@ -53,8 +61,7 @@ class Entry:
         if not self._message:
             filepath = self._record.file_path
             try:
-                with open(filepath, 'r') as file:
-                    self._message = email.message_from_file(file)
+                self._message = load_message(filepath)
             except FileNotFoundError:
                 expire_record(self._record)
 
@@ -161,9 +168,9 @@ def guess_title(basename):
 
 ''' scan a file and put it into the index '''
 def scan_file(fullpath, relpath, assign_id):
+    load_message.cache_clear()
     try:
-        with open(fullpath, 'r') as file:
-            entry = email.message_from_file(file)
+        entry = load_message(fullpath)
     except FileNotFoundError:
         # The file doesn't exist, so remove it from the index
         record = model.Entry.get_or_none(file_path=fullpath)

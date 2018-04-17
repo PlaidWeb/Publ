@@ -9,6 +9,8 @@ from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
 from .view import View
+from . import caching
+from .caching import cache
 
 import config
 
@@ -25,6 +27,7 @@ def mimetype(template):
     _,ext = os.path.splitext(template.filename)
     return extmap.get(ext, 'text/html; charset=utf-8')
 
+@cache.memoize()
 def map_template(orig_path, template_list):
     if type(template_list) == str:
         template_list = [template_list]
@@ -82,6 +85,7 @@ def render_path_alias(path):
         return render_error('', 'Path redirection not found', 404)
     return redirect(redir)
 
+@cache.cached(key_prefix=caching.make_category_key)
 def render_category(category='', template='index'):
     # See if this is an aliased path
     redir = get_redirect()
@@ -121,6 +125,7 @@ def render_category(category='', template='index'):
         view=view_obj,
         template=tmpl), { 'Content-Type': mimetype(tmpl) }
 
+@cache.cached(key_prefix=caching.make_entry_key)
 def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
