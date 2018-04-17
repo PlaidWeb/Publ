@@ -94,7 +94,7 @@ class Entry:
     @staticmethod
     def _get_markup(text, is_markdown, **kwargs):
         if is_markdown:
-            return flask.Markup(markdown.format(text), **kwargs)
+            return flask.Markup(markdown.to_html(text), **kwargs)
         return flask.Markup(text)
 
     def __getattr__(self, name):

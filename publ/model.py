@@ -100,8 +100,8 @@ def create_tables():
         cur_version = Global.get(key='schema_version').int_value
         logger.info("Current schema version: %s", cur_version)
         rebuild = cur_version != schema_version
-    except Exception:
-        logger.info("Schema version missing")
+    except:
+        logger.info("Schema information not found")
         rebuild = True
 
     if rebuild:
