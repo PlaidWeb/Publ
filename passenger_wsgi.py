@@ -1,14 +1,17 @@
 #!env/bin/python
 # Wrapper script to make this work in Passenger environments (e.g. Dreamhost)
 
-import sys, os
+import sys
+import os
 import subprocess
 import logging
 import logging.handlers
 
 logging.basicConfig(level=logging.INFO)
 
-# set up logging; see https://docs.python.org/2/library/logging.config.html#logging-config-fileformat for details
+# set up logging; see
+# https://docs.python.org/2/library/logging.config.html#logging-config-fileformat
+# for details
 if os.path.isfile('logging.conf'):
     logging.config.fileConfig('logging.conf')
 else:
@@ -26,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 logger.info('My interpreter: %s' % sys.executable)
 
-INTERP = subprocess.check_output(['pipenv', 'run', 'which', 'python3']).strip().decode('utf-8')
+INTERP = subprocess.check_output(
+    ['pipenv', 'run', 'which', 'python3']).strip().decode('utf-8')
 
 if sys.executable != INTERP:
     logger.info('Restarting with interpreter: %s', INTERP)
@@ -36,20 +40,19 @@ if sys.executable != INTERP:
 sys.path.append(os.getcwd())
 
 # load the app
-import main, time
+import main
 
-last_scan = None
 
 # hackish way to make Passenger urldecode the same way WSGI does
 import urllib.parse
-def application(environ, start_response):
-    # Dreamhost hack - sometimes watchdog doesn't really work so good
-    global last_scan
-    now = time.time()
-    if not last_scan or now - last_scan > 30:
-        main.scan_index()
 
-    # make Passenger interpret PATH_INFO the same way that the WSGI standard does
+
+def application(environ, start_response):
+    """
+        make Passenger interpret PATH_INFO the same way that the WSGI standard
+        does
+    """
+
     environ["PATH_INFO"] = urllib.parse.unquote(environ["PATH_INFO"])
     return main.app(environ, start_response)
 
