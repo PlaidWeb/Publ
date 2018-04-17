@@ -11,20 +11,17 @@ import tempfile
 import flask
 import logging
 import random
-from functools import lru_cache
-
 import config
+import functools
 
 from . import model, queries
 from . import path_alias
 from . import markdown
 from .utils import CallableProxy
 
-from .caching import cache
-
 logger = logging.getLogger(__name__)
 
-@cache.memoize()
+@functools.lru_cache(10)
 def load_message(filepath):
     with open(filepath, 'r') as file:
         return email.message_from_file(file)
@@ -169,6 +166,7 @@ def guess_title(basename):
 ''' scan a file and put it into the index '''
 def scan_file(fullpath, relpath, assign_id):
     load_message.cache_clear()
+
     try:
         entry = load_message(fullpath)
     except FileNotFoundError:
@@ -276,10 +274,11 @@ def scan_file(fullpath, relpath, assign_id):
         return record
 
 def expire_record(record):
+    load_message.cache_clear()
+
     with model.lock:
         # This entry no longer exists so delete it, and anything that references it
         # SQLite doesn't support cascading deletes so let's just clean up manually
         model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
         record.delete_instance(recursive=True)
-
 
