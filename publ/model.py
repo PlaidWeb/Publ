@@ -1,7 +1,7 @@
 # model.py
 # Content indices et al
 
-from peewee import *
+from peewee import Model, IntegerField, DateTimeField, CharField, ForeignKeyField
 import playhouse.db_url
 from enum import Enum
 import uuid

@@ -1,17 +1,19 @@
 # caching.py
 # Where the cache lives
 
-import config
 from flask_cache import Cache
 from flask import request
 
+import config
+
 cache = Cache(config=config.cache)
 
-''' Key generator for categories '''
+
 def make_category_key():
+    # Key generator for categories
     return 'category/' + request.full_path
 
-''' Key generator for entries '''
-def make_entry_key():
-    return 'entry/' + request.path
 
+def make_entry_key():
+    # Key generator for entries
+    return 'entry/' + request.path
