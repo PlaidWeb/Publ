@@ -1,5 +1,5 @@
 # utils.py
-# Some useful utilities that don't belong anywhere else
+""" Some useful utilities that don't belong anywhere else """
 
 import re
 
@@ -9,22 +9,33 @@ import config
 
 
 class CallableProxy:
-    # Wrapper class to make args possible on properties
+    """ Wrapper class to make args possible on properties """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, func, *args, **kwargs):
+        """ Construct the property proxy.
+
+        func -- The function to wrap
+        args -- Default positional arguments for the function call
+        kwargs -- Default keyword arguments for the function call
+        """
+
         self._func = func
-        self._hasDefault = False
+        self._has_default = False
         self._default_args = args
         self._default_kwargs = kwargs
 
     def _get_default(self):
-        if not self._hasDefault:
+        """ Get the default function return """
+
+        # pylint: disable=attribute-defined-outside-init
+        if not self._has_default:
             if self._default_args:
                 self._default = self._func(
                     *self._default_args, **self._default_kwargs)
             else:
                 self._default = self._func(**self._default_kwargs)
-            self._hasDefault = True
+            self._has_default = True
         return self._default
 
     def __call__(self, **kwargs):
@@ -36,7 +47,7 @@ class CallableProxy:
         return getattr(self._get_default(), name)
 
     def __nonzero__(self):
-        return not not self._get_default()
+        return self._get_default().__nonzero__()
 
     def __len__(self):
         return 1 if self._get_default() else 0
@@ -49,9 +60,14 @@ class CallableProxy:
 
 
 def parse_date(datestr):
-    # Parse a date expression into a tuple:
-    #
-    # (start_date, span_type, span_format)
+    """ Parse a date expression into a tuple of:
+
+        (start_date, span_type, span_format)
+
+    Arguments:
+        datestr -- A date specification, in the format of YYYY-MM-DD (dashes optional)
+    """
+
     match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?$', datestr)
     if not match:
         return (arrow.get(datestr), 'day', 'YYYY-MM-DD')
@@ -66,3 +82,5 @@ def parse_date(datestr):
         return start, 'month', 'YYYY-MM'
     elif year:
         return start, 'year', 'YYYY'
+
+    return ValueError("Could not parse date: {}".format(datestr))
