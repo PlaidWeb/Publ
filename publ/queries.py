@@ -99,10 +99,12 @@ def where_entry_date(datespec):
 
 def get_entry(entry):
     # Get an entry by ID or by object
+    from .entry import Entry
+    if isinstance(entry, (Entry, model.Entry, utils.CallableProxy)):
+        return entry
     if isinstance(entry, (int, str)):
         return model.Entry.get(model.Entry.id == int(entry))
-    if isinstance(entry, model.Entry):
-        return entry
+    raise ValueError("entry is of unknown type {}".format(type(entry)))
 
 
 def build_query(spec):

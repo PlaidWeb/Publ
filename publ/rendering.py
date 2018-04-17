@@ -142,7 +142,7 @@ def render_entry(entry_id, slug_text='', category=''):
         # It's not a valid entry, so see if it's a redirection
         path_redirect = get_redirect()
         if path_redirect:
-            return redirect(path_redir)
+            return redirect(path_redirect)
 
         logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
         return render_error(category, 'Entry not found', 404)
