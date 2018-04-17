@@ -4,6 +4,7 @@
 from . import model
 from flask import url_for
 
+
 def set_alias(path, entry=None, url=None):
     record, created = model.PathAlias.get_or_create(
         path=path,
@@ -16,19 +17,21 @@ def set_alias(path, entry=None, url=None):
         record.redirect_url = url
         record.save()
 
+
 def remove_alias(path):
     model.PathAlias.delete().where(model.PathAlias.path == path).execute()
 
+
 def get_redirect(paths):
-    if type(paths) == str:
+    if isinstance(paths, str):
         paths = [paths]
 
     for path in paths:
         record = model.PathAlias.get_or_none(model.PathAlias.path == path)
         if record and record.redirect_entry:
             return url_for('entry',
-                entry_id=record.redirect_entry.id,
-                category=record.redirect_entry.category,
-                slug_text=record.redirect_entry.slug_text)
+                           entry_id=record.redirect_entry.id,
+                           category=record.redirect_entry.category,
+                           slug_text=record.redirect_entry.slug_text)
         elif record and record.redirect_url:
             return record.redirect_url
