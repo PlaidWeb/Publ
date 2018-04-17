@@ -1,9 +1,14 @@
 # rendering.py
-# Render and route functions
+""" Rendering functions """
 
 import os
 import logging
-from flask import request, redirect, render_template, send_from_directory, url_for, make_response
+
+import flask
+from flask import request, redirect, render_template, url_for
+
+import config
+
 from . import path_alias, model
 from .entry import Entry, expire_record
 from .category import Category
@@ -12,30 +17,41 @@ from .view import View
 from . import caching
 from .caching import cache
 
-import config
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # mapping from template extension to MIME type; probably could be better
-extmap = {
+EXTENSION_MAP = {
+    '.html': 'text/html; charset=utf-8',
     '.xml': 'application/xml',
-    '.json': 'application/json'
+    '.json': 'application/json',
+    '.css': 'text/css'
 }
 
 
-def mimetype(template):
-    # infer the content-type from the extension
+def mime_type(template):
+    """ infer the content-type from the extension """
     _, ext = os.path.splitext(template.filename)
-    return extmap.get(ext, 'text/html; charset=utf-8')
+    return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
 
 
 @cache.memoize()
-def map_template(orig_path, template_list):
+def map_template(category, template_list):
+    """
+    Given a file path and an acceptable list of templates, return the
+    best-matching template's path relative to the configured template
+    directory.
+
+    Arguments:
+
+    category -- The path to map
+    template_list -- A template to look up (as a string), or a list of templates.
+    """
+
     if isinstance(template_list, str):
         template_list = [template_list]
 
     for template in template_list:
-        path = os.path.normpath(orig_path)
+        path = os.path.normpath(category)
         while path != None:
             for extension in ['', '.html', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
@@ -50,14 +66,35 @@ def map_template(orig_path, template_list):
 
 
 def static_url(path, absolute=False):
+    """ Shorthand for returning a URL for the requested static file.
+
+    Arguments:
+
+    path -- the path to the file (relative to the static files directory)
+    absolute -- whether the link should be absolute or relative
+    """
     return url_for('static', filename=path, _external=absolute)
 
 
 def get_redirect():
+    """ Check to see if the current request is a redirection """
     return path_alias.get_redirect([request.full_path, request.path])
 
 
 def render_error(category, error_message, error_codes, exception=None):
+    """ Render an error page.
+
+    Arguments:
+
+    category -- The category of the request
+    error_message -- The message to provide to the error template
+    error_codes -- The applicable HTTP error code(s). Will usually be an
+        integer or a list of integers; the HTTP error response will always
+        be the first error code in the list, and the others are alternates
+        for looking up the error template to use.
+    exception -- Any exception that led to this error page
+    """
+
     if isinstance(error_codes, int):
         error_codes = [error_codes]
 
@@ -74,10 +111,11 @@ def render_error(category, error_message, error_codes, exception=None):
             template=template), error_code
 
     # no template found, so fall back to default Flask handler
-    flask.abort(error_code)
+    return flask.abort(error_code)
 
 
 def render_exception(error):
+    """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
@@ -87,6 +125,8 @@ def render_exception(error):
 
 
 def render_path_alias(path):
+    """ Render a known path-alias (used primarily for Dreamhost .php redirects) """
+
     redir = path_alias.get_redirect('/' + path)
     if not redir:
         return render_error('', 'Path redirection not found', 404)
@@ -95,6 +135,13 @@ def render_path_alias(path):
 
 @cache.cached(key_prefix=caching.make_category_key)
 def render_category(category='', template='index'):
+    """ Render a category page.
+
+    Arguments:
+
+    category -- The category to render
+    template -- The template to render it with
+    """
     # See if this is an aliased path
     redir = get_redirect()
     if redir:
@@ -131,11 +178,20 @@ def render_category(category='', template='index'):
     return render_template(tmpl.filename,
                            category=Category(category),
                            view=view_obj,
-                           template=tmpl), {'Content-Type': mimetype(tmpl)}
+                           template=tmpl), {'Content-Type': mime_type(tmpl)}
 
 
 @cache.cached(key_prefix=caching.make_entry_key)
-def render_entry(entry_id, slug_text='', category=''):
+def render_entry(entry_id, slug_text='', category=''):  # pylint: disable=too-many-return-statements
+    """ Render an entry page.
+
+    Arguments:
+
+    entry_id -- The numeric ID of the entry to render
+    slug_text -- The expected URL slug text
+    category -- The expected category
+    """
+
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
     if not record:
@@ -195,4 +251,4 @@ def render_entry(entry_id, slug_text='', category=''):
     return render_template(tmpl.filename,
                            entry=entry_obj,
                            category=Category(category),
-                           template=tmpl), {'Content-Type': mimetype(tmpl)}
+                           template=tmpl), {'Content-Type': mime_type(tmpl)}

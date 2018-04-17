@@ -1,13 +1,17 @@
+""" Publ entry point """
+
 import arrow
 import flask
 
-from . import rendering, model, index, caching
-from .caching import cache
-
 import config
+
+from . import rendering, model, index, caching, view
+from .caching import cache
 
 
 def setup(app):
+    """ Given a Flask application, configures it for use with Publ. """
+
     for route in [
             '/',
             '/<path:category>/',
