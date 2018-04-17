@@ -1,5 +1,5 @@
 # view.py
-# A view of entries
+""" A view of entries """
 
 import arrow
 import flask
