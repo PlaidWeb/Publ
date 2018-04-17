@@ -1,36 +1,57 @@
 # rendering.py
-# Render and route functions
+""" Rendering functions """
 
 import os
 import logging
-from flask import request, redirect, render_template, send_from_directory, url_for, make_response
+
+import flask
+from flask import request, redirect, render_template, url_for
+
+import config
+
 from . import path_alias, model
 from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
 from .view import View
+from . import caching
+from .caching import cache
 
-import config
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # mapping from template extension to MIME type; probably could be better
-extmap = {
+EXTENSION_MAP = {
+    '.html': 'text/html; charset=utf-8',
     '.xml': 'application/xml',
-    '.json': 'application/json'
+    '.json': 'application/json',
+    '.css': 'text/css'
 }
 
-def mimetype(template):
-    # infer the content-type from the extension
-    _,ext = os.path.splitext(template.filename)
-    return extmap.get(ext, 'text/html; charset=utf-8')
 
-def map_template(orig_path, template_list):
-    if type(template_list) == str:
+def mime_type(template):
+    """ infer the content-type from the extension """
+    _, ext = os.path.splitext(template.filename)
+    return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
+
+
+@cache.memoize()
+def map_template(category, template_list):
+    """
+    Given a file path and an acceptable list of templates, return the
+    best-matching template's path relative to the configured template
+    directory.
+
+    Arguments:
+
+    category -- The path to map
+    template_list -- A template to look up (as a string), or a list of templates.
+    """
+
+    if isinstance(template_list, str):
         template_list = [template_list]
 
     for template in template_list:
-        path = os.path.normpath(orig_path)
+        path = os.path.normpath(category)
         while path != None:
             for extension in ['', '.html', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
@@ -43,14 +64,38 @@ def map_template(orig_path, template_list):
             else:
                 path = None
 
+
 def static_url(path, absolute=False):
+    """ Shorthand for returning a URL for the requested static file.
+
+    Arguments:
+
+    path -- the path to the file (relative to the static files directory)
+    absolute -- whether the link should be absolute or relative
+    """
     return url_for('static', filename=path, _external=absolute)
 
+
 def get_redirect():
+    """ Check to see if the current request is a redirection """
     return path_alias.get_redirect([request.full_path, request.path])
 
+
 def render_error(category, error_message, error_codes, exception=None):
-    if type(error_codes) == int:
+    """ Render an error page.
+
+    Arguments:
+
+    category -- The category of the request
+    error_message -- The message to provide to the error template
+    error_codes -- The applicable HTTP error code(s). Will usually be an
+        integer or a list of integers; the HTTP error response will always
+        be the first error code in the list, and the others are alternates
+        for looking up the error template to use.
+    exception -- Any exception that led to this error page
+    """
+
+    if isinstance(error_codes, int):
         error_codes = [error_codes]
 
     error_code = error_codes[0]
@@ -61,28 +106,42 @@ def render_error(category, error_message, error_codes, exception=None):
     if template:
         return render_template(
             template.filename,
-            error={'code':error_code, 'message':error_message},
+            error={'code': error_code, 'message': error_message},
             exception=exception,
             template=template), error_code
 
     # no template found, so fall back to default Flask handler
-    flask.abort(error_code)
+    return flask.abort(error_code)
+
 
 def render_exception(error):
-    _,_,category = str.partition(request.path, '/')
+    """ Catch-all renderer for the top-level exception handler """
+    _, _, category = str.partition(request.path, '/')
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
         'args': error.args
-        })
+    })
+
 
 def render_path_alias(path):
+    """ Render a known path-alias (used primarily for Dreamhost .php redirects) """
+
     redir = path_alias.get_redirect('/' + path)
     if not redir:
         return render_error('', 'Path redirection not found', 404)
     return redirect(redir)
 
+
+@cache.cached(key_prefix=caching.make_category_key)
 def render_category(category='', template='index'):
+    """ Render a category page.
+
+    Arguments:
+
+    category -- The category to render
+    template -- The template to render it with
+    """
     # See if this is an aliased path
     redir = get_redirect()
     if redir:
@@ -95,17 +154,17 @@ def render_category(category='', template='index'):
     if category:
         # See if there's any entries for the view...
         if not model.Entry.get_or_none((model.Entry.category == category) |
-            (model.Entry.category.startswith(category + '/'))):
+                                       (model.Entry.category.startswith(category + '/'))):
             return render_error(category, 'Category not found', 404)
 
     tmpl = map_template(category, template)
 
     if not tmpl:
        # this might actually be a malformed category URL
-        test_path = os.path.join(category,template)
+        test_path = os.path.join(category, template)
         record = model.Entry.get_or_none(model.Entry.category == test_path)
         if record:
-            return redirect(url_for('category',category=test_path))
+            return redirect(url_for('category', category=test_path))
 
         # nope, we just don't know what this is
         return render_error(category, 'Template not found', 400)
@@ -117,18 +176,29 @@ def render_category(category='', template='index'):
 
     view_obj = View(view_spec)
     return render_template(tmpl.filename,
-        category=Category(category),
-        view=view_obj,
-        template=tmpl), { 'Content-Type': mimetype(tmpl) }
+                           category=Category(category),
+                           view=view_obj,
+                           template=tmpl), {'Content-Type': mime_type(tmpl)}
 
-def render_entry(entry_id, slug_text='', category=''):
+
+@cache.cached(key_prefix=caching.make_entry_key)
+def render_entry(entry_id, slug_text='', category=''):  # pylint: disable=too-many-return-statements
+    """ Render an entry page.
+
+    Arguments:
+
+    entry_id -- The numeric ID of the entry to render
+    slug_text -- The expected URL slug text
+    category -- The expected category
+    """
+
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
     if not record:
         # It's not a valid entry, so see if it's a redirection
         path_redirect = get_redirect()
         if path_redirect:
-            return redirect(path_redir)
+            return redirect(path_redirect)
 
         logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
         return render_error(category, 'Entry not found', 404)
@@ -165,9 +235,9 @@ def render_entry(entry_id, slug_text='', category=''):
 
         # Redirect to the canonical URL
         return redirect(url_for('entry',
-            entry_id=entry_id,
-            category=record.category,
-            slug_text=record.slug_text))
+                                entry_id=entry_id,
+                                category=record.category,
+                                slug_text=record.slug_text))
 
     # if the entry canonically redirects, do that now
     entry_redirect = entry_obj.get('Redirect-To')
@@ -179,7 +249,6 @@ def render_entry(entry_id, slug_text='', category=''):
         return render_error(category, 'Entry template not found', 400)
 
     return render_template(tmpl.filename,
-        entry=entry_obj,
-        category=Category(category),
-        template=tmpl), { 'Content-Type': mimetype(tmpl) }
-
+                           entry=entry_obj,
+                           category=Category(category),
+                           template=tmpl), {'Content-Type': mime_type(tmpl)}
