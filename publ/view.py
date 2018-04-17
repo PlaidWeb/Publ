@@ -23,7 +23,7 @@ class View:
         # filter out any priority override things
         spec = {
             k: v for k, v in input_spec.items()
-            if k not in OFFSET_PRIORITY and k not in PAGINATION_PRIORITY
+            if k not in [*OFFSET_PRIORITY, *PAGINATION_PRIORITY]
         }
 
         # pull in the first offset type that appears
@@ -39,9 +39,7 @@ class View:
                 break
 
         self.spec = spec
-
         self._where = queries.build_query(spec)
-
         self._query = model.Entry.select().where(self._where)
 
         if 'limit' in spec:
@@ -57,26 +55,27 @@ class View:
 
         self.link = utils.CallableProxy(self._link)
 
-    ''' Return a spec where all pagination stuff has been removed '''
-
     def _spec_filtered(self):
+        # Return a version of our spec where all pagination stuff has been
+        # removed
         return {k: v for k, v in self.spec.items()
-                if k not in OFFSET_PRIORITY
-                and k not in PAGINATION_PRIORITY}
+                if k not in [*OFFSET_PRIORITY, *PAGINATION_PRIORITY]}
 
     def __str__(self):
         return str(self._link())
 
     def _link(self, template='', absolute=False):
         args = {}
-        for k, v in self.spec.items():
+        for k, val in self.spec.items():
             if k in ['date', 'last', 'first', 'before', 'after']:
-                if isinstance(v, (str, int)):
-                    args[k] = v
+                if isinstance(val, (Entry, model.BaseModel, utils.CallableProxy)):
+                    # the item was an object, so we want the object's id
+                    args[k] = val.id
+                elif isinstance(val, (str, int)):
+                    args[k] = val
                 else:
-                    # the item was an object, so we actually want the object's
-                    # id
-                    args[k] = v.id
+                    raise ValueError(
+                        "key {} is of type {}".format(k, type(val)))
 
         return flask.url_for('category',
                              **args,

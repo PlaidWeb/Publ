@@ -4,6 +4,8 @@ import flask
 from . import rendering, model, index, caching
 from .caching import cache
 
+import config
+
 
 def setup(app):
     for route in [
