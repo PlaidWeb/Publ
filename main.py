@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-# Main Publ application
+""" Main Publ application """
 
 import os
+import logging
+import logging.handlers
+
+import flask
 
 import config
 import publ
-import logging, logging.handlers
 
-import flask
 
 if not os.path.exists(config.log_directory):
     os.mkdir(config.log_directory)
@@ -18,35 +20,36 @@ if os.path.isfile('logging.conf'):
     logging.config.fileConfig('logging.conf')
 else:
     logging.basicConfig(level=logging.INFO,
-        handlers=[
-            logging.handlers.TimedRotatingFileHandler('tmp/publ.log'),
-            logging.StreamHandler()
-        ])
+                        handlers=[
+                            logging.handlers.TimedRotatingFileHandler(
+                                'tmp/publ.log'),
+                            logging.StreamHandler()
+                        ])
 
 logging.info("Setting up")
 
-# TODO https://github.com/fluffy-critter/Publ/issues/20
-# move to app.config.from_object
-app = flask.Flask(__name__,
-    static_folder=config.static_directory,
-    static_path=config.static_path,
-    template_folder=config.template_directory)
-app.config['SERVER_NAME'] = config.server_name
+
+def startup(name):
+    """ Build the Flask application. Wrapped in a function to keep pylint happy. """
+    # TODO https://github.com/fluffy-critter/Publ/issues/20
+    # move to app.config.from_object
+    flask_app = flask.Flask(name,
+                            static_folder=config.static_directory,
+                            static_path=config.static_path,
+                            template_folder=config.template_directory)
+    flask_app.config['SERVER_NAME'] = config.server_name
+    publ.setup(flask_app)
+    return flask_app
+
+app = startup(__name__)  # pylint: disable=invalid-name
+
 
 @app.after_request
-def set_cache_expiry(r):
-    r.headers['Cache-Control'] = 'public, max-age=300'
-    return r
+def set_cache_expiry(req):
+    """ Set the cache control headers """
+    req.headers['Cache-Control'] = 'public, max-age=300'
+    return req
 
-publ.setup(app)
-
-def scan_index():
-    publ.model.create_tables()
-    publ.index.scan_index(config.content_directory)
-    publ.index.background_scan(config.content_directory)
-
-scan_index()
 
 if __name__ == "__main__":
-    app.run(port=os.environ.get('PORT',5000))
-
+    app.run(port=os.environ.get('PORT', 5000))
