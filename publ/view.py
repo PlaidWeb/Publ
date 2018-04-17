@@ -68,11 +68,11 @@ class View:
         args = {}
         for k, val in self.spec.items():
             if k in ['date', 'last', 'first', 'before', 'after']:
-                if isinstance(val, (Entry, model.BaseModel, utils.CallableProxy)):
+                if isinstance(val, (str, int)):
+                    args[k] = val
+                elif hasattr(val, 'id'):
                     # the item was an object, so we want the object's id
                     args[k] = val.id
-                elif isinstance(val, (str, int)):
-                    args[k] = val
                 else:
                     raise ValueError(
                         "key {} is of type {}".format(k, type(val)))
