@@ -1,16 +1,24 @@
 # category.py
-# The Category object passed to entry and category views
-
-from . import model
-from . import utils
-from flask import url_for
+""" The Category object passed to entry and category views """
 
 import os
 
+from flask import url_for
+
+from . import model
+from . import utils
+
 
 class Category:
+    """ Wrapper for category information """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, path):
+        """ Initialize a category wrapper
+
+        path -- the path to the category
+        """
+
         self.path = path
         self.basename = os.path.basename(path)
 
@@ -39,13 +47,21 @@ class Category:
         return self.path
 
     def __getattr__(self, name):
-        # Lazily bind related objects
+        """ Lazily bind related objects """
+        # pylint: disable=attribute-defined-outside-init
         if name == 'parent':
             self.parent = Category(self._parent) if (
                 self._parent != None) else None
             return self.parent
 
+        raise AttributeError("Unknown category attribute {}".format(name))
+
     def _get_subcats(self, recurse=False):
+        """ Get the subcategories of this category
+
+        recurse -- whether to include their subcategories as well
+        """
+
         if recurse:
             # No need to filter
             return [Category(e.category) for e in self._subcats_recursive]
