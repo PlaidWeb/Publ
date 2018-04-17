@@ -124,9 +124,10 @@ def where_entry_date(datespec):
 
 def get_entry(entry):
     """ Helper function to get an entry by ID or by object """
-    from .entry import Entry
-    if isinstance(entry, (Entry, model.Entry, utils.CallableProxy)):
+
+    if hasattr(entry, 'id'):
         return entry
+
     if isinstance(entry, (int, str)):
         return model.Entry.get(model.Entry.id == int(entry))
     raise ValueError("entry is of unknown type {}".format(type(entry)))
