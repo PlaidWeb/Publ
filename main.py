@@ -36,7 +36,7 @@ def startup(name):
     flask_app = flask.Flask(name,
                             static_folder=config.static_directory,
                             static_path=config.static_path,
-                            template_folder=config.template_directory)  # pylint: disable=invalid-name
+                            template_folder=config.template_directory)
     flask_app.config['SERVER_NAME'] = config.server_name
     publ.setup(flask_app)
     return flask_app
