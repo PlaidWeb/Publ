@@ -15,6 +15,7 @@ arrow = "*"
 misaka = "*"
 pygments = "*"
 flask-cache = "*"
+pylint = "*"
 
 
 [dev-packages]

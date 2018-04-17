@@ -7,7 +7,9 @@ from flask import url_for
 
 import os
 
+
 class Category:
+
     def __init__(self, path):
         self.path = path
         self.basename = os.path.basename(path)
@@ -16,7 +18,8 @@ class Category:
 
         subcat_query = model.Entry.select(model.Entry.category).distinct()
         if path:
-            subcat_query = subcat_query.where(model.Entry.category.startswith(path + '/'))
+            subcat_query = subcat_query.where(
+                model.Entry.category.startswith(path + '/'))
         else:
             subcat_query = subcat_query.where(model.Entry.category != path)
 
@@ -28,21 +31,23 @@ class Category:
 
     def _link(self, template='', absolute=False):
         return url_for('category',
-            category=self.path,
-            template=template,
-            _external=absolute)
+                       category=self.path,
+                       template=template,
+                       _external=absolute)
 
     def __str__(self):
         return self.path
 
-    ''' Lazily bind related objects '''
     def __getattr__(self, name):
+        # Lazily bind related objects
         if name == 'parent':
-            self.parent = Category(self._parent) if (self._parent != None) else None
+            self.parent = Category(self._parent) if (
+                self._parent != None) else None
             return self.parent
 
     def _get_subcats(self, recurse=False):
         if recurse:
+            # No need to filter
             return [Category(e.category) for e in self._subcats_recursive]
 
         # get all the subcategories, with only the first subdir added
