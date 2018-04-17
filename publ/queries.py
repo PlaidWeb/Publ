@@ -1,22 +1,30 @@
 # queries.py
-# Collection of commonly-used queries
+""" Collection of commonly-used queries """
+
+import arrow
 
 from . import model, utils
-import arrow
-import re
 
 
-def where_entry_visible():
-    # Generate a where clause for currently-visible entries
-    return (model.Entry.status == model.PublishStatus.PUBLISHED) |
+def where_entry_visible(date=None):
+    """ Generate a where clause for currently-visible entries
+
+    Arguments:
+
+    date -- The date to generate it relative to (defaults to right now)
+    """
+
+    return (
+        (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (
             (model.Entry.status == model.PublishStatus.SCHEDULED) &
-            (model.Entry.entry_date <= arrow.utcnow().datetime)
+            (model.Entry.entry_date <= (date or arrow.utcnow().datetime))
         )
+    )
 
 
 def where_entry_visible_future():
-    # Generate a where clause for entries that are visible now or in the future
+    """ Generate a where clause for entries that are visible now or in the future """
     return (
         (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (model.Entry.status == model.PublishStatus.SCHEDULED)
@@ -24,7 +32,7 @@ def where_entry_visible_future():
 
 
 def where_entry_category(category, recurse=False):
-    # Generate a where clause for a particular category
+    """ Generate a where clause for a particular category """
     if category or not recurse:
         cat_where = (model.Entry.category == category)
 
@@ -39,7 +47,10 @@ def where_entry_category(category, recurse=False):
 
 
 def where_before_entry(entry):
-    # Generate a where clause for prior entries
+    """ Generate a where clause for prior entries
+
+    entry -- The entry of reference
+    """
     return (model.Entry.entry_date < entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id < entry.id)
@@ -47,7 +58,10 @@ def where_before_entry(entry):
 
 
 def where_after_entry(entry):
-    # Generate a where clause for later entries
+    """ Generate a where clause for later entries
+
+    entry -- the entry of reference
+    """
     return (model.Entry.entry_date > entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id > entry.id)
@@ -55,7 +69,10 @@ def where_after_entry(entry):
 
 
 def where_entry_last(entry):
-    # Generate a where clause where this is the last entry
+    """ Generate a where clause where this is the last entry
+
+    entry -- the entry of reference
+    """
     return (model.Entry.entry_date < entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id <= entry.id)
@@ -63,7 +80,10 @@ def where_entry_last(entry):
 
 
 def where_entry_first(entry):
-    # Generate a where clause where this is the first entry
+    """ Generate a where clause where this is the first entry
+
+    entry -- the entry of reference
+    """
     return (model.Entry.entry_date > entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id >= entry.id)
@@ -71,23 +91,30 @@ def where_entry_first(entry):
 
 
 def where_entry_type(entry_type):
-    # Generate a where clause for entries of certain types
+    """ Generate a where clause for entries of certain types
+
+    entry_type -- one or more entries to check against
+    """
     if isinstance(entry_type, list):
-        return (model.Entry.entry_type << entry_type)
-    else:
-        return (model.Entry.entry_type == entry_type)
+        return model.Entry.entry_type << entry_type
+    return model.Entry.entry_type == entry_type
 
 
 def where_entry_type_not(entry_type):
-    # Generate a where clause for entries that aren't of certain types
+    """ Generate a where clause for entries that aren't of certain types
+
+    entry_type -- one or more entries to check against
+    """
     if isinstance(entry_type, list):
-        return (model.Entry.entry_type.not_in(entry_type))
-    else:
-        return (model.Entry.entry_type != entry_type)
+        return model.Entry.entry_type.not_in(entry_type)
+    return model.Entry.entry_type != entry_type
 
 
 def where_entry_date(datespec):
-    # Where clause for entries which match a textual date spec
+    """ Where clause for entries which match a textual date spec
+
+    datespec -- The date spec to check for, in YYYY[[-]MM[[-]DD]] format
+    """
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
@@ -96,7 +123,7 @@ def where_entry_date(datespec):
 
 
 def get_entry(entry):
-    # Get an entry by ID or by object
+    """ Helper function to get an entry by ID or by object """
     from .entry import Entry
     if isinstance(entry, (Entry, model.Entry, utils.CallableProxy)):
         return entry
@@ -106,7 +133,20 @@ def get_entry(entry):
 
 
 def build_query(spec):
-    # build the where clause based on a view specification
+    """ build the where clause based on a view specification
+
+    spec -- The view specification. Contains the following possible values:
+        future -- Boolean; whether to include entries from the future
+        category -- Which category to limit to
+        recurse -- Whether to include subcategories
+        entry_type -- one or more entry types to include
+        entry_type_not -- one or more entry types to exclude
+        date -- a date spec
+        last -- the last entry to end a view on
+        first -- the first entry to start a view on
+        before -- get entries from before this one
+        after -- get entries from after this one
+    """
 
     # primarily restrict by publication status
     if spec.get('future', False):
@@ -136,9 +176,9 @@ def build_query(spec):
         where = where & where_entry_first(get_entry(spec['first']))
 
     if 'before' in spec:
-        where = where & where_entry_before(get_entry(spec['before']))
+        where = where & where_before_entry(get_entry(spec['before']))
 
     if 'after' in spec:
-        where = where & where_query_after(get_entry(spec['after']))
+        where = where & where_after_entry(get_entry(spec['after']))
 
     return where
