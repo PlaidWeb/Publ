@@ -5,8 +5,9 @@ from . import model, utils
 import arrow
 import re
 
-''' Where clause for currently-visible entries '''
+
 def where_entry_visible():
+    # Generate a where clause for currently-visible entries
     return (
         (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (
@@ -15,84 +16,98 @@ def where_entry_visible():
         )
     )
 
-''' Where clause for entries visible in the future '''
+
 def where_entry_visible_future():
+    # Generate a where clause for entries that are visible now or in the future
     return (
         (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (model.Entry.status == model.PublishStatus.SCHEDULED)
     )
 
-''' Where clause for entries in a category '''
+
 def where_entry_category(category, recurse=False):
+    # Generate a where clause for a particular category
     if category or not recurse:
         cat_where = (model.Entry.category == category)
 
         if recurse:
             # We're recursing and aren't in /, so add the prefix clause
-            cat_where = cat_where | (model.Entry.category.startswith(category + '/'))
+            cat_where = cat_where | (
+                model.Entry.category.startswith(category + '/'))
     else:
         cat_where = True
 
     return cat_where
 
-''' Where clauses for preceding entries '''
+
 def where_before_entry(entry):
+    # Generate a where clause for prior entries
     return (model.Entry.entry_date < entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id < entry.id)
     )
 
-''' Where clause for succeeding entries '''
+
 def where_after_entry(entry):
+    # Generate a where clause for later entries
     return (model.Entry.entry_date > entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id > entry.id)
     )
 
-''' Where clauses for entries where this is the last one '''
+
 def where_entry_last(entry):
+    # Generate a where clause where this is the last entry
     return (model.Entry.entry_date < entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id <= entry.id)
     )
 
-''' Where clause for entries where this is the first one '''
+
 def where_entry_first(entry):
+    # Generate a where clause where this is the first entry
     return (model.Entry.entry_date > entry.entry_date) | (
         (model.Entry.entry_date == entry.entry_date) &
         (model.Entry.id >= entry.id)
     )
 
-''' Where clauses for entry type inclusion '''
+
 def where_entry_type(entry_type):
-    if type(entry_type) == str:
-        return (model.Entry.entry_type == entry_type)
-    else:
+    # Generate a where clause for entries of certain types
+    if isinstance(entry_type, list):
         return (model.Entry.entry_type << entry_type)
-
-''' Where clauses for entry type exclusion '''
-def where_entry_type_not(entry_type):
-    if type(entry_type) == str:
-        return (model.Entry.entry_type != entry_type)
     else:
-        return (model.Entry.entry_type.not_in(entry_type))
+        return (model.Entry.entry_type == entry_type)
 
-''' Where clauses for a date range '''
+
+def where_entry_type_not(entry_type):
+    # Generate a where clause for entries that aren't of certain types
+    if isinstance(entry_type, list):
+        return (model.Entry.entry_type.not_in(entry_type))
+    else:
+        return (model.Entry.entry_type != entry_type)
+
+
 def where_entry_date(datespec):
+    # Where clause for entries which match a textual date spec
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
     return ((model.Entry.entry_date >= start_date.datetime) &
-        (model.Entry.entry_date <= end_date.datetime))
+            (model.Entry.entry_date <= end_date.datetime))
 
-''' Get an entry by ID or by object '''
+
 def get_entry(entry):
-    if type(entry) == int or type(entry) == str:
+    # Get an entry by ID or by object
+    if isinstance(entry, (int, str)):
         return model.Entry.get(model.Entry.id == int(entry))
-    return entry
+    if isinstance(entry, model.Entry):
+        return entry
 
-''' Generate a full where clause based on a restriction specification '''
+
 def build_query(spec):
+    # build the where clause based on a view specification
+
     # primarily restrict by publication status
     if spec.get('future', False):
         where = where_entry_visible_future()
