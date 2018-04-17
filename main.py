@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Main Publ application
+""" Main Publ application """
 
 import os
 import logging
@@ -28,21 +28,28 @@ else:
 
 logging.info("Setting up")
 
-# TODO https://github.com/fluffy-critter/Publ/issues/20
-# move to app.config.from_object
-app = flask.Flask(__name__,
-                  static_folder=config.static_directory,
-                  static_path=config.static_path,
-                  template_folder=config.template_directory)
-app.config['SERVER_NAME'] = config.server_name
+
+def startup(name):
+    """ Build the Flask application. Wrapped in a function to keep pylint happy. """
+    # TODO https://github.com/fluffy-critter/Publ/issues/20
+    # move to app.config.from_object
+    flask_app = flask.Flask(name,
+                            static_folder=config.static_directory,
+                            static_path=config.static_path,
+                            template_folder=config.template_directory)  # pylint: disable=invalid-name
+    flask_app.config['SERVER_NAME'] = config.server_name
+    publ.setup(flask_app)
+    return flask_app
+
+app = startup(__name__)  # pylint: disable=invalid-name
 
 
 @app.after_request
-def set_cache_expiry(r):
-    r.headers['Cache-Control'] = 'public, max-age=300'
-    return r
+def set_cache_expiry(req):
+    """ Set the cache control headers """
+    req.headers['Cache-Control'] = 'public, max-age=300'
+    return req
 
-publ.setup(app)
 
 if __name__ == "__main__":
     app.run(port=os.environ.get('PORT', 5000))
