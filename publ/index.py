@@ -1,49 +1,66 @@
 # index.py
-# Content indexer
+''' Content indexer '''
 
 import os
 import logging
-from . import entry
-from . import model
-import arrow
+
 import watchdog.observers
 import watchdog.events
-import flask
 
-logger = logging.getLogger(__name__)
+from . import entry
+from . import model
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 ENTRY_TYPES = ['.md', '.htm', '.html']
 
-observer = None
-watchdirs = set()
 
 def scan_file(fullpath, relpath, assign_id):
-    _,ext = os.path.splitext(fullpath)
+    """ Scan a file for the index
+
+    fullpath -- The full path to the file
+    relpath -- The path to the file, relative to its base directory
+    assign_id -- Whether to assign an ID to the file if not yet assigned
+    """
+
+    _, ext = os.path.splitext(fullpath)
 
     try:
         if ext in ENTRY_TYPES:
             return entry.scan_file(fullpath, relpath, assign_id)
 
         return True
-    except Exception as e:
+    except Exception:  # pylint: disable=broad-except
         logger.exception("Got error parsing %s", fullpath)
+    return None
+
 
 def get_last_mtime(fullpath):
+    """ Get the last known modification time for a file """
+
     record = model.FileMTime.get_or_none(model.FileMTime.file_path == fullpath)
     if record:
         return record.stat_mtime
+    return None
+
 
 def set_last_mtime(fullpath, mtime):
-    record, created = model.FileMTime.get_or_create(file_path=fullpath, defaults={'stat_mtime':mtime})
+    """ Set the last known modification time for a file """
+    record, created = model.FileMTime.get_or_create(
+        file_path=fullpath, defaults={'stat_mtime': mtime})
     if not created:
         record.stat_mtime = mtime
         record.save()
 
+
 class IndexWatchdog(watchdog.events.FileSystemEventHandler):
+    """ Watchdog handler """
+
     def __init__(self, content_dir):
         self.content_dir = content_dir
 
     def update_file(self, fullpath):
+        """ Update a file """
         relpath = os.path.relpath(fullpath, self.content_dir)
 
         if scan_file(fullpath, relpath, True):
@@ -53,46 +70,44 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
             logger.warning("Couldn't update %s", fullpath)
 
     def on_created(self, event):
+        """ on_created handler """
         logger.info("file created: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_modified(self, event):
+        """ on_modified handler """
         logger.info("file modified: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_moved(self, event):
+        """ on_moved handler """
         logger.info("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):
+        """ on_deleted handler """
         logger.info("File deleted: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
+
 def background_scan(content_dir):
-    global observer
-    global watchdirs
+    """ Start background scanning a directory for changes """
+    observer = watchdog.observers.Observer()
+    observer.schedule(IndexWatchdog(content_dir),
+                      content_dir, recursive=True)
+    logging.info("Watching %s for changes", content_dir)
+    observer.start()
 
-    if not content_dir in watchdirs:
-        start_observer = not observer
-        if start_observer:
-            observer = watchdog.observers.Observer()
-        watchdirs.add(content_dir)
-        observer.schedule(IndexWatchdog(content_dir), content_dir, recursive=True)
-        logging.info("Watching %s for changes", content_dir)
-        if start_observer:
-            logging.info("Starting observer %s", observer)
-            observer.start()
 
-''' scans the specified directory for content to ingest '''
 def scan_index(content_dir):
+    """ Scan all files in a content directory """
     fixups = []
     for root, _, files in os.walk(content_dir, followlinks=True):
         for file in files:
-            basename = file
             fullpath = os.path.join(root, file)
             relpath = os.path.relpath(fullpath, content_dir)
 

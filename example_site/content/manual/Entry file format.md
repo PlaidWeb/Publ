@@ -63,8 +63,10 @@ templates; the following headers are what Publ itself uses:
     This can be in any
     format that [Arrow](http://arrow.readthedocs.io) understands. If no timezone
     is specified it will use the timezone indicated in `config.py`.
+    ([TODO](https://github.com/fluffy-critter/Publ/issues/41); this
+    is pending an [external fix](https://github.com/crsmithdev/arrow/pull/516))
 
-    **Default value**: the creation time of the entry (and will be added to the
+    **Default value**: the ctime of the entry file (which will be added to the
     file for later).
 
 * **`Category`**: Which category to put this entry in
@@ -150,11 +152,12 @@ After the headers, you can have entry content; if the file has a `.htm` or `.htm
 extension it will just render as plain HTML, but with a `.md` extension it will
 render as [Markdown](https://en.wikipedia.org/wiki/Markdown).
 
-Publ supports [GitHub-flavored markdown](https://guides.github.com/features/mastering-markdown/),
-as well as some Publ-specific tags for things like cuts, image renditions, and galleries.
+Publ supports [GitHub-flavored markdown](https://guides.github.com/features/mastering-markdown/), specifically via [Misaka](http://misaka.61924.nl) (which in turn uses [Hoedown](https://github.com/hoedown/hoedown) — my, Earth certainly is full of things!).
 
 Code highlighting uses the [Pygments](http://pygments.org) library, which supports
 [a rather large list of syntaxes](http://pygments.org/docs/lexers/).
+
+There are also some Publ-specific extensions for things like cuts, image renditions, and galleries.
 
 ### Custom tags
 
