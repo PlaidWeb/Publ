@@ -9,6 +9,8 @@ from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
 from .view import View
+from . import caching
+from .caching import cache
 
 import config
 
@@ -20,11 +22,14 @@ extmap = {
     '.json': 'application/json'
 }
 
+
 def mimetype(template):
     # infer the content-type from the extension
-    _,ext = os.path.splitext(template.filename)
+    _, ext = os.path.splitext(template.filename)
     return extmap.get(ext, 'text/html; charset=utf-8')
 
+
+@cache.memoize()
 def map_template(orig_path, template_list):
     if type(template_list) == str:
         template_list = [template_list]
@@ -43,11 +48,14 @@ def map_template(orig_path, template_list):
             else:
                 path = None
 
+
 def static_url(path, absolute=False):
     return url_for('static', filename=path, _external=absolute)
 
+
 def get_redirect():
     return path_alias.get_redirect([request.full_path, request.path])
+
 
 def render_error(category, error_message, error_codes, exception=None):
     if type(error_codes) == int:
@@ -61,20 +69,22 @@ def render_error(category, error_message, error_codes, exception=None):
     if template:
         return render_template(
             template.filename,
-            error={'code':error_code, 'message':error_message},
+            error={'code': error_code, 'message': error_message},
             exception=exception,
             template=template), error_code
 
     # no template found, so fall back to default Flask handler
     flask.abort(error_code)
 
+
 def render_exception(error):
-    _,_,category = str.partition(request.path, '/')
+    _, _, category = str.partition(request.path, '/')
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
         'args': error.args
-        })
+    })
+
 
 def render_path_alias(path):
     redir = path_alias.get_redirect('/' + path)
@@ -82,6 +92,8 @@ def render_path_alias(path):
         return render_error('', 'Path redirection not found', 404)
     return redirect(redir)
 
+
+@cache.cached(key_prefix=caching.make_category_key)
 def render_category(category='', template='index'):
     # See if this is an aliased path
     redir = get_redirect()
@@ -95,17 +107,17 @@ def render_category(category='', template='index'):
     if category:
         # See if there's any entries for the view...
         if not model.Entry.get_or_none((model.Entry.category == category) |
-            (model.Entry.category.startswith(category + '/'))):
+                                       (model.Entry.category.startswith(category + '/'))):
             return render_error(category, 'Category not found', 404)
 
     tmpl = map_template(category, template)
 
     if not tmpl:
        # this might actually be a malformed category URL
-        test_path = os.path.join(category,template)
+        test_path = os.path.join(category, template)
         record = model.Entry.get_or_none(model.Entry.category == test_path)
         if record:
-            return redirect(url_for('category',category=test_path))
+            return redirect(url_for('category', category=test_path))
 
         # nope, we just don't know what this is
         return render_error(category, 'Template not found', 400)
@@ -117,10 +129,12 @@ def render_category(category='', template='index'):
 
     view_obj = View(view_spec)
     return render_template(tmpl.filename,
-        category=Category(category),
-        view=view_obj,
-        template=tmpl), { 'Content-Type': mimetype(tmpl) }
+                           category=Category(category),
+                           view=view_obj,
+                           template=tmpl), {'Content-Type': mimetype(tmpl)}
 
+
+@cache.cached(key_prefix=caching.make_entry_key)
 def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
@@ -165,9 +179,9 @@ def render_entry(entry_id, slug_text='', category=''):
 
         # Redirect to the canonical URL
         return redirect(url_for('entry',
-            entry_id=entry_id,
-            category=record.category,
-            slug_text=record.slug_text))
+                                entry_id=entry_id,
+                                category=record.category,
+                                slug_text=record.slug_text))
 
     # if the entry canonically redirects, do that now
     entry_redirect = entry_obj.get('Redirect-To')
@@ -179,7 +193,6 @@ def render_entry(entry_id, slug_text='', category=''):
         return render_error(category, 'Entry template not found', 400)
 
     return render_template(tmpl.filename,
-        entry=entry_obj,
-        category=Category(category),
-        template=tmpl), { 'Content-Type': mimetype(tmpl) }
-
+                           entry=entry_obj,
+                           category=Category(category),
+                           template=tmpl), {'Content-Type': mimetype(tmpl)}

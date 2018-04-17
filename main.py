@@ -38,7 +38,6 @@ def set_cache_expiry(r):
     r.headers['Cache-Control'] = 'public, max-age=300'
     return r
 
-
 publ.setup(app)
 
 def scan_index():
