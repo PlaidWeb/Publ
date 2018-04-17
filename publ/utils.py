@@ -70,7 +70,7 @@ def parse_date(datestr):
 
     match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?$', datestr)
     if not match:
-        return (arrow.get(datestr), 'day', 'YYYY-MM-DD')
+        return (arrow.get(datestr, tzinfo=config.timezone).replace(tzinfo=config.timezone), 'day', 'YYYY-MM-DD')
 
     year, month, day = match.group(1, 3, 5)
     start = arrow.Arrow(year=int(year), month=int(
