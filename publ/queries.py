@@ -8,13 +8,11 @@ import re
 
 def where_entry_visible():
     # Generate a where clause for currently-visible entries
-    return (
-        (model.Entry.status == model.PublishStatus.PUBLISHED) |
+    return (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (
             (model.Entry.status == model.PublishStatus.SCHEDULED) &
             (model.Entry.entry_date <= arrow.utcnow().datetime)
         )
-    )
 
 
 def where_entry_visible_future():
