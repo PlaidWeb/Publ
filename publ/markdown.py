@@ -58,7 +58,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if not spec:
                 continue
 
-            text += self._img_tag(spec, alt, container_args)
+            text += self._render_image(spec, container_args, alt)
 
         if container_class:
             text += '</div>'
@@ -80,54 +80,80 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
             flask.escape(text.strip()))
 
-    def _img_tag(self, spec, alt, container_args):
-        """ Given an image specification and configuration, produce an <img> tag """
-        # pylint: disable=too-many-locals
+    def _render_image(self, spec, container_args, alt_text=None):
+        """ Render an image specification into an <img> tag """
 
         try:
             path, image_args, title = self._parse_image_spec(spec)
 
-            if os.path.isabs(path):
-                search_path = self._absolute_search_path
-                path = os.path.relpath(path, "/")
-            else:
-                search_path = self._relative_search_path
+            # remote images should only use their direct configuration
+            if path.startswith('//') or '://' in path:
+                return self._remote_image(path, image_args, title, alt_text)
 
-            img = image.get_image(path, search_path)
-            if not img:
-                return ('<span class="error">Couldn\'t find image: ' +
-                        '<code>{}</code></span>'.format(flask.escape(path)))
-
-            image_args = {**container_args, **image_args}
-
-            img_1x, width, height = img.get_rendition(1, image_args)
-            img_2x, _, _ = img.get_rendition(2, image_args)
-
-            absolute = self._config.get('absolute')
-
-            img_1x = utils.static_url(img_1x, absolute)
-            img_2x = utils.static_url(img_2x, absolute)
-
-            text = '<img src="{}"'.format(img_1x)
-            if img_1x != img_2x:
-                text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
-
-            if width:
-                text += ' width="{}"'.format(width)
-            if height:
-                text += ' height="{}"'.format(height)
-
-            if alt:
-                text += ' alt="{}"'.format(flask.escape(alt))
-            if title:
-                text += ' title="{}"'.format(flask.escape(title))
-
-            text += '>'
-            return text
+            composite_args = {**container_args, **image_args}
+            return self._local_image(path, composite_args, title, alt_text)
         except Exception as err:  # pylint: disable=broad-except
             return ('<span class="error">Couldn\'t parse image spec: ' +
                     '<code>{}</code> {}</span>'.format(flask.escape(spec),
                                                        flask.escape(str(err))))
+
+    def _local_image(self, path, image_args, title, alt_text):
+        """ Render an img tag for a locally-stored image """
+
+        if os.path.isabs(path):
+            search_path = self._absolute_search_path
+            path = os.path.relpath(path, "/")
+        else:
+            search_path = self._relative_search_path
+
+        img = image.get_image(path, search_path)
+        if not img:
+            return ('<span class="error">Couldn\'t find image: ' +
+                    '<code>{}</code></span>'.format(flask.escape(path)))
+
+        img_1x, width, height = img.get_rendition(1, image_args)
+        img_2x, _, _ = img.get_rendition(2, image_args)
+
+        absolute = self._config.get('absolute')
+
+        img_1x = utils.static_url(img_1x, absolute)
+        img_2x = utils.static_url(img_2x, absolute)
+
+        text = '<img src="{}"'.format(img_1x)
+        if img_1x != img_2x:
+            text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
+
+        if width:
+            text += ' width="{}"'.format(width)
+        if height:
+            text += ' height="{}"'.format(height)
+
+        if alt_text:
+            text += ' alt="{}"'.format(flask.escape(alt_text))
+        if title:
+            text += ' title="{}"'.format(flask.escape(title))
+
+        text += '>'
+        return text
+
+    @staticmethod
+    def _remote_image(path, image_args, title, alt_text):
+        """ Render an img tag for a remotely-stored image """
+
+        text = '<img src="{}"'.format(path)
+
+        if 'width' in image_args:
+            text += ' width="{}"'.format(image_args['width'])
+        if 'height' in image_args:
+            text += ' height="{}"'.format(image_args['height'])
+
+        if title:
+            text += ' title="{}"'.format(flask.escape(title))
+        if alt_text:
+            text += ' alt="{}"'.format(flask.escape(alt_text))
+
+        text += '>'
+        return text
 
     def _parse_image_spec(self, spec):
         """ Parse an image spec out into (path,args,title) """

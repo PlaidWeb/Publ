@@ -46,12 +46,12 @@
 
             {% if entry.body %}
             <div class="preamble">
-                {{entry.body}}
+                {{entry.body(gallery_id=entry.uuid)}}
             </div>
             {% endif %}
             {% if entry.more %}
             <div class="more"><a name="more"></a>
-                {{entry.more}}
+                {{entry.more(gallery_id=entry.uuid)}}
             </div>
             {% endif %}
 

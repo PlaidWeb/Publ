@@ -65,8 +65,8 @@ TODO: templates may also get an `image()` function that allows image renditions 
 
 These options drive the behavior of image sets for use with [lightbox.js](http://www.lokeshdhakar.com/projects/lightbox2/).
 
-* **`disable_lightbox`**: Set this in the template to disable lightbox (for example, for feeds)
-* **`lightbox_id`**: An identifier for the Lightbox image set
+* **`disable_gallery`**: Set this in the template to disable lightbox (for example, for feeds)
+* **`gallery_id`**: An identifier for the Lightbox image set
     * **Note:** If this is not set, Lightbox will not be enabled, and popup renditions will not be generated
 * **`limit`**: How many images to allow in the image set (useful for feeds)
 * **`fullsize_width`**: The maximum width for the popup image
