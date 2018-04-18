@@ -15,3 +15,17 @@ Local image:
 
 ![alt text](rawr.jpg "test single image")
 
+![alt text](
+rawr.jpg{width=240} "test lightbox" |
+rawr.jpg{width=120} |
+rawr.jpg "image 3"
+)
+
+![alt text](rawr.jpg "test single image")
+
+
+asdfjklasf
+
+## test
+
+sh

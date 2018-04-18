@@ -10,8 +10,7 @@ import playhouse.db_url
 
 import config
 
-database = playhouse.db_url.connect(
-    config.database)  # pylint: disable=invalid-name
+DATABASE = playhouse.db_url.connect(config.database)
 lock = threading.Lock()  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -26,7 +25,7 @@ class BaseModel(Model):
 
     class Meta:
         """ database configuration """
-        database = database
+        database = DATABASE
 
 
 class PublishStatus(Enum):
@@ -120,9 +119,9 @@ def create_tables():
 
     if rebuild:
         logger.info("Updating database schema")
-        database.drop_tables(ALL_TYPES)
+        DATABASE.drop_tables(ALL_TYPES)
 
-    database.create_tables(ALL_TYPES)
+    DATABASE.create_tables(ALL_TYPES)
 
     version_record, _ = Global.get_or_create(key='schema_version')
     version_record.int_value = SCHEMA_VERSION
