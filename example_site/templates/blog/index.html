@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Publ {{category.basename.title()}}</title>
+    <title>Publ {{category.basename.title()}}
+    {% if view.title %}
+        : {{ view.title(day="MMMM D, YYYY",month="MMMM YYYY") }}
+    {% endif %}
+    </title>
     <link rel="stylesheet" href="{{ static('style.css') }}" />
     <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
     <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
@@ -31,16 +35,6 @@
 <div id="content">
     {% set content = view(entry_type_not='sidebar',limit=10) %}
 
-    <div class="nav">
-        {% if content.previous %}
-        <a href="{{content.previous.link}}" class="previous">Previous page</a>
-        {% endif %}
-
-        {% if content.next %}
-        <a href="{{content.next.link}}" class="next">Next page</a>
-        {% endif %}
-    </div>
-
 
     <div class="entries">
         {% for entry in content.entries %}
@@ -61,11 +55,23 @@
 
     <div class="nav">
         {% if content.previous %}
-        <a href="{{content.previous.link}}" class="previous">Previous page</a>
+        <a href="{{content.previous.link}}" class="previous">
+            {% if content.previous.title %}
+            {{content.previous.title(day="MMMM D, YYYY",month="MMMM YYYY")}}
+            {% else %}
+            Newer entries
+            {% endif %}
+        </a>
         {% endif %}
 
         {% if content.next %}
-        <a href="{{content.next.link}}" class="next">Next page</a>
+        <a href="{{content.next.link}}" class="next">
+            {% if content.next.title %}
+            {{content.next.title(day="MMMM D, YYYY",month="MMMM YYYY")}}
+            {% else %}
+            Older entries
+            {% endif %}
+        </a>
         {% endif %}
     </div>
 
