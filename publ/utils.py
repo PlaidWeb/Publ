@@ -2,6 +2,7 @@
 """ Some useful utilities that don't belong anywhere else """
 
 import re
+import os
 
 import arrow
 
@@ -98,6 +99,6 @@ def find_file(path, relative_to):
     if isinstance(relative_to, str):
         relative_to = [relative_to]
     for relative in relative_to:
-        candidate = os.path.normalize(os.path.join(relative, path))
+        candidate = os.path.normpath(os.path.join(relative, path))
         if os.path.isfile(candidate):
             return candidate
