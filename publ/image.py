@@ -4,11 +4,14 @@
 import os
 import math
 import hashlib
+import logging
 
-import PIL
+import PIL.Image
 import config
 
 from . import model, utils
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class Image:
@@ -126,10 +129,11 @@ def get_image(path, relative_to):
     mtime = os.stat(file_path).st_mtime
     if not record or record.mtime < mtime:
         # Reindex the file
+        logger.info("Updating image %s", file_path)
 
         # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
         md5 = hashlib.md5()
-        with open(file_path, 'r') as file:
+        with open(file_path, 'rb') as file:
             for chunk in iter(lambda: file.read(16384), b""):
                 md5.update(chunk)
 
