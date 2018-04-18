@@ -36,16 +36,18 @@ TODO: templates may also get an `image()` function that allows image renditions 
 * **`scale`**: What factor to scale the source image down by (e.g. 3 = the display size should be 33%)
 * **`scale_min_width`**: The minimum width to target based on scaling
 * **`scale_min_height`**: The minimum height to target based on scaling
-* **`width`**: The maximum width to target
-* **`height`**: The maximum height to target
-* **`force_width`**: A value to force the width to (intended for templates)
-* **`force_height`**: A value to force the height to (intended for templates)
+* **`max_width`**: The maximum width to target
+* **`max_height`**: The maximum height to target
+* **`force_max_width`**: A value to force the width to (intended for templates)
+* **`force_max_height`**: A value to force the height to (intended for templates)
 * **`resize`**: If both `width` and `height` are specified, how to fit the image into the rectangle if the aspect ratio doesn't match
     * `fit`: Fit the image into the space (default)
     * `fill`: Fill the space with the image, cropping off the sides
     * `stretch`: Distort the image to fit
 * **`fill_crop_x`**: If `resize="fill"`, where to take the cropping (0=left, 1=right); default=0.5
 * **`fill_crop_y`**: If `resize="fill"`, where to take the cropping (0=top, 1=bottom); default=0.5
+
+==**Note:** Images will never be scaled to larger than their native resolution==
 
 ### File format options
 
@@ -63,11 +65,11 @@ These options drive the behavior of image sets for use with [lightbox.js](http:/
 * **`lightbox_id`**: An identifier for the Lightbox image set
     * **Note:** If this is not set, Lightbox will not be enabled, and popup renditions will not be generated
 * **`limit`**: How many images to allow in the image set (useful for feeds)
-* **`popup_width`**: The maximum width for the popup image
-* **`popup_height`**: The maximum height for the popup image
-* **`popup_quality`**: The JPEG quality level to use for the popup image
-* **`popup_format`**: What format the popup image should be in (defaults to the original format)
-* **`popup_background`**: The background color to use when converting transparent images (such as .png) to non-transparent formats (such as .jpg)
+* **`fullsize_width`**: The maximum width for the popup image
+* **`fullsize_height`**: The maximum height for the popup image
+* **`fullsize_quality`**: The JPEG quality level to use for the popup image
+* **`fullsize_format`**: What format the popup image should be in (defaults to the original format)
+* **`fullsize_background`**: The background color to use when converting transparent images (such as .png) to non-transparent formats (such as .jpg)
 * **`container_class`**: If set, wraps the gallery in a `<div>` with the specified `class` attribute.
 
 ## Useful template examples
