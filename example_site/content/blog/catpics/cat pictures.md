@@ -18,5 +18,7 @@ IMG_20130701_223914.jpg "Why are there cat photos here?"
 
 .....
 
+(If it isn't obvious, the images all have captions. Try clicking on one!)
+
 Anyway, this means Publ is now ready for me to start migrating my site over to
 it. Eep/yay!
