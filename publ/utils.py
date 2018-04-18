@@ -102,18 +102,18 @@ def parse_date(datestr):
     raise ValueError("Could not parse date: {}".format(datestr))
 
 
-def find_file(path, relative_to):
+def find_file(path, search_path):
     """ Find a file by relative path. Arguments:
 
     path -- the image's filename
-    relative_to -- a search path or list of search paths
+    search_path -- a list of directories to check in
 
     Returns: the resolved file path
     """
 
-    if isinstance(relative_to, str):
-        relative_to = [relative_to]
-    for relative in relative_to:
+    if isinstance(search_path, str):
+        search_path = [search_path]
+    for relative in search_path:
         candidate = os.path.normpath(os.path.join(relative, path))
         if os.path.isfile(candidate):
             return candidate

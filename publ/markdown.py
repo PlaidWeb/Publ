@@ -3,6 +3,7 @@
 
 import re
 import ast
+import os
 
 import misaka
 import flask
@@ -21,10 +22,13 @@ ENABLED_EXTENSIONS = [
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting """
 
-    def __init__(self, config, image_search_path):
+    def __init__(self, config):
         super().__init__()
         self._config = config
-        self._image_search_path = image_search_path
+        self._relative_search_path = config.get(
+            'relative_search_path', config.get('search_path'))
+        self._absolute_search_path = config.get(
+            'absolute_search_path', config.get('search_path'))
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition """
@@ -38,7 +42,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = self._parse_alt_text(alt)
 
-        spec_list = image_specs.split('|')
+        spec_list = [spec.strip() for spec in image_specs.split('|')]
+
+        limit = self._config.get('limit')
+        if limit:
+            spec_list = spec_list[:limit]
 
         container_args = {**self._config, **container_args}
 
@@ -46,41 +54,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
         if container_class:
             text += '<div class="{}">'.format(flask.escape(container_class))
 
-        absolute = self._config.get('absolute')
-
         for spec in spec_list:
-            path, image_args, title = self._parse_image_spec(spec.strip())
-
-            img = image.get_image(path, self._image_search_path)
-            if not img:
-                text += '<span class="error">Couldn\'t find image: {}</span>'.format(
-                    flask.escape(path))
+            if not spec:
                 continue
 
-            image_args = {**container_args, **image_args}
-
-            rendition_args = self._build_rendition_args(image_args)
-            img_1x, width, height = img.get_rendition(1, rendition_args)
-            img_2x, _, _ = img.get_rendition(2, rendition_args)
-
-            img_1x = utils.static_url(img_1x, absolute)
-            img_2x = utils.static_url(img_2x, absolute)
-
-            text += '<img src="{}"'.format(img_1x)
-            if img_1x != img_2x:
-                text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
-
-            if width:
-                text += ' width="{}"'.format(width)
-            if height:
-                text += ' height="{}"'.format(height)
-
-            if alt:
-                text += ' alt="{}"'.format(flask.escape(alt))
-            if title:
-                text += ' title="{}"'.format(flask.escape(title))
-
-            text += '</img>'
+            text += self._img_tag(spec, alt, container_args)
 
         if container_class:
             text += '</div>'
@@ -101,6 +79,54 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
             flask.escape(text.strip()))
+
+    def _img_tag(self, spec, alt, container_args):
+        """ Given an image specification and configuration, produce an <img> tag """
+        # pylint: disable=too-many-locals
+
+        try:
+            path, image_args, title = self._parse_image_spec(spec)
+
+            if os.path.isabs(path):
+                search_path = self._absolute_search_path
+                path = os.path.relpath(path, "/")
+            else:
+                search_path = self._relative_search_path
+
+            img = image.get_image(path, search_path)
+            if not img:
+                return ('<span class="error">Couldn\'t find image: ' +
+                        '<code>{}</code></span>'.format(flask.escape(path)))
+
+            image_args = {**container_args, **image_args}
+
+            img_1x, width, height = img.get_rendition(1, image_args)
+            img_2x, _, _ = img.get_rendition(2, image_args)
+
+            absolute = self._config.get('absolute')
+
+            img_1x = utils.static_url(img_1x, absolute)
+            img_2x = utils.static_url(img_2x, absolute)
+
+            text = '<img src="{}"'.format(img_1x)
+            if img_1x != img_2x:
+                text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
+
+            if width:
+                text += ' width="{}"'.format(width)
+            if height:
+                text += ' height="{}"'.format(height)
+
+            if alt:
+                text += ' alt="{}"'.format(flask.escape(alt))
+            if title:
+                text += ' title="{}"'.format(flask.escape(title))
+
+            text += '>'
+            return text
+        except:  # pylint: disable=broad-except
+            return ('<span class="error">Couldn\'t parse image spec: ' +
+                    '<code>{}</code></span>'.format(flask.escape(spec)))
 
     def _parse_image_spec(self, spec):
         """ Parse an image spec out into (path,args,title) """
@@ -168,20 +194,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         return kwargs
 
-    @staticmethod
-    def _build_rendition_args(args):
-        return {
-            'max_width': args.get('force_width', args.get('width')),
-            'max_height': args.get('force_height', args.get('height')),
-            'input_scale': args.get('scale'),
-            'scale_min_width': args.get('scale_min_width'),
-            'scale_min_height': args.get('scale_min_height')
-        }
 
-
-def to_html(text, search_path, config):
+def to_html(text, config):
     """ Convert Markdown text to HTML """
 
-    processor = misaka.Markdown(HtmlRenderer(config, search_path),
+    processor = misaka.Markdown(HtmlRenderer(config),
                                 extensions=ENABLED_EXTENSIONS)
     return processor(text)

@@ -23,9 +23,8 @@ rawr.jpg "image 3"
 
 ![alt text](rawr.jpg "test single image")
 
+![broken image](alsdkfjaks asdlfkas fsalkfj salfsa)
 
-asdfjklasf
+![broken spec](foo{123[]})
 
-## test
-
-sh
+![broken spec](poiu{100} foo{200})

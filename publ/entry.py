@@ -55,9 +55,15 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
-        self._search_path = [
+        self._relative_search_path = [
             os.path.dirname(self._record.file_path),
             os.path.join(config.content_directory, self._record.category),
+            config.content_directory,
+            config.static_directory,
+        ]
+        self._absolute_search_path = [
+            config.content_directory,
+            config.static_directory,
         ]
 
     def _link(self, **kwargs):
@@ -114,7 +120,12 @@ class Entry:
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
-            return flask.Markup(markdown.to_html(text, self._search_path, config=kwargs))
+            md_config = {
+                **kwargs,
+                "relative_search_path": self._relative_search_path,
+                "absolute_search_path": self._absolute_search_path
+            }
+            return flask.Markup(markdown.to_html(text, config=md_config))
         return flask.Markup(text)
 
     def __getattr__(self, name):
