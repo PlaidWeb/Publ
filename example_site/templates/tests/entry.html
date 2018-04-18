@@ -3,6 +3,7 @@
 <head>
     <title>{{ entry.title }}</title>
     <link rel="stylesheet" href="{{ static('style.css') }}">
+    <link rel="stylesheet" href="{{ static('lightbox/css/lightbox.min.css') }}">
 </head>
 <body>
 <h1><a href="{{category.link}}">Publ: {{ entry.title }}</a></h1>
@@ -58,5 +59,6 @@
 </div>
 </div>
 
+<script src="{{ static('lightbox/js/lightbox-plus-jquery.min.js') }}"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ import flask
 
 import config
 
-from . import rendering, model, index, caching, view
+from . import rendering, model, index, caching, view, utils
 from .caching import cache
 
 
@@ -37,7 +37,7 @@ def setup(app):
         app.register_error_handler(Exception, rendering.render_exception)
 
     app.jinja_env.globals.update(
-        get_view=view.get_view, arrow=arrow, static=rendering.static_url)
+        get_view=view.get_view, arrow=arrow, static=utils.static_url)
 
     app.before_request(rescan_index)
     app.after_request(set_cache_expiry)
@@ -50,12 +50,12 @@ def setup(app):
     index.background_scan(config.content_directory)
 
 
-last_scan = None
+last_scan = None  # pylint: disable=invalid-name
 
 
 def rescan_index():
     """ Rescan the index if it's been more than a minute since the last scan """
-    global last_scan
+    global last_scan  # pylint: disable=invalid-name,global-statement
     now = time.time()
     if not last_scan or now - last_scan > 60:
         index.scan_index(config.content_directory)

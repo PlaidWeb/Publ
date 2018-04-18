@@ -4,6 +4,7 @@
     <title>{{entry['title'] | safe}}</title>
 
     <link rel="stylesheet" href="{{ static('style.css') }}">
+    <link rel="stylesheet" href="{{ static('lightbox/css/lightbox.min.css') }}">
 
     <!-- Include MathJax to support math rendering -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
@@ -46,12 +47,12 @@
 
             {% if entry.body %}
             <div class="preamble">
-                {{entry.body}}
+                {{entry.body(gallery_id=entry.uuid)}}
             </div>
             {% endif %}
             {% if entry.more %}
             <div class="more"><a name="more"></a>
-                {{entry.more}}
+                {{entry.more(gallery_id=entry.uuid)}}
             </div>
             {% endif %}
 
@@ -59,6 +60,8 @@
 
     </div>
 </div>
+
+<script src="{{ static('lightbox/js/lightbox-plus-jquery.min.js') }}"></script>
 
 </body>
 </html>

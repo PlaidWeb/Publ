@@ -8,9 +8,8 @@ How to configure images and galleries for display
 
 .....
 
-## Important note
 
-This is a [very rough draft and is not yet implemented](https://github.com/fluffy-critter/Publ/issues/9).
+==**Note:** This is a [very rough draft and is not yet implemented](https://github.com/fluffy-critter/Publ/issues/9).==
 
 ## Image rendition support
 
@@ -20,11 +19,15 @@ See the [entry format article](/entry-format#image-renditions)
 
 ### In templates
 
-Pass thes in as parameters to `entry.body` and/or `entry.more`.
+Pass these in as parameters to `entry.body` and/or `entry.more`.
 
 TODO: templates may also get an `image()` function that allows image renditions to be part of the template itself (not just entries); this will likely allow rendering out both the raw URL and an `<img src>` tag as appropriate.
 
 ## Configuration values
+
+### General configuration
+
+* **`absolute`**: Whether to produce absolute URLs
 
 ### Layout
 
@@ -37,15 +40,18 @@ TODO: templates may also get an `image()` function that allows image renditions 
 * **`scale`**: What factor to scale the source image down by (e.g. 3 = the display size should be 33%)
 * **`scale_min_width`**: The minimum width to target based on scaling
 * **`scale_min_height`**: The minimum height to target based on scaling
-* **`width`**: The maximum width to target
-* **`height`**: The maximum height to target
-* **`force_size`**: If `True`, don't allow the Markdown processor to override the size settings
+* **`width`**: The width to target
+* **`height`**: The height to target
+* **`max_width`**: If present and smaller than `width`, use this instead (useful for templates)
+* **`max_height`**: If present and smaller than `height`, use this instead (useful for templates)
 * **`resize`**: If both `width` and `height` are specified, how to fit the image into the rectangle if the aspect ratio doesn't match
     * `fit`: Fit the image into the space (default)
     * `fill`: Fill the space with the image, cropping off the sides
     * `stretch`: Distort the image to fit
 * **`fill_crop_x`**: If `resize="fill"`, where to take the cropping (0=left, 1=right); default=0.5
 * **`fill_crop_y`**: If `resize="fill"`, where to take the cropping (0=top, 1=bottom); default=0.5
+
+==**Note:** Images will never be scaled to larger than their native resolution==
 
 ### File format options
 
@@ -59,15 +65,15 @@ TODO: templates may also get an `image()` function that allows image renditions 
 
 These options drive the behavior of image sets for use with [lightbox.js](http://www.lokeshdhakar.com/projects/lightbox2/).
 
-* **`disable_lightbox`**: Set this in the template to disable lightbox (for example, for feeds)
-* **`lightbox_id`**: An identifier for the Lightbox image set
+* **`disable_gallery`**: Set this in the template to disable lightbox (for example, for feeds)
+* **`gallery_id`**: An identifier for the Lightbox image set
     * **Note:** If this is not set, Lightbox will not be enabled, and popup renditions will not be generated
 * **`limit`**: How many images to allow in the image set (useful for feeds)
-* **`popup_width`**: The maximum width for the popup image
-* **`popup_height`**: The maximum height for the popup image
-* **`popup_quality`**: The JPEG quality level to use for the popup image
-* **`popup_format`**: What format the popup image should be in (defaults to the original format)
-* **`popup_background`**: The background color to use when converting transparent images (such as .png) to non-transparent formats (such as .jpg)
+* **`fullsize_width`**: The maximum width for the popup image
+* **`fullsize_height`**: The maximum height for the popup image
+* **`fullsize_quality`**: The JPEG quality level to use for the popup image
+* **`fullsize_format`**: What format the popup image should be in (defaults to the original format)
+* **`fullsize_background`**: The background color to use when converting transparent images (such as .png) to non-transparent formats (such as .jpg)
 * **`container_class`**: If set, wraps the gallery in a `<div>` with the specified `class` attribute.
 
 ## Useful template examples
@@ -76,7 +82,8 @@ These options drive the behavior of image sets for use with [lightbox.js](http:/
 
 `index.html` and `entry.html`:
 
-This will treat source images as being 3x screen resolution, the source image as being at 3x the resolution of the screen, make images size to no wider than 960 pixels, force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
+This will treat source images as being 3x screen resolution, make images scale to no narrower than 480 pixels and to no wider than 960 pixels,
+force them to be a JPEG (with transparency turning white), and with 35% JPEG quality for the high-DPI rendition
 
 ```jinja
 {{ entry.body(
@@ -97,8 +104,8 @@ of the image (making for a useful non-punchline-destroying excerpt).
 ```jinja
 {{ entry.body(link=entry.link(
     absolute=True,
-    width=400,
-    height=400,
+    force_width=400,
+    force_height=400,
     resize="fill",
     fill_crop_x=0,
     fill_crop_y=0,
@@ -109,13 +116,13 @@ of the image (making for a useful non-punchline-destroying excerpt).
 In the above example, if you have a comic that is provided at screen resolution to begin with (such as guest art) you can override the default scaling with e.g.:
 
 ```markdown
-![@scale=1|title="Look at this amazing guest comic!"](guest-comic.png)
+![](guest-comic.png{scale=1} "Amazing guest comic!")
 ```
 
 Or if there's one you want to force to a specific size:
 
 ```markdown
-![@scale=1,width=960,height=480](special-comic.jpg)
+![](special-comic.jpg{scale=1,width=960,height=480})
 ```
 
 ### A photo gallery

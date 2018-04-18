@@ -19,7 +19,7 @@ import config
 from . import model, queries
 from . import path_alias
 from . import markdown
-from .utils import CallableProxy
+from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -55,6 +55,17 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
+        self._relative_search_path = [
+            os.path.dirname(self._record.file_path),
+            os.path.join(config.content_directory, self._record.category),
+            config.content_directory,
+            config.static_directory,
+        ]
+        self._absolute_search_path = [
+            config.content_directory,
+            config.static_directory,
+        ]
+
     def _link(self, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
@@ -89,16 +100,16 @@ class Entry:
                 more = body[6:]
                 body = ''
 
-            # TODO https://github.com/fluffy-critter/Publ/issues/9
-            # Not only will we want to accept args on the markdown path but
-            # we'll want to ignore them on the HTML path (or maybe implement
-            # a VERY basic template processor even for HTML)
             _, ext = os.path.splitext(filepath)
             is_markdown = ext == '.md'
-            self.body = CallableProxy(
-                self._get_markup, body or '', is_markdown)
-            self.more = CallableProxy(
-                self._get_markup, more or '', is_markdown)
+            self.body = TrueCallableProxy(
+                self._get_markup,
+                body,
+                is_markdown) if body else CallableProxy(lambda **kwargs: '')
+            self.more = TrueCallableProxy(
+                self._get_markup,
+                more,
+                is_markdown) if more else CallableProxy(lambda **kwargs: '')
 
             self.last_modified = arrow.get(
                 os.stat(self._record.file_path).st_mtime).to(config.timezone)
@@ -106,15 +117,19 @@ class Entry:
             return True
         return False
 
-    @staticmethod
-    def _get_markup(text, is_markdown, **kwargs):
+    def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
-            return flask.Markup(markdown.to_html(text), **kwargs)
+            md_config = {
+                **kwargs,
+                "relative_search_path": self._relative_search_path,
+                "absolute_search_path": self._absolute_search_path
+            }
+            return flask.Markup(markdown.to_html(text, config=md_config))
         return flask.Markup(text)
 
     def __getattr__(self, name):
@@ -185,15 +200,6 @@ class Entry:
         return self._message.get_all(name) or []
 
 
-def make_slug(title):
-    """ convert a title into a URL-friendly slug """
-
-    # TODO https://github.com/fluffy-critter/Publ/issues/16
-    # this should probably handle things other than English ASCII, and also
-    # some punctuation should just be outright removed (quotes/apostrophes/etc)
-    return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ', '-')
-
-
 def guess_title(basename):
     """ Attempt to guess the title from the filename """
 
@@ -235,7 +241,10 @@ def get_entry_id(entry, fullpath, assign_id):
         # averages around 0.25 collisions per ID generated while keeping the
         # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
         # per ID.
-        limit = model.Entry.select().count() * 5 + 10
+
+        # database=None is to shut up pylint
+        limit = max(10, model.Entry.select().count(database=None) * 5)
+
         entry_id = random.randint(1, limit)
         while model.Entry.get_or_none(model.Entry.id == entry_id):
             entry_id = random.randint(1, limit)

@@ -163,50 +163,34 @@ There are also some Publ-specific extensions for things like cuts, image renditi
 
 * **`.....`**: Indicates the cut from above-the-fold to below-the-fold content (must be on a line by itself)
 
-### <a name="image-renditions"></a>Image renditions
+### <a name="image-renditions"></a>Images
+
+==**Note:** This is a [draft](http://github.com/fluffy-critter/Publ/issues/9).== Both the API and implementation are subject to change.
 
 Publ extends the standard Markdown image tag (`![](imageFile)`) syntax with some added features for
-generating display-resolution-independent renditions and [Lightbox](http://lokeshdhakar.com/projects/lightbox2/) galleries. The syntax looks like this:
+generating display-resolution-independent renditions and [Lightbox](http://lokeshdhakar.com/projects/lightbox2/) galleries. The syntax is based on the standard Markdown for an image, which is:
 
-* A single image:
+```markdown
+![alt text](image-path.jpg "title text")
+```
+
+(where `alt text` and `"title text"` are optional), but it adds a few features:
+
+* Multiple images can be specified in the image list, separated by `|` characters; for example:
 
     ```markdown
-    ![@configuration](image_specification)
+    ![](image1.jpg "title text" | image2.jpg | image3.jpg "also title text")
     ```
 
-* A gallery:
+* Images can be configured by adding `{arguments}` to the filename portion or to the alt text; for example:
 
     ```markdown
-    ![@configuration](image1_specification,
-        image2_specification,
-        ...)
+    <!-- A single image being configured -->
+    ![](image.jpg{width=320,height=200})
+
+    <!-- Three images configured to a width of 640, with one of them further overridden -->
+    ![{width=640}](image1.jpg | image2.jpg{width=320} "this one is narrower" | image3.jpg)
     ```
-
-A configuration is a string of configuration names and values, separated by `|` characters. For example,
-
-```
-minWidth=200|maxWidth=800|alt="photo"|title="French Riviera"
-```
-
-An image specification is an image file, optionally followed by a `|` and a configuration. Newlines are optional. For example,
-
-```
-DSC_00235.jpg,
-DSC_00236.jpg|title="Look at the birb!",
-sales_brochure.png|format="jpg"
-```
-
-So, here are some examples of how to format some images:
-
-```
-![@](comic-1.jpg|title="Here is the snarky popup text")
-
-![@format="jpg"](slide_1.png, slide_2.png, slide_3.jpg)
-```
-
-The configuration is nested; default values are provided by [the template](/template-format#image-renditions),
-options provided in the `[@configuration]` part override the template, and options provided in the image specs
-override the template and the configuration.
 
 For a full list of the configurations available, please see the manual entry on [image renditions](/image-renditions).
 
@@ -241,3 +225,7 @@ search order will be:
 This approach allows for greater flexibility in how you manage your images; the simple
 case is that the files simply live in the same directory as the entry file, and in more complex cases
 things work in a hopefully-intuitive manner.
+
+Of course, external absolute URLs (e.g. `http://example.com/image.jpg`) are still allowed, although they are
+more limited in what you can do with them (for example, scaling will be done client-side and cropping
+options will not work). Also, keep in mind that URLs that are not under your control may change without notice.
