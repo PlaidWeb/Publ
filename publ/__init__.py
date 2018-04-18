@@ -7,7 +7,7 @@ import flask
 
 import config
 
-from . import rendering, model, index, caching, view
+from . import rendering, model, index, caching, view, utils
 from .caching import cache
 
 
@@ -37,7 +37,7 @@ def setup(app):
         app.register_error_handler(Exception, rendering.render_exception)
 
     app.jinja_env.globals.update(
-        get_view=view.get_view, arrow=arrow, static=rendering.static_url)
+        get_view=view.get_view, arrow=arrow, static=utils.static_url)
 
     app.before_request(rescan_index)
     app.after_request(set_cache_expiry)

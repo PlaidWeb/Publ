@@ -22,7 +22,7 @@ class Image:
         """ Get the base image from an index record """
         self._record = record
 
-    def get_rendition(self, **kwargs):
+    def get_rendition(self, output_scale, kwargs):
         """
         Get the rendition for this image, generating it if necessary.
         Returns a tuple of `(relative_path, width, height)`, where relative_path
@@ -41,11 +41,13 @@ class Image:
 
         input_filename = self._record.file_path
         basename, ext = os.path.splitext(os.path.basename(input_filename))
+        basename = utils.make_slug(basename)
 
         # The spec for building the output filename
         out_spec = [basename, self._record.checksum]
 
-        width, height = self.get_rendition_fit_size(self._record, kwargs)
+        width, height = self.get_rendition_fit_size(
+            self._record, kwargs, output_scale)
         out_spec.append('{}x{}'.format(width, height))
 
         # Build the output filename
@@ -60,7 +62,7 @@ class Image:
 
         if os.path.isfile(out_fullpath):
             # File already exists
-            return out_rel_path
+            return out_rel_path, width, height
 
         # Process the file
         input_image = PIL.Image.open(input_filename)
@@ -68,10 +70,10 @@ class Image:
             input_image = input_image.resize(size=(width, height),
                                              resample=PIL.Image.LANCZOS)
         input_image.save(out_fullpath)
-        return out_rel_path
+        return out_rel_path, width, height
 
     @staticmethod
-    def get_rendition_fit_size(record, spec):
+    def get_rendition_fit_size(record, spec, output_scale):
         """ Determine the scaled size based on the provided spec """
 
         width = record.width
@@ -102,10 +104,8 @@ class Image:
             width = width * max_height / height
             height = max_height
 
-        out_scale = spec.get('output_scale')
-        if out_scale:
-            width = width * out_scale
-            height = height * out_scale
+        width = width * output_scale
+        height = height * output_scale
 
         # Never scale to larger than the base rendition
         width = min(int(math.floor(width + 0.5)), record.width)

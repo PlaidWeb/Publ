@@ -36,10 +36,10 @@ TODO: templates may also get an `image()` function that allows image renditions 
 * **`scale`**: What factor to scale the source image down by (e.g. 3 = the display size should be 33%)
 * **`scale_min_width`**: The minimum width to target based on scaling
 * **`scale_min_height`**: The minimum height to target based on scaling
-* **`max_width`**: The maximum width to target
-* **`max_height`**: The maximum height to target
-* **`force_max_width`**: A value to force the width to (intended for templates)
-* **`force_max_height`**: A value to force the height to (intended for templates)
+* **`width`**: The maximum width to target
+* **`height`**: The maximum height to target
+* **`force_width`**: A value to force the width to (intended for templates)
+* **`force_height`**: A value to force the height to (intended for templates)
 * **`resize`**: If both `width` and `height` are specified, how to fit the image into the rectangle if the aspect ratio doesn't match
     * `fit`: Fit the image into the space (default)
     * `fill`: Fill the space with the image, cropping off the sides
