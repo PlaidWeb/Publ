@@ -4,6 +4,7 @@
 import re
 import ast
 import os
+import logging
 
 import misaka
 import flask
@@ -17,6 +18,8 @@ from . import image, utils
 ENABLED_EXTENSIONS = [
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
 ]
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
@@ -85,17 +88,40 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         try:
             path, image_args, title = self._parse_image_spec(spec)
-
-            # remote images should only use their direct configuration
-            if path.startswith('//') or '://' in path:
-                return self._remote_image(path, image_args, title, alt_text)
-
             composite_args = {**container_args, **image_args}
+
+            if path.startswith('//') or '://' in path:
+                return self._remote_image(path, composite_args, title, alt_text)
+
             return self._local_image(path, composite_args, title, alt_text)
         except Exception as err:  # pylint: disable=broad-except
+            logger.exception("Got error on spec %s: %s", spec, err)
             return ('<span class="error">Couldn\'t parse image spec: ' +
                     '<code>{}</code> {}</span>'.format(flask.escape(spec),
                                                        flask.escape(str(err))))
+
+    @staticmethod
+    def _rendition_args(image_args, remap):
+        """ Generate rendition arguments specific to a rendition. The 'remap'
+        dict maps from destination key -> priority list of source keys
+        """
+        out_args = image_args
+        for dest_key, src_keys in remap.items():
+            remap_value = None
+            if isinstance(src_keys, str):
+                src_keys = [src_keys]
+
+            for key in src_keys:
+                if key in image_args:
+                    remap_value = image_args[key]
+                    break
+
+            if remap_value is not None:
+                if out_args is image_args:
+                    out_args = {**image_args}
+                out_args[dest_key] = remap_value
+
+        return out_args
 
     def _local_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a locally-stored image """
@@ -111,8 +137,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return ('<span class="error">Couldn\'t find image: ' +
                     '<code>{}</code></span>'.format(flask.escape(path)))
 
-        img_1x, width, height = img.get_rendition(1, image_args)
-        img_2x, _, _ = img.get_rendition(2, image_args)
+        img_1x, width, height = img.get_rendition(
+            1, self._rendition_args(image_args, {"quality": "quality_ldpi"}))
+        img_2x, _, _ = img.get_rendition(
+            2, self._rendition_args(image_args, {"quality": "quality_hdpi"}))
 
         absolute = self._config.get('absolute')
 
@@ -134,6 +162,25 @@ class HtmlRenderer(misaka.HtmlRenderer):
             text += ' title="{}"'.format(flask.escape(title))
 
         text += '>'
+
+        gallery_id = image_args.get('gallery_id')
+        if gallery_id:
+            fullsize_args = {}
+            for key in ['width', 'height', 'quality', 'format', 'background']:
+                fsk = 'fullsize_' + key
+                if fsk in image_args:
+                    fullsize_args[key] = image_args[fsk]
+
+            img_fullsize, _, _ = img.get_rendition(1, fullsize_args)
+            img_fullsize = utils.static_url(img_fullsize, absolute)
+
+            link = '<a data-lightbox="{}" href="{}"'.format(
+                flask.escape(gallery_id), img_fullsize)
+            if title:
+                link += ' title="{}"'.format(flask.escape(title))
+            link += '>'
+            text = link + text + '</a>'
+
         return text
 
     @staticmethod
@@ -144,7 +191,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         if 'width' in image_args:
             text += ' width="{}"'.format(image_args['width'])
-        if 'height' in image_args:
+        elif 'height' in image_args:
             text += ' height="{}"'.format(image_args['height'])
 
         if title:
@@ -153,6 +200,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
             text += ' alt="{}"'.format(flask.escape(alt_text))
 
         text += '>'
+
+        if 'gallery_id' in image_args:
+            text = '<a href="{}" data-lightbox="{}">{}</a>'.format(
+                flask.escape(path),
+                flask.escape(image_args['gallery_id']),
+                text)
+
         return text
 
     def _parse_image_spec(self, spec):
