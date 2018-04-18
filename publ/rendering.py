@@ -65,17 +65,6 @@ def map_template(category, template_list):
                 path = None
 
 
-def static_url(path, absolute=False):
-    """ Shorthand for returning a URL for the requested static file.
-
-    Arguments:
-
-    path -- the path to the file (relative to the static files directory)
-    absolute -- whether the link should be absolute or relative
-    """
-    return url_for('static', filename=path, _external=absolute)
-
-
 def get_redirect():
     """ Check to see if the current request is a redirection """
     return path_alias.get_redirect([request.full_path, request.path])
