@@ -13,7 +13,7 @@ External image:
 
 External image in a link and with width set:
 
-[![](http://beesbuzz.biz/d/lewi/lewi-52.jpg{250} "so smol")](http://beesbuzz.biz/d/)
+[![](http://beesbuzz.biz/d/lewi/lewi-52.HIDPI.jpg{250} "so smol")](http://beesbuzz.biz/d/)
 
 Local image:
 
@@ -33,4 +33,6 @@ rawr.jpg "image 3"
 
 ![broken spec](poiu{100} foo{200})
 
-![such gallery{255}](rawr.jpg | rawr.jpg | rawr.jpg{100})
+
+![such gallery{255,gallery_id="rawry"}](rawr.jpg | rawr.jpg{fullscreen_width=50} "Rawr!" | rawr.jpg{100}
+| http://beesbuzz.biz/d/lewi/lewi-52.HIDPI.jpg)
