@@ -103,9 +103,13 @@ class Entry:
             _, ext = os.path.splitext(filepath)
             is_markdown = ext == '.md'
             self.body = TrueCallableProxy(
-                self._get_markup, body, is_markdown) if body else None
+                self._get_markup,
+                body,
+                is_markdown) if body else CallableProxy(lambda **kwargs: '')
             self.more = TrueCallableProxy(
-                self._get_markup, more, is_markdown) if more else None
+                self._get_markup,
+                more,
+                is_markdown) if more else CallableProxy(lambda **kwargs: '')
 
             self.last_modified = arrow.get(
                 os.stat(self._record.file_path).st_mtime).to(config.timezone)
