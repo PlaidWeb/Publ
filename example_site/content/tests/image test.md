@@ -11,6 +11,10 @@ External image:
 
 ![](http://beesbuzz.biz/d/lewi/lewi-51.jpg)
 
+External image in a link and with width set:
+
+[![](http://beesbuzz.biz/d/lewi/lewi-52.jpg{250} "so smol")](http://beesbuzz.biz/d/)
+
 Local image:
 
 ![alt text](rawr.jpg "test single image")
@@ -28,3 +32,5 @@ rawr.jpg "image 3"
 ![broken spec](foo{123[]})
 
 ![broken spec](poiu{100} foo{200})
+
+![such gallery{255}](rawr.jpg | rawr.jpg | rawr.jpg{100})
