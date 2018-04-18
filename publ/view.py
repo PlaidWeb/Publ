@@ -52,6 +52,11 @@ class View:
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
 
+        if 'date' in spec:
+            self.title = utils.CallableProxy(self._date_name)
+        else:
+            self.title = None
+
         if 'limit' in spec:
             self._query = self._query.limit(spec['limit'])
 
@@ -228,6 +233,10 @@ class View:
 
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
+
+    def _date_name(self, **formats):
+        date, interval, date_format = utils.parse_date(self.spec['date'])
+        return date.format(formats.get(interval, date_format))
 
 
 def get_view(**kwargs):
