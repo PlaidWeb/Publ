@@ -29,10 +29,11 @@ class Image:
         is relative to the static file directory (i.e. what one would pass into
         `get_static()`)
 
-        Arguments:
-
-        input_scale -- the downsample factor for the base rendition
         output_scale -- the upsample factor for the requested rendition
+
+        Keyword arguments:
+
+        scale -- the downsample factor for the base rendition
         max_width -- the maximum width to target for input_scale
         max_height -- the maximum height to target for input_scale
         scale_min_width -- the minimum width to target for input_scale
@@ -79,7 +80,7 @@ class Image:
         width = record.width
         height = record.height
 
-        scale = spec.get('input_scale')
+        scale = spec.get('scale')
         if scale:
             width = width / scale
             height = height / scale
@@ -94,15 +95,27 @@ class Image:
             width = width * min_height / height
             height = min_height
 
-        max_width = spec.get('max_width')
-        if max_width and width > max_width:
-            height = height * max_width / width
-            width = max_width
+        tgt_width, tgt_height = spec.get('width'), spec.get('height')
 
-        max_height = spec.get('max_width')
-        if max_height and height > max_height:
-            width = width * max_height / height
-            height = max_height
+        if tgt_width and width > tgt_width:
+            height = height * tgt_width / width
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            width = width * tgt_height / height
+            height = tgt_height
+
+        tgt_width, tgt_height = spec.get('max_width'), spec.get('max_height')
+
+        if tgt_width and width > tgt_width:
+            height = height * tgt_width / width
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            width = width * tgt_height / height
+            height = tgt_height
 
         width = width * output_scale
         height = height * output_scale
@@ -114,14 +127,14 @@ class Image:
         return width, height
 
 
-def get_image(path, relative_to):
+def get_image(path, search_path):
     """ Get an Image object. Arguments:
 
     path -- the image's filename
-    relative_to -- a search path or list of search paths
+    search_path -- a search path or list of search paths
     """
 
-    file_path = utils.find_file(path, relative_to)
+    file_path = utils.find_file(path, search_path)
     if not file_path:
         return None
 
