@@ -163,8 +163,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text += '>'
 
-        gallery_id = image_args.get('gallery_id')
-        if gallery_id:
+        if 'link' in image_args:
+            text = '<a href="{}">{}</a>'.format(
+                flask.escape(image_args['link']), text)
+        elif 'gallery_id' in image_args:
             fullsize_args = {}
             for key in ['width', 'height', 'quality', 'format', 'background']:
                 fsk = 'fullsize_' + key
@@ -175,7 +177,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             img_fullsize = utils.static_url(img_fullsize, absolute)
 
             link = '<a data-lightbox="{}" href="{}"'.format(
-                flask.escape(gallery_id), img_fullsize)
+                flask.escape(image_args['gallery_id']), img_fullsize)
             if title:
                 link += ' title="{}"'.format(flask.escape(title))
             link += '>'
@@ -201,10 +203,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text += '>'
 
-        if 'gallery_id' in image_args:
-            text = '<a href="{}" data-lightbox="{}">{}</a>'.format(
-                flask.escape(path),
+        if 'link' in image_args:
+            text = '<a href="{}">{}</a>'.format(
+                flask.escape(image_args['link']), text)
+        elif 'gallery_id' in image_args:
+            text = '<a data-lightbox="{}" href="{}">{}</a>'.format(
                 flask.escape(image_args['gallery_id']),
+                flask.escape(path),
                 text)
 
         return text
