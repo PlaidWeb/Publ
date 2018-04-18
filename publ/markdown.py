@@ -124,9 +124,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
             text += '>'
             return text
-        except:  # pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except
             return ('<span class="error">Couldn\'t parse image spec: ' +
-                    '<code>{}</code></span>'.format(flask.escape(spec)))
+                    '<code>{}</code> {}</span>'.format(flask.escape(spec),
+                                                       flask.escape(str(err))))
 
     def _parse_image_spec(self, spec):
         """ Parse an image spec out into (path,args,title) """
