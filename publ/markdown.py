@@ -49,12 +49,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         spec_list = [spec.strip() for spec in image_specs.split('|')]
 
-        if 'limit' in self._config:
-            if 'limit_offset' in self._config:
-                spec_list = spec_list[self._config['limit_offset']]
-            spec_list = spec_list[:self._config['limit']]
-
         container_args = {**self._config, **container_args}
+
+        if 'limit' in container_args:
+            if 'limit_offset' in container_args:
+                spec_list = spec_list[container_args['limit_offset']:]
+            spec_list = spec_list[:container_args['limit']]
 
         if 'container_class' in container_args:
             text += '<div class="{}">'.format(
