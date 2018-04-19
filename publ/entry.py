@@ -1,6 +1,8 @@
 # item.py
 """ Functions for handling content items """
 
+from __future__ import absolute_import, with_statement
+
 import email
 import functools
 import logging
@@ -14,8 +16,7 @@ import uuid
 import arrow
 import flask
 
-import config
-
+from . import config
 from . import model, queries
 from . import path_alias
 from . import markdown
@@ -57,13 +58,13 @@ class Entry:
 
         self._relative_search_path = [
             os.path.dirname(self._record.file_path),
-            os.path.join(config.content_directory, self._record.category),
-            config.content_directory,
-            config.static_directory,
+            os.path.join(config.content_folder, self._record.category),
+            config.content_folder,
+            config.static_folder,
         ]
         self._absolute_search_path = [
-            config.content_directory,
-            config.static_directory,
+            config.content_folder,
+            config.static_folder,
         ]
 
     def _link(self, **kwargs):
