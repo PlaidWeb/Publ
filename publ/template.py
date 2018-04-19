@@ -1,6 +1,8 @@
 # template.py
 """ Wrapper for template information """
 
+from __future__ import absolute_import, with_statement
+
 import os
 import arrow
 
