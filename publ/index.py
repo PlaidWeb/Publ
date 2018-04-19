@@ -32,7 +32,7 @@ def scan_file(fullpath, relpath, assign_id):
             return entry.scan_file(fullpath, relpath, assign_id)
 
         return True
-    except:  # pylint: disable=broad-except
+    except:  # pylint: disable=bare-except
         logger.exception("Got error parsing %s", fullpath)
     return None
 
@@ -75,7 +75,7 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
                 set_last_mtime(fullpath)
             else:
                 logger.warning("Couldn't update %s", fullpath)
-        except:  # pylint: disable=broad-except
+        except:  # pylint: disable=bare-except
             logger.exception("Got error updating %s", fullpath)
 
     def on_created(self, event):

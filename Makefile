@@ -2,10 +2,11 @@ all: pylint
 
 .PHONY: pylint
 pylint:
-	pylint -f colorized publ
+	pipenv run pylint -f colorized publ
 
 .PHONY: build
 build:
+	rm -rf dist
 	python3 setup.py sdist
 	python3 setup.py bdist_wheel --universal
 
