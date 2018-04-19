@@ -1,12 +1,6 @@
-config.py
-__pycache__
 *.pyc
-tmp
-example_site/static/img/
-data
 .DS_Store
-public
-example_site/static/_img/
+__pycache__
+build/
+dist/
 Publ.egg-info/
-dist
-build
