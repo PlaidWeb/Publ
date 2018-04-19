@@ -49,9 +49,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         spec_list = [spec.strip() for spec in image_specs.split('|')]
 
-        if 'first' in self._config:
-            spec_list = spec_list[self._config['first']]
         if 'limit' in self._config:
+            if 'limit_offset' in self._config:
+                spec_list = spec_list[self._config['limit_offset']]
             spec_list = spec_list[:self._config['limit']]
 
         container_args = {**self._config, **container_args}

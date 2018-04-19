@@ -60,4 +60,4 @@ def get_redirect(paths):
                            slug_text=record.redirect_entry.slug_text)
         elif record and record.redirect_url:
             return record.redirect_url
-        return None
+    return None
