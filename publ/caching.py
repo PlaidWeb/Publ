@@ -4,7 +4,7 @@
 from flask_cache import Cache
 from flask import request
 
-import config
+from . import config
 
 cache = Cache(config=config.cache)  # pylint: disable=invalid-name
 

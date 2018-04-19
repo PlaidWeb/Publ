@@ -1,14 +1,15 @@
 # rendering.py
 """ Rendering functions """
 
+from __future__ import absolute_import, with_statement
+
 import os
 import logging
 
 import flask
 from flask import request, redirect, render_template, url_for
 
-import config
-
+from . import config
 from . import path_alias, model
 from .entry import Entry, expire_record
 from .category import Category
@@ -55,7 +56,7 @@ def map_template(category, template_list):
         while path != None:
             for extension in ['', '.html', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
-                file_path = os.path.join(config.template_directory, candidate)
+                file_path = os.path.join(config.template_folder, candidate)
                 if os.path.isfile(file_path):
                     return Template(template, candidate, file_path)
             parent = os.path.dirname(path)

@@ -1,14 +1,16 @@
 # image.py
 ''' Managing image renditions '''
 
+from __future__ import absolute_import, with_statement
+
 import os
 import math
 import hashlib
 import logging
 
 import PIL.Image
-import config
 
+from . import config
 from . import model, utils
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name

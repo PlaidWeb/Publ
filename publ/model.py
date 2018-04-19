@@ -1,16 +1,18 @@
 # model.py
 """ Database schema for the content index """
 
+from __future__ import absolute_import
+
 import logging
 import threading
 from enum import Enum
 
-from peewee import Model, IntegerField, DateTimeField, CharField, ForeignKeyField
+from peewee import Proxy, Model, IntegerField, DateTimeField, CharField, ForeignKeyField
 import playhouse.db_url
 
-import config
+from . import config
 
-DATABASE = playhouse.db_url.connect(config.database)
+DATABASE_PROXY = Proxy()
 lock = threading.Lock()  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -25,7 +27,7 @@ class BaseModel(Model):
 
     class Meta:
         """ database configuration """
-        database = DATABASE
+        database = DATABASE_PROXY
 
 
 class PublishStatus(Enum):
@@ -105,8 +107,10 @@ ALL_TYPES = [
 ]
 
 
-def create_tables():
+def setup():
     """ Set up the database """
+    database = playhouse.db_url.connect(config.database)
+    DATABASE_PROXY.initialize(database)
 
     rebuild = False
     try:
@@ -119,9 +123,9 @@ def create_tables():
 
     if rebuild:
         logger.info("Updating database schema")
-        DATABASE.drop_tables(ALL_TYPES)
+        database.drop_tables(ALL_TYPES)
 
-    DATABASE.create_tables(ALL_TYPES)
+    database.create_tables(ALL_TYPES)
 
     version_record, _ = Global.get_or_create(key='schema_version')
     version_record.int_value = SCHEMA_VERSION

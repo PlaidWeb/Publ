@@ -7,3 +7,4 @@ data
 .DS_Store
 public
 example_site/static/_img/
+Publ.egg-info/
