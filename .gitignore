@@ -8,3 +8,4 @@ data
 public
 example_site/static/_img/
 Publ.egg-info/
+dist
