@@ -56,8 +56,8 @@ class Image:
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
         out_rel_path = os.path.join(
-            config.image_output_directory, out_basename)
-        out_fullpath = os.path.join(config.static_directory, out_rel_path)
+            config.image_output_subdir, out_basename)
+        out_fullpath = os.path.join(config.static_folder, out_rel_path)
         out_dir = os.path.dirname(out_fullpath)
 
         if not os.path.isdir(out_dir):
