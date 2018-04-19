@@ -1,6 +1,8 @@
 # markdown.py
 """ handler for markdown formatting """
 
+from __future__ import absolute_import
+
 import re
 import ast
 import os
@@ -47,23 +49,26 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         spec_list = [spec.strip() for spec in image_specs.split('|')]
 
-        limit = self._config.get('limit')
-        if limit:
-            spec_list = spec_list[:limit]
+        if 'first' in self._config:
+            spec_list = spec_list[self._config['first']]
+        if 'limit' in self._config:
+            spec_list = spec_list[:self._config['limit']]
 
         container_args = {**self._config, **container_args}
 
-        container_class = container_args.get('container_class')
-        if container_class:
-            text += '<div class="{}">'.format(flask.escape(container_class))
+        if 'container_class' in container_args:
+            text += '<div class="{}">'.format(
+                flask.escape(container_args['container_class']))
 
         for spec in spec_list:
             if not spec:
                 continue
 
-            text += self._render_image(spec, container_args, alt)
+            text += self._render_image(spec,
+                                       container_args,
+                                       alt) if spec else ''
 
-        if container_class:
+        if 'container_class' in container_args:
             text += '</div>'
 
         return text or ' '
@@ -125,28 +130,33 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def _local_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a locally-stored image """
+        # pylint: disable=too-many-locals,too-many-branches
 
+        # Determine the appropriate search path for the image request
         if os.path.isabs(path):
             search_path = self._absolute_search_path
             path = os.path.relpath(path, "/")
         else:
             search_path = self._relative_search_path
 
+        # Get the image object
         img = image.get_image(path, search_path)
         if not img:
             return ('<span class="error">Couldn\'t find image: ' +
                     '<code>{}</code></span>'.format(flask.escape(path)))
 
+        # Get the 1x and 2x renditions
         img_1x, width, height = img.get_rendition(
             1, self._rendition_args(image_args, {"quality": "quality_ldpi"}))
         img_2x, _, _ = img.get_rendition(
             2, self._rendition_args(image_args, {"quality": "quality_hdpi"}))
 
+        # ... and their URLs
         absolute = self._config.get('absolute')
-
         img_1x = utils.static_url(img_1x, absolute)
         img_2x = utils.static_url(img_2x, absolute)
 
+        # Build the <img> tag
         text = '<img src="{}"'.format(img_1x)
         if img_1x != img_2x:
             text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
@@ -163,6 +173,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text += '>'
 
+        # Wrap it in a link as appropriate
         if 'link' in image_args:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)

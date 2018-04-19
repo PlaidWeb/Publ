@@ -5,14 +5,19 @@ import time
 import arrow
 import flask
 
-import config
-
-from . import rendering, model, index, caching, view, utils
+from . import config, rendering, model, index, caching, view, utils
 from .caching import cache
 
 
-def setup(app):
-    """ Given a Flask application, configures it for use with Publ. """
+def publ(name, cfg):
+    """ Create a Flask app and configure it for use with Publ """
+
+    config.setup(cfg)
+
+    app = flask.Flask(name,
+                      template_folder=config.template_folder,
+                      static_folder=config.static_folder,
+                      static_url_path=config.static_url_path)
 
     for route in [
             '/',
@@ -39,30 +44,37 @@ def setup(app):
     app.jinja_env.globals.update(
         get_view=view.get_view, arrow=arrow, static=utils.static_url)
 
-    app.before_request(rescan_index)
-    app.after_request(set_cache_expiry)
+    if config.index_rescan_interval:
+        app.before_request(scan_index)
+
+    if 'CACHE_THRESHOLD' in config.cache:
+        app.after_request(set_cache_expiry)
 
     cache.init_app(app)
 
     # Scan the index
-    model.create_tables()
-    index.scan_index(config.content_directory)
-    index.background_scan(config.content_directory)
+    model.setup()
+    scan_index(True)
+    index.background_scan(config.content_folder)
+
+    return app
 
 
 last_scan = None  # pylint: disable=invalid-name
 
 
-def rescan_index():
+def scan_index(force=False):
     """ Rescan the index if it's been more than a minute since the last scan """
     global last_scan  # pylint: disable=invalid-name,global-statement
     now = time.time()
-    if not last_scan or now - last_scan > 60:
-        index.scan_index(config.content_directory)
+    if force or not last_scan or now - last_scan > config.index_rescan_interval:
+        index.scan_index(config.content_folder)
         last_scan = now
 
 
 def set_cache_expiry(req):
     """ Set the cache control headers """
-    req.headers['Cache-Control'] = 'public, max-age=300'
+    if 'CACHE_THRESHOLD' in config.cache:
+        req.headers['Cache-Control'] = (
+            'public, max-age={}'.format(config.cache['CACHE_THRESHOLD']))
     return req
