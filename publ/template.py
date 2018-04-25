@@ -21,3 +21,6 @@ class Template:
         self.name = name
         self.filename = filename
         self.last_modified = arrow.get(os.stat(file_path).st_mtime)
+
+    def __str__(self):
+        return self.name
