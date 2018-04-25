@@ -154,9 +154,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
                     '<code>{}</code></span>'.format(flask.escape(path)))
 
         # Get the 1x and 2x renditions
-        img_1x, width, height = img.get_rendition(
+        img_1x, size = img.get_rendition(
             1, self._rendition_args(image_args, {"quality": "quality_ldpi"}))
-        img_2x, _, _ = img.get_rendition(
+        img_2x, _ = img.get_rendition(
             2, self._rendition_args(image_args, {"quality": "quality_hdpi"}))
 
         # ... and their URLs
@@ -166,8 +166,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text = self._make_tag('img', {
             'src': img_1x,
-            'width': width,
-            'height': height,
+            'width': size[0],
+            'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'title': title,
             'alt': alt_text
@@ -192,7 +192,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if fsk in image_args:
                 fullsize_args[key] = image_args[fsk]
 
-        img_fullsize, _, _ = img.get_rendition(1, fullsize_args)
+        img_fullsize, _ = img.get_rendition(1, fullsize_args)
         img_fullsize = utils.static_url(img_fullsize, absolute)
 
         return self._make_tag('a', {
