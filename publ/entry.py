@@ -130,6 +130,7 @@ class Entry:
                 "relative_search_path": self._relative_search_path,
                 "absolute_search_path": self._absolute_search_path
             }
+
             return flask.Markup(markdown.to_html(text, config=md_config))
         return flask.Markup(text)
 

@@ -56,9 +56,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 spec_list = spec_list[container_args['limit_offset']:]
             spec_list = spec_list[:container_args['limit']]
 
-        if 'container_class' in container_args:
-            text += '<div class="{}">'.format(
-                flask.escape(container_args['container_class']))
+        if 'div_class' in container_args:
+            text += self._make_tag('div',
+                                   {'class': container_args['div_class']})
 
         for spec in spec_list:
             if not spec:
@@ -68,7 +68,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                        container_args,
                                        alt) if spec else ''
 
-        if 'container_class' in container_args:
+        if 'div_class' in container_args:
             text += '</div>'
 
         return text or ' '
@@ -106,6 +106,15 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                                        flask.escape(str(err))))
 
     @staticmethod
+    def _make_tag(name, attrs):
+        text = '<' + name
+        for key, val in attrs.items():
+            if val is not None:
+                text += ' {}="{}"'.format(key, flask.escape(val))
+        text += '>'
+        return text
+
+    @staticmethod
     def _rendition_args(image_args, remap):
         """ Generate rendition arguments specific to a rendition. The 'remap'
         dict maps from destination key -> priority list of source keys
@@ -130,7 +139,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def _local_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a locally-stored image """
-        # pylint: disable=too-many-locals,too-many-branches
 
         # Determine the appropriate search path for the image request
         if os.path.isabs(path):
@@ -156,45 +164,42 @@ class HtmlRenderer(misaka.HtmlRenderer):
         img_1x = utils.static_url(img_1x, absolute)
         img_2x = utils.static_url(img_2x, absolute)
 
-        # Build the <img> tag
-        text = '<img src="{}"'.format(img_1x)
-        if img_1x != img_2x:
-            text += ' srcset="{} 1x, {} 2x"'.format(img_1x, img_2x)
-
-        if width:
-            text += ' width="{}"'.format(width)
-        if height:
-            text += ' height="{}"'.format(height)
-
-        if alt_text:
-            text += ' alt="{}"'.format(flask.escape(alt_text))
-        if title:
-            text += ' title="{}"'.format(flask.escape(title))
-
-        text += '>'
+        text = self._make_tag('img', {
+            'src': img_1x,
+            'width': width,
+            'height': height,
+            'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
+            'title': title,
+            'alt': alt_text
+        })
 
         # Wrap it in a link as appropriate
         if 'link' in image_args:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
         elif 'gallery_id' in image_args:
-            fullsize_args = {}
-            for key in ['width', 'height', 'quality', 'format', 'background']:
-                fsk = 'fullsize_' + key
-                if fsk in image_args:
-                    fullsize_args[key] = image_args[fsk]
-
-            img_fullsize, _, _ = img.get_rendition(1, fullsize_args)
-            img_fullsize = utils.static_url(img_fullsize, absolute)
-
-            link = '<a data-lightbox="{}" href="{}"'.format(
-                flask.escape(image_args['gallery_id']), img_fullsize)
-            if title:
-                link += ' title="{}"'.format(flask.escape(title))
-            link += '>'
-            text = link + text + '</a>'
+            text = '{}{}</a>'.format(
+                self._fullsize_link(
+                    img, image_args, title, absolute),
+                text)
 
         return text
+
+    def _fullsize_link(self, img, image_args, title, absolute):
+        fullsize_args = {}
+        for key in ['width', 'height', 'quality', 'format', 'background']:
+            fsk = 'fullsize_' + key
+            if fsk in image_args:
+                fullsize_args[key] = image_args[fsk]
+
+        img_fullsize, _, _ = img.get_rendition(1, fullsize_args)
+        img_fullsize = utils.static_url(img_fullsize, absolute)
+
+        return self._make_tag('a', {
+            'href': img_fullsize,
+            'data-lightbox': image_args['gallery_id'],
+            'title': title
+        })
 
     @staticmethod
     def _remote_image(path, image_args, title, alt_text):
