@@ -49,9 +49,12 @@ class Image:
         # The spec for building the output filename
         out_spec = [basename, self._record.checksum]
 
-        width, height = self.get_rendition_fit_size(
+        size, box = self.get_rendition_fit_size(
             self._record, kwargs, output_scale)
-        out_spec.append('{}x{}'.format(width, height))
+        if size:
+            out_spec.append('x'.join([str(v) for v in size]))
+        if box:
+            out_spec.append('-'.join([str(v) for v in box]))
 
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
@@ -63,17 +66,16 @@ class Image:
         if not os.path.isdir(out_dir):
             os.makedirs(out_dir)
 
-        if os.path.isfile(out_fullpath):
-            # File already exists
-            return out_rel_path, width, height
+        if not os.path.isfile(out_fullpath):
+            # Process the file
+            input_image = PIL.Image.open(input_filename)
+            if width < self._record.width or height < self._record.height:
+                input_image = input_image.resize(size=size,
+                                                 box=box,
+                                                 resample=PIL.Image.LANCZOS)
+            input_image.save(out_fullpath)
 
-        # Process the file
-        input_image = PIL.Image.open(input_filename)
-        if width < self._record.width or height < self._record.height:
-            input_image = input_image.resize(size=(width, height),
-                                             resample=PIL.Image.LANCZOS)
-        input_image.save(out_fullpath)
-        return out_rel_path, width, height
+        return out_rel_path, size
 
     @staticmethod
     def get_rendition_fit_size(record, spec, output_scale):
@@ -126,7 +128,7 @@ class Image:
         width = min(int(math.floor(width + 0.5)), record.width)
         height = min(int(math.floor(height + 0.5)), record.height)
 
-        return width, height
+        return (width, height), None
 
 
 def get_image(path, search_path):
