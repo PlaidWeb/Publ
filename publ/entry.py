@@ -17,9 +17,11 @@ import arrow
 import flask
 
 from . import config
-from . import model, queries
+from . import model
+from . import queries
 from . import path_alias
 from . import markdown
+from . import utils
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -52,6 +54,7 @@ class Entry:
 
         self.link = CallableProxy(self._link)
         self.permalink = CallableProxy(self._permalink)
+        self.archive = CallableProxy(self._archive_link)
 
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
@@ -81,6 +84,22 @@ class Entry:
                              category=self._record.category if expand else None,
                              slug_text=self._record.slug_text if expand else None,
                              _external=absolute)
+
+    def _archive_link(self, paging=None, template='', category=None, absolute=False):
+        args = {
+            'template': template,
+            'category': category if category is not None else self.category,
+        }
+        if paging == 'day':
+            args['date'] = self.date.format(utils.DAY_FORMAT)
+        elif paging == 'month':
+            args['date'] = self.date.format(utils.MONTH_FORMAT)
+        elif paging == 'year':
+            args['date'] = self.date.format(utils.YEAR_FORMAT)
+        else:
+            args['first'] = self._record.id
+
+        return flask.url_for('category', **args, _external=absolute)
 
     def _load(self):
         """ ensure the message payload is loaded """
