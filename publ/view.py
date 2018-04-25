@@ -15,8 +15,8 @@ OFFSET_PRIORITY = ['date', 'last', 'first', 'before', 'after']
 # Prioritization list for pagination type
 #
 # NOTE: date appears in here too so that if it appears as an offset it
-# overrides the limit
-PAGINATION_PRIORITY = ['date', 'limit']
+# overrides the count
+PAGINATION_PRIORITY = ['date', 'count']
 
 
 class View:
@@ -28,7 +28,7 @@ class View:
 
         input_spec -- the parameters to the view. In addition to the values provided
         to queries.build_query, this also takes the following keys:
-            limit -- How many entries to include in a page
+            count -- How many entries to include in a page
             order -- How to order the entries ('newest' or 'oldest')
         """
 
@@ -54,14 +54,16 @@ class View:
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
 
-        if 'limit' in spec:
-            self._query = self._query.limit(spec['limit'])
+        if 'count' in spec:
+            self._query = self._query.limit(spec['count'])
 
         self._order_by = spec.get('order', 'newest')
         if self._order_by == 'newest':
             self._order = [-model.Entry.entry_date, -model.Entry.id]
         elif self._order_by == 'oldest':
             self._order = [model.Entry.entry_date, model.Entry.id]
+        elif self._order_by == 'title':
+            self._order = [model.Entry.title, model.Entry.id]
         else:
             raise ValueError("Unknown sort order '{}'".format(self._order_by))
 
@@ -117,17 +119,28 @@ class View:
             self.previous, self.next = self._get_pagination()
             return getattr(self, name)
 
+        if name == 'first' or name == 'last':
+            self.first = self.entries[0] if self.entries else None
+            self.last = self.entries[-1] if self.entries else None
+            return getattr(self, name)
+
         if name == 'newest' or name == 'oldest':
-            entries = self.entries
-            first = entries[0] if entries else None
-            last = entries[-1] if entries else None
             if self._order_by == 'newest':
-                self.newest, self.oldest = first, last
+                self.newest, self.oldest = self.first, self.last
             elif self._order_by == 'oldest':
-                self.newest, self.oldest = last, first
+                self.newest, self.oldest = self.last, self.first
             else:
                 raise ValueError(
                     'newest/oldest not supported on sort type {}'.format(self._order_by))
+            return getattr(self, name)
+
+        if name == 'type':
+            if 'date' in self.spec:
+                _, self.type, _ = utils.parse_date(self.spec['date'])
+            elif 'count' in self.spec:
+                self.type = 'count'
+            else:
+                self.type = None
             return getattr(self, name)
 
         raise AttributeError("Unknown view attribute {}".format(name))
@@ -146,8 +159,8 @@ class View:
 
         base = self._spec_filtered()
 
-        if 'limit' in self.spec:
-            return self._get_limit_pagination(base, oldest_neighbor, newest_neighbor)
+        if 'count' in self.spec:
+            return self._get_count_pagination(base, oldest_neighbor, newest_neighbor)
 
         if 'date' in self.spec:
             return self._get_date_pagination(base, oldest_neighbor, newest_neighbor)
@@ -155,9 +168,9 @@ class View:
         # we're not paginating?
         return None, None
 
-    def _get_limit_pagination(self, base, oldest_neighbor, newest_neighbor):
-        """ Compute the pagination for count limits """
-        count = int(self.spec['limit'])
+    def _get_count_pagination(self, base, oldest_neighbor, newest_neighbor):
+        """ Compute the pagination for count paginations """
+        count = int(self.spec['count'])
 
         if self._order_by == 'newest':
                 # Newest first; next page ends at the one prior to our oldest
@@ -166,12 +179,12 @@ class View:
             else:
                 next_view = None
 
-            # Previous page ends at [limit] after our newest
+            # Previous page ends at [count] after our newest
             if newest_neighbor:
                 # Ask for the next chunk of items in ascending order
                 scan_view = View({**base,
                                   'first': newest_neighbor,
-                                  'limit': count,
+                                  'count': count,
                                   'order': 'oldest'})
                 # our previous page starts at the last entry (ascending)
                 previous_view = View({**base, 'last': scan_view.entries[-1]})
@@ -187,12 +200,12 @@ class View:
             else:
                 next_view = None
 
-            # Previous page starts at [limit] before our newest
+            # Previous page starts at [count] before our newest
             if oldest_neighbor:
                 # Ask for the previous chunk of items in descending order
                 scan_view = View({**base,
                                   'last': oldest_neighbor,
-                                  'limit': count,
+                                  'count': count,
                                   'order': 'newest'})
                 # our previous page starts at the last entry (descending)
                 previous_view = View({**base, 'first': scan_view.entries[-1]})
