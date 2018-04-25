@@ -174,10 +174,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
         })
 
         # Wrap it in a link as appropriate
-        if 'link' in image_args:
+        if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args:
+        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
             text = '{}{}</a>'.format(
                 self._fullsize_link(
                     img, image_args, title, absolute),
@@ -219,10 +219,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text += '>'
 
-        if 'link' in image_args:
+        if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args:
+        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
             text = '<a data-lightbox="{}" href="{}">{}</a>'.format(
                 flask.escape(image_args['gallery_id']),
                 flask.escape(path),
@@ -274,6 +274,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 return node.s
             elif isinstance(node, ast.Num):
                 return node.n
+            elif isinstance(node, ast.NameConstant):
+                return node.value
             else:
                 raise TypeError('node type not supported: {}'.format(node))
 
