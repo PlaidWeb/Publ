@@ -43,10 +43,14 @@ class CallableProxy:
             self._has_default = True
         return self._default
 
-    def __call__(self, **kwargs):
+    def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
         kwargs = dict(self._default_kwargs, **kwargs)
-        return self._func(*self._default_args, **kwargs)
+
+        # override args as well
+        pos_args = [*args, *self._default_args[len(args):]]
+
+        return self._func(*pos_args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._get_default(), name)
@@ -74,6 +78,15 @@ class TrueCallableProxy(CallableProxy):
     def __len__(self):
         return True
 
+#: arrow format string for 'day' archives
+DAY_FORMAT = 'YYYY-MM-DD'
+
+#: arrow format string for 'month' archives
+MONTH_FORMAT = 'YYYY-MM'
+
+#: arrow format string for 'year' archives
+YEAR_FORMAT = 'YYYY'
+
 
 def parse_date(datestr):
     """ Parse a date expression into a tuple of:
@@ -95,11 +108,11 @@ def parse_date(datestr):
         month or 1), day=int(day or 1), tzinfo=config.timezone)
 
     if day:
-        return start, 'day', 'YYYY-MM-DD'
+        return start, 'day', DAY_FORMAT
     elif month:
-        return start, 'month', 'YYYY-MM'
+        return start, 'month', MONTH_FORMAT
     elif year:
-        return start, 'year', 'YYYY'
+        return start, 'year', YEAR_FORMAT
 
     raise ValueError("Could not parse date: {}".format(datestr))
 
