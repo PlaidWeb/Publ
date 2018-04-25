@@ -51,10 +51,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         container_args = {**self._config, **container_args}
 
-        if 'limit' in container_args:
-            if 'limit_offset' in container_args:
-                spec_list = spec_list[container_args['limit_offset']:]
-            spec_list = spec_list[:container_args['limit']]
+        if 'count' in container_args:
+            if 'count_offset' in container_args:
+                spec_list = spec_list[container_args['count_offset']:]
+            spec_list = spec_list[:container_args['count']]
 
         if 'div_class' in container_args:
             text += self._make_tag('div',
