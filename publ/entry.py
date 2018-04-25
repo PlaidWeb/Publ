@@ -70,12 +70,12 @@ class Entry:
             config.static_folder,
         ]
 
-    def _link(self, **kwargs):
+    def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
             return self._record.redirect_url
 
-        return self._permalink(**kwargs)
+        return self._permalink(*args, **kwargs)
 
     def _permalink(self, absolute=False, expand=True):
         """ Returns a canonical URL for the item """
