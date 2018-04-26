@@ -21,6 +21,11 @@ ENABLED_EXTENSIONS = [
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
 ]
 
+CSS_SIZE_MODE = {
+    'fit': 'contain',
+    'fill': 'cover'
+}
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -94,6 +99,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         try:
             path, image_args, title = self._parse_image_spec(spec)
             composite_args = {**container_args, **image_args}
+
+            print('container', container_args)
+            print('image', image_args)
 
             if path.startswith('//') or '://' in path:
                 return self._remote_image(path, composite_args, title, alt_text)
@@ -201,31 +209,48 @@ class HtmlRenderer(misaka.HtmlRenderer):
             'title': title
         })
 
-    @staticmethod
-    def _remote_image(path, image_args, title, alt_text):
+    def _remote_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a remotely-stored image """
 
-        text = '<img src="{}"'.format(path)
+        attrs = {
+            'title': title,
+            'alt': alt_text
+        }
 
-        if 'width' in image_args:
-            text += ' width="{}"'.format(image_args['width'])
-        elif 'height' in image_args:
-            text += ' height="{}"'.format(image_args['height'])
+        # try to fudge the sizing
+        width = image_args.get('width')
+        height = image_args.get('height')
+        size_mode = image_args.get('resize', 'fit')
 
-        if title:
-            text += ' title="{}"'.format(flask.escape(title))
-        if alt_text:
-            text += ' alt="{}"'.format(flask.escape(alt_text))
+        if width and height and not (size_mode == 'stretch'):
+            attrs['style'] = ';'.join([
+                'background-image:url(\'{}\')'.format(flask.escape(path)),
+                'background-size:{}'.format(CSS_SIZE_MODE[size_mode]),
+                'background-position:{:.1f}% {:.1f}%'.format(
+                    image_args.get('fill_crop_x', 0.5) * 100,
+                    image_args.get('fill_crop_y', 0.5) * 100),
+                'background-repeat:no-repeat'
+            ])
+            attrs['src'] = (
+                'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw'
+            )
+        else:
+            attrs['src'] = path
 
-        text += '>'
+        attrs['width'] = width
+        attrs['height'] = height
+
+        text = self._make_tag('img', attrs)
 
         if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
         elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
-            text = '<a data-lightbox="{}" href="{}">{}</a>'.format(
-                flask.escape(image_args['gallery_id']),
-                flask.escape(path),
+            text = '{}{}</a>'.format(
+                self._make_tag('a', {
+                    'href': path,
+                    'data-lightbox': image_args['gallery_id']
+                }),
                 text)
 
         return text
@@ -236,15 +261,17 @@ class HtmlRenderer(misaka.HtmlRenderer):
         # I was having trouble coming up with a single RE that did it right,
         # so let's just break it down into sub-problems. First, parse out the
         # alt text...
-        match = re.match(r'([^\"]+)\s+\"(.*)\"$', spec)
+        match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
         if match:
             spec, title = match.group(1, 2)
+            print('spec="{}" title="{}"'.format(spec, title))
         else:
             title = None
 
         # and now parse out the arglist
-        match = re.match(r'([^\{]*)(\{(.*)\})$', spec)
+        match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
         if match:
+            print('img match', match.group(1), match.group(3))
             spec = match.group(1)
             args = self._parse_args(match.group(3))
         else:
@@ -256,6 +283,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Parse the alt text out into (alt_text,args) """
         match = re.match(r'([^\{]*)(\{(.*)\})$', spec)
         if match:
+            print('alt match', match.group(1), match.group(3))
             spec = match.group(1)
             args = self._parse_args(match.group(3))
         else:

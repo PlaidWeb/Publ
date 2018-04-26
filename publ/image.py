@@ -16,6 +16,11 @@ from . import model, utils
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
+def round(num):
+    """ Round a number to the nearest integer """
+    return int(num + 0.5)
+
+
 class Image:
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
@@ -36,10 +41,15 @@ class Image:
         Keyword arguments:
 
         scale -- the downsample factor for the base rendition
-        max_width -- the maximum width to target for input_scale
-        max_height -- the maximum height to target for input_scale
-        scale_min_width -- the minimum width to target for input_scale
-        scale_min_height -- the minimum height to target for input_scale
+        scale_min_width -- the minimum width after downsampling
+        scale_min_height -- the minimum height after downsampling
+        width -- the width to target
+        height -- the height to target
+        max_width -- the maximum width
+        max_height -- the maximum height
+        resize -- how to fit the width and height; "fit", "fill", or "stretch"
+        fill_crop_x -- horizontal offset fraction for resize="fill"
+        fill_crop_y -- vertical offset fraction for resize="fill"
         """
 
         input_filename = self._record.file_path
@@ -49,8 +59,7 @@ class Image:
         # The spec for building the output filename
         out_spec = [basename, self._record.checksum[-10:]]
 
-        size, box = self.get_rendition_fit_size(
-            self._record, kwargs, output_scale)
+        size, box = self.get_rendition_size(kwargs, output_scale)
         if size:
             out_spec.append('x'.join([str(v) for v in size]))
         if box:
@@ -80,12 +89,28 @@ class Image:
 
         return out_rel_path, size
 
-    @staticmethod
-    def get_rendition_fit_size(record, spec, output_scale):
+    def get_rendition_size(self, spec, output_scale):
+        mode = spec.get('resize', 'fit')
+
+        if mode == 'fit':
+            return self.get_rendition_fit_size(spec, output_scale)
+
+        if mode == 'fill':
+            return self.get_rendition_fill_size(spec, output_scale)
+
+        if mode == 'stretch':
+            return self.get_rendition_stretch_size(spec, output_scale)
+
+        raise ValueError("Unknown resize mode {}".format(mode))
+
+    def get_rendition_fit_size(self, spec, output_scale):
         """ Determine the scaled size based on the provided spec """
 
-        width = record.width
-        height = record.height
+        iw = self._record.width  # input width
+        ih = self._record.height  # input height
+
+        width = iw
+        height = ih
 
         scale = spec.get('scale')
         if scale:
@@ -128,10 +153,115 @@ class Image:
         height = height * output_scale
 
         # Never scale to larger than the base rendition
-        width = min(int(math.floor(width + 0.5)), record.width)
-        height = min(int(math.floor(height + 0.5)), record.height)
+        width = min(round(width), iw)
+        height = min(round(height), ih)
 
         return (width, height), None
+
+    def get_rendition_fill_size(self, spec, output_scale):
+        """ Determine the scale-crop size given the provided spec """
+
+        iw = self._record.width
+        ih = self._record.height
+
+        width = iw
+        height = ih
+
+        scale = spec.get('scale')
+        if scale:
+            width = width / scale
+            height = height / scale
+
+        min_width = spec.get('scale_min_width')
+        if min_width and width < min_width:
+            width = min_width
+
+        min_height = spec.get('scale_min_height')
+        if min_height and height < min_height:
+            height = min_height
+
+        tgt_width, tgt_height = spec.get('width'), spec.get('height')
+
+        if tgt_width and width > tgt_width:
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            height = tgt_height
+
+        tgt_width, tgt_height = spec.get('max_width'), spec.get('max_height')
+
+        if tgt_width and width > tgt_width:
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            height = tgt_height
+
+        width = width * output_scale
+        height = height * output_scale
+
+        # Never scale to larger than the base rendition (but keep the output
+        # aspect)
+        if width > iw:
+            height = height * iw / width
+            width = iw
+
+        if height > ih:
+            width = width * ih / height
+            height = ih
+
+        # Determine the box size
+        box_w = min(iw, round(width * ih / height))
+        box_h = min(ih, round(height * iw / width))
+
+        # Box offset
+        box_x = round((iw - box_w) * spec.get('fill_crop_x', 0.5))
+        box_y = round((ih - box_h) * spec.get('fill_crop_y', 0.5))
+
+        return (round(width), round(height)), (box_x, box_y, box_x + box_w, box_y + box_h)
+
+    def get_rendition_stretch_size(self, spec, output_scale):
+        """ Determine the scale-crop size given the provided spec """
+
+        width = self._record.width
+        height = self._record.height
+
+        scale = spec.get('scale')
+        if scale:
+            width = width / scale
+            height = height / scale
+
+        min_width = spec.get('scale_min_width')
+        if min_width and width < min_width:
+            width = min_width
+
+        min_height = spec.get('scale_min_height')
+        if min_height and height < min_height:
+            height = min_height
+
+        tgt_width, tgt_height = spec.get('width'), spec.get('height')
+
+        if tgt_width and width > tgt_width:
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            height = tgt_height
+
+        tgt_width, tgt_height = spec.get('max_width'), spec.get('max_height')
+
+        if tgt_width and width > tgt_width:
+            width = tgt_width
+
+        tgt_height = spec.get('height')
+        if tgt_height and height > tgt_height:
+            height = tgt_height
+
+        width = width * output_scale
+        height = height * output_scale
+
+        return (round(width), round(height)), None
 
 
 def get_image(path, search_path):
