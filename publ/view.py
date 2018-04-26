@@ -69,6 +69,13 @@ class View:
 
         self.link = utils.CallableProxy(self._link)
 
+        if 'date' in self.spec:
+            _, self.type, _ = utils.parse_date(self.spec['date'])
+        elif 'count' in self.spec:
+            self.type = 'count'
+        else:
+            self.type = None
+
     def _spec_filtered(self):
         # Return a version of our spec where all pagination stuff has been
         # removed
@@ -132,15 +139,6 @@ class View:
             else:
                 raise ValueError(
                     'newest/oldest not supported on sort type {}'.format(self._order_by))
-            return getattr(self, name)
-
-        if name == 'type':
-            if 'date' in self.spec:
-                _, self.type, _ = utils.parse_date(self.spec['date'])
-            elif 'count' in self.spec:
-                self.type = 'count'
-            else:
-                self.type = None
             return getattr(self, name)
 
         raise AttributeError("Unknown view attribute {}".format(name))

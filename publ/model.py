@@ -7,7 +7,8 @@ import logging
 import threading
 from enum import Enum
 
-from peewee import Proxy, Model, IntegerField, DateTimeField, CharField, ForeignKeyField, BooleanField
+import peewee
+from peewee import Proxy, Model, IntegerField, DateTimeField, CharField
 import playhouse.db_url
 
 from . import config
@@ -87,7 +88,10 @@ class PathAlias(BaseModel):
     """ Path alias mapping """
     path = CharField(unique=True)
     redirect_url = CharField(null=True)
-    redirect_entry = ForeignKeyField(Entry, null=True, backref='aliases')
+    redirect_entry = peewee.ForeignKeyField(
+        Entry,
+        null=True,
+        backref='aliases')
 
 
 class Image(BaseModel):
@@ -96,7 +100,7 @@ class Image(BaseModel):
     checksum = CharField()
     width = IntegerField()
     height = IntegerField()
-    transparent = BooleanField()
+    transparent = peewee.BooleanField()
     mtime = IntegerField()
 
 ALL_TYPES = [
