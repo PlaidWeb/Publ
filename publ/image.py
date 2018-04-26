@@ -4,7 +4,6 @@
 from __future__ import absolute_import, with_statement
 
 import os
-import math
 import hashlib
 import logging
 
@@ -14,11 +13,6 @@ from . import config
 from . import model, utils
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
-
-
-def round(num):
-    """ Round a number to the nearest integer """
-    return int(num + 0.5)
 
 
 class Image:
@@ -55,6 +49,8 @@ class Image:
         quality -- the JPEG quality to save the image as
         """
 
+        # pylint:disable=too-many-locals
+
         input_filename = self._record.file_path
         basename, ext = os.path.splitext(os.path.basename(input_filename))
         basename = utils.make_slug(basename)
@@ -85,11 +81,9 @@ class Image:
                 out_spec.append('b' + str(bg_color))
 
         # Set JPEG quality
-        if (ext == '.jpg' or ext == '.jpeg') and 'quality' in kwargs:
-            quality = kwargs['quality']
-            if quality:
-                out_spec.append('q' + str(quality))
-            out_args['quality'] = quality
+        if (ext == '.jpg' or ext == '.jpeg') and kwargs.get('quality'):
+            out_spec.append('q' + str(kwargs['quality']))
+            out_args['quality'] = kwargs['quality']
 
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
@@ -101,29 +95,28 @@ class Image:
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
         if not os.path.isfile(out_fullpath):
-            self.process_file(input_filename, out_fullpath,
-                              size, box, flatten, kwargs, out_args)
+            logger.info("Rendering file %s", out_fullpath)
+            if not os.path.isdir(os.path.dirname(out_fullpath)):
+                os.makedirs(os.path.dirname(out_fullpath))
+
+            image = PIL.Image.open(input_filename)
+
+            if size:
+                image = image.resize(size=size, box=box,
+                                     resample=PIL.Image.LANCZOS)
+            if flatten:
+                image = self.flatten(image, kwargs.get('background'))
+            image.save(out_fullpath, **out_args)
 
         return out_rel_path, size
 
-    def process_file(self, input_file, output_file, size, box, flatten, kwargs, encoder_args):
-        """ Process an input file to an output file """
-
-        dir = os.path.dirname(output_file)
-        if not os.path.isdir(dir):
-            os.makedirs(dir)
-
-        image = PIL.Image.open(input_file)
-        if size:
-            image = image.resize(size=size,
-                                 box=box,
-                                 resample=PIL.Image.LANCZOS)
-        if flatten:
-            image = self.flatten(image, kwargs)
-
-        image.save(output_file, **encoder_args)
-
     def get_rendition_size(self, spec, output_scale):
+        """
+        Wrapper to determine the overall rendition size and cropping box
+
+        Returns tuple of (size,box)
+        """
+
         mode = spec.get('resize', 'fit')
 
         if mode == 'fit':
@@ -140,11 +133,11 @@ class Image:
     def get_rendition_fit_size(self, spec, output_scale):
         """ Determine the scaled size based on the provided spec """
 
-        iw = self._record.width  # input width
-        ih = self._record.height  # input height
+        input_w = self._record.width  # input width
+        input_h = self._record.height  # input height
 
-        width = iw
-        height = ih
+        width = input_w
+        height = input_h
 
         scale = spec.get('scale')
         if scale:
@@ -187,71 +180,61 @@ class Image:
         height = height * output_scale
 
         # Never scale to larger than the base rendition
-        width = min(round(width), iw)
-        height = min(round(height), ih)
+        width = min(round(width), input_w)
+        height = min(round(height), input_h)
 
         return (width, height), None
 
     def get_rendition_fill_size(self, spec, output_scale):
         """ Determine the scale-crop size given the provided spec """
 
-        iw = self._record.width
-        ih = self._record.height
+        input_w = self._record.width
+        input_h = self._record.height
 
-        width = iw
-        height = ih
+        width = input_w
+        height = input_h
 
         scale = spec.get('scale')
         if scale:
             width = width / scale
             height = height / scale
 
-        min_width = spec.get('scale_min_width')
-        if min_width and width < min_width:
-            width = min_width
+        if spec.get('scale_min_width'):
+            width = max(width, spec['spec_min_width'])
 
-        min_height = spec.get('scale_min_height')
-        if min_height and height < min_height:
-            height = min_height
+        if spec.get('scale_min_height'):
+            height = max(height, spec['scale_min_height'])
 
-        tgt_width, tgt_height = spec.get('width'), spec.get('height')
+        if spec.get('width'):
+            width = min(width, spec['width'])
+        if spec.get('max_width'):
+            width = min(width, spec['max_width'])
 
-        if tgt_width and width > tgt_width:
-            width = tgt_width
-
-        tgt_height = spec.get('height')
-        if tgt_height and height > tgt_height:
-            height = tgt_height
-
-        tgt_width, tgt_height = spec.get('max_width'), spec.get('max_height')
-
-        if tgt_width and width > tgt_width:
-            width = tgt_width
-
-        tgt_height = spec.get('height')
-        if tgt_height and height > tgt_height:
-            height = tgt_height
+        if spec.get('height'):
+            height = min(height, spec['height'])
+        if spec.get('max_height'):
+            height = min(height, spec['max_height'])
 
         width = width * output_scale
         height = height * output_scale
 
         # Never scale to larger than the base rendition (but keep the output
         # aspect)
-        if width > iw:
-            height = height * iw / width
-            width = iw
+        if width > input_w:
+            height = height * input_w / width
+            width = input_w
 
-        if height > ih:
-            width = width * ih / height
-            height = ih
+        if height > input_h:
+            width = width * input_h / height
+            height = input_h
 
         # Determine the box size
-        box_w = min(iw, round(width * ih / height))
-        box_h = min(ih, round(height * iw / width))
+        box_w = min(input_w, round(width * input_h / height))
+        box_h = min(input_h, round(height * input_w / width))
 
         # Box offset
-        box_x = round((iw - box_w) * spec.get('fill_crop_x', 0.5))
-        box_y = round((ih - box_h) * spec.get('fill_crop_y', 0.5))
+        box_x = round((input_w - box_w) * spec.get('fill_crop_x', 0.5))
+        box_y = round((input_h - box_h) * spec.get('fill_crop_y', 0.5))
 
         return (round(width), round(height)), (box_x, box_y, box_x + box_w, box_y + box_h)
 
@@ -298,9 +281,10 @@ class Image:
         return (round(width), round(height)), None
 
     @staticmethod
-    def flatten(image, kwargs):
-        if 'background' in kwargs:
-            background = PIL.Image.new('RGB', image.size, kwargs['background'])
+    def flatten(image, bgcolor=None):
+        """ Flatten an image, with an optional background color """
+        if bgcolor:
+            background = PIL.Image.new('RGB', image.size, bgcolor)
             background.paste(image, mask=image.split()[3])
             return background
 

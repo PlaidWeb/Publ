@@ -219,7 +219,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         height = image_args.get('height')
         size_mode = image_args.get('resize', 'fit')
 
-        if width and height and not (size_mode == 'stretch'):
+        if width and height and size_mode != 'stretch':
             attrs['style'] = ';'.join([
                 'background-image:url(\'{}\')'.format(flask.escape(path)),
                 'background-size:{}'.format(CSS_SIZE_MODE[size_mode]),
