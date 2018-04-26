@@ -15,7 +15,7 @@ from . import queries
 
 class Category:
     """ Wrapper for category information """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
     def __init__(self, path):
         """ Initialize a category wrapper
@@ -86,7 +86,7 @@ class Category:
         # join them back into a path, and make unique
         subcats = {'/'.join(c) for c in subcats}
 
-        # convert to a bunch of Category objects and bind to the Category
+        # convert to a bunch of Category objects
         return [Category(c) for c in sorted(subcats)]
 
     def _entries(self, spec):
