@@ -7,7 +7,7 @@ import logging
 import threading
 from enum import Enum
 
-from peewee import Proxy, Model, IntegerField, DateTimeField, CharField, ForeignKeyField
+from peewee import Proxy, Model, IntegerField, DateTimeField, CharField, ForeignKeyField, BooleanField
 import playhouse.db_url
 
 from . import config
@@ -18,7 +18,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class BaseModel(Model):
@@ -96,6 +96,7 @@ class Image(BaseModel):
     checksum = CharField()
     width = IntegerField()
     height = IntegerField()
+    transparent = BooleanField()
     mtime = IntegerField()
 
 ALL_TYPES = [

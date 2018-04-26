@@ -246,7 +246,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             text = '{}{}</a>'.format(
                 self._make_tag('a', {
                     'href': path,
-                    'data-lightbox': image_args['gallery_id']
+                    'data-lightbox': image_args['gallery_id'],
+                    'title': title
                 }),
                 text)
 
