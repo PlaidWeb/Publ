@@ -59,15 +59,15 @@ class Image:
         basename, ext = os.path.splitext(os.path.basename(input_filename))
         basename = utils.make_slug(basename)
 
-        flatten = None
         if kwargs.get('format'):
             ext = '.' + kwargs['format']
-            flatten = ext not in ['.png', '.gif']
 
         # The spec for building the output filename
         out_spec = [basename, self._record.checksum[-10:]]
 
         out_args = {}
+        if ext in ['.png', '.jpg', '.jpeg']:
+            out_args['optimize'] = True
 
         size, box = self.get_rendition_size(kwargs, output_scale)
         if size and (size[0] < self._record.width or size[1] < self._record.height):
@@ -75,6 +75,8 @@ class Image:
         if box:
             out_spec.append('-'.join([str(v) for v in box]))
 
+        # Set RGBA flattening options
+        flatten = self._record.transparent and ext not in ['.png', '.gif']
         if flatten and 'background' in kwargs:
             bg_color = kwargs['background']
             if isinstance(bg_color, (tuple, list)):
@@ -82,6 +84,7 @@ class Image:
             else:
                 out_spec.append('b' + str(bg_color))
 
+        # Set JPEG quality
         if (ext == '.jpg' or ext == '.jpeg') and 'quality' in kwargs:
             quality = kwargs['quality']
             if quality:
@@ -96,23 +99,29 @@ class Image:
             self._record.checksum[2:6],
             out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
-        out_dir = os.path.dirname(out_fullpath)
-
-        if not os.path.isdir(out_dir):
-            os.makedirs(out_dir)
 
         if not os.path.isfile(out_fullpath):
-            # Process the file
-            input_image = PIL.Image.open(input_filename)
-            if size:
-                input_image = input_image.resize(size=size,
-                                                 box=box,
-                                                 resample=PIL.Image.LANCZOS)
-            if input_image.mode == 'RGBA' and flatten:
-                input_image = self.flatten(input_image, kwargs)
-            input_image.save(out_fullpath, optimize=True, **out_args)
+            self.process_file(input_filename, out_fullpath,
+                              size, box, flatten, kwargs, out_args)
 
         return out_rel_path, size
+
+    def process_file(self, input_file, output_file, size, box, flatten, kwargs, encoder_args):
+        """ Process an input file to an output file """
+
+        dir = os.path.dirname(output_file)
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+
+        image = PIL.Image.open(input_file)
+        if size:
+            image = image.resize(size=size,
+                                 box=box,
+                                 resample=PIL.Image.LANCZOS)
+        if flatten:
+            image = self.flatten(image, kwargs)
+
+        image.save(output_file, **encoder_args)
 
     def get_rendition_size(self, spec, output_scale):
         mode = spec.get('resize', 'fit')
@@ -326,7 +335,8 @@ def get_image(path, search_path):
             'checksum': md5.hexdigest(),
             'width': image.width,
             'height': image.height,
-            'mtime': mtime
+            'mtime': mtime,
+            'transparent': image.mode == 'RGBA'
         }
         record, created = model.Image.get_or_create(
             file_path=file_path, defaults=values)
