@@ -113,10 +113,12 @@ class View:
 
     @property
     def first(self):
+        """ Gets the first entry in the view """
         return self.entries[0] if self.entries else None
 
     @property
     def last(self):
+        """ Gets the last entry in the view """
         return self.entries[-1] if self.entries else None
 
     def __getattr__(self, name):
