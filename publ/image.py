@@ -47,7 +47,7 @@ class Image:
         basename = utils.make_slug(basename)
 
         # The spec for building the output filename
-        out_spec = [basename, self._record.checksum]
+        out_spec = [basename, self._record.checksum[-10:]]
 
         size, box = self.get_rendition_fit_size(
             self._record, kwargs, output_scale)
@@ -59,7 +59,10 @@ class Image:
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
         out_rel_path = os.path.join(
-            config.image_output_subdir, out_basename)
+            config.image_output_subdir,
+            self._record.checksum[0:2],
+            self._record.checksum[2:6],
+            out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
         out_dir = os.path.dirname(out_fullpath)
 
@@ -69,7 +72,7 @@ class Image:
         if not os.path.isfile(out_fullpath):
             # Process the file
             input_image = PIL.Image.open(input_filename)
-            if width < self._record.width or height < self._record.height:
+            if size[0] < self._record.width or size[1] < self._record.height:
                 input_image = input_image.resize(size=size,
                                                  box=box,
                                                  resample=PIL.Image.LANCZOS)
