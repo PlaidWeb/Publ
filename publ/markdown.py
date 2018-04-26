@@ -21,6 +21,11 @@ ENABLED_EXTENSIONS = [
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
 ]
 
+CSS_SIZE_MODE = {
+    'fit': 'contain',
+    'fill': 'cover'
+}
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -154,9 +159,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
                     '<code>{}</code></span>'.format(flask.escape(path)))
 
         # Get the 1x and 2x renditions
-        img_1x, width, height = img.get_rendition(
+        img_1x, size = img.get_rendition(
             1, self._rendition_args(image_args, {"quality": "quality_ldpi"}))
-        img_2x, _, _ = img.get_rendition(
+        img_2x, _ = img.get_rendition(
             2, self._rendition_args(image_args, {"quality": "quality_hdpi"}))
 
         # ... and their URLs
@@ -166,18 +171,18 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         text = self._make_tag('img', {
             'src': img_1x,
-            'width': width,
-            'height': height,
+            'width': size[0],
+            'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'title': title,
             'alt': alt_text
         })
 
         # Wrap it in a link as appropriate
-        if 'link' in image_args:
+        if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args:
+        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
             text = '{}{}</a>'.format(
                 self._fullsize_link(
                     img, image_args, title, absolute),
@@ -192,7 +197,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if fsk in image_args:
                 fullsize_args[key] = image_args[fsk]
 
-        img_fullsize, _, _ = img.get_rendition(1, fullsize_args)
+        img_fullsize, _ = img.get_rendition(1, fullsize_args)
         img_fullsize = utils.static_url(img_fullsize, absolute)
 
         return self._make_tag('a', {
@@ -201,31 +206,49 @@ class HtmlRenderer(misaka.HtmlRenderer):
             'title': title
         })
 
-    @staticmethod
-    def _remote_image(path, image_args, title, alt_text):
+    def _remote_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a remotely-stored image """
 
-        text = '<img src="{}"'.format(path)
+        attrs = {
+            'title': title,
+            'alt': alt_text
+        }
 
-        if 'width' in image_args:
-            text += ' width="{}"'.format(image_args['width'])
-        elif 'height' in image_args:
-            text += ' height="{}"'.format(image_args['height'])
+        # try to fudge the sizing
+        width = image_args.get('width')
+        height = image_args.get('height')
+        size_mode = image_args.get('resize', 'fit')
 
-        if title:
-            text += ' title="{}"'.format(flask.escape(title))
-        if alt_text:
-            text += ' alt="{}"'.format(flask.escape(alt_text))
+        if width and height and size_mode != 'stretch':
+            attrs['style'] = ';'.join([
+                'background-image:url(\'{}\')'.format(flask.escape(path)),
+                'background-size:{}'.format(CSS_SIZE_MODE[size_mode]),
+                'background-position:{:.1f}% {:.1f}%'.format(
+                    image_args.get('fill_crop_x', 0.5) * 100,
+                    image_args.get('fill_crop_y', 0.5) * 100),
+                'background-repeat:no-repeat'
+            ])
+            attrs['src'] = (
+                'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw'
+            )
+        else:
+            attrs['src'] = path
 
-        text += '>'
+        attrs['width'] = width
+        attrs['height'] = height
 
-        if 'link' in image_args:
+        text = self._make_tag('img', attrs)
+
+        if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args:
-            text = '<a data-lightbox="{}" href="{}">{}</a>'.format(
-                flask.escape(image_args['gallery_id']),
-                flask.escape(path),
+        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
+            text = '{}{}</a>'.format(
+                self._make_tag('a', {
+                    'href': path,
+                    'data-lightbox': image_args['gallery_id'],
+                    'title': title
+                }),
                 text)
 
         return text
@@ -236,14 +259,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
         # I was having trouble coming up with a single RE that did it right,
         # so let's just break it down into sub-problems. First, parse out the
         # alt text...
-        match = re.match(r'([^\"]+)\s+\"(.*)\"$', spec)
+        match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
         if match:
             spec, title = match.group(1, 2)
         else:
             title = None
 
         # and now parse out the arglist
-        match = re.match(r'([^\{]*)(\{(.*)\})$', spec)
+        match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
         if match:
             spec = match.group(1)
             args = self._parse_args(match.group(3))
@@ -268,21 +291,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Parse an arglist into args and kwargs """
         # per https://stackoverflow.com/a/49723227/318857
 
-        def extract_value(node):
-            """ extract a value from the AST """
-            if isinstance(node, ast.Str):
-                return node.s
-            elif isinstance(node, ast.Num):
-                return node.n
-            else:
-                raise TypeError('node type not supported: {}'.format(node))
-
         args = 'f({})'.format(args)
         tree = ast.parse(args)
         funccall = tree.body[0].value
 
-        args = [extract_value(arg) for arg in funccall.args]
-        kwargs = {arg.arg: extract_value(arg.value)
+        args = [ast.literal_eval(arg) for arg in funccall.args]
+        kwargs = {arg.arg: ast.literal_eval(arg.value)
                   for arg in funccall.keywords}
 
         if len(args) > 2:
