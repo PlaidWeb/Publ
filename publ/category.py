@@ -9,6 +9,8 @@ from flask import url_for
 
 from . import model
 from . import utils
+from . import entry
+from . import queries
 
 
 class Category:
@@ -38,6 +40,8 @@ class Category:
         self.link = utils.CallableProxy(self._link)
 
         self.subcats = utils.CallableProxy(self._get_subcats)
+        self.first = utils.CallableProxy(self._first)
+        self.last = utils.CallableProxy(self._last)
 
     def _link(self, template='', absolute=False):
         return url_for('category',
@@ -84,3 +88,20 @@ class Category:
 
         # convert to a bunch of Category objects and bind to the Category
         return [Category(c) for c in sorted(subcats)]
+
+    def _entries(self, spec):
+        """ Return a model query to get our entry records """
+        return model.Entry.select().where(
+            queries.build_query({**spec, 'category': self}))
+
+    def _first(self, **spec):
+        """ Get the earliest entry in this category, optionally including subcategories """
+        first = self._entries(spec).order_by(
+            model.Entry.entry_date, model.Entry.id)
+        return entry.Entry(first[0]) if first else None
+
+    def _last(self, **spec):
+        """ Get the latest entry in this category, optionally including subcategories """
+        last = self._entries(spec).order_by(
+            -model.Entry.entry_date, -model.Entry.id)
+        return entry.Entry(last[0]) if last else None
