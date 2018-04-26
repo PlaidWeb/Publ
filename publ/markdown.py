@@ -100,9 +100,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
             path, image_args, title = self._parse_image_spec(spec)
             composite_args = {**container_args, **image_args}
 
-            print('container', container_args)
-            print('image', image_args)
-
             if path.startswith('//') or '://' in path:
                 return self._remote_image(path, composite_args, title, alt_text)
 
@@ -264,14 +261,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
         match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
         if match:
             spec, title = match.group(1, 2)
-            print('spec="{}" title="{}"'.format(spec, title))
         else:
             title = None
 
         # and now parse out the arglist
         match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
         if match:
-            print('img match', match.group(1), match.group(3))
             spec = match.group(1)
             args = self._parse_args(match.group(3))
         else:
@@ -283,7 +278,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Parse the alt text out into (alt_text,args) """
         match = re.match(r'([^\{]*)(\{(.*)\})$', spec)
         if match:
-            print('alt match', match.group(1), match.group(3))
             spec = match.group(1)
             args = self._parse_args(match.group(3))
         else:
@@ -296,23 +290,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Parse an arglist into args and kwargs """
         # per https://stackoverflow.com/a/49723227/318857
 
-        def extract_value(node):
-            """ extract a value from the AST """
-            if isinstance(node, ast.Str):
-                return node.s
-            elif isinstance(node, ast.Num):
-                return node.n
-            elif isinstance(node, ast.NameConstant):
-                return node.value
-            else:
-                raise TypeError('node type not supported: {}'.format(node))
-
         args = 'f({})'.format(args)
         tree = ast.parse(args)
         funccall = tree.body[0].value
 
-        args = [extract_value(arg) for arg in funccall.args]
-        kwargs = {arg.arg: extract_value(arg.value)
+        args = [ast.literal_eval(arg) for arg in funccall.args]
+        kwargs = {arg.arg: ast.literal_eval(arg.value)
                   for arg in funccall.keywords}
 
         if len(args) > 2:
