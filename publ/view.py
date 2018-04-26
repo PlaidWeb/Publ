@@ -19,6 +19,20 @@ OFFSET_PRIORITY = ['date', 'last', 'first', 'before', 'after']
 PAGINATION_PRIORITY = ['date', 'count']
 
 
+#: Ordering queries for different sort orders
+ORDER_BY = {
+    'newest': [-model.Entry.entry_date, -model.Entry.id],
+    'oldest': [model.Entry.entry_date, model.Entry.id],
+    'title': [model.Entry.title, model.Entry.id]
+}
+
+REVERSE_ORDER_BY = {
+    'newest': [model.Entry.entry_date, model.Entry.id],
+    'oldest': [-model.Entry.entry_date, -model.Entry.id],
+    'title': [-model.Entry.title, -model.Entry.id]
+}
+
+
 class View:
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """ A view of entries """
@@ -58,14 +72,7 @@ class View:
             self._query = self._query.limit(spec['count'])
 
         self._order_by = spec.get('order', 'newest')
-        if self._order_by == 'newest':
-            self._order = [-model.Entry.entry_date, -model.Entry.id]
-        elif self._order_by == 'oldest':
-            self._order = [model.Entry.entry_date, model.Entry.id]
-        elif self._order_by == 'title':
-            self._order = [model.Entry.title, model.Entry.id]
-        else:
-            raise ValueError("Unknown sort order '{}'".format(self._order_by))
+        self._entries = self._query.order_by(*ORDER_BY[self._order_by])
 
         self.link = utils.CallableProxy(self._link)
 
@@ -104,13 +111,20 @@ class View:
                              category=self.spec.get('category'),
                              _external=absolute)
 
+    @property
+    def first(self):
+        return self.entries[0] if self.entries else None
+
+    @property
+    def last(self):
+        return self.entries[-1] if self.entries else None
+
     def __getattr__(self, name):
         """ Lazy evaluation of properties """
         # pylint: disable=attribute-defined-outside-init
 
         if name == 'entries':
-            self.entries = [Entry(e)
-                            for e in self._query.order_by(*self._order)]
+            self.entries = [Entry(e) for e in self._entries]
             return self.entries
 
         if name == 'last_modified':
@@ -124,11 +138,6 @@ class View:
 
         if name == 'previous' or name == 'next':
             self.previous, self.next = self._get_pagination()
-            return getattr(self, name)
-
-        if name == 'first' or name == 'last':
-            self.first = self.entries[0] if self.entries else None
-            self.last = self.entries[-1] if self.entries else None
             return getattr(self, name)
 
         if name == 'newest' or name == 'oldest':
