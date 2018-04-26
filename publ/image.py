@@ -50,20 +50,43 @@ class Image:
         resize -- how to fit the width and height; "fit", "fill", or "stretch"
         fill_crop_x -- horizontal offset fraction for resize="fill"
         fill_crop_y -- vertical offset fraction for resize="fill"
+        format -- output format
+        background -- background color when converting transparent to opaque
+        quality -- the JPEG quality to save the image as
         """
 
         input_filename = self._record.file_path
         basename, ext = os.path.splitext(os.path.basename(input_filename))
         basename = utils.make_slug(basename)
 
+        flatten = None
+        if kwargs.get('format'):
+            ext = '.' + kwargs['format']
+            flatten = ext not in ['.png', '.gif']
+
         # The spec for building the output filename
         out_spec = [basename, self._record.checksum[-10:]]
 
+        out_args = {}
+
         size, box = self.get_rendition_size(kwargs, output_scale)
-        if size:
+        if size and (size[0] < self._record.width or size[1] < self._record.height):
             out_spec.append('x'.join([str(v) for v in size]))
         if box:
             out_spec.append('-'.join([str(v) for v in box]))
+
+        if flatten and 'background' in kwargs:
+            bg_color = kwargs['background']
+            if isinstance(bg_color, (tuple, list)):
+                out_spec.append('b' + '-'.join([str(a) for a in bg_color]))
+            else:
+                out_spec.append('b' + str(bg_color))
+
+        if (ext == '.jpg' or ext == '.jpeg') and 'quality' in kwargs:
+            quality = kwargs['quality']
+            if quality:
+                out_spec.append('q' + str(quality))
+            out_args['quality'] = quality
 
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
@@ -81,11 +104,13 @@ class Image:
         if not os.path.isfile(out_fullpath):
             # Process the file
             input_image = PIL.Image.open(input_filename)
-            if size[0] < self._record.width or size[1] < self._record.height:
+            if size:
                 input_image = input_image.resize(size=size,
                                                  box=box,
                                                  resample=PIL.Image.LANCZOS)
-            input_image.save(out_fullpath)
+            if input_image.mode == 'RGBA' and flatten:
+                input_image = self.flatten(input_image, kwargs)
+            input_image.save(out_fullpath, optimize=True, **out_args)
 
         return out_rel_path, size
 
@@ -262,6 +287,15 @@ class Image:
         height = height * output_scale
 
         return (round(width), round(height)), None
+
+    @staticmethod
+    def flatten(image, kwargs):
+        if 'background' in kwargs:
+            background = PIL.Image.new('RGB', image.size, kwargs['background'])
+            background.paste(image, mask=image.split()[3])
+            return background
+
+        return image.convert('RGB')
 
 
 def get_image(path, search_path):
