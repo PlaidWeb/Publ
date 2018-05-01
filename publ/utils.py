@@ -139,7 +139,7 @@ def find_file(path, search_path):
 def make_slug(title):
     """ convert a title into a URL-friendly slug """
 
-    # TODO https://github.com/fluffy-critter/Publ/issues/16
+    # https://github.com/fluffy-critter/Publ/issues/16
     # this should probably handle things other than English ASCII, and also
     # some punctuation should just be outright removed (quotes/apostrophes/etc)
     return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ', '-')

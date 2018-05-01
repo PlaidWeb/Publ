@@ -160,7 +160,7 @@ class View:
         Returns a tuple of previous page, next page.
         """
 
-        # TODO https://github.com/fluffy-critter/Publ/issues/35
+        # https://github.com/fluffy-critter/Publ/issues/35
         oldest = self.oldest
         newest = self.newest
         oldest_neighbor = self.oldest.previous if oldest else None
@@ -196,7 +196,8 @@ class View:
                                   'count': count,
                                   'order': 'oldest'})
                 # our previous page starts at the last entry (ascending)
-                previous_view = View({**base, 'last': scan_view.entries[-1]}) if scan_view.entries else None
+                previous_view = (View({**base, 'last': scan_view.entries[-1]})
+                                 if scan_view.entries else None)
             else:
                 previous_view = None
 
@@ -217,7 +218,8 @@ class View:
                                   'count': count,
                                   'order': 'newest'})
                 # our previous page starts at the last entry (descending)
-                previous_view = View({**base, 'first': scan_view.entries[-1]}) if scan_view.entries else None
+                previous_view = (View({**base, 'first': scan_view.entries[-1]})
+                                 if scan_view.entries else None)
             else:
                 previous_view = None
 
