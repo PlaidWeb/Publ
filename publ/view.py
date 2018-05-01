@@ -196,7 +196,7 @@ class View:
                                   'count': count,
                                   'order': 'oldest'})
                 # our previous page starts at the last entry (ascending)
-                previous_view = View({**base, 'last': scan_view.entries[-1]})
+                previous_view = View({**base, 'last': scan_view.entries[-1]}) if scan_view.entries else None
             else:
                 previous_view = None
 
@@ -217,7 +217,7 @@ class View:
                                   'count': count,
                                   'order': 'newest'})
                 # our previous page starts at the last entry (descending)
-                previous_view = View({**base, 'first': scan_view.entries[-1]})
+                previous_view = View({**base, 'first': scan_view.entries[-1]}) if scan_view.entries else None
             else:
                 previous_view = None
 
