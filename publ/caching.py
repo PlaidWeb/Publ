@@ -6,7 +6,11 @@ from flask import request
 
 from . import config
 
-cache = Cache(config=config.cache)  # pylint: disable=invalid-name
+cache = Cache()
+
+
+def init_app(app):
+    cache.init_app(app, config=config.cache)
 
 
 def make_category_key():
