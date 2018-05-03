@@ -7,8 +7,8 @@ name = "pypi"
 
 [packages]
 
+flask-caching = "*"
 
 
 [dev-packages]
 
-pylint = "*"

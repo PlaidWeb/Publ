@@ -13,7 +13,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='Publ',
 
-    version='0.1.6',
+    version='0.1.7',
 
     description='A content-management system for flexible web-based publishing',
 
@@ -53,7 +53,7 @@ setup(
 
     install_requires=[
         'Flask',
-        'Flask-Cache',
+        'Flask-Caching',
         'arrow',
         'peewee',
         'misaka',

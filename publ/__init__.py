@@ -6,7 +6,7 @@ import arrow
 import flask
 
 from . import config, rendering, model, index, caching, view, utils
-from .caching import cache
+from . import caching
 
 
 def publ(name, cfg):
@@ -50,7 +50,7 @@ def publ(name, cfg):
     if 'CACHE_THRESHOLD' in config.cache:
         app.after_request(set_cache_expiry)
 
-    cache.init_app(app)
+    caching.init_app(app)
 
     # Scan the index
     model.setup()
