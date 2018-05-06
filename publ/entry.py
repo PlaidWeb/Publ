@@ -59,17 +59,6 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
-        self._relative_search_path = [
-            os.path.dirname(self._record.file_path),
-            os.path.join(config.content_folder, self._record.category),
-            config.content_folder,
-            config.static_folder,
-        ]
-        self._absolute_search_path = [
-            config.content_folder,
-            config.static_folder,
-        ]
-
     def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
@@ -100,6 +89,14 @@ class Entry:
             args['first'] = self._record.id
 
         return flask.url_for('category', **args, _external=absolute)
+
+    @property
+    def image_search_path(self):
+        """ The relative image search path for this entry """
+        return [
+            os.path.dirname(self._record.file_path),
+            os.path.join(config.content_folder, self._record.category)
+        ]
 
     def _load(self):
         """ ensure the message payload is loaded """
@@ -144,13 +141,10 @@ class Entry:
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
-            md_config = {
-                **kwargs,
-                "relative_search_path": self._relative_search_path,
-                "absolute_search_path": self._absolute_search_path
-            }
-
-            return flask.Markup(markdown.to_html(text, config=md_config))
+            return flask.Markup(markdown.to_html(
+                text,
+                config=kwargs,
+                image_search_path=self.image_search_path))
         return flask.Markup(text)
 
     def __getattr__(self, name):
