@@ -13,7 +13,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='Publ',
 
-    version='0.1.7',
+    version='0.1.8',
 
     description='A content-management system for flexible web-based publishing',
 
@@ -63,7 +63,7 @@ setup(
     ],
 
     extras_require={
-        'dev': ['pylint'],
+        'dev': ['pylint', 'twine'],
     },
 
     project_urls={
