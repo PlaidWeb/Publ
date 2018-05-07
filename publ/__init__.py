@@ -6,7 +6,6 @@ import arrow
 import flask
 
 from . import config, rendering, model, index, caching, view, utils
-from . import caching
 
 
 def publ(name, cfg):
@@ -42,7 +41,10 @@ def publ(name, cfg):
         app.register_error_handler(Exception, rendering.render_exception)
 
     app.jinja_env.globals.update(  # pylint: disable=no-member
-        get_view=view.get_view, arrow=arrow, static=utils.static_url)
+        get_view=view.get_view,
+        arrow=arrow,
+        static=utils.static_url
+    )
 
     if config.index_rescan_interval:
         app.before_request(scan_index)

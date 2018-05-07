@@ -292,13 +292,19 @@ class Image:
 
 
 def get_image(path, search_path):
-    """ Get an Image object. Arguments:
+    """ Get an Image object. If the path is given as absolute, it will be
+    relative to the content directory; otherwise it will be relative to the
+    search path.
 
     path -- the image's filename
-    search_path -- a search path or list of search paths
+    search_path -- a search path for the image (string or list of strings)
     """
 
-    file_path = utils.find_file(path, search_path)
+    if os.path.isabs(path):
+        file_path = utils.find_file(os.path.relpath(
+            path, '/'), config.content_folder)
+    else:
+        file_path = utils.find_file(path, search_path)
     if not file_path:
         return None
 
