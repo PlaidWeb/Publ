@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import re
 import ast
-import os
 import logging
 
 import misaka
@@ -32,13 +31,10 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting """
 
-    def __init__(self, config):
+    def __init__(self, config, image_search_path):
         super().__init__()
         self._config = config
-        self._relative_search_path = config.get(
-            'relative_search_path', config.get('search_path'))
-        self._absolute_search_path = config.get(
-            'absolute_search_path', config.get('search_path'))
+        self._image_search_path = image_search_path
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition """
@@ -145,15 +141,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def _local_image(self, path, image_args, title, alt_text):
         """ Render an img tag for a locally-stored image """
 
-        # Determine the appropriate search path for the image request
-        if os.path.isabs(path):
-            search_path = self._absolute_search_path
-            path = os.path.relpath(path, "/")
-        else:
-            search_path = self._relative_search_path
-
         # Get the image object
-        img = image.get_image(path, search_path)
+        img = image.get_image(path, self._image_search_path)
         if not img:
             return ('<span class="error">Couldn\'t find image: ' +
                     '<code>{}</code></span>'.format(flask.escape(path)))
@@ -311,9 +300,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return kwargs
 
 
-def to_html(text, config):
+def to_html(text, config, image_search_path):
     """ Convert Markdown text to HTML """
 
-    processor = misaka.Markdown(HtmlRenderer(config),
+    processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
     return processor(text)
