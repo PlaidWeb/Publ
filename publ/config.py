@@ -12,7 +12,7 @@ template_folder = 'templates'
 static_folder = 'static'
 static_url_path = '/static'
 image_output_subdir = '_img'
-index_rescan_interval = 300
+index_rescan_interval = 7200
 timezone = tz.tzlocal()
 cache = {}
 
