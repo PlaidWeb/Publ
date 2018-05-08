@@ -89,6 +89,20 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
             flask.escape(text.strip()))
 
+    @staticmethod
+    def _remap_path(path):
+        if path.startswith('@'):
+            return utils.static_url(path[1:])
+        return path
+
+    def link(self, content, link, title=''):
+        """ Links that start with @ are treated as a static file link """
+        link = self._remap_path(link)
+        return '<a href="{link}"{title}>{content}</a>'.format(
+            link=link,
+            title=' title="{}"'.format(flask.escape(title)) if title else '',
+            content=content)
+
     def _render_image(self, spec, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
 
@@ -96,8 +110,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             path, image_args, title = self._parse_image_spec(spec)
             composite_args = {**container_args, **image_args}
 
-            if path.startswith('//') or '://' in path:
-                return self._remote_image(path, composite_args, title, alt_text)
+            if path.startswith('//') or path.startswith('@') or '://' in path:
+                return self._remote_image(self._remap_path(path), composite_args, title, alt_text)
 
             return self._local_image(path, composite_args, title, alt_text)
         except Exception as err:  # pylint: disable=broad-except
