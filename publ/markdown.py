@@ -89,19 +89,24 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
             flask.escape(text.strip()))
 
-    @staticmethod
-    def _remap_path(path):
+    def _remap_path(self, path):
+        """ Remap a static URL to the static path handler """
+
         if path.startswith('@'):
-            return utils.static_url(path[1:])
+            return utils.static_url(path[1:], absolute=self._config.get('absolute'))
+
         return path
 
     def link(self, content, link, title=''):
-        """ Links that start with @ are treated as a static file link """
+        """ Emit a link, potentially remapped based on our embed or static rules """
+
         link = self._remap_path(link)
-        return '<a href="{link}"{title}>{content}</a>'.format(
-            link=link,
-            title=' title="{}"'.format(flask.escape(title)) if title else '',
-            content=content)
+        return '{}{}</a>'.format(
+            self._make_tag('a', {
+                'href': link,
+                'title': title if title else None
+            }),
+            content)
 
     def _render_image(self, spec, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
