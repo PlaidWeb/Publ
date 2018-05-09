@@ -94,7 +94,8 @@ def image_function(template=None, entry=None, category=None):
     def rendition(filename, output_scale=1, **kwargs):
         """ Get a URL for a rendition of an image, to be used by the templates """
         img = image.get_image(filename, path)
-        return utils.static_url(img.get_rendition(output_scale, kwargs)[0])
+        return utils.static_url(img.get_rendition(output_scale, kwargs)[0],
+                                absolute=kwargs.get('absolute'))
 
     return rendition
 
@@ -103,11 +104,13 @@ def render_publ_template(template, **kwargs):
     """ Render out a template, providing the image function based on the args """
     return render_template(
         template.filename,
-        **kwargs,
+        template=template,
         image=image_function(
             template=template,
             category=kwargs.get('category'),
-            entry=kwargs.get('entry')))
+            entry=kwargs.get('entry')),
+        **kwargs
+    )
 
 
 def render_error(category, error_message, error_codes, exception=None):
