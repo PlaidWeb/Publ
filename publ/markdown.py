@@ -58,8 +58,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             spec_list = spec_list[:container_args['count']]
 
         if 'div_class' in container_args:
-            text += self._make_tag('div',
-                                   {'class': container_args['div_class']})
+            text += '</p>' + self._make_tag('div',
+                                            {'class': container_args['div_class']})
 
         for spec in spec_list:
             if not spec:
@@ -70,7 +70,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                        alt) if spec else ''
 
         if 'div_class' in container_args:
-            text += '</div>'
+            text += '</div><p>'
 
         return text or ' '
 
@@ -89,19 +89,24 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
             flask.escape(text.strip()))
 
-    @staticmethod
-    def _remap_path(path):
-        if path.startswith('@'):
-            return utils.static_url(path[1:])
-        return path
-
     def link(self, content, link, title=''):
-        """ Links that start with @ are treated as a static file link """
+        """ Emit a link, potentially remapped based on our embed or static rules """
+
         link = self._remap_path(link)
-        return '<a href="{link}"{title}>{content}</a>'.format(
-            link=link,
-            title=' title="{}"'.format(flask.escape(title)) if title else '',
-            content=content)
+        return '{}{}</a>'.format(
+            self._make_tag('a', {
+                'href': link,
+                'title': title if title else None
+            }),
+            content)
+
+    def _remap_path(self, path):
+        """ Remap a static URL to the static path handler """
+
+        if path.startswith('@'):
+            return utils.static_url(path[1:], absolute=self._config.get('absolute'))
+
+        return path
 
     def _render_image(self, spec, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
@@ -121,11 +126,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                                        flask.escape(str(err))))
 
     @staticmethod
-    def _make_tag(name, attrs):
+    def _make_tag(name, attrs, start_end=False):
         text = '<' + name
         for key, val in attrs.items():
             if val is not None:
                 text += ' {}="{}"'.format(key, flask.escape(val))
+        if start_end:
+            text += ' /'
         text += '>'
         return text
 
