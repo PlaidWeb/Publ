@@ -42,6 +42,7 @@ class Category:
         self.subcats = utils.CallableProxy(self._get_subcats)
         self.first = utils.CallableProxy(self._first)
         self.last = utils.CallableProxy(self._last)
+        self.name = self.basename.replace('_', ' ')
 
     def _link(self, template='', absolute=False):
         return url_for('category',
