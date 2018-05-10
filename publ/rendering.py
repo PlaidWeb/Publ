@@ -8,6 +8,7 @@ import logging
 
 import flask
 from flask import request, redirect, render_template, url_for
+from werkzeug.exceptions import HTTPException
 
 from . import config
 from . import path_alias
@@ -148,6 +149,12 @@ def render_error(category, error_message, error_codes, exception=None):
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
+    if isinstance(error, HTTPException) and error.code:
+        return render_error(category, error.name, error.code, exception={
+            'type': type(error).__name__,
+            'str': error.description,
+            'args': error.args
+        })
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
@@ -180,7 +187,7 @@ def render_category(category='', template='index'):
 
     # Forbidden template types
     if template in ['entry', 'error']:
-        return render_error(category, 'Unsupported template', 400)
+        return render_error(category, 'Unsupported template', 403)
 
     if category:
         # See if there's any entries for the view...
