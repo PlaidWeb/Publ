@@ -55,8 +55,8 @@ class Category:
     @cached_property
     def parent(self):
         """ Get the parent category """
-        if path:
-            return Category(os.path.dirname(path))
+        if self.path:
+            return Category(os.path.dirname(self.path))
         return None
 
     def _get_subcats(self, recurse=False):
