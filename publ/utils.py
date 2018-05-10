@@ -1,11 +1,15 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
+from __future__ import absolute_import, with_statement
+
 import re
+import os
 
 import arrow
+import flask
 
-import config
+from . import config
 
 
 class CallableProxy:
@@ -32,16 +36,21 @@ class CallableProxy:
         if not self._has_default:
             if self._default_args:
                 self._default = self._func(
-                    *self._default_args, **self._default_kwargs)
+                    *self._default_args,
+                    **self._default_kwargs)
             else:
                 self._default = self._func(**self._default_kwargs)
             self._has_default = True
         return self._default
 
-    def __call__(self, **kwargs):
+    def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
         kwargs = dict(self._default_kwargs, **kwargs)
-        return self._func(*self._default_args, **kwargs)
+
+        # override args as well
+        pos_args = [*args, *self._default_args[len(args):]]
+
+        return self._func(*pos_args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._get_default(), name)
@@ -59,6 +68,26 @@ class CallableProxy:
         return self._get_default().__iter__()
 
 
+class TrueCallableProxy(CallableProxy):
+    """ A version of CallableProxy that is always truthy """
+    # pylint: disable=too-few-public-methods
+
+    def __nonzero__(self):
+        return True
+
+    def __len__(self):
+        return True
+
+#: arrow format string for 'day' archives
+DAY_FORMAT = 'YYYY-MM-DD'
+
+#: arrow format string for 'month' archives
+MONTH_FORMAT = 'YYYY-MM'
+
+#: arrow format string for 'year' archives
+YEAR_FORMAT = 'YYYY'
+
+
 def parse_date(datestr):
     """ Parse a date expression into a tuple of:
 
@@ -70,17 +99,58 @@ def parse_date(datestr):
 
     match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?$', datestr)
     if not match:
-        return (arrow.get(datestr, tzinfo=config.timezone).replace(tzinfo=config.timezone), 'day', 'YYYY-MM-DD')
+        return (arrow.get(datestr,
+                          tzinfo=config.timezone).replace(tzinfo=config.timezone),
+                'day', 'YYYY-MM-DD')
 
     year, month, day = match.group(1, 3, 5)
     start = arrow.Arrow(year=int(year), month=int(
         month or 1), day=int(day or 1), tzinfo=config.timezone)
 
     if day:
-        return start, 'day', 'YYYY-MM-DD'
+        return start, 'day', DAY_FORMAT
     elif month:
-        return start, 'month', 'YYYY-MM'
+        return start, 'month', MONTH_FORMAT
     elif year:
-        return start, 'year', 'YYYY'
+        return start, 'year', YEAR_FORMAT
 
-    return ValueError("Could not parse date: {}".format(datestr))
+    raise ValueError("Could not parse date: {}".format(datestr))
+
+
+def find_file(path, search_path):
+    """ Find a file by relative path. Arguments:
+
+    path -- the image's filename
+    search_path -- a list of directories to check in
+
+    Returns: the resolved file path
+    """
+
+    if isinstance(search_path, str):
+        search_path = [search_path]
+    for relative in search_path:
+        candidate = os.path.normpath(os.path.join(relative, path))
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def make_slug(title):
+    """ convert a title into a URL-friendly slug """
+
+    # https://github.com/fluffy-critter/Publ/issues/16
+    # this should probably handle things other than English ASCII, and also
+    # some punctuation should just be outright removed (quotes/apostrophes/etc)
+    return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ', '-')
+
+
+def static_url(path, absolute=False):
+    """ Shorthand for returning a URL for the requested static file.
+
+    Arguments:
+
+    path -- the path to the file (relative to the static files directory)
+    absolute -- whether the link should be absolute or relative
+    """
+    return flask.url_for('static', filename=path, _external=absolute)

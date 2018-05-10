@@ -1,6 +1,8 @@
 # index.py
 ''' Content indexer '''
 
+from __future__ import absolute_import, with_statement
+
 import os
 import logging
 
@@ -30,27 +32,31 @@ def scan_file(fullpath, relpath, assign_id):
             return entry.scan_file(fullpath, relpath, assign_id)
 
         return True
-    except Exception:  # pylint: disable=broad-except
+    except:  # pylint: disable=bare-except
         logger.exception("Got error parsing %s", fullpath)
     return None
 
 
 def get_last_mtime(fullpath):
     """ Get the last known modification time for a file """
-
     record = model.FileMTime.get_or_none(model.FileMTime.file_path == fullpath)
     if record:
         return record.stat_mtime
     return None
 
 
-def set_last_mtime(fullpath, mtime):
+def set_last_mtime(fullpath, mtime=None):
     """ Set the last known modification time for a file """
-    record, created = model.FileMTime.get_or_create(
-        file_path=fullpath, defaults={'stat_mtime': mtime})
-    if not created:
-        record.stat_mtime = mtime
-        record.save()
+    try:
+        mtime = mtime or os.stat(fullpath).st_mtime
+
+        record, created = model.FileMTime.get_or_create(
+            file_path=fullpath, defaults={'stat_mtime': os.stat(fullpath).st_mtime})
+        if not created:
+            record.stat_mtime = mtime
+            record.save()
+    except FileNotFoundError:
+        model.FileMTime.delete().where(model.FileMTime.file_path == fullpath)
 
 
 class IndexWatchdog(watchdog.events.FileSystemEventHandler):
@@ -63,11 +69,14 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         """ Update a file """
         relpath = os.path.relpath(fullpath, self.content_dir)
 
-        if scan_file(fullpath, relpath, True):
-            logger.info("Updated %s", fullpath)
-            set_last_mtime(fullpath, os.stat(fullpath).st_mtime)
-        else:
-            logger.warning("Couldn't update %s", fullpath)
+        try:
+            if scan_file(fullpath, relpath, True):
+                logger.info("Updated %s", fullpath)
+                set_last_mtime(fullpath)
+            else:
+                logger.warning("Couldn't update %s", fullpath)
+        except:  # pylint: disable=bare-except
+            logger.exception("Got error updating %s", fullpath)
 
     def on_created(self, event):
         """ on_created handler """
@@ -85,6 +94,7 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         """ on_moved handler """
         logger.info("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
+            self.update_file(event.src_path)
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):

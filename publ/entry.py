@@ -1,6 +1,8 @@
 # item.py
 """ Functions for handling content items """
 
+from __future__ import absolute_import, with_statement
+
 import email
 import functools
 import logging
@@ -14,12 +16,13 @@ import uuid
 import arrow
 import flask
 
-import config
-
-from . import model, queries
+from . import config
+from . import model
+from . import queries
 from . import path_alias
 from . import markdown
-from .utils import CallableProxy
+from . import utils
+from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -51,16 +54,17 @@ class Entry:
 
         self.link = CallableProxy(self._link)
         self.permalink = CallableProxy(self._permalink)
+        self.archive = CallableProxy(self._archive_link)
 
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
-    def _link(self, **kwargs):
+    def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
             return self._record.redirect_url
 
-        return self._permalink(**kwargs)
+        return self._permalink(*args, **kwargs)
 
     def _permalink(self, absolute=False, expand=True):
         """ Returns a canonical URL for the item """
@@ -69,6 +73,30 @@ class Entry:
                              category=self._record.category if expand else None,
                              slug_text=self._record.slug_text if expand else None,
                              _external=absolute)
+
+    def _archive_link(self, paging=None, template='', category=None, absolute=False):
+        args = {
+            'template': template,
+            'category': category if category is not None else self.category,
+        }
+        if paging == 'day':
+            args['date'] = self.date.format(utils.DAY_FORMAT)
+        elif paging == 'month':
+            args['date'] = self.date.format(utils.MONTH_FORMAT)
+        elif paging == 'year':
+            args['date'] = self.date.format(utils.YEAR_FORMAT)
+        else:
+            args['first'] = self._record.id
+
+        return flask.url_for('category', **args, _external=absolute)
+
+    @property
+    def image_search_path(self):
+        """ The relative image search path for this entry """
+        return [
+            os.path.dirname(self._record.file_path),
+            os.path.join(config.content_folder, self._record.category)
+        ]
 
     def _load(self):
         """ ensure the message payload is loaded """
@@ -89,16 +117,16 @@ class Entry:
                 more = body[6:]
                 body = ''
 
-            # TODO https://github.com/fluffy-critter/Publ/issues/9
-            # Not only will we want to accept args on the markdown path but
-            # we'll want to ignore them on the HTML path (or maybe implement
-            # a VERY basic template processor even for HTML)
             _, ext = os.path.splitext(filepath)
             is_markdown = ext == '.md'
-            self.body = CallableProxy(
-                self._get_markup, body or '', is_markdown)
-            self.more = CallableProxy(
-                self._get_markup, more or '', is_markdown)
+            self.body = TrueCallableProxy(
+                self._get_markup,
+                body,
+                is_markdown) if body else CallableProxy(lambda **kwargs: '')
+            self.more = TrueCallableProxy(
+                self._get_markup,
+                more,
+                is_markdown) if more else CallableProxy(lambda **kwargs: '')
 
             self.last_modified = arrow.get(
                 os.stat(self._record.file_path).st_mtime).to(config.timezone)
@@ -106,15 +134,17 @@ class Entry:
             return True
         return False
 
-    @staticmethod
-    def _get_markup(text, is_markdown, **kwargs):
+    def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
-            return flask.Markup(markdown.to_html(text), **kwargs)
+            return flask.Markup(markdown.to_html(
+                text,
+                config=kwargs,
+                image_search_path=self.image_search_path))
         return flask.Markup(text)
 
     def __getattr__(self, name):
@@ -185,15 +215,6 @@ class Entry:
         return self._message.get_all(name) or []
 
 
-def make_slug(title):
-    """ convert a title into a URL-friendly slug """
-
-    # TODO https://github.com/fluffy-critter/Publ/issues/16
-    # this should probably handle things other than English ASCII, and also
-    # some punctuation should just be outright removed (quotes/apostrophes/etc)
-    return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ', '-')
-
-
 def guess_title(basename):
     """ Attempt to guess the title from the filename """
 
@@ -235,7 +256,10 @@ def get_entry_id(entry, fullpath, assign_id):
         # averages around 0.25 collisions per ID generated while keeping the
         # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
         # per ID.
-        limit = model.Entry.select().count() * 5 + 10
+
+        # database=None is to shut up pylint
+        limit = max(10, model.Entry.select().count(database=None) * 5)
+
         entry_id = random.randint(1, limit)
         while model.Entry.get_or_none(model.Entry.id == entry_id):
             entry_id = random.randint(1, limit)

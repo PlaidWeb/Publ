@@ -1,15 +1,20 @@
 # rendering.py
 """ Rendering functions """
 
+from __future__ import absolute_import, with_statement
+
 import os
 import logging
 
 import flask
 from flask import request, redirect, render_template, url_for
+from werkzeug.exceptions import HTTPException
 
-import config
-
-from . import path_alias, model
+from . import config
+from . import path_alias
+from . import model
+from . import image
+from . import utils
 from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
@@ -53,9 +58,9 @@ def map_template(category, template_list):
     for template in template_list:
         path = os.path.normpath(category)
         while path != None:
-            for extension in ['', '.html', '.xml', '.json']:
+            for extension in ['', '.html', '.htm', '.xml', '.json']:
                 candidate = os.path.join(path, template + extension)
-                file_path = os.path.join(config.template_directory, candidate)
+                file_path = os.path.join(config.template_folder, candidate)
                 if os.path.isfile(file_path):
                     return Template(template, candidate, file_path)
             parent = os.path.dirname(path)
@@ -65,20 +70,48 @@ def map_template(category, template_list):
                 path = None
 
 
-def static_url(path, absolute=False):
-    """ Shorthand for returning a URL for the requested static file.
-
-    Arguments:
-
-    path -- the path to the file (relative to the static files directory)
-    absolute -- whether the link should be absolute or relative
-    """
-    return url_for('static', filename=path, _external=absolute)
-
-
 def get_redirect():
     """ Check to see if the current request is a redirection """
     return path_alias.get_redirect([request.full_path, request.path])
+
+
+def image_function(template=None, entry=None, category=None):
+    """ Get a function that gets an image """
+
+    path = []
+
+    if entry is not None:
+        path += entry.image_search_path
+    if category is not None:
+        # Since the category might be a parent of the entry's category we add
+        # this too
+        path += os.path.join(config.content_folder, category.path)
+    if template is not None:
+        path.append(os.path.join(
+            config.content_folder,
+            os.path.dirname(os.path.relpath(template.filename,
+                                            config.template_folder))))
+
+    def rendition(filename, output_scale=1, **kwargs):
+        """ Get a URL for a rendition of an image, to be used by the templates """
+        img = image.get_image(filename, path)
+        return utils.static_url(img.get_rendition(output_scale, kwargs)[0],
+                                absolute=kwargs.get('absolute'))
+
+    return rendition
+
+
+def render_publ_template(template, **kwargs):
+    """ Render out a template, providing the image function based on the args """
+    return render_template(
+        template.filename,
+        template=template,
+        image=image_function(
+            template=template,
+            category=kwargs.get('category'),
+            entry=kwargs.get('entry')),
+        **kwargs
+    )
 
 
 def render_error(category, error_message, error_codes, exception=None):
@@ -104,11 +137,10 @@ def render_error(category, error_message, error_codes, exception=None):
 
     template = map_template(category, template_list)
     if template:
-        return render_template(
-            template.filename,
+        return render_publ_template(
+            template,
             error={'code': error_code, 'message': error_message},
-            exception=exception,
-            template=template), error_code
+            exception=exception), error_code
 
     # no template found, so fall back to default Flask handler
     return flask.abort(error_code)
@@ -117,6 +149,12 @@ def render_error(category, error_message, error_codes, exception=None):
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
+    if isinstance(error, HTTPException) and error.code:
+        return render_error(category, error.name, error.code, exception={
+            'type': type(error).__name__,
+            'str': error.description,
+            'args': error.args
+        })
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
@@ -149,7 +187,7 @@ def render_category(category='', template='index'):
 
     # Forbidden template types
     if template in ['entry', 'error']:
-        return render_error(category, 'Unsupported template', 400)
+        return render_error(category, 'Unsupported template', 403)
 
     if category:
         # See if there's any entries for the view...
@@ -175,10 +213,10 @@ def render_category(category='', template='index'):
             view_spec[key] = request.args[key]
 
     view_obj = View(view_spec)
-    return render_template(tmpl.filename,
-                           category=Category(category),
-                           view=view_obj,
-                           template=tmpl), {'Content-Type': mime_type(tmpl)}
+    return render_publ_template(
+        tmpl,
+        category=Category(category),
+        view=view_obj), {'Content-Type': mime_type(tmpl)}
 
 
 @cache.cached(key_prefix=caching.make_entry_key)
@@ -248,7 +286,7 @@ def render_entry(entry_id, slug_text='', category=''):  # pylint: disable=too-ma
     if not tmpl:
         return render_error(category, 'Entry template not found', 400)
 
-    return render_template(tmpl.filename,
-                           entry=entry_obj,
-                           category=Category(category),
-                           template=tmpl), {'Content-Type': mime_type(tmpl)}
+    return render_publ_template(
+        tmpl,
+        entry=entry_obj,
+        category=Category(category)), {'Content-Type': mime_type(tmpl)}

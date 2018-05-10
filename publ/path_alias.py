@@ -1,6 +1,8 @@
 # path_alias.py
 """ Handling for URL aliases """
 
+from __future__ import absolute_import, with_statement
+
 from flask import url_for
 
 from . import model
@@ -58,4 +60,4 @@ def get_redirect(paths):
                            slug_text=record.redirect_entry.slug_text)
         elif record and record.redirect_url:
             return record.redirect_url
-        return None
+    return None
