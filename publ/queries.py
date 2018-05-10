@@ -1,6 +1,8 @@
 # queries.py
 """ Collection of commonly-used queries """
 
+from __future__ import absolute_import, with_statement
+
 import arrow
 
 from . import model, utils
@@ -33,13 +35,14 @@ def where_entry_visible_future():
 
 def where_entry_category(category, recurse=False):
     """ Generate a where clause for a particular category """
+
     if category or not recurse:
-        cat_where = (model.Entry.category == category)
+        cat_where = (model.Entry.category == str(category))
 
         if recurse:
             # We're recursing and aren't in /, so add the prefix clause
             cat_where = cat_where | (
-                model.Entry.category.startswith(category + '/'))
+                model.Entry.category.startswith(str(category) + '/'))
     else:
         cat_where = True
 

@@ -1,22 +1,26 @@
 # model.py
 """ Database schema for the content index """
 
+from __future__ import absolute_import
+
 import logging
 import threading
 from enum import Enum
 
-from peewee import Model, IntegerField, DateTimeField, CharField, ForeignKeyField
+import peewee
+from peewee import Proxy, Model, IntegerField, DateTimeField, CharField
 import playhouse.db_url
 
-import config
+from . import config
 
-database = playhouse.db_url.connect(config.database)  # pylint: disable=invalid-name
-lock = threading.Lock() # pylint: disable=invalid-name
+DATABASE_PROXY = Proxy()
+lock = threading.Lock()  # pylint: disable=invalid-name
 
-logger = logging.getLogger(__name__) # pylint: disable=invalid-name
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 6
+
 
 class BaseModel(Model):
     """ Base model for our content index """
@@ -24,15 +28,15 @@ class BaseModel(Model):
 
     class Meta:
         """ database configuration """
-        database = database
+        database = DATABASE_PROXY
 
 
 class PublishStatus(Enum):
     """ The status of the entry """
-    DRAFT = 0 # Entry should not be rendered
-    HIDDEN = 1 # Entry should be shown via direct link, but not shown on a view
-    PUBLISHED = 2 # Entry is visible
-    SCHEDULED = 3 # Entry will be visible in the future
+    DRAFT = 0  # Entry should not be rendered
+    HIDDEN = 1  # Entry should be shown via direct link, but not shown on a view
+    PUBLISHED = 2  # Entry is visible
+    SCHEDULED = 3  # Entry will be visible in the future
 
     @staticmethod
     class Field(IntegerField):
@@ -84,17 +88,20 @@ class PathAlias(BaseModel):
     """ Path alias mapping """
     path = CharField(unique=True)
     redirect_url = CharField(null=True)
-    redirect_entry = ForeignKeyField(Entry, null=True, backref='aliases')
+    redirect_entry = peewee.ForeignKeyField(
+        Entry,
+        null=True,
+        backref='aliases')
 
 
 class Image(BaseModel):
     """ Image metadata """
     file_path = CharField(unique=True)
-    md5sum = CharField()
-    mtime = DateTimeField()
+    checksum = CharField()
     width = IntegerField()
     height = IntegerField()
-
+    transparent = peewee.BooleanField()
+    mtime = IntegerField()
 
 ALL_TYPES = [
     Global,
@@ -105,15 +112,17 @@ ALL_TYPES = [
 ]
 
 
-def create_tables():
+def setup():
     """ Set up the database """
+    database = playhouse.db_url.connect(config.database)
+    DATABASE_PROXY.initialize(database)
 
     rebuild = False
     try:
         cur_version = Global.get(key='schema_version').int_value
         logger.info("Current schema version: %s", cur_version)
         rebuild = cur_version != SCHEMA_VERSION
-    except: # pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         logger.info("Schema information not found")
         rebuild = True
 

@@ -1,6 +1,8 @@
 # template.py
 """ Wrapper for template information """
 
+from __future__ import absolute_import, with_statement
+
 import os
 import arrow
 
@@ -19,3 +21,6 @@ class Template:
         self.name = name
         self.filename = filename
         self.last_modified = arrow.get(os.stat(file_path).st_mtime)
+
+    def __str__(self):
+        return self.name
