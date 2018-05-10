@@ -15,6 +15,7 @@ import uuid
 
 import arrow
 import flask
+from werkzeug.utils import cached_property
 
 from . import config
 from . import model
@@ -148,17 +149,7 @@ class Entry:
         return flask.Markup(text)
 
     def __getattr__(self, name):
-        """ Lazy binding for deferred properties """
-        # pylint: disable=attribute-defined-outside-init
-        if name == 'previous':
-            # Get the previous entry in the same category (by date)
-            self.previous = self.previous_in(self._record.category, False)
-            return self.previous
-
-        if name == 'next':
-            # Get the next entry in the same category (by date)
-            self.next = self.next_in(self._record.category, False)
-            return self.next
+        """ Proxy undefined properties to the backing objects """
 
         if hasattr(self._record, name):
             return getattr(self._record, name)

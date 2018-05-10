@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import os
 
 from flask import url_for
+from werkzeug.utils import cached_property
 
 from . import model
 from . import utils
@@ -25,8 +26,6 @@ class Category:
 
         self.path = path
         self.basename = os.path.basename(path)
-
-        self._parent = os.path.dirname(path) if path else None
 
         subcat_query = model.Entry.select(model.Entry.category).distinct()
         if path:
@@ -53,15 +52,12 @@ class Category:
     def __str__(self):
         return self.path
 
-    def __getattr__(self, name):
-        """ Lazily bind related objects """
-        # pylint: disable=attribute-defined-outside-init
-        if name == 'parent':
-            self.parent = Category(self._parent) if (
-                self._parent != None) else None
-            return self.parent
-
-        raise AttributeError("Unknown category attribute {}".format(name))
+    @cached_property
+    def parent(self):
+        """ Get the parent category """
+        if path:
+            return Category(os.path.dirname(path))
+        return None
 
     def _get_subcats(self, recurse=False):
         """ Get the subcategories of this category
