@@ -128,40 +128,44 @@ class View:
 
     @cached_property
     def entries(self):
+        """ Gets the entries for the view """
         return [Entry(e) for e in self._entries]
 
     @cached_property
     def last_modified(self):
-        try:
-            latest = self._query.order_by(-model.Entry.entry_date)[0]
-            return arrow.get(Entry(latest).last_modified)
-        except IndexError:
-            return arrow.get()
-        return None
+        """ Gets the most recent modification time for all entries in the view """
+        if self.entries:
+            latest = max(self.entries, key=lambda x: x.last_modified)
+            return arrow.get(latest.last_modified)
+        return arrow.get()
 
     @cached_property
     def previous(self):
+        """ Gets the previous page """
         return self._pagination[0]
 
     @cached_property
     def next(self):
+        """ Gets the next page """
         return self._pagination[1]
 
     @cached_property
     def newest(self):
+        """ Gets the newest entry in the view, regardless of sort order """
         if self._order_by == 'newest':
             return self.first
         if self._order_by == 'oldest':
             return self.last
-        return max(self.entries, key=lambda x: (x.date, x._record.id))
+        return max(self.entries, key=lambda x: (x.date, x.id))
 
     @cached_property
     def oldest(self):
+        """ Gets the odlest entry in the view, regardless of sort order """
         if self._order_by == 'newest':
             return self.last
         if self._order_by == 'oldest':
             return self.first
-        return min(self.entries, key=lambda x: (x.date, -x._record.id))
+        return min(self.entries, key=lambda x: (x.date, -x.id))
 
     @cached_property
     def _pagination(self):
