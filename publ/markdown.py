@@ -100,7 +100,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             }),
             content)
 
-    def paragraph(self, content):
+    @staticmethod
+    def paragraph(content):
         """ emit a paragraph, stripping out any leading or following empty paragraphs """
         text = '<p>' + content + '</p>'
         if text.startswith('<p></p>'):
