@@ -5,6 +5,7 @@ from __future__ import absolute_import, with_statement
 
 import arrow
 import flask
+from werkzeug.utils import cached_property
 
 from . import model, utils, queries
 from .entry import Entry
@@ -18,6 +19,8 @@ OFFSET_PRIORITY = ['date', 'last', 'first', 'before', 'after']
 # overrides the count
 PAGINATION_PRIORITY = ['date', 'count']
 
+# All spec keys that indicate a pagination
+PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
 ORDER_BY = {
@@ -49,7 +52,7 @@ class View:
         # filter out any priority override things
         spec = {
             k: v for k, v in input_spec.items()
-            if k not in [*OFFSET_PRIORITY, *PAGINATION_PRIORITY]
+            if k not in PAGINATION_SPECS
         }
 
         # pull in the first offset type that appears
@@ -68,10 +71,7 @@ class View:
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
 
-        if 'date' in spec:
-            self.title = utils.CallableProxy(self._date_name)
-        else:
-            self.title = None
+        self.range = utils.CallableProxy(self._view_name)
 
         if 'count' in spec:
             self._query = self._query.limit(spec['count'])
@@ -89,10 +89,10 @@ class View:
             self.type = None
 
     def _spec_filtered(self):
-        # Return a version of our spec where all pagination stuff has been
+        # Return a version of our spec where all pagination boundary constraints have been
         # removed
         return {k: v for k, v in self.spec.items()
-                if k not in [*OFFSET_PRIORITY, *PAGINATION_PRIORITY]}
+                if k not in OFFSET_PRIORITY}
 
     def __str__(self):
         return str(self._link())
@@ -116,50 +116,55 @@ class View:
                              category=self.spec.get('category'),
                              _external=absolute)
 
-    @property
+    @cached_property
     def first(self):
         """ Gets the first entry in the view """
         return self.entries[0] if self.entries else None
 
-    @property
+    @cached_property
     def last(self):
         """ Gets the last entry in the view """
         return self.entries[-1] if self.entries else None
 
-    def __getattr__(self, name):
-        """ Lazy evaluation of properties """
-        # pylint: disable=attribute-defined-outside-init
+    @cached_property
+    def entries(self):
+        return [Entry(e) for e in self._entries]
 
-        if name == 'entries':
-            self.entries = [Entry(e) for e in self._entries]
-            return self.entries
+    @cached_property
+    def last_modified(self):
+        try:
+            latest = self._query.order_by(-model.Entry.entry_date)[0]
+            return arrow.get(Entry(latest).last_modified)
+        except IndexError:
+            return arrow.get()
+        return None
 
-        if name == 'last_modified':
-            # Get the most recent entry in the view
-            try:
-                latest = self._query.order_by(-model.Entry.entry_date)[0]
-                self.last_modified = arrow.get(Entry(latest).last_modified)
-            except IndexError:
-                self.last_modified = arrow.get()
-            return self.last_modified
+    @cached_property
+    def previous(self):
+        return self._pagination[0]
 
-        if name == 'previous' or name == 'next':
-            self.previous, self.next = self._get_pagination()
-            return getattr(self, name)
+    @cached_property
+    def next(self):
+        return self._pagination[1]
 
-        if name == 'newest' or name == 'oldest':
-            if self._order_by == 'newest':
-                self.newest, self.oldest = self.first, self.last
-            elif self._order_by == 'oldest':
-                self.newest, self.oldest = self.last, self.first
-            else:
-                raise ValueError(
-                    'newest/oldest not supported on sort type {}'.format(self._order_by))
-            return getattr(self, name)
+    @cached_property
+    def newest(self):
+        if self._order_by == 'newest':
+            return self.first
+        if self._order_by == 'oldest':
+            return self.last
+        return max(self.entries, key=lambda x: (x.date, x._record.id))
 
-        raise AttributeError("Unknown view attribute {}".format(name))
+    @cached_property
+    def oldest(self):
+        if self._order_by == 'newest':
+            return self.last
+        if self._order_by == 'oldest':
+            return self.first
+        return min(self.entries, key=lambda x: (x.date, -x._record.id))
 
-    def _get_pagination(self):
+    @cached_property
+    def _pagination(self):
         """ Compute the next/previous pages from this view.
 
         Returns a tuple of previous page, next page.
@@ -260,9 +265,43 @@ class View:
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
 
-    def _date_name(self, **formats):
-        date, interval, date_format = utils.parse_date(self.spec['date'])
-        return date.format(formats.get(interval, date_format))
+    def _view_name(self, **formats):
+        if not any(k for k in PAGINATION_SPECS if k in self.spec):
+            # We don't have anything that specifies a pagination constraint, so
+            # we don't have a name
+            return None
+
+        if not self.first or not self.last:
+            # We don't have any entries, so we don't have a name
+            return None
+
+        if 'date' in self.spec:
+            _, span_type, span_format = utils.parse_date(self.spec['date'])
+        elif self.first.date.year != self.last.date.year:
+            span_type = 'year'
+            span_format = utils.YEAR_FORMAT
+        elif self.first.date.month != self.last.date.month:
+            span_type = 'month'
+            span_format = utils.MONTH_FORMAT
+        else:
+            span_type = 'day'
+            span_format = utils.DAY_FORMAT
+
+        date_format = formats.get(span_type, span_format)
+
+        first = self.first.date.format(date_format)
+        if len(self.entries) == 1:
+            return first
+
+        last = self.last.date.format(date_format)
+
+        if first == last:
+            template = formats.get('span', '{first} ({count})')
+        else:
+            template = formats.get(
+                'single', '{first} — {last} ({count})')
+
+        return template.format(count=len(self.entries), first=first, last=last)
 
 
 def get_view(**kwargs):
