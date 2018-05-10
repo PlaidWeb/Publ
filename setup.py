@@ -71,5 +71,6 @@ setup(
         'Bug Reports': 'https://github.com/fluffy-critter/Publ/issues',
         'Funding': 'https://patreon.com/fluffy',
         'Source': 'https://github.com/fluffy-critter/Publ/',
+        'Discord': 'https://discord.gg/xADP3ja'
     },
 )
