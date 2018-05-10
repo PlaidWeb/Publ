@@ -57,10 +57,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 spec_list = spec_list[container_args['count_offset']:]
             spec_list = spec_list[:container_args['count']]
 
-        if 'div_class' in container_args:
-            text += '</p>' + self._make_tag('div',
-                                            {'class': container_args['div_class']})
-
         for spec in spec_list:
             if not spec:
                 continue
@@ -69,9 +65,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                        container_args,
                                        alt) if spec else ''
 
-        if 'div_class' in container_args:
-            text += '</div><p>'
+        if text and 'div_class' in container_args:
+            text = '</p>{tag}{text}</div><p>'.format(
+                tag=self._make_tag('div',
+                                   {'class': container_args['div_class']}),
+                text=text)
 
+        # if text is ''/falsy then misaka interprets this as a failed parse...
         return text or ' '
 
     def blockcode(self, text, lang):
@@ -99,6 +99,15 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 'title': title if title else None
             }),
             content)
+
+    def paragraph(self, content):
+        """ emit a paragraph, stripping out any leading or following empty paragraphs """
+        text = '<p>' + content + '</p>'
+        if text.startswith('<p></p>'):
+            text = text[7:]
+        if text.endswith('<p></p>'):
+            text = text[:-7]
+        return text
 
     def _remap_path(self, path):
         """ Remap a static URL to the static path handler """
