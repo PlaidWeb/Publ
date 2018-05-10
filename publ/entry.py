@@ -91,7 +91,7 @@ class Entry:
 
         return flask.url_for('category', **args, _external=absolute)
 
-    @property
+    @cached_property
     def image_search_path(self):
         """ The relative image search path for this entry """
         return [
