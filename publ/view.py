@@ -271,16 +271,16 @@ class View:
             # we don't have a name
             return None
 
-        if not self.first or not self.last:
+        if not self.oldest or not self.newest:
             # We don't have any entries, so we don't have a name
             return None
 
         if 'date' in self.spec:
             _, span_type, span_format = utils.parse_date(self.spec['date'])
-        elif self.first.date.year != self.last.date.year:
+        elif self.oldest.date.year != self.newest.date.year:
             span_type = 'year'
             span_format = utils.YEAR_FORMAT
-        elif self.first.date.month != self.last.date.month:
+        elif self.oldest.date.month != self.newest.date.month:
             span_type = 'month'
             span_format = utils.MONTH_FORMAT
         else:
@@ -289,19 +289,19 @@ class View:
 
         date_format = formats.get(span_type, span_format)
 
-        first = self.first.date.format(date_format)
+        oldest = self.oldest.date.format(date_format)
         if len(self.entries) == 1:
-            return first
+            return oldest
 
-        last = self.last.date.format(date_format)
+        newest = self.newest.date.format(date_format)
 
-        if first == last:
-            template = formats.get('span', '{first} ({count})')
+        if oldest == newest:
+            template = formats.get('span', '{oldest} ({count})')
         else:
             template = formats.get(
-                'single', '{first} — {last} ({count})')
+                'single', '{oldest} — {newest} ({count})')
 
-        return template.format(count=len(self.entries), first=first, last=last)
+        return template.format(count=len(self.entries), oldest=oldest, newest=newest)
 
 
 def get_view(**kwargs):
