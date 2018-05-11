@@ -154,3 +154,23 @@ def static_url(path, absolute=False):
     absolute -- whether the link should be absolute or relative
     """
     return flask.url_for('static', filename=path, _external=absolute)
+
+
+def make_tag(name, attrs, start_end=False):
+    """ Build an HTML tag from the given name and attributes.
+
+    Arguments:
+
+    name -- the name of the tag (p, div, etc.)
+    attrs -- a dict of attributes to apply to the tag
+    start_end -- whether this tag should be self-closing
+    """
+
+    text = '<' + name
+    for key, val in attrs.items():
+        if val is not None:
+            text += ' {}="{}"'.format(key, flask.escape(val))
+    if start_end:
+        text += ' /'
+    text += '>'
+    return text
