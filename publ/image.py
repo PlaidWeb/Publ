@@ -396,3 +396,17 @@ def parse_image_spec(spec):
         args = {}
 
     return spec, args, title
+
+
+def get_spec_list(image_specs, container_args):
+    """ Given a list of specs and a set of container args, return the final
+    container argument list """
+
+    spec_list = [spec.strip() for spec in image_specs.split('|')]
+
+    if 'count' in container_args:
+        if 'count_offset' in container_args:
+            spec_list = spec_list[container_args['count_offset']:]
+        spec_list = spec_list[:container_args['count']]
+
+    return spec_list
