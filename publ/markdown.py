@@ -3,9 +3,8 @@
 
 from __future__ import absolute_import
 
-import re
-import ast
 import logging
+import urllib.parse
 
 import misaka
 import flask
@@ -46,7 +45,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         if title:
             image_specs += ' "{}"'.format(title)
 
-        alt, container_args = self._parse_alt_text(alt)
+        alt, container_args = image.parse_alt_text(alt)
 
         spec_list = [spec.strip() for spec in image_specs.split('|')]
 
@@ -63,11 +62,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
             text += self._render_image(spec,
                                        container_args,
-                                       alt) if spec else ''
+                                       alt)
 
         if text and 'div_class' in container_args:
             text = '</p>{tag}{text}</div><p>'.format(
-                tag=self._make_tag('div',
+                tag=utils.make_tag('div',
                                    {'class': container_args['div_class']}),
                 text=text)
 
@@ -93,8 +92,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Emit a link, potentially remapped based on our embed or static rules """
 
         link = self._remap_path(link)
+
         return '{}{}</a>'.format(
-            self._make_tag('a', {
+            utils.make_tag('a', {
                 'href': link,
                 'title': title if title else None
             }),
@@ -111,10 +111,16 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return text
 
     def _remap_path(self, path):
-        """ Remap a static URL to the static path handler """
+        """ Remap a path to an appropriate URL """
+        absolute = self._config.get('absolute')
 
         if path.startswith('@'):
-            return utils.static_url(path[1:], absolute=self._config.get('absolute'))
+            # static resource
+            return utils.static_url(path[1:], absolute=absolute)
+
+        if absolute:
+            # absolute-ify whatever the URL is
+            return urllib.parse.urljoin(flask.request.url, path)
 
         return path
 
@@ -122,29 +128,19 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Render an image specification into an <img> tag """
 
         try:
-            path, image_args, title = self._parse_image_spec(spec)
-            composite_args = {**container_args, **image_args}
-
-            if path.startswith('//') or path.startswith('@') or '://' in path:
-                return self._remote_image(self._remap_path(path), composite_args, title, alt_text)
-
-            return self._local_image(path, composite_args, title, alt_text)
+            path, image_args, title = image.parse_image_spec(spec)
         except Exception as err:  # pylint: disable=broad-except
             logger.exception("Got error on spec %s: %s", spec, err)
             return ('<span class="error">Couldn\'t parse image spec: ' +
                     '<code>{}</code> {}</span>'.format(flask.escape(spec),
                                                        flask.escape(str(err))))
 
-    @staticmethod
-    def _make_tag(name, attrs, start_end=False):
-        text = '<' + name
-        for key, val in attrs.items():
-            if val is not None:
-                text += ' {}="{}"'.format(key, flask.escape(val))
-        if start_end:
-            text += ' /'
-        text += '>'
-        return text
+        composite_args = {**container_args, **image_args}
+
+        if path.startswith('//') or path.startswith('@') or '://' in path:
+            return self._remote_image(self._remap_path(path), composite_args, title, alt_text)
+
+        return self._local_image(path, composite_args, title, alt_text)
 
     @staticmethod
     def _rendition_args(image_args, remap):
@@ -189,7 +185,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         img_1x = utils.static_url(img_1x, absolute)
         img_2x = utils.static_url(img_2x, absolute)
 
-        text = self._make_tag('img', {
+        text = utils.make_tag('img', {
             'src': img_1x,
             'width': size[0],
             'height': size[1],
@@ -220,7 +216,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         img_fullsize, _ = img.get_rendition(1, fullsize_args)
         img_fullsize = utils.static_url(img_fullsize, absolute)
 
-        return self._make_tag('a', {
+        return utils.make_tag('a', {
             'href': img_fullsize,
             'data-lightbox': image_args['gallery_id'],
             'title': title
@@ -257,14 +253,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
         attrs['width'] = width
         attrs['height'] = height
 
-        text = self._make_tag('img', attrs)
+        text = utils.make_tag('img', attrs)
 
         if 'link' in image_args and image_args['link'] is not None:
             text = '<a href="{}">{}</a>'.format(
                 flask.escape(image_args['link']), text)
         elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
             text = '{}{}</a>'.format(
-                self._make_tag('a', {
+                utils.make_tag('a', {
                     'href': path,
                     'data-lightbox': image_args['gallery_id'],
                     'title': title
@@ -272,63 +268,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 text)
 
         return text
-
-    def _parse_image_spec(self, spec):
-        """ Parse an image spec out into (path,args,title) """
-
-        # I was having trouble coming up with a single RE that did it right,
-        # so let's just break it down into sub-problems. First, parse out the
-        # alt text...
-        match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
-        if match:
-            spec, title = match.group(1, 2)
-        else:
-            title = None
-
-        # and now parse out the arglist
-        match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
-        if match:
-            spec = match.group(1)
-            args = self._parse_args(match.group(3))
-        else:
-            args = {}
-
-        return spec, args, title
-
-    def _parse_alt_text(self, spec):
-        """ Parse the alt text out into (alt_text,args) """
-        match = re.match(r'([^\{]*)(\{(.*)\})$', spec)
-        if match:
-            spec = match.group(1)
-            args = self._parse_args(match.group(3))
-        else:
-            args = {}
-
-        return spec, args
-
-    @staticmethod
-    def _parse_args(args):
-        """ Parse an arglist into args and kwargs """
-        # per https://stackoverflow.com/a/49723227/318857
-
-        args = 'f({})'.format(args)
-        tree = ast.parse(args)
-        funccall = tree.body[0].value
-
-        args = [ast.literal_eval(arg) for arg in funccall.args]
-        kwargs = {arg.arg: ast.literal_eval(arg.value)
-                  for arg in funccall.keywords}
-
-        if len(args) > 2:
-            raise TypeError(
-                "Expected at most 2 positional args but {} were given".format(len(args)))
-
-        if len(args) >= 1:
-            kwargs['width'] = int(args[0])
-        if len(args) >= 2:
-            kwargs['height'] = int(args[1])
-
-        return kwargs
 
 
 def to_html(text, config, image_search_path):
