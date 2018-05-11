@@ -157,6 +157,7 @@ class Entry:
         """ Render out the tags for a Twitter/OpenGraph card for this entry. """
 
         def og_tag(key, val):
+            """ produce an OpenGraph tag with the given key and value """
             return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
 
         tags = og_tag('og:title', self.title)

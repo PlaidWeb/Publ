@@ -1,14 +1,18 @@
 # cards.py
 """ Rendering functions for Twitter/OpenGraph cards"""
 
+import logging
+
 import misaka
-import flask
 
 from . import image, utils
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class CardData():
     """ Extracted card data """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self):
         self.description = None
@@ -29,6 +33,7 @@ class CardParser(misaka.BaseRenderer):
     def paragraph(self, content):
         """ Turn the first paragraph of text into the summary text """
         if not self._out.description:
+            print('----content-----', content)
             self._out.description = content.strip()
         return ' '
 
@@ -42,14 +47,9 @@ class CardParser(misaka.BaseRenderer):
         if title:
             image_specs += ' "{}"'.format(title)
 
-        alt, container_args = image.parse_alt_text(alt)
+        _, container_args = image.parse_alt_text(alt)
 
-        spec_list = [spec.strip() for spec in image_specs.split('|')]
-
-        if 'count' in container_args:
-            if 'count_offset' in container_args:
-                spec_list = spec_list[container_args['count_offset']:]
-            spec_list = spec_list[:container_args['count']]
+        spec_list = image.get_spec_list(image_specs, container_args)
 
         for spec in spec_list:
             if not spec:
@@ -61,15 +61,22 @@ class CardParser(misaka.BaseRenderer):
 
         return ' '
 
-    def link(self, content, link, title=''):
+    @staticmethod
+    def link(content, link, title=''):
+        """ extract the text content out of a link """
+        # pylint: disable=unused-argument
+
         return content
 
-    def _render_image(self, spec, alt):
+    def _render_image(self, spec, alt=''):
         """ Given an image spec, try to turn it into a card image per the configuration """
+        # pylint: disable=unused-argument
+
         try:
-            path, image_args, title = image.parse_image_spec(spec)
-        except Excpetion as err:  # pylint: disable=broad-except
+            path, image_args, _ = image.parse_image_spec(spec)
+        except Exception as err:  # pylint: disable=broad-except
             # we tried™
+            logger.exception("Got error on spec %s: %s", spec, err)
             return None
 
         if path.startswith('@'):
@@ -82,7 +89,8 @@ class CardParser(misaka.BaseRenderer):
 
         img = image.get_image(path, self._image_search_path)
         if img:
-            return utils.static_url(img.get_rendition(1, self._config)[0], absolute=True)
+            image_config = {**image_args, **self._config}
+            return utils.static_url(img.get_rendition(1, image_config)[0], absolute=True)
 
         return None
 

@@ -47,14 +47,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
-        spec_list = [spec.strip() for spec in image_specs.split('|')]
-
         container_args = {**self._config, **container_args}
 
-        if 'count' in container_args:
-            if 'count_offset' in container_args:
-                spec_list = spec_list[container_args['count_offset']:]
-            spec_list = spec_list[:container_args['count']]
+        spec_list = image.get_spec_list(image_specs, container_args)
 
         for spec in spec_list:
             if not spec:
@@ -206,7 +201,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         return text
 
-    def _fullsize_link(self, img, image_args, title, absolute):
+    @staticmethod
+    def _fullsize_link(img, image_args, title, absolute):
         fullsize_args = {}
         for key in ['width', 'height', 'quality', 'format', 'background']:
             fsk = 'fullsize_' + key
@@ -222,7 +218,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             'title': title
         })
 
-    def _remote_image(self, path, image_args, title, alt_text):
+    @staticmethod
+    def _remote_image(path, image_args, title, alt_text):
         """ Render an img tag for a remotely-stored image """
 
         attrs = {
