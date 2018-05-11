@@ -16,7 +16,7 @@ class CardData():
 
     def __init__(self):
         self.description = None
-        self.image = None
+        self.images = []
 
 
 class CardParser(misaka.BaseRenderer):
@@ -38,9 +38,10 @@ class CardParser(misaka.BaseRenderer):
         return ' '
 
     def image(self, raw_url, title='', alt=''):
-        """ Extract the first image """
-        if self._out.image:
-            # We already have an image, so we can abort
+        ''' extract the images '''
+        max_images = self._config.get('count')
+        if max_images is not None and len(self._out.images) >= max_images:
+            # We already have enough images, so bail out
             return ' '
 
         image_specs = raw_url
@@ -55,8 +56,8 @@ class CardParser(misaka.BaseRenderer):
             if not spec:
                 continue
 
-            self._out.image = self._render_image(spec, alt)
-            if self._out.image:
+            self._out.images.append(self._render_image(spec, alt))
+            if max_images is not None and len(self._out.images) >= max_images:
                 break
 
         return ' '
