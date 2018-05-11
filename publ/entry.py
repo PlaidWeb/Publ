@@ -23,6 +23,7 @@ from . import queries
 from . import path_alias
 from . import markdown
 from . import utils
+from . import cards
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -132,6 +133,10 @@ class Entry:
             self.last_modified = arrow.get(
                 os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
+            self.card = TrueCallableProxy(
+                self._get_card,
+                body or more) if is_markdown else CallableProxy(lambda **kwargs: '')
+
             return True
         return False
 
@@ -147,6 +152,23 @@ class Entry:
                 config=kwargs,
                 image_search_path=self.image_search_path))
         return flask.Markup(text)
+
+    def _get_card(self, text, **kwargs):
+        """ Render out the tags for a Twitter/OpenGraph card for this entry. """
+
+        def og_tag(key, val):
+            return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
+
+        tags = og_tag('og:title', self.title)
+        tags += og_tag('og:url', self.link(absolute=True))
+
+        card = cards.extract_card(text, kwargs, self.image_search_path)
+        if card.image:
+            tags += og_tag('og:image', card.image)
+        if card.description:
+            tags += og_tag('og:description', card.description)
+
+        return flask.Markup(tags)
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
