@@ -164,8 +164,8 @@ class Entry:
         tags += og_tag('og:url', self.link(absolute=True))
 
         card = cards.extract_card(text, kwargs, self.image_search_path)
-        if card.image:
-            tags += og_tag('og:image', card.image)
+        for image in card.images:
+            tags += og_tag('og:image', image)
         if card.description:
             tags += og_tag('og:description', card.description)
 
