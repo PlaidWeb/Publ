@@ -285,6 +285,21 @@ def get_entry_id(entry, fullpath, assign_id):
     return entry_id
 
 
+def save_file(fullpath, entry):
+    """ Save a message file out, without mangling the headers """
+    with tempfile.NamedTemporaryFile('w', delete=False) as file:
+        tmpfile = file.name
+        # we can't just use file.write(str(entry)) because otherwise the
+        # headers "helpfully" do MIME encoding normalization.
+        # str(val) is necessary to get around email.header's encoding
+        # shenanigans
+        for key, val in entry.items():
+            print('{}: {}'.format(key, str(val)), file=file)
+        print('', file=file)
+        file.write(entry.get_payload())
+    shutil.move(tmpfile, fullpath)
+
+
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
 
@@ -357,10 +372,7 @@ def scan_file(fullpath, relpath, assign_id):
             path_alias.remove_alias(alias)
 
         if fixup_needed:
-            with tempfile.NamedTemporaryFile('w', delete=False) as file:
-                tmpfile = file.name
-                file.write(str(entry))
-            shutil.move(tmpfile, fullpath)
+            save_file(fullpath, entry)
 
         return record
 
