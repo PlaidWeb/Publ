@@ -7,6 +7,9 @@ import os
 import hashlib
 import logging
 
+import re
+import ast
+
 import PIL.Image
 
 from . import config
@@ -334,3 +337,76 @@ def get_image(path, search_path):
             record.update(**values).where(model.Image.id == record.id)
 
     return Image(record)
+
+
+def parse_arglist(args):
+    """ Parses an arglist into arguments for Image, as a kwargs dict """
+    # per https://stackoverflow.com/a/49723227/318857
+
+    args = 'f({})'.format(args)
+    tree = ast.parse(args)
+    funccall = tree.body[0].value
+
+    args = [ast.literal_eval(arg) for arg in funccall.args]
+    kwargs = {arg.arg: ast.literal_eval(arg.value)
+              for arg in funccall.keywords}
+
+    if len(args) > 2:
+        raise TypeError(
+            "Expected at most 2 positional args but {} were given".format(len(args)))
+
+    if len(args) >= 1:
+        kwargs['width'] = int(args[0])
+    if len(args) >= 2:
+        kwargs['height'] = int(args[1])
+
+    return kwargs
+
+
+def parse_alt_text(alt):
+    """ Parses the arguments out from a Publ-Markdown alt text into a tuple of text, args """
+    match = re.match(r'([^\{]*)(\{(.*)\})$', alt)
+    if match:
+        alt = match.group(1)
+        args = parse_arglist(match.group(3))
+    else:
+        args = {}
+
+    return alt, args
+
+
+def parse_image_spec(spec):
+    """ Parses out a Publ-Markdown image spec into a tuple of path, args, title """
+
+    # I was having trouble coming up with a single RE that did it right,
+    # so let's just break it down into sub-problems. First, parse out the
+    # alt text...
+    match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
+    if match:
+        spec, title = match.group(1, 2)
+    else:
+        title = None
+
+    # and now parse out the arglist
+    match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
+    if match:
+        spec = match.group(1)
+        args = parse_arglist(match.group(3))
+    else:
+        args = {}
+
+    return spec, args, title
+
+
+def get_spec_list(image_specs, container_args):
+    """ Given a list of specs and a set of container args, return the final
+    container argument list """
+
+    spec_list = [spec.strip() for spec in image_specs.split('|')]
+
+    if 'count' in container_args:
+        if 'count_offset' in container_args:
+            spec_list = spec_list[container_args['count_offset']:]
+        spec_list = spec_list[:container_args['count']]
+
+    return spec_list
