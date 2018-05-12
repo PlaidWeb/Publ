@@ -33,7 +33,6 @@ class CardParser(misaka.BaseRenderer):
     def paragraph(self, content):
         """ Turn the first paragraph of text into the summary text """
         if not self._out.description:
-            print('----content-----', content)
             self._out.description = content.strip()
         return ' '
 

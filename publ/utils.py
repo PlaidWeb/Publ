@@ -5,9 +5,11 @@ from __future__ import absolute_import, with_statement
 
 import re
 import os
+import html
 
 import arrow
 import flask
+import slugify
 
 from . import config
 
@@ -138,11 +140,7 @@ def find_file(path, search_path):
 
 def make_slug(title):
     """ convert a title into a URL-friendly slug """
-
-    # https://github.com/fluffy-critter/Publ/issues/16
-    # this should probably handle things other than English ASCII, and also
-    # some punctuation should just be outright removed (quotes/apostrophes/etc)
-    return re.sub(r"[^a-zA-Z0-9.]+", r" ", title).strip().replace(' ', '-')
+    return slugify.slugify(title)
 
 
 def static_url(path, absolute=False):
