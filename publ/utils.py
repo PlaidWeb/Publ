@@ -5,7 +5,6 @@ from __future__ import absolute_import, with_statement
 
 import re
 import os
-import html
 
 import arrow
 import flask
