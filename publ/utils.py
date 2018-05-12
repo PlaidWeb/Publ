@@ -171,3 +171,9 @@ def make_tag(name, attrs, start_end=False):
         text += ' /'
     text += '>'
     return text
+
+
+def file_fingerprint(fullpath):
+    """ Get a metadata fingerprint for a file """
+    stat = os.stat(fullpath)
+    return ','.join([str(value) for value in [stat.st_ino, stat.st_mtime, stat.st_size] if value])

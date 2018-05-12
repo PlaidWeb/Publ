@@ -312,10 +312,10 @@ def get_image(path, search_path):
         return None
 
     record = model.Image.get_or_none(file_path=file_path)
-    mtime = os.stat(file_path).st_mtime
-    if not record or record.mtime < mtime:
+    fingerprint = utils.file_fingerprint(file_path)
+    if not record or record.fingerprint != fingerprint:
         # Reindex the file
-        logger.info("Updating image %s", file_path)
+        logger.info("Updating image %s -> %s", file_path, fingerprint)
 
         # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
         md5 = hashlib.md5()
@@ -328,13 +328,14 @@ def get_image(path, search_path):
             'checksum': md5.hexdigest(),
             'width': image.width,
             'height': image.height,
-            'mtime': mtime,
+            'fingerprint': fingerprint,
             'transparent': image.mode == 'RGBA'
         }
         record, created = model.Image.get_or_create(
             file_path=file_path, defaults=values)
         if not created:
-            record.update(**values).where(model.Image.id == record.id)
+            record.update(**values).where(model.Image.id ==
+                                          record.id).execute()
 
     return Image(record)
 
