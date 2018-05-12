@@ -132,6 +132,11 @@ class View:
         return [Entry(e) for e in self._entries]
 
     @cached_property
+    def count(self):
+        """ Returns the number of entries in the view """
+        return len(self.entries)
+
+    @cached_property
     def last_modified(self):
         """ Gets the most recent modification time for all entries in the view """
         if self.entries:
@@ -148,6 +153,20 @@ class View:
     def next(self):
         """ Gets the next page """
         return self._pagination[1]
+
+    @cached_property
+    def older(self):
+        """ Gets the older-direction page """
+        if self.order_by == 'oldest':
+            return self.previous
+        return self.next
+
+    @cached_property
+    def newer(self):
+        """ Gets the newer-direction page """
+        if self.order_by == 'oldest':
+            return self.next
+        return self.previous
 
     @cached_property
     def newest(self):
