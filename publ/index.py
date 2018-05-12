@@ -11,6 +11,7 @@ import watchdog.events
 
 from . import entry
 from . import model
+from . import utils
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -29,6 +30,7 @@ def scan_file(fullpath, relpath, assign_id):
 
     try:
         if ext in ENTRY_TYPES:
+            logger.info("Scanning entry: %s", fullpath)
             return entry.scan_file(fullpath, relpath, assign_id)
 
         return True
@@ -37,26 +39,27 @@ def scan_file(fullpath, relpath, assign_id):
     return None
 
 
-def get_last_mtime(fullpath):
+def get_last_fingerprint(fullpath):
     """ Get the last known modification time for a file """
-    record = model.FileMTime.get_or_none(model.FileMTime.file_path == fullpath)
+    record = model.FileFingerprint.get_or_none(
+        model.FileFingerprint.file_path == fullpath)
     if record:
-        return record.stat_mtime
+        return record.fingerprint
     return None
 
 
-def set_last_mtime(fullpath, mtime=None):
+def set_fingerprint(fullpath, fingerprint=None):
     """ Set the last known modification time for a file """
     try:
-        mtime = mtime or os.stat(fullpath).st_mtime
+        fingerprint = fingerprint or utils.file_fingerprint(fullpath)
 
-        record, created = model.FileMTime.get_or_create(
-            file_path=fullpath, defaults={'stat_mtime': os.stat(fullpath).st_mtime})
+        record, created = model.FileFingerprint.get_or_create(
+            file_path=fullpath, defaults={'fingerprint': fingerprint})
         if not created:
-            record.stat_mtime = mtime
+            record.fingerprint = fingerprint
             record.save()
     except FileNotFoundError:
-        model.FileMTime.delete().where(model.FileMTime.file_path == fullpath)
+        model.FileFingerprint.delete().where(model.FileFingerprint.file_path == fullpath)
 
 
 class IndexWatchdog(watchdog.events.FileSystemEventHandler):
@@ -72,7 +75,7 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         try:
             if scan_file(fullpath, relpath, True):
                 logger.info("Updated %s", fullpath)
-                set_last_mtime(fullpath)
+                set_fingerprint(fullpath)
             else:
                 logger.warning("Couldn't update %s", fullpath)
         except:  # pylint: disable=bare-except
@@ -121,12 +124,11 @@ def scan_index(content_dir):
             fullpath = os.path.join(root, file)
             relpath = os.path.relpath(fullpath, content_dir)
 
-            mtime = os.stat(fullpath).st_mtime
-            last_mtime = get_last_mtime(fullpath)
-            if not last_mtime or last_mtime < mtime:
+            fingerprint = utils.file_fingerprint(fullpath)
+            last_fingerprint = get_last_fingerprint(fullpath)
+            if fingerprint != last_fingerprint:
                 if scan_file(fullpath, relpath, False):
-                    logger.info("Scanned %s", fullpath)
-                    set_last_mtime(fullpath, mtime)
+                    set_fingerprint(fullpath)
                 else:
                     # file scan failed, add to the fixups queue
                     fixups.append((fullpath, relpath))
@@ -136,5 +138,6 @@ def scan_index(content_dir):
     for fullpath, relpath in fixups:
         if scan_file(fullpath, relpath, True):
             logger.info("Fixed up %s", fullpath)
+            set_fingerprint(fullpath)
         else:
             logger.warning("Couldn't fix up %s", fullpath)

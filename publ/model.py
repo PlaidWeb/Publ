@@ -19,7 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 class BaseModel(Model):
@@ -58,10 +58,10 @@ class Global(BaseModel):
     str_value = CharField(null=True)
 
 
-class FileMTime(BaseModel):
+class FileFingerprint(BaseModel):
     """ File modification time """
     file_path = CharField(unique=True)
-    stat_mtime = IntegerField()  # At least on SQLite, this is Y2k38-ready
+    fingerprint = CharField()
 
 
 class Entry(BaseModel):
@@ -101,11 +101,11 @@ class Image(BaseModel):
     width = IntegerField()
     height = IntegerField()
     transparent = peewee.BooleanField()
-    mtime = IntegerField()
+    fingerprint = CharField()
 
 ALL_TYPES = [
     Global,
-    FileMTime,
+    FileFingerprint,
     Entry,
     PathAlias,
     Image,
