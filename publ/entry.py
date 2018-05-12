@@ -61,6 +61,9 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
+        from .category import Category
+        self.category = Category(record.category)
+
     def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
