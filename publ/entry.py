@@ -193,12 +193,16 @@ class Entry:
         query = query.limit(1)
         return Entry(query[0]) if query.count() else None
 
-    def _previous(self, **kwargs):
-        # Get the previous item in any particular category
-        spec = {
-            'category': kwargs.get('category', self._record.category),
-            'recurse': 'category' in kwargs
+    def _pagination_default_spec(self, kwargs):
+        category = kwargs.get('category', self._record.category)
+        return {
+            'category': category,
+            'recurse': kwargs.get('recurse', category != self._record.category)
         }
+
+    def _previous(self, **kwargs):
+        """ Get the previous item in any particular category """
+        spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
         return self._get_first(model.Entry.select().where(
@@ -207,11 +211,8 @@ class Entry:
         ).order_by(-model.Entry.entry_date, -model.Entry.id))
 
     def _next(self, **kwargs):
-        # Get the next item in any particular category
-        spec = {
-            'category': kwargs.get('category', self._record.category),
-            'recurse': 'category' in kwargs
-        }
+        """ Get the next item in any particular category """
+        spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
         return self._get_first(
