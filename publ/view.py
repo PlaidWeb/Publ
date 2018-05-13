@@ -11,7 +11,7 @@ from . import model, utils, queries
 from .entry import Entry
 
 # Prioritization list for page/offset/whatever
-OFFSET_PRIORITY = ['date', 'last', 'first', 'before', 'after']
+OFFSET_PRIORITY = ['date', 'start', 'last', 'first', 'before', 'after']
 
 # Prioritization list for pagination type
 #
@@ -67,7 +67,18 @@ class View:
                 spec[pagination] = input_spec[pagination]
                 break
 
+        self._order_by = spec.get('order', 'newest')
+
         self.spec = spec
+
+        if 'start' in spec:
+            if self._order_by == 'oldest':
+                self.spec['first'] = self.spec['start']
+            elif self._order_by == 'newest':
+                self.spec['last'] = self.spec['start']
+
+        print('spec', spec)
+
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
 
@@ -76,7 +87,6 @@ class View:
         if 'count' in spec:
             self._query = self._query.limit(spec['count'])
 
-        self._order_by = spec.get('order', 'newest')
         self._entries = self._query.order_by(*ORDER_BY[self._order_by])
 
         self.link = utils.CallableProxy(self._link)
@@ -87,12 +97,6 @@ class View:
             self.type = 'count'
         else:
             self.type = None
-
-    def _spec_filtered(self):
-        # Return a version of our spec where all pagination boundary constraints have been
-        # removed
-        return {k: v for k, v in self.spec.items()
-                if k not in OFFSET_PRIORITY}
 
     def __str__(self):
         return str(self._link())
@@ -145,28 +149,34 @@ class View:
         return arrow.get()
 
     @cached_property
-    def previous(self):
-        """ Gets the previous page """
-        return self._pagination[0]
-
-    @cached_property
-    def next(self):
-        """ Gets the next page """
-        return self._pagination[1]
-
-    @cached_property
     def older(self):
-        """ Gets the older-direction page """
-        if self.order_by == 'oldest':
-            return self.previous
-        return self.next
+        """ Gets the page of older items """
+        older, _ = self._pagination
+        return older
 
     @cached_property
     def newer(self):
-        """ Gets the newer-direction page """
-        if self.order_by == 'oldest':
-            return self.next
-        return self.previous
+        """ Gets the page of newer items """
+        _, newer = self._pagination
+        return newer
+
+    @cached_property
+    def previous(self):
+        """ Gets the previous page, respecting sort order """
+        if self._order_by == 'oldest':
+            return self.older
+        if self._order_by == 'newest':
+            return self.newer
+        return None
+
+    @cached_property
+    def next(self):
+        """ Gets the next page, respecting sort order """
+        if self._order_by == 'oldest':
+            return self.newer
+        if self._order_by == 'newest':
+            return self.older
+        return None
 
     @cached_property
     def newest(self):
@@ -179,7 +189,7 @@ class View:
 
     @cached_property
     def oldest(self):
-        """ Gets the odlest entry in the view, regardless of sort order """
+        """ Gets the oldest entry in the view, regardless of sort order """
         if self._order_by == 'newest':
             return self.last
         if self._order_by == 'oldest':
@@ -188,102 +198,77 @@ class View:
 
     @cached_property
     def _pagination(self):
-        """ Compute the next/previous pages from this view.
+        """ Compute the neighboring pages from this view.
 
-        Returns a tuple of previous page, next page.
+        Returns a tuple of older page, newer page.
         """
 
-        # https://github.com/fluffy-critter/Publ/issues/35
         oldest = self.oldest
         newest = self.newest
-        oldest_neighbor = self.oldest.previous if oldest else None
-        newest_neighbor = self.newest.next if newest else None
 
-        base = self._spec_filtered()
+        base = {key: val for key, val in self.spec.items()
+                if key not in OFFSET_PRIORITY}
 
-        if 'count' in self.spec:
-            return self._get_count_pagination(base, oldest_neighbor, newest_neighbor)
+        oldest_neighbor = View({**base, 'before': oldest, 'order': 'newest'}).first if oldest else None
+        newest_neighbor = View({**base, 'after': newest, 'order': 'oldest'}).first if newest else None
 
         if 'date' in self.spec:
+            print('date pagination', oldest_neighbor, newest_neighbor)
             return self._get_date_pagination(base, oldest_neighbor, newest_neighbor)
 
-        # we're not paginating?
-        return None, None
+        if 'count' in self.spec:
+            print('count pagination', oldest_neighbor, newest_neighbor)
+            return self._get_count_pagination(base, oldest_neighbor, newest_neighbor)
 
-    def _get_count_pagination(self, base, oldest_neighbor, newest_neighbor):
-        """ Compute the pagination for count paginations """
-        count = int(self.spec['count'])
-
-        if self._order_by == 'newest':
-                # Newest first; next page ends at the one prior to our oldest
-            if oldest_neighbor:
-                next_view = View({**base, 'last': oldest_neighbor})
-            else:
-                next_view = None
-
-            # Previous page ends at [count] after our newest
-            if newest_neighbor:
-                # Ask for the next chunk of items in ascending order
-                scan_view = View({**base,
-                                  'first': newest_neighbor,
-                                  'count': count,
-                                  'order': 'oldest'})
-                # our previous page starts at the last entry (ascending)
-                previous_view = (View({**base, 'last': scan_view.entries[-1]})
-                                 if scan_view.entries else None)
-            else:
-                previous_view = None
-
-            return previous_view, next_view
-
-        if self._order_by == 'oldest':
-            # Oldest first; next page begins with our newest entry
-            if newest_neighbor:
-                next_view = View({**base, 'first': newest_neighbor})
-            else:
-                next_view = None
-
-            # Previous page starts at [count] before our newest
-            if oldest_neighbor:
-                # Ask for the previous chunk of items in descending order
-                scan_view = View({**base,
-                                  'last': oldest_neighbor,
-                                  'count': count,
-                                  'order': 'newest'})
-                # our previous page starts at the last entry (descending)
-                previous_view = (View({**base, 'first': scan_view.entries[-1]})
-                                 if scan_view.entries else None)
-            else:
-                previous_view = None
-
-            return previous_view, next_view
-
+        # we're not paginating
         return None, None
 
     def _get_date_pagination(self, base, oldest_neighbor, newest_neighbor):
         """ Compute the pagination for date-based views """
         _, _, date_format = utils.parse_date(self.spec['date'])
 
-        if self._order_by == 'newest':
-                # newest first; next page contains the oldest neighbor
-            next_date = oldest_neighbor.date.format(
-                date_format) if oldest_neighbor else None
-            previous_date = newest_neighbor.date.format(
-                date_format) if newest_neighbor else None
-        elif self._order_by == 'oldest':
-            # oldest first; next page contains the newest neighbor
-            next_date = newest_neighbor.date.format(
-                date_format) if newest_neighbor else None
-            previous_date = oldest_neighbor.date.format(
-                date_format) if oldest_neighbor else None
+        if newest_neighbor:
+            newer_date = newest_neighbor.date.format(date_format)
+            newer_view = View({**base, 'order': self._order_by, 'date': newer_date})
         else:
-            raise ValueError(
-                "Unsupported sort {} for date pagination".format(self._order_by))
+            newer_view = None
 
-        previous_view = View({**base, 'date': previous_date}) if previous_date else None
-        next_view = View({**base, 'date': next_date}) if next_date else None
+        if oldest_neighbor:
+            older_date = oldest_neighbor.date.format(date_format)
+            older_view = View({**base, 'order': self._order_by, 'date': older_date})
+        else:
+            older_view = None
 
-        return previous_view, next_view
+        return older_view, newer_view
+
+    def _get_count_pagination(self, base, oldest_neighbor, newest_neighbor):
+        """ Compute the pagination for count-based views """
+
+        count = self.spec['count']
+
+        newer_count = View({**base,
+                            'first': newest_neighbor,
+                            'order': 'oldest',
+                            'count': count}) if newest_neighbor else None
+
+        older_count = View({**base,
+                            'last': oldest_neighbor,
+                            'order': 'newest',
+                            'count': count}) if oldest_neighbor else None
+
+        out_spec = {**base, 'count': count, 'order': self._order_by}
+
+        if self._order_by == 'newest':
+            older_view = View({**out_spec, 'last': oldest_neighbor}) if oldest_neighbor else None
+            newer_view = View({**out_spec, 'last': newer_count.last}) if newer_count else None
+            return older_view, newer_view
+
+        if self._order_by == 'oldest':
+            older_view = View({**out_spec, 'first': older_count.last}) if older_count else None
+            newer_view = View({**out_spec, 'first': newest_neighbor}) if newest_neighbor else None
+            return older_view, newer_view
+
+        return None, None
 
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})

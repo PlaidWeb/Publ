@@ -52,6 +52,15 @@ class Category:
     def __str__(self):
         return self.path
 
+    def __eq__(self, other):
+        return other.path == self.path
+
+    def __hash__(self):
+        return hash(self.path)
+
+    def __lt__(self, other):
+        return self.path < other.path
+
     @cached_property
     def parent(self):
         """ Get the parent category """
@@ -93,12 +102,10 @@ class Category:
 
     def _first(self, **spec):
         """ Get the earliest entry in this category, optionally including subcategories """
-        first = self._entries(spec).order_by(
-            model.Entry.entry_date, model.Entry.id)
-        return entry.Entry(first[0]) if first else None
+        return entry.Entry(self._entries(spec).order_by(
+            model.Entry.entry_date, model.Entry.id).get())
 
     def _last(self, **spec):
         """ Get the latest entry in this category, optionally including subcategories """
-        last = self._entries(spec).order_by(
-            -model.Entry.entry_date, -model.Entry.id)
-        return entry.Entry(last[0]) if last else None
+        return entry.Entry(self._entries(spec).order_by(
+            -model.Entry.entry_date, -model.Entry.id).get())
