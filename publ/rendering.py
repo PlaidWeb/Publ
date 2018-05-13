@@ -208,7 +208,7 @@ def render_category(category='', template='index'):
         return render_error(category, 'Template not found', 400)
 
     view_spec = {'category': category}
-    for key in ['date', 'last', 'first', 'before', 'after']:
+    for key in ['date', 'start', 'last', 'first', 'before', 'after']:
         if key in request.args:
             view_spec[key] = request.args[key]
 

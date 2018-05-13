@@ -61,7 +61,7 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
-        from .category import Category
+        from .category import Category  # pylint: disable=cyclic-import
         self.category = Category(record.category)
 
     def _link(self, *args, **kwargs):
@@ -91,7 +91,7 @@ class Entry:
         elif paging == 'year':
             args['date'] = self.date.format(utils.YEAR_FORMAT)
         else:
-            args['first'] = self._record.id
+            args['start'] = self._record.id
 
         return flask.url_for('category', **args, _external=absolute)
 
@@ -196,7 +196,7 @@ class Entry:
     def _previous(self, **kwargs):
         # Get the previous item in any particular category
         spec = {
-            'category': self._record.category,
+            'category': kwargs.get('category', self._record.category),
             'recurse': 'category' in kwargs
         }
         spec.update(kwargs)
@@ -209,7 +209,7 @@ class Entry:
     def _next(self, **kwargs):
         # Get the next item in any particular category
         spec = {
-            'category': self._record.category,
+            'category': kwargs.get('category', self._record.category),
             'recurse': 'category' in kwargs
         }
         spec.update(kwargs)
