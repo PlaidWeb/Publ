@@ -209,8 +209,17 @@ class View:
         base = {key: val for key, val in self.spec.items()
                 if key not in OFFSET_PRIORITY}
 
-        oldest_neighbor = View({**base, 'before': oldest, 'order': 'newest'}).first if oldest else None
-        newest_neighbor = View({**base, 'after': newest, 'order': 'oldest'}).first if newest else None
+        oldest_neighbor = View({
+            **base,
+            'before': oldest,
+            'order': 'newest'
+        }).first if oldest else None
+
+        newest_neighbor = View({
+            **base,
+            'after': newest,
+            'order': 'oldest'
+        }).first if newest else None
 
         if 'date' in self.spec:
             print('date pagination', oldest_neighbor, newest_neighbor)
@@ -246,26 +255,32 @@ class View:
 
         count = self.spec['count']
 
-        newer_count = View({**base,
-                            'first': newest_neighbor,
-                            'order': 'oldest',
-                            'count': count}) if newest_neighbor else None
-
-        older_count = View({**base,
-                            'last': oldest_neighbor,
-                            'order': 'newest',
-                            'count': count}) if oldest_neighbor else None
-
         out_spec = {**base, 'count': count, 'order': self._order_by}
 
         if self._order_by == 'newest':
-            older_view = View({**out_spec, 'last': oldest_neighbor}) if oldest_neighbor else None
-            newer_view = View({**out_spec, 'last': newer_count.last}) if newer_count else None
+            older_view = View({**out_spec,
+                               'last': oldest_neighbor}) if oldest_neighbor else None
+
+            newer_count = View({**base,
+                                'first': newest_neighbor,
+                                'order': 'oldest',
+                                'count': count}) if newest_neighbor else None
+            newer_view = View({**out_spec,
+                               'last': newer_count.last}) if newer_count else None
+
             return older_view, newer_view
 
         if self._order_by == 'oldest':
-            older_view = View({**out_spec, 'first': older_count.last}) if older_count else None
-            newer_view = View({**out_spec, 'first': newest_neighbor}) if newest_neighbor else None
+            older_count = View({**base,
+                                'last': oldest_neighbor,
+                                'order': 'newest',
+                                'count': count}) if oldest_neighbor else None
+            older_view = View({**out_spec,
+                               'first': older_count.last}) if older_count else None
+
+            newer_view = View({**out_spec,
+                               'first': newest_neighbor}) if newest_neighbor else None
+
             return older_view, newer_view
 
         return None, None
@@ -309,7 +324,9 @@ class View:
             template = formats.get(
                 'single', '{oldest} — {newest} ({count})')
 
-        return template.format(count=len(self.entries), oldest=oldest, newest=newest)
+        return template.format(count=len(self.entries),
+                               oldest=oldest,
+                               newest=newest)
 
 
 def get_view(**kwargs):
