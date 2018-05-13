@@ -104,6 +104,10 @@ class Image:
 
             image = PIL.Image.open(input_filename)
 
+            paletted = image.mode == 'P'
+            if paletted:
+                image.convert('RGB')
+
             if size:
                 image = image.resize(size=size, box=box,
                                      resample=PIL.Image.LANCZOS)
