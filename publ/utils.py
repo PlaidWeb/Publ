@@ -5,6 +5,7 @@ from __future__ import absolute_import, with_statement
 
 import re
 import os
+import html
 
 import arrow
 import flask
@@ -166,7 +167,7 @@ def make_tag(name, attrs, start_end=False):
     text = '<' + name
     for key, val in attrs.items():
         if val is not None:
-            text += ' {}="{}"'.format(key, flask.escape(val))
+            text += ' {}="{}"'.format(key, html.escape(val))
     if start_end:
         text += ' /'
     text += '>'
@@ -177,3 +178,26 @@ def file_fingerprint(fullpath):
     """ Get a metadata fingerprint for a file """
     stat = os.stat(fullpath)
     return ','.join([str(value) for value in [stat.st_ino, stat.st_mtime, stat.st_size] if value])
+
+
+def remap_args(input_args, remap):
+    """ Generate a new argument list by remapping keys. The 'remap'
+    dict maps from destination key -> priority list of source keys
+    """
+    out_args = input_args
+    for dest_key, src_keys in remap.items():
+        remap_value = None
+        if isinstance(src_keys, str):
+            src_keys = [src_keys]
+
+        for key in src_keys:
+            if key in input_args:
+                remap_value = input_args[key]
+                break
+
+        if remap_value is not None:
+            if out_args is input_args:
+                out_args = {**input_args}
+            out_args[dest_key] = remap_value
+
+    return out_args

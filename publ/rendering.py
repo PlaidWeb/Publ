@@ -92,13 +92,7 @@ def image_function(template=None, entry=None, category=None):
             os.path.dirname(os.path.relpath(template.filename,
                                             config.template_folder))))
 
-    def rendition(filename, output_scale=1, **kwargs):
-        """ Get a URL for a rendition of an image, to be used by the templates """
-        img = image.get_image(filename, path)
-        return utils.static_url(img.get_rendition(output_scale, kwargs)[0],
-                                absolute=kwargs.get('absolute'))
-
-    return rendition
+    return lambda filename: image.get_image(filename, path)
 
 
 def render_publ_template(template, **kwargs):

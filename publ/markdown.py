@@ -19,11 +19,6 @@ ENABLED_EXTENSIONS = [
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
 ]
 
-CSS_SIZE_MODE = {
-    'fit': 'contain',
-    'fill': 'cover'
-}
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -132,139 +127,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         composite_args = {**container_args, **image_args}
 
-        if path.startswith('//') or path.startswith('@') or '://' in path:
-            return self._remote_image(self._remap_path(path), composite_args, title, alt_text)
-
-        return self._local_image(path, composite_args, title, alt_text)
-
-    @staticmethod
-    def _rendition_args(image_args, remap):
-        """ Generate rendition arguments specific to a rendition. The 'remap'
-        dict maps from destination key -> priority list of source keys
-        """
-        out_args = image_args
-        for dest_key, src_keys in remap.items():
-            remap_value = None
-            if isinstance(src_keys, str):
-                src_keys = [src_keys]
-
-            for key in src_keys:
-                if key in image_args:
-                    remap_value = image_args[key]
-                    break
-
-            if remap_value is not None:
-                if out_args is image_args:
-                    out_args = {**image_args}
-                out_args[dest_key] = remap_value
-
-        return out_args
-
-    def _local_image(self, path, image_args, title, alt_text):
-        """ Render an img tag for a locally-stored image """
-
-        # Get the image object
-        img = image.get_image(path, self._image_search_path)
-        if not img:
-            return ('<span class="error">Couldn\'t find image: ' +
-                    '<code>{}</code></span>'.format(flask.escape(path)))
-
-        # Get the 1x and 2x renditions
-        img_1x, size = img.get_rendition(
-            1, self._rendition_args(image_args, {"quality": "quality_ldpi"}))
-        img_2x, _ = img.get_rendition(
-            2, self._rendition_args(image_args, {"quality": "quality_hdpi"}))
-
-        # ... and their URLs
-        absolute = self._config.get('absolute')
-        img_1x = utils.static_url(img_1x, absolute)
-        img_2x = utils.static_url(img_2x, absolute)
-
-        text = utils.make_tag('img', {
-            'src': img_1x,
-            'width': size[0],
-            'height': size[1],
-            'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
-            'title': title,
-            'alt': alt_text
-        })
-
-        # Wrap it in a link as appropriate
-        if 'link' in image_args and image_args['link'] is not None:
-            text = '<a href="{}">{}</a>'.format(
-                flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
-            text = '{}{}</a>'.format(
-                self._fullsize_link(
-                    img, image_args, title, absolute),
-                text)
-
-        return text
-
-    @staticmethod
-    def _fullsize_link(img, image_args, title, absolute):
-        fullsize_args = {}
-        for key in ['width', 'height', 'quality', 'format', 'background']:
-            fsk = 'fullsize_' + key
-            if fsk in image_args:
-                fullsize_args[key] = image_args[fsk]
-
-        img_fullsize, _ = img.get_rendition(1, fullsize_args)
-        img_fullsize = utils.static_url(img_fullsize, absolute)
-
-        return utils.make_tag('a', {
-            'href': img_fullsize,
-            'data-lightbox': image_args['gallery_id'],
-            'title': title
-        })
-
-    @staticmethod
-    def _remote_image(path, image_args, title, alt_text):
-        """ Render an img tag for a remotely-stored image """
-
-        attrs = {
-            'title': title,
-            'alt': alt_text
-        }
-
-        # try to fudge the sizing
-        width = image_args.get('width')
-        height = image_args.get('height')
-        size_mode = image_args.get('resize', 'fit')
-
-        if width and height and size_mode != 'stretch':
-            attrs['style'] = ';'.join([
-                'background-image:url(\'{}\')'.format(flask.escape(path)),
-                'background-size:{}'.format(CSS_SIZE_MODE[size_mode]),
-                'background-position:{:.1f}% {:.1f}%'.format(
-                    image_args.get('fill_crop_x', 0.5) * 100,
-                    image_args.get('fill_crop_y', 0.5) * 100),
-                'background-repeat:no-repeat'
-            ])
-            attrs['src'] = (
-                'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw'
-            )
-        else:
-            attrs['src'] = path
-
-        attrs['width'] = width
-        attrs['height'] = height
-
-        text = utils.make_tag('img', attrs)
-
-        if 'link' in image_args and image_args['link'] is not None:
-            text = '<a href="{}">{}</a>'.format(
-                flask.escape(image_args['link']), text)
-        elif 'gallery_id' in image_args and image_args['gallery_id'] is not None:
-            text = '{}{}</a>'.format(
-                utils.make_tag('a', {
-                    'href': path,
-                    'data-lightbox': image_args['gallery_id'],
-                    'title': title
-                }),
-                text)
-
-        return text
+        try:
+            img = image.get_image(path, self._image_search_path)
+            return img.get_img_tag(composite_args)
+        except Exception as err:  # pulint: disable=broad-except
+            logger.exception("Got error on image %s: %s", path, err)
+            return ('<span class="error">Error loading image {}: {}</span>'.format(
+                flask.escape(spec), flask.escape(str(err))))
 
 
 def to_html(text, config, image_search_path):
