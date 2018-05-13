@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import os
 import hashlib
 import logging
+import html
 
 import re
 import ast
@@ -19,14 +20,38 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class Image:
+    """ Base class for image handlers """
+
+    def get_rendition(self, output_scale, **kwargs):
+        """ Get a rendition of the image with the specified output scale and specification.
+
+        Returns: a tuple of (url, size) for the image. """
+        pass
+
+    def get_img_tag(self, title='', alt_text='', **kwargs):
+        """ Build a <img> tag for the image with the specified options.
+
+        Returns: an HTML fragment. """
+        pass
+
+    def __call__(self, output_scale=1, **kwargs):
+        url, _ = self.get_rendition(output_scale, **kwargs)
+        return url
+
+    def __str__(self):
+        return self()
+
+
+class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
 
     def __init__(self, record):
         """ Get the base image from an index record """
+        super().__init__()
         self._record = record
 
-    def get_rendition(self, output_scale, kwargs):
+    def get_rendition(self, output_scale, **kwargs):
         """
         Get the rendition for this image, generating it if necessary.
         Returns a tuple of `(relative_path, width, height)`, where relative_path
@@ -297,6 +322,131 @@ class Image:
 
         return image.convert('RGB')
 
+    def get_img_tag(self, title='', alt_text='', **kwargs):
+        # Get the 1x and 2x renditions
+        img_1x, size = self.get_rendition(
+            1, utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
+        img_2x, _ = self.get_rendition(
+            2, utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
+
+        text = utils.make_tag('img', {
+            'src': img_1x,
+            'width': size[0],
+            'height': size[1],
+            'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
+            'title': title,
+            'alt': alt_text
+        })
+
+        # Wrap it in a link as appropriate
+        if 'link' in kwargs and kwargs['link'] is not None:
+            text = '{}{}</a>'.format(
+                utils.make_tag('a', {'link': kwargs['link']}),
+                text)
+        elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
+            text = '{}{}</a>'.format(
+                self._fullsize_link_tag(kwargs, title), text)
+
+        return text
+
+    def _fullsize_link_tag(kwargs, title):
+        """ Render a <a href> that points to the fullsize rendition specified """
+        fullsize_args = {}
+
+        if 'absolute' in kwargs:
+            fullsize_args = kwargs['absolute']
+
+        for key in ['width', 'height', 'quality', 'format', 'background']:
+            fsk = 'fullsize_' + key
+            if fsk in kwargs:
+                fullsize_args[key] = kwargs[fsk]
+
+        img_fullsize, _ = img.get_rendition(1, fullsize_args)
+
+        return utils.make_tag('a', {
+            'href': img_fullsize,
+            'data-lightbox': kwargs['gallery_id'],
+            'title': title
+        })
+
+
+class RemoteImage(Image):
+    """ An image that points to a remote URL """
+
+    CSS_SIZE_MODE = {
+        'fit': 'contain',
+        'fill': 'cover'
+    }
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+
+    def get_rendition(self, scale, **kwargs):
+        # pylint: disable=unused-argument
+        return self.url
+
+    def get_img_tag(self, title='', alt_text='', **kwargs):
+        attrs = {
+            'title': title,
+            'alt': alt_text
+        }
+
+        # try to fudge the sizing
+        width = kwargs.get('width')
+        height = kwargs.get('height')
+        size_mode = kwargs.get('resize', 'fit')
+
+        if width and height and size_mode != 'stretch':
+            attrs['style'] = ';'.join([
+                'background-image:url(\'{}\')'.format(flask.escape(self.url)),
+                'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
+                'background-position:{:.1f}% {:.1f}%'.format(
+                    kwargs.get('fill_crop_x', 0.5) * 100,
+                    kwargs.get('fill_crop_y', 0.5) * 100),
+                'background-repeat:no-repeat'
+            ])
+            attrs['src'] = (
+                'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw'
+            )
+        else:
+            attrs['src'] = self.url
+
+        attrs['width'] = width
+        attrs['height'] = height
+
+        text = utils.make_tag('img', attrs)
+
+        if 'link' in kwargs and kwargs['link'] is not None:
+            text = '<a href="{}">{}</a>'.format(
+                flask.escape(kwargs['link']), text)
+        elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
+            text = '{}{}</a>'.format(
+                utils.make_tag('a', {
+                    'href': path,
+                    'data-lightbox': kwargs['gallery_id'],
+                    'title': title
+                }),
+                text)
+
+        return text
+
+
+class StaticImage(Image):
+    """ An image that points to a static resource """
+
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+
+    def get_rendition(self, scale, **kwargs):
+        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
+        return RemoteImage(url).get_rendition(scale, **kwargs), None
+
+    def get_img_tag(self, title='', alt_text='', **kwargs):
+        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
+        return RemoteImage(url).get_img_tag(title, alt_text, **kwargs)
+
 
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
@@ -306,6 +456,12 @@ def get_image(path, search_path):
     path -- the image's filename
     search_path -- a search path for the image (string or list of strings)
     """
+
+    if path.startswith('@'):
+        return StaticImage(path[1:])
+
+    if path.startswith('//') or '://' in path:
+        return RemoteImage(path)
 
     if os.path.isabs(path):
         file_path = utils.find_file(os.path.relpath(
@@ -341,7 +497,7 @@ def get_image(path, search_path):
             record.update(**values).where(model.Image.id ==
                                           record.id).execute()
 
-    return Image(record)
+    return LocalImage(record)
 
 
 def parse_arglist(args):
@@ -400,7 +556,7 @@ def parse_image_spec(spec):
     else:
         args = {}
 
-    return spec, args, title
+    return spec, args, html.unescape(title)
 
 
 def get_spec_list(image_specs, container_args):
