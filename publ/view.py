@@ -77,8 +77,6 @@ class View:
             elif self._order_by == 'newest':
                 self.spec['last'] = self.spec['start']
 
-        print('spec', spec)
-
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
 
@@ -222,11 +220,9 @@ class View:
         }).first if newest else None
 
         if 'date' in self.spec:
-            print('date pagination', oldest_neighbor, newest_neighbor)
             return self._get_date_pagination(base, oldest_neighbor, newest_neighbor)
 
         if 'count' in self.spec:
-            print('count pagination', oldest_neighbor, newest_neighbor)
             return self._get_count_pagination(base, oldest_neighbor, newest_neighbor)
 
         # we're not paginating
@@ -319,10 +315,10 @@ class View:
         newest = self.newest.date.format(date_format)
 
         if oldest == newest:
-            template = formats.get('span', '{oldest} ({count})')
+            template = formats.get('single', '{oldest} ({count})')
         else:
             template = formats.get(
-                'single', '{oldest} — {newest} ({count})')
+                'span', '{oldest} — {newest} ({count})')
 
         return template.format(count=len(self.entries),
                                oldest=oldest,
