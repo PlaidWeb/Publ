@@ -41,6 +41,41 @@ class Image:
     def __str__(self):
         return self()
 
+    def _wrap_link_target(self, kwargs, text, title):
+        if 'link' in kwargs and kwargs['link'] is not None:
+            return '{}{}</a>'.format(
+                utils.make_tag(
+                    'a', {'href': utils.remap_link_target(
+                        kwargs['link'], kwargs.get('absolute')
+                    )}),
+                text)
+
+        if 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
+            return '{}{}</a>'.format(
+                self._fullsize_link_tag(kwargs, title), text)
+
+        return text
+
+    def _fullsize_link_tag(self, kwargs, title):
+        """ Render a <a href> that points to the fullsize rendition specified """
+        fullsize_args = {}
+
+        if 'absolute' in kwargs:
+            fullsize_args = kwargs['absolute']
+
+        for key in ['width', 'height', 'quality', 'format', 'background']:
+            fsk = 'fullsize_' + key
+            if fsk in kwargs:
+                fullsize_args[key] = kwargs[fsk]
+
+        img_fullsize, _ = self.get_rendition(1, **fullsize_args)
+
+        return utils.make_tag('a', {
+            'href': img_fullsize,
+            'data-lightbox': kwargs['gallery_id'],
+            'title': title
+        })
+
 
 class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
@@ -340,35 +375,7 @@ class LocalImage(Image):
         })
 
         # Wrap it in a link as appropriate
-        if 'link' in kwargs and kwargs['link'] is not None:
-            text = '{}{}</a>'.format(
-                utils.make_tag('a', {'href': kwargs['link']}),
-                text)
-        elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
-            text = '{}{}</a>'.format(
-                self._fullsize_link_tag(kwargs, title), text)
-
-        return text
-
-    def _fullsize_link_tag(self, kwargs, title):
-        """ Render a <a href> that points to the fullsize rendition specified """
-        fullsize_args = {}
-
-        if 'absolute' in kwargs:
-            fullsize_args = kwargs['absolute']
-
-        for key in ['width', 'height', 'quality', 'format', 'background']:
-            fsk = 'fullsize_' + key
-            if fsk in kwargs:
-                fullsize_args[key] = kwargs[fsk]
-
-        img_fullsize, _ = self.get_rendition(1, **fullsize_args)
-
-        return utils.make_tag('a', {
-            'href': img_fullsize,
-            'data-lightbox': kwargs['gallery_id'],
-            'title': title
-        })
+        return self._wrap_link_target(kwargs, text, title)
 
 
 class RemoteImage(Image):
@@ -385,7 +392,7 @@ class RemoteImage(Image):
 
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint: disable=unused-argument
-        return self.url
+        return self.url, None
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         attrs = {
@@ -416,22 +423,7 @@ class RemoteImage(Image):
         attrs['width'] = width
         attrs['height'] = height
 
-        text = utils.make_tag('img', attrs)
-
-        if 'link' in kwargs and kwargs['link'] is not None:
-            text = '{}{}</a>'.format(
-                utils.make_tag('a', {'href': kwargs['link']}),
-                text)
-        elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
-            text = '{}{}</a>'.format(
-                utils.make_tag('a', {
-                    'href': self.url,
-                    'data-lightbox': kwargs['gallery_id'],
-                    'title': title
-                }),
-                text)
-
-        return text
+        return self._wrap_link_target(kwargs, utils.make_tag('img', attrs), title)
 
 
 class StaticImage(Image):
@@ -443,7 +435,7 @@ class StaticImage(Image):
 
     def get_rendition(self, output_scale=1, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_rendition(output_scale, **kwargs), None
+        return RemoteImage(url).get_rendition(output_scale, **kwargs)
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
@@ -457,7 +449,7 @@ class ImageNotFound(Image):
         super().__init__()
         self.path = path
 
-    def get_rendition(self, output_scale, **kwargs):
+    def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=unused-argument
         return 'missing file ' + self.path
 
