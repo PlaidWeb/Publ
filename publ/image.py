@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 class Image:
     """ Base class for image handlers """
 
-    def get_rendition(self, output_scale, **kwargs):
+    def get_rendition(self, output_scale=1, **kwargs):
         """ Get a rendition of the image with the specified output scale and specification.
 
         Returns: a tuple of (url, size) for the image. """
@@ -34,8 +34,8 @@ class Image:
         Returns: an HTML fragment. """
         pass
 
-    def __call__(self, output_scale=1, **kwargs):
-        url, _ = self.get_rendition(output_scale, **kwargs)
+    def __call__(self, *args, **kwargs):
+        url, _ = self.get_rendition(*args, **kwargs)
         return url
 
     def __str__(self):
@@ -51,7 +51,7 @@ class LocalImage(Image):
         super().__init__()
         self._record = record
 
-    def get_rendition(self, output_scale, **kwargs):
+    def get_rendition(self, output_scale=1, **kwargs):
         """
         Get the rendition for this image, generating it if necessary.
         Returns a tuple of `(relative_path, width, height)`, where relative_path
@@ -383,7 +383,7 @@ class RemoteImage(Image):
         super().__init__()
         self.url = url
 
-    def get_rendition(self, output_scale, **kwargs):
+    def get_rendition(self, output_scale=1, **kwargs):
         # pylint: disable=unused-argument
         return self.url
 
@@ -441,7 +441,7 @@ class StaticImage(Image):
         super().__init__()
         self.path = path
 
-    def get_rendition(self, output_scale, **kwargs):
+    def get_rendition(self, output_scale=1, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_rendition(output_scale, **kwargs), None
 
