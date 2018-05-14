@@ -42,6 +42,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
+        print('config', self._config, container_args)
         container_args = {**self._config, **container_args}
 
         spec_list = image.get_spec_list(image_specs, container_args)
@@ -50,6 +51,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if not spec:
                 continue
 
+            print(spec, container_args)
             text += self._render_image(spec,
                                        container_args,
                                        alt)
@@ -129,7 +131,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         try:
             img = image.get_image(path, self._image_search_path)
-            return img.get_img_tag(composite_args)
+            return img.get_img_tag(**composite_args)
         except Exception as err:  # pulint: disable=broad-except
             logger.exception("Got error on image %s: %s", path, err)
             return ('<span class="error">Error loading image {}: {}</span>'.format(

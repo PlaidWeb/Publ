@@ -325,9 +325,9 @@ class LocalImage(Image):
     def get_img_tag(self, title='', alt_text='', **kwargs):
         # Get the 1x and 2x renditions
         img_1x, size = self.get_rendition(
-            1, utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
+            1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
         img_2x, _ = self.get_rendition(
-            2, utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
+            2, **utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
 
         text = utils.make_tag('img', {
             'src': img_1x,
@@ -392,6 +392,8 @@ class RemoteImage(Image):
             'alt': alt_text
         }
 
+        print(self.url, kwargs)
+
         # try to fudge the sizing
         width = kwargs.get('width')
         height = kwargs.get('height')
@@ -448,6 +450,19 @@ class StaticImage(Image):
         return RemoteImage(url).get_img_tag(title, alt_text, **kwargs)
 
 
+class ImageNotFound(Image):
+
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+
+    def get_rendition(self, scale, **kwargs):
+        return 'missing file ' + self.path
+
+    def get_img_tag(self, title='', alt_text='', **kwargs):
+        return '<span class="error">Image not found: {}</span>'.format(self.path)
+
+
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the
@@ -469,7 +484,7 @@ def get_image(path, search_path):
     else:
         file_path = utils.find_file(path, search_path)
     if not file_path:
-        return None
+        return ImageNotFound(path)
 
     record = model.Image.get_or_none(file_path=file_path)
     fingerprint = utils.file_fingerprint(file_path)
@@ -556,7 +571,8 @@ def parse_image_spec(spec):
     else:
         args = {}
 
-    return spec, args, html.unescape(title)
+    print('image_spec', spec, args, title)
+    return spec, args, (title and html.unescape(title))
 
 
 def get_spec_list(image_specs, container_args):
