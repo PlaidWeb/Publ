@@ -17,7 +17,7 @@ from . import category
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 ENTRY_TYPES = ['.md', '.htm', '.html']
-CATEGORY_TYPES = ['cat', '.meta']
+CATEGORY_TYPES = ['.cat', '.meta']
 
 
 def scan_file(fullpath, relpath, assign_id):
@@ -26,6 +26,10 @@ def scan_file(fullpath, relpath, assign_id):
     fullpath -- The full path to the file
     relpath -- The path to the file, relative to its base directory
     assign_id -- Whether to assign an ID to the file if not yet assigned
+
+    This calls into various modules' scanner functions; the expectation is that
+    the scan_file function will return a truthy value if it was scanned
+    successfully, False if it failed, and None if there is nothing to scan.
     """
 
     _, ext = os.path.splitext(fullpath)
@@ -39,10 +43,10 @@ def scan_file(fullpath, relpath, assign_id):
             logger.info("Scanning meta info: %s", fullpath)
             return category.scan_file(fullpath, relpath)
 
-        return True
+        return None
     except:  # pylint: disable=bare-except
         logger.exception("Got error parsing %s", fullpath)
-    return None
+        return False
 
 
 def get_last_fingerprint(fullpath):
@@ -133,9 +137,11 @@ def scan_index(content_dir):
             fingerprint = utils.file_fingerprint(fullpath)
             last_fingerprint = get_last_fingerprint(fullpath)
             if fingerprint != last_fingerprint:
-                if scan_file(fullpath, relpath, False):
+                result = scan_file(fullpath, relpath, False)
+
+                if result:
                     set_fingerprint(fullpath)
-                else:
+                elif result is False:
                     # file scan failed, add to the fixups queue
                     fixups.append((fullpath, relpath))
                     logger.info("Scheduling fixup for %s", fullpath)
