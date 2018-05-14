@@ -463,7 +463,12 @@ class ImageNotFound(Image):
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         # pylint:disable=unused-argument
-        return '<span class="error">Image not found: {}</span>'.format(self.path)
+        text = '<span class="error">Image not found: <code>{}</code>'.format(
+            html.escape(self.path))
+        if ' ' in self.path:
+            text += ' (Did you forget a <code>|</code>?)'
+        text += '</span>'
+        return text
 
 
 def get_image(path, search_path):
