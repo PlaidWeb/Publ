@@ -157,14 +157,14 @@ class View:
     @cached_property
     def older(self):
         """ Gets the older-direction page """
-        if self.order_by == 'oldest':
+        if self._order_by == 'oldest':
             return self.previous
         return self.next
 
     @cached_property
     def newer(self):
         """ Gets the newer-direction page """
-        if self.order_by == 'oldest':
+        if self._order_by == 'oldest':
             return self.next
         return self.previous
 

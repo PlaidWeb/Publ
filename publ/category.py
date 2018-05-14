@@ -10,7 +10,7 @@ from werkzeug.utils import cached_property
 
 from . import model
 from . import utils
-from . import entry
+from . import entry  # pylint: disable=cyclic-import
 from . import queries
 
 

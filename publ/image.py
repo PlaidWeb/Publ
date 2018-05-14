@@ -77,7 +77,7 @@ class LocalImage(Image):
         quality -- the JPEG quality to save the image as
         """
 
-        # pylint:disable=too-many-locals
+        # pylint:disable=too-many-locals,too-many-branches
 
         input_filename = self._record.file_path
         basename, ext = os.path.splitext(os.path.basename(input_filename))
@@ -324,8 +324,6 @@ class LocalImage(Image):
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
 
-        print("get_img_tag", kwargs)
-
         # Get the 1x and 2x renditions
         img_1x, size = self.get_rendition(
             1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
@@ -343,7 +341,6 @@ class LocalImage(Image):
 
         # Wrap it in a link as appropriate
         if 'link' in kwargs and kwargs['link'] is not None:
-            print('adding link ' + str(kwargs['link']))
             text = '{}{}</a>'.format(
                 utils.make_tag('a', {'href': kwargs['link']}),
                 text)
@@ -386,7 +383,7 @@ class RemoteImage(Image):
         super().__init__()
         self.url = url
 
-    def get_rendition(self, scale, **kwargs):
+    def get_rendition(self, output_scale, **kwargs):
         # pylint: disable=unused-argument
         return self.url
 
@@ -395,8 +392,6 @@ class RemoteImage(Image):
             'title': title,
             'alt': alt_text
         }
-
-        print(self.url, kwargs)
 
         # try to fudge the sizing
         width = kwargs.get('width')
@@ -425,7 +420,7 @@ class RemoteImage(Image):
 
         if 'link' in kwargs and kwargs['link'] is not None:
             text = '{}{}</a>'.format(
-                utils.make_link('a', {'href': kwargs['link']}),
+                utils.make_tag('a', {'href': kwargs['link']}),
                 text)
         elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
             text = '{}{}</a>'.format(
@@ -446,9 +441,9 @@ class StaticImage(Image):
         super().__init__()
         self.path = path
 
-    def get_rendition(self, scale, **kwargs):
+    def get_rendition(self, output_scale, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_rendition(scale, **kwargs), None
+        return RemoteImage(url).get_rendition(output_scale, **kwargs), None
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
@@ -456,15 +451,18 @@ class StaticImage(Image):
 
 
 class ImageNotFound(Image):
+    """ A fake image that prints out appropriate error messages for missing images """
 
     def __init__(self, path):
         super().__init__()
         self.path = path
 
-    def get_rendition(self, scale, **kwargs):
+    def get_rendition(self, output_scale, **kwargs):
+        # pylint:disable=unused-argument
         return 'missing file ' + self.path
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
+        # pylint:disable=unused-argument
         return '<span class="error">Image not found: {}</span>'.format(self.path)
 
 
@@ -576,7 +574,6 @@ def parse_image_spec(spec):
     else:
         args = {}
 
-    print('image_spec', spec, args, title)
     return spec, args, (title and html.unescape(title))
 
 
