@@ -42,7 +42,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
-        print('config', self._config, container_args)
+        print('image config', self._config, container_args)
         container_args = {**self._config, **container_args}
 
         spec_list = image.get_spec_list(image_specs, container_args)
@@ -140,6 +140,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
 def to_html(text, config, image_search_path):
     """ Convert Markdown text to HTML """
+
+    print('to_html', config, image_search_path)
 
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)

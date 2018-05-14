@@ -140,7 +140,7 @@ class LocalImage(Image):
                 image = self.flatten(image, kwargs.get('background'))
             image.save(out_fullpath, **out_args)
 
-        return out_rel_path, size
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
     def get_rendition_size(self, spec, output_scale):
         """
@@ -323,6 +323,9 @@ class LocalImage(Image):
         return image.convert('RGB')
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
+
+        print("get_img_tag", kwargs)
+
         # Get the 1x and 2x renditions
         img_1x, size = self.get_rendition(
             1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
@@ -340,8 +343,9 @@ class LocalImage(Image):
 
         # Wrap it in a link as appropriate
         if 'link' in kwargs and kwargs['link'] is not None:
+            print('adding link ' + str(kwargs['link']))
             text = '{}{}</a>'.format(
-                utils.make_tag('a', {'link': kwargs['link']}),
+                utils.make_tag('a', {'href': kwargs['link']}),
                 text)
         elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
             text = '{}{}</a>'.format(
@@ -361,7 +365,7 @@ class LocalImage(Image):
             if fsk in kwargs:
                 fullsize_args[key] = kwargs[fsk]
 
-        img_fullsize, _ = self.get_rendition(1, fullsize_args)
+        img_fullsize, _ = self.get_rendition(1, **fullsize_args)
 
         return utils.make_tag('a', {
             'href': img_fullsize,
