@@ -14,7 +14,6 @@ from . import config
 from . import path_alias
 from . import model
 from . import image
-from . import utils
 from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
@@ -92,13 +91,7 @@ def image_function(template=None, entry=None, category=None):
             os.path.dirname(os.path.relpath(template.filename,
                                             config.template_folder))))
 
-    def rendition(filename, output_scale=1, **kwargs):
-        """ Get a URL for a rendition of an image, to be used by the templates """
-        img = image.get_image(filename, path)
-        return utils.static_url(img.get_rendition(output_scale, kwargs)[0],
-                                absolute=kwargs.get('absolute'))
-
-    return rendition
+    return lambda filename: image.get_image(filename, path)
 
 
 def render_publ_template(template, **kwargs):
@@ -220,7 +213,7 @@ def render_category(category='', template='index'):
 
 
 @cache.cached(key_prefix=caching.make_entry_key)
-def render_entry(entry_id, slug_text='', category=''):  # pylint: disable=too-many-return-statements
+def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
     Arguments:
@@ -229,6 +222,8 @@ def render_entry(entry_id, slug_text='', category=''):  # pylint: disable=too-ma
     slug_text -- The expected URL slug text
     category -- The expected category
     """
+
+    # pylint: disable=too-many-return-statements
 
     # check if it's a valid entry
     record = model.Entry.get_or_none(model.Entry.id == entry_id)
