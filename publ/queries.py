@@ -20,7 +20,7 @@ def where_entry_visible(date=None):
         (model.Entry.status == model.PublishStatus.PUBLISHED) |
         (
             (model.Entry.status == model.PublishStatus.SCHEDULED) &
-            (model.Entry.entry_date <= (date or arrow.utcnow().datetime))
+            (model.Entry.utc_date <= (date or arrow.utcnow().datetime))
         )
     )
 
@@ -54,8 +54,8 @@ def where_before_entry(entry):
 
     entry -- The entry of reference
     """
-    return (model.Entry.entry_date < entry.entry_date) | (
-        (model.Entry.entry_date == entry.entry_date) &
+    return (model.Entry.utc_date < entry.utc_date) | (
+        (model.Entry.utc_date == entry.utc_date) &
         (model.Entry.id < entry.id)
     )
 
@@ -65,8 +65,8 @@ def where_after_entry(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.entry_date > entry.entry_date) | (
-        (model.Entry.entry_date == entry.entry_date) &
+    return (model.Entry.utc_date > entry.utc_date) | (
+        (model.Entry.utc_date == entry.utc_date) &
         (model.Entry.id > entry.id)
     )
 
@@ -76,8 +76,8 @@ def where_entry_last(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.entry_date < entry.entry_date) | (
-        (model.Entry.entry_date == entry.entry_date) &
+    return (model.Entry.utc_date < entry.utc_date) | (
+        (model.Entry.utc_date == entry.utc_date) &
         (model.Entry.id <= entry.id)
     )
 
@@ -87,8 +87,8 @@ def where_entry_first(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.entry_date > entry.entry_date) | (
-        (model.Entry.entry_date == entry.entry_date) &
+    return (model.Entry.utc_date > entry.utc_date) | (
+        (model.Entry.utc_date == entry.utc_date) &
         (model.Entry.id >= entry.id)
     )
 
@@ -113,7 +113,7 @@ def where_entry_type_not(entry_type):
     return model.Entry.entry_type != entry_type
 
 
-def where_entry_date(datespec):
+def where_utc_date(datespec):
     """ Where clause for entries which match a textual date spec
 
     datespec -- The date spec to check for, in YYYY[[-]MM[[-]DD]] format
@@ -121,10 +121,10 @@ def where_entry_date(datespec):
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
-    print('where_entry_date', start_date, end_date)
+    print('where_utc_date', start_date, end_date)
 
-    return ((model.Entry.entry_date >= start_date.to('utc').datetime) &
-            (model.Entry.entry_date <= end_date.to('utc').datetime))
+    return ((model.Entry.utc_date >= start_date.to('utc').datetime) &
+            (model.Entry.utc_date <= end_date.to('utc').datetime))
 
 
 def get_entry(entry):
@@ -173,7 +173,7 @@ def build_query(spec):
         where = where & where_entry_type_not(spec['entry_type_not'])
 
     if 'date' in spec:
-        where = where & where_entry_date(spec['date'])
+        where = where & where_utc_date(spec['date'])
 
     if 'last' in spec:
         where = where & where_entry_last(get_entry(spec['last']))

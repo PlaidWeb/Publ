@@ -98,10 +98,7 @@ class Entry:
     @cached_property
     def image_search_path(self):
         """ The relative image search path for this entry """
-        return [
-            os.path.dirname(self._record.file_path),
-            os.path.join(config.content_folder, self._record.category)
-        ]
+        return [os.path.dirname(self._record.file_path)] + self.category.image_search_path
 
     def _load(self):
         """ ensure the message payload is loaded """
@@ -127,18 +124,18 @@ class Entry:
             self.body = TrueCallableProxy(
                 self._get_markup,
                 body,
-                is_markdown) if body else CallableProxy(lambda **kwargs: '')
+                is_markdown) if body else CallableProxy(None)
             self.more = TrueCallableProxy(
                 self._get_markup,
                 more,
-                is_markdown) if more else CallableProxy(lambda **kwargs: '')
+                is_markdown) if more else CallableProxy(None)
 
             self.last_modified = arrow.get(
                 os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
             self.card = TrueCallableProxy(
                 self._get_card,
-                body or more) if is_markdown else CallableProxy(lambda **kwargs: '')
+                body or more) if is_markdown else CallableProxy(None)
 
             return True
         return False
@@ -208,7 +205,7 @@ class Entry:
         return self._get_first(model.Entry.select().where(
             queries.build_query(spec) &
             queries.where_before_entry(self._record)
-        ).order_by(-model.Entry.entry_date, -model.Entry.id))
+        ).order_by(-model.Entry.utc_date, -model.Entry.id))
 
     def _next(self, **kwargs):
         """ Get the next item in any particular category """
@@ -219,7 +216,7 @@ class Entry:
             model.Entry.select().where(
                 queries.build_query(spec) &
                 queries.where_after_entry(self._record)
-            ).order_by(model.Entry.entry_date, model.Entry.id))
+            ).order_by(model.Entry.utc_date, model.Entry.id))
 
     def get(self, name):
         """ Get a single header on an entry """
@@ -350,7 +347,7 @@ def scan_file(fullpath, relpath, assign_id):
                 os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
 
-        values['entry_date'] = entry_date.to('utc').datetime
+        values['utc_date'] = entry_date.to('utc').datetime
         values['display_date'] = entry_date.datetime
 
         logger.debug("getting entry %s with id %d", fullpath, entry_id)

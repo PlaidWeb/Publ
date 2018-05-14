@@ -12,10 +12,12 @@ import watchdog.events
 from . import entry
 from . import model
 from . import utils
+from . import category
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 ENTRY_TYPES = ['.md', '.htm', '.html']
+CATEGORY_TYPES = ['cat', '.meta']
 
 
 def scan_file(fullpath, relpath, assign_id):
@@ -32,6 +34,10 @@ def scan_file(fullpath, relpath, assign_id):
         if ext in ENTRY_TYPES:
             logger.info("Scanning entry: %s", fullpath)
             return entry.scan_file(fullpath, relpath, assign_id)
+
+        if ext in CATEGORY_TYPES:
+            logger.info("Scanning meta info: %s", fullpath)
+            return category.scan_file(fullpath, relpath)
 
         return True
     except:  # pylint: disable=bare-except

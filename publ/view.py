@@ -24,14 +24,14 @@ PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
 ORDER_BY = {
-    'newest': [-model.Entry.entry_date, -model.Entry.id],
-    'oldest': [model.Entry.entry_date, model.Entry.id],
+    'newest': [-model.Entry.utc_date, -model.Entry.id],
+    'oldest': [model.Entry.utc_date, model.Entry.id],
     'title': [model.Entry.title, model.Entry.id]
 }
 
 REVERSE_ORDER_BY = {
-    'newest': [model.Entry.entry_date, model.Entry.id],
-    'oldest': [-model.Entry.entry_date, -model.Entry.id],
+    'newest': [model.Entry.utc_date, model.Entry.id],
+    'oldest': [-model.Entry.utc_date, -model.Entry.id],
     'title': [-model.Entry.title, -model.Entry.id]
 }
 

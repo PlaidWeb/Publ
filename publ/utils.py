@@ -27,7 +27,7 @@ class CallableProxy:
         kwargs -- Default keyword arguments for the function call
         """
 
-        self._func = func
+        self._func = func if func else (lambda **kwargs: '')
         self._has_default = False
         self._default_args = args
         self._default_kwargs = kwargs
