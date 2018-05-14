@@ -30,7 +30,7 @@ def load_metafile(filepath):
         with open(filepath, 'r') as file:
             return email.message_from_file(file)
     except FileNotFoundError:
-        logger.warning("Category file %s not found", file)
+        logger.warning("Category file %s not found", filepath)
         model.Category.delete().where(model.Category.file_path == fullpath).execute()
 
     return None
