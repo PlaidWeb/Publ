@@ -89,8 +89,8 @@ class CardParser(misaka.BaseRenderer):
 
         img = image.get_image(path, self._image_search_path)
         if img:
-            image_config = {**image_args, **self._config}
-            return utils.static_url(img.get_rendition(1, image_config)[0], absolute=True)
+            image_config = {**image_args, **self._config, 'absolute': True}
+            return img.get_rendition(1, **image_config)[0]
 
         return None
 
