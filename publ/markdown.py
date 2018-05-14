@@ -42,7 +42,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
-        print('image config', self._config, container_args)
         container_args = {**self._config, **container_args}
 
         spec_list = image.get_spec_list(image_specs, container_args)
@@ -51,7 +50,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if not spec:
                 continue
 
-            print(spec, container_args)
             text += self._render_image(spec,
                                        container_args,
                                        alt)
@@ -131,8 +129,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         try:
             img = image.get_image(path, self._image_search_path)
-            return img.get_img_tag(**composite_args)
-        except Exception as err:  # pulint: disable=broad-except
+            return img.get_img_tag(title, alt_text, **composite_args)
+        except Exception as err:  # pylint: disable=broad-except
             logger.exception("Got error on image %s: %s", path, err)
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
@@ -140,9 +138,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
 def to_html(text, config, image_search_path):
     """ Convert Markdown text to HTML """
-
-    print('to_html', config, image_search_path)
-
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
     return processor(text)
