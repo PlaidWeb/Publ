@@ -167,7 +167,7 @@ def make_tag(name, attrs, start_end=False):
     text = '<' + name
     for key, val in attrs.items():
         if val is not None:
-            text += ' {}="{}"'.format(key, html.escape(val))
+            text += ' {}="{}"'.format(key, html.escape(str(val)))
     if start_end:
         text += ' /'
     text += '>'
