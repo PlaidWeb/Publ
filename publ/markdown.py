@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 
 import logging
-import urllib.parse
 
 import misaka
 import flask
@@ -102,17 +101,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def _remap_path(self, path):
         """ Remap a path to an appropriate URL """
-        absolute = self._config.get('absolute')
-
-        if path.startswith('@'):
-            # static resource
-            return utils.static_url(path[1:], absolute=absolute)
-
-        if absolute:
-            # absolute-ify whatever the URL is
-            return urllib.parse.urljoin(flask.request.url, path)
-
-        return path
+        return utils.remap_link_target(path, self._config.get('absolute'))
 
     def _render_image(self, spec, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
@@ -129,11 +118,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         try:
             img = image.get_image(path, self._image_search_path)
-            return img.get_img_tag(title, alt_text, **composite_args)
         except Exception as err:  # pylint: disable=broad-except
             logger.exception("Got error on image %s: %s", path, err)
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
+
+        return img.get_img_tag(title, alt_text, **composite_args)
 
 
 def to_html(text, config, image_search_path):

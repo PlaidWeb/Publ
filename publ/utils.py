@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import re
 import os
 import html
+import urllib.parse
 
 import arrow
 import flask
@@ -201,3 +202,16 @@ def remap_args(input_args, remap):
             out_args[dest_key] = remap_value
 
     return out_args
+
+
+def remap_link_target(path, absolute=False):
+    """ remap a link target to a static URL if it's prefixed with @ """
+    if path.startswith('@'):
+        # static resource
+        return static_url(path[1:], absolute=absolute)
+
+    if absolute:
+        # absolute-ify whatever the URL is
+        return urllib.parse.urljoin(flask.request.url, path)
+
+    return path
