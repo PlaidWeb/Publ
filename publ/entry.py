@@ -61,7 +61,7 @@ class Entry:
         self.next = CallableProxy(self._next)
         self.previous = CallableProxy(self._previous)
 
-        from .category import Category
+        from .category import Category  # pylint: disable=cyclic-import
         self.category = Category(record.category)
 
     def _link(self, *args, **kwargs):
@@ -91,7 +91,7 @@ class Entry:
         elif paging == 'year':
             args['date'] = self.date.format(utils.YEAR_FORMAT)
         else:
-            args['first'] = self._record.id
+            args['start'] = self._record.id
 
         return flask.url_for('category', **args, _external=absolute)
 
@@ -193,12 +193,16 @@ class Entry:
         query = query.limit(1)
         return Entry(query[0]) if query.count() else None
 
-    def _previous(self, **kwargs):
-        # Get the previous item in any particular category
-        spec = {
-            'category': self._record.category,
-            'recurse': 'category' in kwargs
+    def _pagination_default_spec(self, kwargs):
+        category = kwargs.get('category', self._record.category)
+        return {
+            'category': category,
+            'recurse': kwargs.get('recurse', category != self._record.category)
         }
+
+    def _previous(self, **kwargs):
+        """ Get the previous item in any particular category """
+        spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
         return self._get_first(model.Entry.select().where(
@@ -207,11 +211,8 @@ class Entry:
         ).order_by(-model.Entry.entry_date, -model.Entry.id))
 
     def _next(self, **kwargs):
-        # Get the next item in any particular category
-        spec = {
-            'category': self._record.category,
-            'recurse': 'category' in kwargs
-        }
+        """ Get the next item in any particular category """
+        spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
         return self._get_first(
