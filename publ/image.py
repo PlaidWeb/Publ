@@ -349,7 +349,7 @@ class LocalImage(Image):
 
         return text
 
-    def _fullsize_link_tag(kwargs, title):
+    def _fullsize_link_tag(self, kwargs, title):
         """ Render a <a href> that points to the fullsize rendition specified """
         fullsize_args = {}
 
@@ -361,7 +361,7 @@ class LocalImage(Image):
             if fsk in kwargs:
                 fullsize_args[key] = kwargs[fsk]
 
-        img_fullsize, _ = img.get_rendition(1, fullsize_args)
+        img_fullsize, _ = self.get_rendition(1, fullsize_args)
 
         return utils.make_tag('a', {
             'href': img_fullsize,
@@ -401,7 +401,7 @@ class RemoteImage(Image):
 
         if width and height and size_mode != 'stretch':
             attrs['style'] = ';'.join([
-                'background-image:url(\'{}\')'.format(flask.escape(self.url)),
+                'background-image:url(\'{}\')'.format(html.escape(self.url)),
                 'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
                 'background-position:{:.1f}% {:.1f}%'.format(
                     kwargs.get('fill_crop_x', 0.5) * 100,
@@ -420,12 +420,13 @@ class RemoteImage(Image):
         text = utils.make_tag('img', attrs)
 
         if 'link' in kwargs and kwargs['link'] is not None:
-            text = '<a href="{}">{}</a>'.format(
-                flask.escape(kwargs['link']), text)
+            text = '{}{}</a>'.format(
+                utils.make_link('a', {'href': kwargs['link']}),
+                text)
         elif 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
             text = '{}{}</a>'.format(
                 utils.make_tag('a', {
-                    'href': path,
+                    'href': self.url,
                     'data-lightbox': kwargs['gallery_id'],
                     'title': title
                 }),
