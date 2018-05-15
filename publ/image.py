@@ -7,11 +7,11 @@ import os
 import hashlib
 import logging
 import html
-
 import re
 import ast
 
 import PIL.Image
+from werkzeug.utils import cached_property
 
 from . import config
 from . import model, utils
@@ -110,12 +110,11 @@ class LocalImage(Image):
         format -- output format
         background -- background color when converting transparent to opaque
         quality -- the JPEG quality to save the image as
+        quantize -- how large a palette to use for GIF or PNG images
         """
 
-        # pylint:disable=too-many-locals,too-many-branches
-
-        input_filename = self._record.file_path
-        basename, ext = os.path.splitext(os.path.basename(input_filename))
+        basename, ext = os.path.splitext(
+            os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
 
         if kwargs.get('format'):
@@ -157,25 +156,40 @@ class LocalImage(Image):
             out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
-        if not os.path.isfile(out_fullpath):
-            logger.info("Rendering file %s", out_fullpath)
-            if not os.path.isdir(os.path.dirname(out_fullpath)):
-                os.makedirs(os.path.dirname(out_fullpath))
+        self._render(out_fullpath, size, box, flatten, kwargs, out_args)
 
-            image = PIL.Image.open(input_filename)
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
-            paletted = image.mode == 'P'
-            if paletted:
-                image.convert('RGB')
+    @cached_property
+    def _image(self):
+        image = PIL.Image.open(self._record.file_path)
+
+        paletted = image.mode == 'P'
+        if paletted:
+            image.convert('RGB')
+
+        return image
+
+    def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
+        if not os.path.isfile(path):
+            _, ext = os.path.splitext(path)
+
+            logger.info("Rendering file %s", path)
+            if not os.path.isdir(os.path.dirname(path)):
+                os.makedirs(os.path.dirname(path))
+
+            image = self._image
 
             if size:
                 image = image.resize(size=size, box=box,
                                      resample=PIL.Image.LANCZOS)
             if flatten:
                 image = self.flatten(image, kwargs.get('background'))
-            image.save(out_fullpath, **out_args)
 
-        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+            if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
+                image = image.quantize(kwargs.get('quantize', 256))
+
+            image.save(path, **out_args)
 
     def get_rendition_size(self, spec, output_scale):
         """
