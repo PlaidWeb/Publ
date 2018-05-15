@@ -1,10 +1,9 @@
 # index.py
 ''' Content indexer '''
 
-from __future__ import absolute_import, with_statement
-
 import os
 import logging
+import concurrent.futures
 
 import watchdog.observers
 import watchdog.events
@@ -19,6 +18,9 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
 
+thread_pool = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1)  # pylint: disable=invalid-name
+
 
 def scan_file(fullpath, relpath, assign_id):
     """ Scan a file for the index
@@ -32,21 +34,32 @@ def scan_file(fullpath, relpath, assign_id):
     successfully, False if it failed, and None if there is nothing to scan.
     """
 
-    _, ext = os.path.splitext(fullpath)
+    logger.debug("Scanning file: %s (%s) %s", fullpath, relpath, assign_id)
 
-    try:
-        if ext in ENTRY_TYPES:
-            logger.info("Scanning entry: %s", fullpath)
-            return entry.scan_file(fullpath, relpath, assign_id)
+    def do_scan():
+        """ helper function to do the scan and gather the result """
+        _, ext = os.path.splitext(fullpath)
 
-        if ext in CATEGORY_TYPES:
-            logger.info("Scanning meta info: %s", fullpath)
-            return category.scan_file(fullpath, relpath)
+        try:
+            if ext in ENTRY_TYPES:
+                logger.info("Scanning entry: %s", fullpath)
+                return entry.scan_file(fullpath, relpath, assign_id)
 
-        return None
-    except:  # pylint: disable=bare-except
-        logger.exception("Got error parsing %s", fullpath)
-        return False
+            if ext in CATEGORY_TYPES:
+                logger.info("Scanning meta info: %s", fullpath)
+                return category.scan_file(fullpath, relpath)
+
+            return None
+        except:  # pylint: disable=bare-except
+            logger.exception("Got error parsing %s", fullpath)
+            return False
+
+    result = do_scan()
+    if result is False and not assign_id:
+        logger.info("Scheduling fixup for %s", fullpath)
+        thread_pool.submit(scan_file, fullpath, relpath, True)
+    elif result:
+        set_fingerprint(fullpath)
 
 
 def get_last_fingerprint(fullpath):
@@ -81,15 +94,7 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
     def update_file(self, fullpath):
         """ Update a file """
         relpath = os.path.relpath(fullpath, self.content_dir)
-
-        try:
-            if scan_file(fullpath, relpath, True) is not False:
-                logger.info("Updated %s", fullpath)
-                set_fingerprint(fullpath)
-            else:
-                logger.warning("Couldn't update %s", fullpath)
-        except:  # pylint: disable=bare-except
-            logger.exception("Got error updating %s", fullpath)
+        thread_pool.submit(scan_file, fullpath, relpath, False)
 
     def on_created(self, event):
         """ on_created handler """
@@ -127,8 +132,8 @@ def background_scan(content_dir):
 
 def scan_index(content_dir):
     """ Scan all files in a content directory """
-    fixups = []
-    for root, _, files in os.walk(content_dir, followlinks=True):
+
+    def scan_directory(root, files):
         for file in files:
             fullpath = os.path.join(root, file)
             relpath = os.path.relpath(fullpath, content_dir)
@@ -136,19 +141,8 @@ def scan_index(content_dir):
             fingerprint = utils.file_fingerprint(fullpath)
             last_fingerprint = get_last_fingerprint(fullpath)
             if fingerprint != last_fingerprint:
-                result = scan_file(fullpath, relpath, False)
+                result = thread_pool.submit(
+                    scan_file, fullpath, relpath, False)
 
-                if result:
-                    set_fingerprint(fullpath)
-                elif result is False:
-                    # file scan failed, add to the fixups queue
-                    fixups.append((fullpath, relpath))
-                    logger.info("Scheduling fixup for %s", fullpath)
-
-    # perform the fixup queue
-    for fullpath, relpath in fixups:
-        if scan_file(fullpath, relpath, True):
-            logger.info("Fixed up %s", fullpath)
-            set_fingerprint(fullpath)
-        else:
-            logger.warning("Couldn't fix up %s", fullpath)
+    for root, _, files in os.walk(content_dir, followlinks=True):
+        thread_pool.submit(scan_directory, root, files)
