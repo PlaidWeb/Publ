@@ -37,6 +37,9 @@ def publ(name, cfg):
     app.add_url_rule('/<path:path>.PUBL_PATHALIAS',
                      'path_alias', rendering.render_path_alias)
 
+    app.add_url_rule('/_async/<path:filename>',
+                     'async', rendering.async_image)
+
     if not app.debug:
         app.register_error_handler(Exception, rendering.render_exception)
 

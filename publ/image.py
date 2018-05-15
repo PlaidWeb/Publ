@@ -9,9 +9,12 @@ import logging
 import html
 import re
 import ast
+import concurrent.futures
+import threading
 
 import PIL.Image
 from werkzeug.utils import cached_property
+import flask
 
 from . import config
 from . import model, utils
@@ -80,6 +83,8 @@ class Image:
 class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
+
+    _thread_pool = None
 
     def __init__(self, record):
         """ Get the base image from an index record """
@@ -156,9 +161,18 @@ class LocalImage(Image):
             out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
-        self._render(out_fullpath, size, box, flatten, kwargs, out_args)
+        if os.path.isfile(out_fullpath):
+            return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
-        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+        if not LocalImage._thread_pool:
+            logger.info("Starting LocalImage threadpool")
+            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=1)
+
+        LocalImage._thread_pool.submit(
+            self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+
+        return flask.url_for('async', filename=out_rel_path), size
 
     @cached_property
     def _image(self):
@@ -172,11 +186,11 @@ class LocalImage(Image):
 
     def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
         if not os.path.isfile(path):
-            _, ext = os.path.splitext(path)
-
             logger.info("Rendering file %s", path)
             if not os.path.isdir(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
+
+            _, ext = os.path.splitext(path)
 
             image = self._image
 
