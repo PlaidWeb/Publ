@@ -113,15 +113,13 @@ def where_entry_type_not(entry_type):
     return model.Entry.entry_type != entry_type
 
 
-def where_utc_date(datespec):
+def where_entry_date(datespec):
     """ Where clause for entries which match a textual date spec
 
     datespec -- The date spec to check for, in YYYY[[-]MM[[-]DD]] format
     """
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
-
-    print('where_utc_date', start_date, end_date)
 
     return ((model.Entry.utc_date >= start_date.to('utc').datetime) &
             (model.Entry.utc_date <= end_date.to('utc').datetime))
@@ -173,7 +171,7 @@ def build_query(spec):
         where = where & where_entry_type_not(spec['entry_type_not'])
 
     if 'date' in spec:
-        where = where & where_utc_date(spec['date'])
+        where = where & where_entry_date(spec['date'])
 
     if 'last' in spec:
         where = where & where_entry_last(get_entry(spec['last']))

@@ -9,6 +9,7 @@ from werkzeug.utils import cached_property
 
 from . import model, utils, queries
 from .entry import Entry
+from . import config
 
 # Prioritization list for page/offset/whatever
 OFFSET_PRIORITY = ['date', 'start', 'last', 'first', 'before', 'after']
@@ -233,14 +234,18 @@ class View:
         _, _, date_format = utils.parse_date(self.spec['date'])
 
         if newest_neighbor:
-            newer_date = newest_neighbor.date.format(date_format)
-            newer_view = View({**base, 'order': self._order_by, 'date': newer_date})
+            newer_date = newest_neighbor.date.to(config.timezone)
+            newer_view = View({**base,
+                               'order': self._order_by,
+                               'date': newer_date.format(date_format)})
         else:
             newer_view = None
 
         if oldest_neighbor:
-            older_date = oldest_neighbor.date.format(date_format)
-            older_view = View({**base, 'order': self._order_by, 'date': older_date})
+            older_date = oldest_neighbor.date.to(config.timezone)
+            older_view = View({**base,
+                               'order': self._order_by,
+                               'date': older_date.format(date_format)})
         else:
             older_view = None
 

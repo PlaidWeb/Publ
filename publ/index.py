@@ -107,7 +107,6 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         """ on_moved handler """
         logger.info("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
-            self.update_file(event.src_path)
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):
