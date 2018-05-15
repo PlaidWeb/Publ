@@ -5,14 +5,10 @@ from __future__ import absolute_import, with_statement
 
 import os
 import logging
-import time
-import hashlib
-import io
 
 import flask
 from flask import request, redirect, render_template, url_for
 from werkzeug.exceptions import HTTPException
-import PIL.Image
 
 from . import config
 from . import path_alias
