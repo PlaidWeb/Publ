@@ -5,7 +5,7 @@ import time
 import arrow
 import flask
 
-from . import config, rendering, model, index, caching, view, utils
+from . import config, rendering, model, index, caching, view, utils, async
 
 
 def publ(name, cfg):
@@ -38,7 +38,7 @@ def publ(name, cfg):
                      'path_alias', rendering.render_path_alias)
 
     app.add_url_rule('/_async/<path:filename>',
-                     'async', rendering.async_image)
+                     'async', async.image)
 
     if not app.debug:
         app.register_error_handler(Exception, rendering.render_exception)
