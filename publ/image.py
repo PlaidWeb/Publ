@@ -178,39 +178,42 @@ class LocalImage(Image):
 
     @cached_property
     def _image(self):
-        image = PIL.Image.open(self._record.file_path)
+        with self._lock:
+            image = PIL.Image.open(self._record.file_path)
 
-        paletted = image.mode == 'P'
-        if paletted:
-            image.convert('RGB')
+            paletted = image.mode == 'P'
+            if paletted:
+                image.convert('RGB')
 
         return image
 
     def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
         if not os.path.isfile(path):
-            with self._lock:
-                logger.info("Rendering file %s", path)
-                if not os.path.isdir(os.path.dirname(path)):
-                    os.makedirs(os.path.dirname(path))
+            logger.info("Rendering file %s", path)
+            if not os.path.isdir(os.path.dirname(path)):
+                os.makedirs(os.path.dirname(path))
 
-                _, ext = os.path.splitext(path)
+            _, ext = os.path.splitext(path)
 
-                image = self._image
+            image = self._image
 
-                if size:
+            if size:
+                with self._lock:
                     image = image.resize(size=size, box=box,
                                          resample=PIL.Image.LANCZOS)
-                if flatten:
+            if flatten:
+                with self._lock:
                     image = self.flatten(image, kwargs.get('background'))
 
-                if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
+            if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
+                with self._lock:
                     image = image.quantize(kwargs.get('quantize', 256))
 
-                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
-                    temp_path = file.name
-                    image.save(file, **out_args)
-                print(temp_path, path)
-                shutil.move(temp_path, path)
+            with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                temp_path = file.name
+                image.save(file, **out_args)
+            print(temp_path, path)
+            shutil.move(temp_path, path)
 
     def get_rendition_size(self, spec, output_scale):
         """
