@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
 
-thread_pool = concurrent.futures.ThreadPoolExecutor(
-    max_workers=1)  # pylint: disable=invalid-name
+thread_pool = concurrent.futures.ThreadPoolExecutor(  # pylint: disable=invalid-name
+    max_workers=1)
 
 
 def scan_file(fullpath, relpath, assign_id):
@@ -134,6 +134,7 @@ def scan_index(content_dir):
     """ Scan all files in a content directory """
 
     def scan_directory(root, files):
+        """ Helper function to scan a single directory """
         for file in files:
             fullpath = os.path.join(root, file)
             relpath = os.path.relpath(fullpath, content_dir)
@@ -141,8 +142,7 @@ def scan_index(content_dir):
             fingerprint = utils.file_fingerprint(fullpath)
             last_fingerprint = get_last_fingerprint(fullpath)
             if fingerprint != last_fingerprint:
-                result = thread_pool.submit(
-                    scan_file, fullpath, relpath, False)
+                thread_pool.submit(scan_file, fullpath, relpath, False)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
         thread_pool.submit(scan_directory, root, files)
