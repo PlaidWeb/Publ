@@ -4,7 +4,11 @@
 from __future__ import absolute_import
 
 import os
+import logging
+import email
+import functools
 
+import flask
 from flask import url_for
 from werkzeug.utils import cached_property
 
@@ -12,6 +16,24 @@ from . import model
 from . import utils
 from . import entry  # pylint: disable=cyclic-import
 from . import queries
+from . import path_alias
+from . import markdown
+from . import config
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+
+@functools.lru_cache(10)
+def load_metafile(filepath):
+    """ Load a metadata file from the filesystem """
+    try:
+        with open(filepath, 'r') as file:
+            return email.message_from_file(file)
+    except FileNotFoundError:
+        logger.warning("Category file %s not found", filepath)
+        model.Category.delete().where(model.Category.file_path == fullpath).execute()
+
+    return None
 
 
 class Category:
@@ -41,7 +63,58 @@ class Category:
         self.subcats = utils.CallableProxy(self._get_subcats)
         self.first = utils.CallableProxy(self._first)
         self.last = utils.CallableProxy(self._last)
-        self.name = self.basename.replace('_', ' ')
+
+        self._record = model.Category.get_or_none(
+            model.Category.category == path)
+
+    @cached_property
+    def _meta(self):
+        if self._record and self._record.file_path:
+            return load_metafile(self._record.file_path)
+
+        return None
+
+    @cached_property
+    def name(self):
+        if self._meta and self._meta.get('name'):
+            # get it from the meta file
+            return self._meta.get('name')
+        # infer it from the basename
+        return self.basename.replace('_', ' ').title()
+
+    @cached_property
+    def description(self):
+        if self._meta and self._meta.get_payload():
+            return utils.TrueCallableProxy(self._description)
+        return utils.CallableProxy(None)
+
+    @cached_property
+    def image_search_path(self):
+        return [os.path.join(config.content_folder, self.path)]
+
+    def _description(self, **kwargs):
+        if self._meta:
+            return flask.Markup(markdown.to_html(self._meta.get_payload(), config=kwargs,
+                                                 image_search_path=self.image_search_path))
+        return None
+
+    def __getattr__(self, name):
+        """ Proxy undefined properties to the meta file """
+        if self._meta:
+            return self._meta.get(name)
+        return None
+
+    def get(self, name):
+        """ Get a single metadata value """
+        if self._meta:
+            return self._meta.get(name)
+        return None
+
+    def get_all(self, name):
+        """ Get all matching metadata values """
+        if self._meta:
+            return self._meta.get_all(name) or []
+        return None
 
     def _link(self, template='', absolute=False):
         return url_for('category',
@@ -109,3 +182,33 @@ class Category:
         """ Get the latest entry in this category, optionally including subcategories """
         return entry.Entry(self._entries(spec).order_by(
             -model.Entry.entry_date, -model.Entry.id).get())
+
+
+def scan_file(fullpath, relpath):
+    """ scan a file and put it into the index """
+
+    load_metafile.cache_clear()
+
+    meta = load_metafile(fullpath)
+    if not meta:
+        return True
+
+    with model.lock:
+        # update the category meta file mapping
+        category = meta.get('Category', os.path.dirname(relpath))
+        values = {
+            'file_path': fullpath,
+        }
+
+        logger.debug("setting category %s to metafile %s", category, fullpath)
+        record, created = model.Category.get_or_create(category=category,
+                                                       defaults=values)
+        if not created:
+            record.update(**values).where(model.Category.id ==
+                                          record.id).execute()
+
+        # update other relationships to the index
+        for alias in meta.get_all('Path-Alias', []):
+            path_alias.set_alias(alias, category=record)
+
+    return record

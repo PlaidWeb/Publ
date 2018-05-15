@@ -19,7 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class BaseModel(Model):
@@ -69,7 +69,7 @@ class Entry(BaseModel):
     file_path = CharField()
     category = CharField()
     status = PublishStatus.Field()
-    entry_date = DateTimeField()  # UTC-normalized, for queries
+    utc_date = DateTimeField()  # UTC-normalized, for queries
     display_date = DateTimeField()  # arbitrary timezone, for display
     slug_text = CharField()
     entry_type = CharField()
@@ -80,18 +80,29 @@ class Entry(BaseModel):
         """ meta info """
         # pylint: disable=too-few-public-methods
         indexes = (
-            (('category', 'entry_type', 'entry_date'), False),
+            (('category', 'entry_type', 'utc_date'), False),
         )
+
+
+class Category(BaseModel):
+    """ Metadata for a category """
+    category = CharField(unique=True)
+    file_path = CharField()
 
 
 class PathAlias(BaseModel):
     """ Path alias mapping """
     path = CharField(unique=True)
-    redirect_url = CharField(null=True)
-    redirect_entry = peewee.ForeignKeyField(
+    url = CharField(null=True)
+    entry = peewee.ForeignKeyField(
         Entry,
         null=True,
         backref='aliases')
+    category = peewee.ForeignKeyField(
+        Category,
+        null=True,
+        backref='aliases')
+    template = CharField(null=True)
 
 
 class Image(BaseModel):
@@ -107,6 +118,7 @@ ALL_TYPES = [
     Global,
     FileFingerprint,
     Entry,
+    Category,
     PathAlias,
     Image,
 ]

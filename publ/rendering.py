@@ -84,7 +84,7 @@ def image_function(template=None, entry=None, category=None):
     if category is not None:
         # Since the category might be a parent of the entry's category we add
         # this too
-        path += os.path.join(config.content_folder, category.path)
+        path += category.image_search_path
     if template is not None:
         path.append(os.path.join(
             config.content_folder,
