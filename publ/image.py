@@ -227,7 +227,6 @@ class LocalImage(Image):
             height = height * tgt_width / width
             width = tgt_width
 
-        tgt_height = spec.get('height')
         if tgt_height and height > tgt_height:
             width = width * tgt_height / height
             height = tgt_height
@@ -238,7 +237,6 @@ class LocalImage(Image):
             height = height * tgt_width / width
             width = tgt_width
 
-        tgt_height = spec.get('height')
         if tgt_height and height > tgt_height:
             width = width * tgt_height / height
             height = tgt_height
