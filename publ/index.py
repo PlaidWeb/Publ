@@ -83,7 +83,7 @@ class IndexWatchdog(watchdog.events.FileSystemEventHandler):
         relpath = os.path.relpath(fullpath, self.content_dir)
 
         try:
-            if scan_file(fullpath, relpath, True):
+            if scan_file(fullpath, relpath, True) is not False:
                 logger.info("Updated %s", fullpath)
                 set_fingerprint(fullpath)
             else:
