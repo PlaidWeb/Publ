@@ -11,6 +11,8 @@ import re
 import ast
 import concurrent.futures
 import threading
+import tempfile
+import shutil
 
 import PIL.Image
 from werkzeug.utils import cached_property
@@ -90,6 +92,7 @@ class LocalImage(Image):
         """ Get the base image from an index record """
         super().__init__()
         self._record = record
+        self._lock = threading.Lock()
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -166,8 +169,7 @@ class LocalImage(Image):
 
         if not LocalImage._thread_pool:
             logger.info("Starting LocalImage threadpool")
-            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
-                max_workers=1)
+            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor()
 
         LocalImage._thread_pool.submit(
             self._render, out_fullpath, size, box, flatten, kwargs, out_args)
@@ -186,24 +188,29 @@ class LocalImage(Image):
 
     def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
         if not os.path.isfile(path):
-            logger.info("Rendering file %s", path)
-            if not os.path.isdir(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
+            with self._lock:
+                logger.info("Rendering file %s", path)
+                if not os.path.isdir(os.path.dirname(path)):
+                    os.makedirs(os.path.dirname(path))
 
-            _, ext = os.path.splitext(path)
+                _, ext = os.path.splitext(path)
 
-            image = self._image
+                image = self._image
 
-            if size:
-                image = image.resize(size=size, box=box,
-                                     resample=PIL.Image.LANCZOS)
-            if flatten:
-                image = self.flatten(image, kwargs.get('background'))
+                if size:
+                    image = image.resize(size=size, box=box,
+                                         resample=PIL.Image.LANCZOS)
+                if flatten:
+                    image = self.flatten(image, kwargs.get('background'))
 
-            if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
-                image = image.quantize(kwargs.get('quantize', 256))
+                if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
+                    image = image.quantize(kwargs.get('quantize', 256))
 
-            image.save(path, **out_args)
+                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                    temp_path = file.name
+                    image.save(file, **out_args)
+                print(temp_path, path)
+                shutil.move(temp_path, path)
 
     def get_rendition_size(self, spec, output_scale):
         """
