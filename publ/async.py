@@ -1,3 +1,5 @@
+""" Asynchronous helper functions """
+
 import os
 import time
 import io
@@ -18,7 +20,9 @@ def image(filename):
     retry_count = int(flask.request.args.get('retry_count', 0))
     if retry_count < 10:
         time.sleep(0.1)  # ghastly hack to get the client to backoff a bit
-        return flask.redirect(flask.url_for('async', filename=filename, retry_count=retry_count + 1))
+        return flask.redirect(flask.url_for('async',
+                                            filename=filename,
+                                            retry_count=retry_count + 1))
 
     # the image isn't available yet; generate a placeholder and let the
     # client attempt to re-fetch periodically, maybe
