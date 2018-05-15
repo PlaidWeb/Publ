@@ -7,11 +7,16 @@ import os
 import hashlib
 import logging
 import html
-
 import re
 import ast
+import concurrent.futures
+import threading
+import tempfile
+import shutil
 
 import PIL.Image
+from werkzeug.utils import cached_property
+import flask
 
 from . import config
 from . import model, utils
@@ -81,10 +86,13 @@ class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
 
+    _thread_pool = None
+
     def __init__(self, record):
         """ Get the base image from an index record """
         super().__init__()
         self._record = record
+        self._lock = threading.Lock()
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -110,12 +118,11 @@ class LocalImage(Image):
         format -- output format
         background -- background color when converting transparent to opaque
         quality -- the JPEG quality to save the image as
+        quantize -- how large a palette to use for GIF or PNG images
         """
 
-        # pylint:disable=too-many-locals,too-many-branches
-
-        input_filename = self._record.file_path
-        basename, ext = os.path.splitext(os.path.basename(input_filename))
+        basename, ext = os.path.splitext(
+            os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
 
         if kwargs.get('format'):
@@ -157,25 +164,56 @@ class LocalImage(Image):
             out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
-        if not os.path.isfile(out_fullpath):
-            logger.info("Rendering file %s", out_fullpath)
-            if not os.path.isdir(os.path.dirname(out_fullpath)):
-                os.makedirs(os.path.dirname(out_fullpath))
+        if os.path.isfile(out_fullpath):
+            return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
-            image = PIL.Image.open(input_filename)
+        if not LocalImage._thread_pool:
+            logger.info("Starting LocalImage threadpool")
+            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor()
+
+        LocalImage._thread_pool.submit(
+            self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+
+        return flask.url_for('async', filename=out_rel_path), size
+
+    @cached_property
+    def _image(self):
+        with self._lock:
+            image = PIL.Image.open(self._record.file_path)
 
             paletted = image.mode == 'P'
             if paletted:
                 image.convert('RGB')
 
-            if size:
-                image = image.resize(size=size, box=box,
-                                     resample=PIL.Image.LANCZOS)
-            if flatten:
-                image = self.flatten(image, kwargs.get('background'))
-            image.save(out_fullpath, **out_args)
+        return image
 
-        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+    def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
+        if not os.path.isfile(path):
+            logger.info("Rendering file %s", path)
+            if not os.path.isdir(os.path.dirname(path)):
+                os.makedirs(os.path.dirname(path))
+
+            _, ext = os.path.splitext(path)
+
+            image = self._image
+
+            if size:
+                with self._lock:
+                    image = image.resize(size=size, box=box,
+                                         resample=PIL.Image.LANCZOS)
+            if flatten:
+                with self._lock:
+                    image = self.flatten(image, kwargs.get('background'))
+
+            if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
+                with self._lock:
+                    image = image.quantize(kwargs.get('quantize', 256))
+
+            with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                temp_path = file.name
+                image.save(file, **out_args)
+            print(temp_path, path)
+            shutil.move(temp_path, path)
 
     def get_rendition_size(self, spec, output_scale):
         """
