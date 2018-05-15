@@ -8,26 +8,27 @@ from flask import url_for
 from . import model
 
 
-def set_alias(path, entry=None, url=None):
+def set_alias(alias, **kwargs):
     """ Set a path alias.
 
     Arguments:
 
-    path -- The path to alias
+    alias -- The alias specification
     entry -- The entry to alias it to
+    category -- The category to alias it to
     url -- The external URL to alias it to
+
     """
 
-    record, created = model.PathAlias.get_or_create(
-        path=path,
-        defaults={
-            'redirect_entry': entry,
-            'redirect_url': url
-        })
-    if not created:
-        record.redirect_entry = entry
-        record.redirect_url = url
-        record.save()
+    spec = alias.split()
+    path = spec[0]
+
+    values = {**kwargs, 'path': path}
+
+    if len(spec) > 1:
+        values['template'] = spec[1]
+
+    model.PathAlias.replace(**values).execute()
 
 
 def remove_alias(path):
@@ -53,11 +54,41 @@ def get_redirect(paths):
 
     for path in paths:
         record = model.PathAlias.get_or_none(model.PathAlias.path == path)
-        if record and record.redirect_entry:
-            return url_for('entry',
-                           entry_id=record.redirect_entry.id,
-                           category=record.redirect_entry.category,
-                           slug_text=record.redirect_entry.slug_text)
-        elif record and record.redirect_url:
-            return record.redirect_url
+
+        if record:
+            if record.template:
+                # we want a specific template view
+
+                template = record.template
+                if template == 'index':
+                    # map this back to the category default
+                    template = None
+
+                if record.entry:
+                    category = (record.category.category
+                                if record.category else record.entry.category)
+                    return url_for('category',
+                                   start=record.entry.id,
+                                   template=template,
+                                   category=category)
+
+                if record.category:
+                    return url_for('category',
+                                   category=record.category.category,
+                                   template=template)
+
+            if record.entry:
+                return url_for('entry',
+                               entry_id=record.entry.id,
+                               category=record.entry.category,
+                               slug_text=record.entry.slug_text)
+
+            if record.category:
+                return url_for('category',
+                               category=record.category.category,
+                               template=record.template)
+
+            if record.url:
+                return record.url
+
     return None
