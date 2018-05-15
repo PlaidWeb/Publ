@@ -386,5 +386,5 @@ def expire_record(record):
         # This entry no longer exists so delete it, and anything that references it
         # SQLite doesn't support cascading deletes so let's just clean up
         # manually
-        model.PathAlias.delete().where(model.PathAlias.redirect_entry == record).execute()
+        model.PathAlias.delete().where(model.PathAlias.entry == record).execute()
         record.delete_instance(recursive=True)
