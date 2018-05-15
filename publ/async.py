@@ -1,6 +1,7 @@
 import os
 import time
 import io
+import hashlib
 
 import flask
 import PIL.Image
