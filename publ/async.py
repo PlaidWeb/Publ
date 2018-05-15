@@ -16,8 +16,8 @@ def image(filename):
         return flask.redirect(flask.url_for('static', filename=filename))
 
     retry_count = int(flask.request.args.get('retry_count', 0))
-    if retry_count < 3:
-        time.sleep(0.5)  # ghastly hack
+    if retry_count < 10:
+        time.sleep(0.1)  # ghastly hack to get the client to backoff a bit
         return flask.redirect(flask.url_for('async', filename=filename, retry_count=retry_count + 1))
 
     # the image isn't available yet; generate a placeholder and let the
@@ -29,4 +29,8 @@ def image(filename):
     outbytes = io.BytesIO()
     placeholder.save(outbytes, "PNG")
     outbytes.seek(0)
-    return flask.send_file(outbytes, mimetype='image/png')
+
+    response = flask.make_response(
+        flask.send_file(outbytes, mimetype='image/png'))
+    response.headers['Refresh'] = 5
+    return response
