@@ -31,7 +31,7 @@ def load_metafile(filepath):
             return email.message_from_file(file)
     except FileNotFoundError:
         logger.warning("Category file %s not found", filepath)
-        model.Category.delete().where(model.Category.file_path == fullpath).execute()
+        model.Category.delete().where(model.Category.file_path == filepath).execute()
 
     return None
 
@@ -76,6 +76,7 @@ class Category:
 
     @cached_property
     def name(self):
+        """ Get the display name of the category """
         if self._meta and self._meta.get('name'):
             # get it from the meta file
             return self._meta.get('name')
@@ -84,12 +85,14 @@ class Category:
 
     @cached_property
     def description(self):
+        """ Get the textual description of the category """
         if self._meta and self._meta.get_payload():
             return utils.TrueCallableProxy(self._description)
         return utils.CallableProxy(None)
 
     @cached_property
     def image_search_path(self):
+        """ Get the image search path for the category """
         return [os.path.join(config.content_folder, self.path)]
 
     def _description(self, **kwargs):
