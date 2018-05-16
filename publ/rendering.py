@@ -5,6 +5,7 @@ from __future__ import absolute_import, with_statement
 
 import os
 import logging
+import base64
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -285,3 +286,9 @@ def render_entry(entry_id, slug_text='', category=''):
         tmpl,
         entry=entry_obj,
         category=Category(category)), {'Content-Type': mime_type(tmpl)}
+
+
+def render_transparent_chit(width=1, height=1):
+    bytes = base64.b64decode(
+        "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+    return bytes, {'Content-Type': 'image/gif'}
