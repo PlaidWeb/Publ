@@ -169,7 +169,8 @@ class LocalImage(Image):
 
         if not LocalImage._thread_pool:
             logger.info("Starting LocalImage threadpool")
-            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor()
+            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
+                thread_name_prefix="Renderer")
 
         LocalImage._thread_pool.submit(
             self._render, out_fullpath, size, box, flatten, kwargs, out_args)
