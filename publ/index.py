@@ -19,7 +19,8 @@ ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
 
 thread_pool = concurrent.futures.ThreadPoolExecutor(  # pylint: disable=invalid-name
-    max_workers=1)
+    max_workers=1,
+    thread_name_prefix="Indexer")
 
 
 def scan_file(fullpath, relpath, assign_id):
@@ -85,10 +86,11 @@ def set_fingerprint(fullpath, fingerprint=None):
         model.FileFingerprint.delete().where(model.FileFingerprint.file_path == fullpath)
 
 
-class IndexWatchdog(watchdog.events.FileSystemEventHandler):
+class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
     """ Watchdog handler """
 
     def __init__(self, content_dir):
+        super().__init__(ignore_directories=True)
         self.content_dir = content_dir
 
     def update_file(self, fullpath):
