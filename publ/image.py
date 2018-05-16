@@ -450,9 +450,8 @@ class RemoteImage(Image):
                     kwargs.get('fill_crop_y', 0.5) * 100),
                 'background-repeat:no-repeat'
             ])
-            attrs['src'] = (
-                'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw'
-            )
+            attrs['src'] = flask.url_for(
+                'chit', _external=kwargs.get('absolute'))
         else:
             attrs['src'] = self.url
 

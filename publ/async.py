@@ -20,7 +20,7 @@ def image(filename):
 
     retry_count = int(flask.request.args.get('retry_count', 0))
     if retry_count < 10:
-        time.sleep(0.1)  # ghastly hack to get the client to backoff a bit
+        time.sleep(0.25)  # ghastly hack to get the client to backoff a bit
         return flask.redirect(flask.url_for('async',
                                             filename=filename,
                                             cb=random.randint(0, 2**48),

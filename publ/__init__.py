@@ -40,6 +40,8 @@ def publ(name, cfg):
     app.add_url_rule('/_async/<path:filename>',
                      'async', async.image)
 
+    app.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
+
     if not app.debug:
         app.register_error_handler(Exception, rendering.render_exception)
 
