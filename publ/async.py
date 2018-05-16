@@ -4,6 +4,7 @@ import os
 import time
 import io
 import hashlib
+import random
 
 import flask
 import PIL.Image
@@ -22,6 +23,7 @@ def image(filename):
         time.sleep(0.1)  # ghastly hack to get the client to backoff a bit
         return flask.redirect(flask.url_for('async',
                                             filename=filename,
+                                            cb=random.randint(0, 2**48),
                                             retry_count=retry_count + 1))
 
     # the image isn't available yet; generate a placeholder and let the
