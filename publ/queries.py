@@ -54,8 +54,8 @@ def where_before_entry(entry):
 
     entry -- The entry of reference
     """
-    return (model.Entry.utc_date < entry.utc_date) | (
-        (model.Entry.utc_date == entry.utc_date) &
+    return (model.Entry.local_date < entry.local_date) | (
+        (model.Entry.local_date == entry.local_date) &
         (model.Entry.id < entry.id)
     )
 
@@ -65,8 +65,8 @@ def where_after_entry(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.utc_date > entry.utc_date) | (
-        (model.Entry.utc_date == entry.utc_date) &
+    return (model.Entry.local_date > entry.local_date) | (
+        (model.Entry.local_date == entry.local_date) &
         (model.Entry.id > entry.id)
     )
 
@@ -76,8 +76,8 @@ def where_entry_last(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.utc_date < entry.utc_date) | (
-        (model.Entry.utc_date == entry.utc_date) &
+    return (model.Entry.local_date < entry.local_date) | (
+        (model.Entry.local_date == entry.local_date) &
         (model.Entry.id <= entry.id)
     )
 
@@ -87,8 +87,8 @@ def where_entry_first(entry):
 
     entry -- the entry of reference
     """
-    return (model.Entry.utc_date > entry.utc_date) | (
-        (model.Entry.utc_date == entry.utc_date) &
+    return (model.Entry.local_date > entry.local_date) | (
+        (model.Entry.local_date == entry.local_date) &
         (model.Entry.id >= entry.id)
     )
 
@@ -121,8 +121,8 @@ def where_entry_date(datespec):
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
-    return ((model.Entry.utc_date >= start_date.to('utc').datetime) &
-            (model.Entry.utc_date <= end_date.to('utc').datetime))
+    return ((model.Entry.local_date >= start_date.naive) &
+            (model.Entry.local_date <= end_date.naive))
 
 
 def get_entry(entry):
