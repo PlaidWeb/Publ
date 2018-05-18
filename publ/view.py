@@ -25,14 +25,14 @@ PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
 ORDER_BY = {
-    'newest': [-model.Entry.utc_date, -model.Entry.id],
-    'oldest': [model.Entry.utc_date, model.Entry.id],
+    'newest': [-model.Entry.local_date, -model.Entry.id],
+    'oldest': [model.Entry.local_date, model.Entry.id],
     'title': [model.Entry.title, model.Entry.id]
 }
 
 REVERSE_ORDER_BY = {
-    'newest': [model.Entry.utc_date, model.Entry.id],
-    'oldest': [-model.Entry.utc_date, -model.Entry.id],
+    'newest': [model.Entry.local_date, model.Entry.id],
+    'oldest': [-model.Entry.local_date, -model.Entry.id],
     'title': [-model.Entry.title, -model.Entry.id]
 }
 
@@ -234,7 +234,7 @@ class View:
         _, _, date_format = utils.parse_date(self.spec['date'])
 
         if newest_neighbor:
-            newer_date = newest_neighbor.date.to(config.timezone)
+            newer_date = newest_neighbor.date
             newer_view = View({**base,
                                'order': self._order_by,
                                'date': newer_date.format(date_format)})
@@ -242,7 +242,7 @@ class View:
             newer_view = None
 
         if oldest_neighbor:
-            older_date = oldest_neighbor.date.to(config.timezone)
+            older_date = oldest_neighbor.date
             older_view = View({**base,
                                'order': self._order_by,
                                'date': older_date.format(date_format)})

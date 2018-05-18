@@ -347,8 +347,9 @@ def scan_file(fullpath, relpath, assign_id):
                 os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
 
-        values['utc_date'] = entry_date.to('utc').datetime
         values['display_date'] = entry_date.datetime
+        values['utc_date'] = entry_date.to('utc').datetime
+        values['local_date'] = entry_date.naive
 
         logger.debug("getting entry %s with id %d", fullpath, entry_id)
         record, created = model.Entry.get_or_create(
