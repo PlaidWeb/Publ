@@ -205,7 +205,7 @@ class Entry:
         return self._get_first(model.Entry.select().where(
             queries.build_query(spec) &
             queries.where_before_entry(self._record)
-        ).order_by(-model.Entry.utc_date, -model.Entry.id))
+        ).order_by(-model.Entry.local_date, -model.Entry.id))
 
     def _next(self, **kwargs):
         """ Get the next item in any particular category """
@@ -216,7 +216,7 @@ class Entry:
             model.Entry.select().where(
                 queries.build_query(spec) &
                 queries.where_after_entry(self._record)
-            ).order_by(model.Entry.utc_date, model.Entry.id))
+            ).order_by(model.Entry.local_date, model.Entry.id))
 
     def get(self, name):
         """ Get a single header on an entry """
