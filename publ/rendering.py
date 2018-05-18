@@ -166,7 +166,7 @@ def render_path_alias(path):
 
 
 @cache.cached(key_prefix=caching.make_category_key)
-def render_category(category='', template='index'):
+def render_category(category='', template=None):
     """ Render a category page.
 
     Arguments:
@@ -180,14 +180,19 @@ def render_category(category='', template='index'):
         return redirect(redir)
 
     # Forbidden template types
+    if template and template.startswith('_'):
+        return render_error(category, 'Access denied', 403)
     if template in ['entry', 'error']:
-        return render_error(category, 'Unsupported template', 403)
+        return render_error(category, 'Unsupported template', 400)
 
     if category:
         # See if there's any entries for the view...
         if not model.Entry.get_or_none((model.Entry.category == category) |
                                        (model.Entry.category.startswith(category + '/'))):
-            return render_error(category, 'Category not found', 404)
+            return render_error(category, 'No such category', 404)
+
+    if not template:
+        template = Category(category).get('Index-Template') or 'index'
 
     tmpl = map_template(category, template)
 
@@ -199,7 +204,7 @@ def render_category(category='', template='index'):
             return redirect(url_for('category', category=test_path))
 
         # nope, we just don't know what this is
-        return render_error(category, 'Template not found', 400)
+        return render_error(category, 'No such template', 404)
 
     view_spec = {'category': category}
     for key in ['date', 'start', 'last', 'first', 'before', 'after']:
@@ -278,7 +283,11 @@ def render_entry(entry_id, slug_text='', category=''):
     if entry_redirect:
         return redirect(entry_redirect)
 
-    tmpl = map_template(category, 'entry')
+    entry_template = (entry_obj.get('Entry-Template')
+                      or Category(category).get('Entry-Template')
+                      or 'entry')
+
+    tmpl = map_template(category, entry_template)
     if not tmpl:
         return render_error(category, 'Entry template not found', 400)
 
