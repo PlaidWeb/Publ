@@ -19,7 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 10
 
 
 class BaseModel(Model):
@@ -69,8 +69,9 @@ class Entry(BaseModel):
     file_path = CharField()
     category = CharField()
     status = PublishStatus.Field()
-    utc_date = DateTimeField()  # UTC-normalized, for queries
-    display_date = DateTimeField()  # arbitrary timezone, for display
+    utc_date = DateTimeField()  # UTC-normalized, for ordering and visibility
+    local_date = DateTimeField()  # arbitrary timezone, for pagination
+    display_date = DateTimeField()  # The actual displayable date
     slug_text = CharField()
     entry_type = CharField()
     redirect_url = CharField(null=True)
@@ -81,6 +82,7 @@ class Entry(BaseModel):
         # pylint: disable=too-few-public-methods
         indexes = (
             (('category', 'entry_type', 'utc_date'), False),
+            (('category', 'entry_type', 'local_date'), False)
         )
 
 
