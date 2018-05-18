@@ -95,6 +95,21 @@ class Category:
         """ Get the image search path for the category """
         return [os.path.join(config.content_folder, self.path)]
 
+    @cached_property
+    def breadcrumb(self):
+        """ Get the category hierarchy leading up to this category, including
+        root and self.
+
+        For example, path/to/long/category will return a list containing
+        Category('path'), Category('path/to'), and Category('path/to/long').
+        """
+        ret = []
+        here = self
+        while here:
+            ret.append(here)
+            here = here.parent
+        return list(reversed(ret))
+
     def _description(self, **kwargs):
         if self._meta:
             return flask.Markup(markdown.to_html(self._meta.get_payload(), config=kwargs,
