@@ -174,6 +174,8 @@ def render_category(category='', template=None):
     category -- The category to render
     template -- The template to render it with
     """
+    # pylint:disable=too-many-return-statements
+
     # See if this is an aliased path
     redir = get_redirect()
     if redir:
@@ -297,7 +299,8 @@ def render_entry(entry_id, slug_text='', category=''):
         category=Category(category)), {'Content-Type': mime_type(tmpl)}
 
 
-def render_transparent_chit(width=1, height=1):
-    bytes = base64.b64decode(
+def render_transparent_chit():
+    """ Render a transparent chit for external, sized images """
+    out_bytes = base64.b64decode(
         "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-    return bytes, {'Content-Type': 'image/gif'}
+    return out_bytes, {'Content-Type': 'image/gif'}

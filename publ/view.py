@@ -9,7 +9,6 @@ from werkzeug.utils import cached_property
 
 from . import model, utils, queries
 from .entry import Entry
-from . import config
 
 # Prioritization list for page/offset/whatever
 OFFSET_PRIORITY = ['date', 'start', 'last', 'first', 'before', 'after']
