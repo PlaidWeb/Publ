@@ -13,7 +13,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='Publ',
 
-    version='0.1.14',
+    version='0.1.15',
 
     description='A content-management system for flexible web-based publishing',
 
@@ -38,7 +38,6 @@ setup(
         'Natural Language :: English',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
 
