@@ -213,7 +213,6 @@ class LocalImage(Image):
             with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
                 temp_path = file.name
                 image.save(file, **out_args)
-            print(temp_path, path)
             shutil.move(temp_path, path)
 
     def get_rendition_size(self, spec, output_scale):
