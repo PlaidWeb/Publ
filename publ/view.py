@@ -10,8 +10,8 @@ from werkzeug.utils import cached_property
 from . import model, utils, queries
 from .entry import Entry
 
-# Prioritization list for page/offset/whatever
-OFFSET_PRIORITY = ['date', 'start', 'last', 'first', 'before', 'after']
+# Prioritization list for pagination
+OFFSET_PRIORITY = ['date', 'start', 'last', 'first']
 
 # Prioritization list for pagination type
 #
@@ -102,7 +102,7 @@ class View:
     def _link(self, template='', absolute=False):
         args = {}
         for k, val in self.spec.items():
-            if k in ['date', 'last', 'first', 'before', 'after']:
+            if k in ['date', 'start', 'last', 'first', 'before', 'after']:
                 if isinstance(val, (str, int)):
                     args[k] = val
                 elif hasattr(val, 'id'):
