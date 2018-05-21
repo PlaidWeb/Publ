@@ -218,11 +218,11 @@ class Entry:
                 queries.where_after_entry(self._record)
             ).order_by(model.Entry.local_date, model.Entry.id))
 
-    def get(self, name):
+    def get(self, name, default=None):
         """ Get a single header on an entry """
 
         self._load()
-        return self._message.get(name)
+        return self._message.get(name, default)
 
     def get_all(self, name):
         """ Get all related headers on an entry, as an iterable list """
