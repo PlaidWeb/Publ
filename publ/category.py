@@ -144,6 +144,8 @@ class Category:
         return self.path
 
     def __eq__(self, other):
+        if isinstance(other, str):
+            return other == self.path
         return other.path == self.path
 
     def __hash__(self):
