@@ -411,7 +411,7 @@ class LocalImage(Image):
         })
 
         # Wrap it in a link as appropriate
-        return self._wrap_link_target(kwargs, text, title)
+        return flask.Markup(self._wrap_link_target(kwargs, text, title))
 
 
 class RemoteImage(Image):
