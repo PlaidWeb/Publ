@@ -39,6 +39,12 @@ class Image:
         Returns: an HTML fragment. """
         pass
 
+    def get_css_background(self, **kwargs):
+        """ Build CSS background-image properties that apply this image.
+
+        Returns: a CSS fragment. """
+        pass
+
     def __call__(self, *args, **kwargs):
         url, _ = self.get_rendition(*args, **kwargs)
         return url
@@ -232,11 +238,11 @@ class LocalImage(Image):
                     temp_path = file.name
                     image.save(file, **out_args)
                 shutil.move(temp_path, path)
+
+                logger.info("%s: complete", path)
             except Exception:  # pylint: disable=broad-except
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
-
-            logger.info("%s: complete", path)
 
     def get_rendition_size(self, spec, output_scale):
         """
@@ -417,6 +423,7 @@ class LocalImage(Image):
         return image.convert('RGB')
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
+        """ Get an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
         img_1x, size = self.get_rendition(
@@ -435,6 +442,22 @@ class LocalImage(Image):
 
         # Wrap it in a link as appropriate
         return flask.Markup(self._wrap_link_target(kwargs, text, title))
+
+    def get_css_background(self, **kwargs):
+        """ Get the CSS specifiers for this as a hidpi-capable background image """
+
+        # Get the 1x and 2x renditions
+        img_1x, _ = self.get_rendition(
+            1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
+        img_2x, _ = self.get_rendition(
+            2, **utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
+
+        tmpl = 'background-image: url("{s1x}");'
+        if img_1x != img_2x:
+            image_set = 'image-set(url("{s1x}") 1x, url("{s2x}") 2x)'
+            tmpl += 'background-image: {ss};background-image: -webkit-{ss};'.format(
+                ss=image_set)
+        return tmpl.format(s1x=img_1x, s2x=img_2x)
 
 
 class RemoteImage(Image):
@@ -483,6 +506,10 @@ class RemoteImage(Image):
 
         return self._wrap_link_target(kwargs, utils.make_tag('img', attrs), title)
 
+    def get_css_background(self, **kwargs):
+        """ Get the CSS background-image for the remote image """
+        return 'background-image: url("{}");'.format(self.url)
+
 
 class StaticImage(Image):
     """ An image that points to a static resource """
@@ -498,6 +525,10 @@ class StaticImage(Image):
     def get_img_tag(self, title='', alt_text='', **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_img_tag(title, alt_text, **kwargs)
+
+    def get_css_background(self, **kwargs):
+        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
+        return RemoteImage(url).get_css_background(**kwargs)
 
 
 class ImageNotFound(Image):
@@ -519,6 +550,9 @@ class ImageNotFound(Image):
             text += ' (Did you forget a <code>|</code>?)'
         text += '</span>'
         return text
+
+    def get_css_background(self, **kwargs):
+        return '/* not found: {} */'.format(self.path)
 
 
 def get_image(path, search_path):
