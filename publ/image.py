@@ -492,7 +492,10 @@ class RemoteImage(Image):
         attrs['width'] = width
         attrs['height'] = height
 
-        return self._wrap_link_target(kwargs, utils.make_tag('img', attrs), title)
+        return flask.Markup(self._wrap_link_target(kwargs,
+                                                   utils.make_tag(
+                                                       'img', attrs),
+                                                   title))
 
     def get_css_background(self, **kwargs):
         """ Get the CSS background-image for the remote image """
