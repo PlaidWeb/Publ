@@ -89,8 +89,7 @@ def image_function(template=None, entry=None, category=None):
     if template is not None:
         path.append(os.path.join(
             config.content_folder,
-            os.path.dirname(os.path.relpath(template.filename,
-                                            config.template_folder))))
+            os.path.dirname(template.filename)))
 
     return lambda filename: image.get_image(filename, path)
 
