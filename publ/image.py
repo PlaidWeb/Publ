@@ -39,6 +39,12 @@ class Image:
         Returns: an HTML fragment. """
         pass
 
+    def get_css_background(self, **kwargs):
+        """ Build CSS background-image properties that apply this image.
+
+        Returns: a CSS fragment. """
+        pass
+
     def __call__(self, *args, **kwargs):
         url, _ = self.get_rendition(*args, **kwargs)
         return url
@@ -84,7 +90,7 @@ class Image:
 
 class _NullLock():
     """ A fake "lock" that lets us not actually lock anymore """
-    # pylint ignore:unused-argument
+    # pylint: disable=too-few-public-methods
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
@@ -234,7 +240,7 @@ class LocalImage(Image):
                 shutil.move(temp_path, path)
 
                 logger.info("%s: complete", path)
-            except Exception:  # pylint: disable=broad-exception
+            except Exception:  # pylint: disable=broad-except
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
 
@@ -501,6 +507,7 @@ class RemoteImage(Image):
         return self._wrap_link_target(kwargs, utils.make_tag('img', attrs), title)
 
     def get_css_background(self, **kwargs):
+        """ Get the CSS background-image for the remote image """
         return 'background-image: url("{}");'.format(self.url)
 
 
@@ -521,7 +528,7 @@ class StaticImage(Image):
 
     def get_css_background(self, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_css_background(title, alt_text, **kwargs)
+        return RemoteImage(url).get_css_background(**kwargs)
 
 
 class ImageNotFound(Image):
