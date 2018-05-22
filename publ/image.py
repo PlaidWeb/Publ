@@ -82,11 +82,23 @@ class Image:
         })
 
 
+class _NullLock():
+    """ A fake "lock" that lets us not actually lock anymore """
+    # pylint ignore:unused-argument
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def __enter__(self):
+        pass
+
+
 class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
 
     _thread_pool = None
+    _null_lock = _NullLock()
 
     def __init__(self, record):
         """ Get the base image from an index record """
@@ -182,38 +194,49 @@ class LocalImage(Image):
         with self._lock:
             image = PIL.Image.open(self._record.file_path)
 
-            paletted = image.mode == 'P'
-            if paletted:
-                image.convert('RGB')
-
         return image
 
     def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
         if not os.path.isfile(path):
             logger.info("Rendering file %s", path)
-            if not os.path.isdir(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path))
+            try:
+                if not os.path.isdir(os.path.dirname(path)):
+                    os.makedirs(os.path.dirname(path))
 
-            _, ext = os.path.splitext(path)
+                _, ext = os.path.splitext(path)
 
-            image = self._image
+                image = self._image
+                lock = self._lock
 
-            if size:
-                with self._lock:
-                    image = image.resize(size=size, box=box,
-                                         resample=PIL.Image.LANCZOS)
-            if flatten:
-                with self._lock:
-                    image = self.flatten(image, kwargs.get('background'))
+                paletted = image.mode == 'P'
+                if paletted:
+                    image = image.convert('RGB')
 
-            if ext == '.gif' or (ext == '.png' and kwargs.get('quantize')):
-                with self._lock:
-                    image = image.quantize(kwargs.get('quantize', 256))
+                if size:
+                    with lock:
+                        image = image.resize(size=size, box=box,
+                                             resample=PIL.Image.LANCZOS)
+                    lock = LocalImage._null_lock
 
-            with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
-                temp_path = file.name
-                image.save(file, **out_args)
-            shutil.move(temp_path, path)
+                if flatten:
+                    with lock:
+                        image = self.flatten(image, kwargs.get('background'))
+                    lock = LocalImage._null_lock
+
+                if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
+                    with lock:
+                        image = image.quantize(kwargs.get('quantize', 256))
+                    lock = LocalImage._null_lock
+
+                with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                    temp_path = file.name
+                    image.save(file, **out_args)
+                shutil.move(temp_path, path)
+            except Exception:
+                logger.exception("Failed to render %s -> %s",
+                                 self._record.file_path, path)
+
+            logger.info("%s: complete", path)
 
     def get_rendition_size(self, spec, output_scale):
         """
