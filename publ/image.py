@@ -199,8 +199,15 @@ class LocalImage(Image):
         return image
 
     def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
-        if not os.path.isfile(path):
+        image = self._image
+
+        with self._lock:
+            if os.path.isfile(path):
+                # file already exists
+                return
+
             logger.info("Rendering file %s", path)
+
             try:
                 os.makedirs(os.path.dirname(path))
             except FileExistsError:
@@ -208,28 +215,22 @@ class LocalImage(Image):
 
             _, ext = os.path.splitext(path)
 
-            image = self._image
-            lock = self._lock
-
             try:
                 paletted = image.mode == 'P'
                 if paletted:
                     image = image.convert('RGBA')
 
                 if size:
-                    with lock:
-                        image = image.resize(size=size, box=box,
-                                             resample=PIL.Image.LANCZOS)
+                    image = image.resize(size=size, box=box,
+                                         resample=PIL.Image.LANCZOS)
 
                 if flatten:
-                    with lock:
-                        image = self.flatten(image, kwargs.get('background'))
+                    image = self.flatten(image, kwargs.get('background'))
 
                 if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
-                    with lock:
-                        image = image.quantize(kwargs.get('quantize', 256))
+                    image = image.quantize(kwargs.get('quantize', 256))
 
-                with lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
                     temp_path = file.name
                     image.save(file, **out_args)
                 shutil.move(temp_path, path)
