@@ -194,14 +194,16 @@ class LocalImage(Image):
         if not os.path.isfile(path):
             logger.info("Rendering file %s", path)
             try:
-                if not os.path.isdir(os.path.dirname(path)):
-                    os.makedirs(os.path.dirname(path))
+                os.makedirs(os.path.dirname(path))
+            except FileExistsError:
+                pass
 
-                _, ext = os.path.splitext(path)
+            _, ext = os.path.splitext(path)
 
-                image = self._image
-                lock = self._lock
+            image = self._image
+            lock = self._lock
 
+            try:
                 paletted = image.mode == 'P'
                 if paletted:
                     image = image.convert('RGBA')
