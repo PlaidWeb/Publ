@@ -88,23 +88,11 @@ class Image:
         })
 
 
-class _NullLock():
-    """ A fake "lock" that lets us not actually lock anymore """
-    # pylint: disable=too-few-public-methods
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-    def __enter__(self):
-        pass
-
-
 class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
 
     _thread_pool = None
-    _null_lock = _NullLock()
 
     def __init__(self, record):
         """ Get the base image from an index record """
@@ -216,25 +204,22 @@ class LocalImage(Image):
 
                 paletted = image.mode == 'P'
                 if paletted:
-                    image = image.convert('RGB')
+                    image = image.convert('RGBA')
 
                 if size:
                     with lock:
                         image = image.resize(size=size, box=box,
                                              resample=PIL.Image.LANCZOS)
-                    lock = LocalImage._null_lock
 
                 if flatten:
                     with lock:
                         image = self.flatten(image, kwargs.get('background'))
-                    lock = LocalImage._null_lock
 
                 if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
                     with lock:
                         image = image.quantize(kwargs.get('quantize', 256))
-                    lock = LocalImage._null_lock
 
-                with self._lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
+                with lock, tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
                     temp_path = file.name
                     image.save(file, **out_args)
                 shutil.move(temp_path, path)
