@@ -84,7 +84,7 @@ class Image:
 
 class _NullLock():
     """ A fake "lock" that lets us not actually lock anymore """
-    # pylint ignore:unused-argument
+    # pylint: disable=too-few-public-methods
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
@@ -232,7 +232,7 @@ class LocalImage(Image):
                     temp_path = file.name
                     image.save(file, **out_args)
                 shutil.move(temp_path, path)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
 
