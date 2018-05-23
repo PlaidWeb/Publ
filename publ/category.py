@@ -111,7 +111,8 @@ class Category:
         return list(reversed(ret))
 
     @cached_property
-    def _sort_name(self):
+    def sort_name(self):
+        """ Get the sorting name of this category """
         return self._record.sort_name if self._record else self.basename
 
     def _description(self, **kwargs):
@@ -190,7 +191,7 @@ class Category:
         subcats = {'/'.join(c) for c in subcats}
 
         # convert to a bunch of Category objects
-        return sorted([Category(c) for c in subcats], key=lambda c: c._sort_name)
+        return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
 
     def _entries(self, spec):
         """ Return a model query to get our entry records """

@@ -232,6 +232,7 @@ class Entry:
     def __eq__(self, other):
         if isinstance(other, int):
             return other == self._record.id
+        # pylint:disable=protected-access
         return other is self or other._record == self._record
 
 
