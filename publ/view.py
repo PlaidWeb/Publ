@@ -99,7 +99,7 @@ class View:
     def __str__(self):
         return str(self._link())
 
-    def _link(self, template='', absolute=False):
+    def _link(self, template='', absolute=False, category=None):
         args = {}
         for k, val in self.spec.items():
             if k in ['date', 'start', 'last', 'first', 'before', 'after']:
@@ -115,7 +115,8 @@ class View:
         return flask.url_for('category',
                              **args,
                              template=template,
-                             category=self.spec.get('category'),
+                             category=category if category else self.spec.get(
+                                 'category'),
                              _external=absolute)
 
     @cached_property
