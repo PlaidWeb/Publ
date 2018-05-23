@@ -126,6 +126,7 @@ def render_error(category, error_message, error_codes, exception=None):
 
     error_code = error_codes[0]
     template_list = [str(code) for code in error_codes]
+    template_list.append(int(error_code / 100) * 100)
     template_list.append('error')
 
     template = map_template(category, template_list)
@@ -259,7 +260,7 @@ def render_entry(entry_id, slug_text='', category=''):
         return render_error(category, 'Entry not available', 403)
     # Show a gone error if the entry has been deleted
     if record.status == model.PublishStatus.GONE:
-        return render_error(category, 'Gone', 410)
+        return render_error(category, 'Gone', [410, 404])
 
     # read the entry from disk
     entry_obj = Entry(record)
