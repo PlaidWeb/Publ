@@ -257,6 +257,9 @@ def render_entry(entry_id, slug_text='', category=''):
     # Show an access denied error if the entry has been set to draft mode
     if record.status == model.PublishStatus.DRAFT:
         return render_error(category, 'Entry not available', 403)
+    # Show a gone error if the entry has been deleted
+    if record.status == model.PublishStatus.GONE:
+        return render_error(category, 'Gone', 410)
 
     # read the entry from disk
     entry_obj = Entry(record)
