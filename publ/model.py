@@ -37,6 +37,7 @@ class PublishStatus(Enum):
     HIDDEN = 1  # Entry should be shown via direct link, but not shown on a view
     PUBLISHED = 2  # Entry is visible
     SCHEDULED = 3  # Entry will be visible in the future
+    GONE = 4  # Entry is gone, won't be coming back
 
     @staticmethod
     class Field(IntegerField):
