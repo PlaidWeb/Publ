@@ -110,6 +110,10 @@ class Category:
             here = here.parent
         return list(reversed(ret))
 
+    @cached_property
+    def _sort_name(self):
+        return self._record.sort_name if self._record else self.basename
+
     def _description(self, **kwargs):
         if self._meta:
             return flask.Markup(markdown.to_html(self._meta.get_payload(), config=kwargs,
@@ -186,7 +190,7 @@ class Category:
         subcats = {'/'.join(c) for c in subcats}
 
         # convert to a bunch of Category objects
-        return [Category(c) for c in sorted(subcats)]
+        return sorted([Category(c) for c in subcats], key=lambda c: c._sort_name)
 
     def _entries(self, spec):
         """ Return a model query to get our entry records """
@@ -218,6 +222,7 @@ def scan_file(fullpath, relpath):
         category = meta.get('Category', os.path.dirname(relpath))
         values = {
             'file_path': fullpath,
+            'sort_name': meta.get('Sort-Name') or category
         }
 
         logger.debug("setting category %s to metafile %s", category, fullpath)

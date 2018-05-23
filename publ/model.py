@@ -19,7 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 12
 
 
 class BaseModel(Model):
@@ -82,7 +82,7 @@ class Entry(BaseModel):
         # pylint: disable=too-few-public-methods
         indexes = (
             (('category', 'entry_type', 'utc_date'), False),
-            (('category', 'entry_type', 'local_date'), False)
+            (('category', 'entry_type', 'local_date'), False),
         )
 
 
@@ -90,6 +90,7 @@ class Category(BaseModel):
     """ Metadata for a category """
     category = CharField(unique=True)
     file_path = CharField()
+    sort_name = CharField()
 
 
 class PathAlias(BaseModel):
