@@ -229,6 +229,11 @@ class Entry:
         self._load()
         return self._message.get_all(name) or []
 
+    def __eq__(self, other):
+        if isinstance(other, int):
+            return other == self._record.id
+        return other is self or other._record == self._record
+
 
 def guess_title(basename):
     """ Attempt to guess the title from the filename """
