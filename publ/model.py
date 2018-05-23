@@ -38,6 +38,7 @@ class PublishStatus(Enum):
     PUBLISHED = 2  # Entry is visible
     SCHEDULED = 3  # Entry will be visible in the future
     GONE = 4  # Entry is gone, won't be coming back
+    DELETED = 4  # synonym for GONE
 
     @staticmethod
     class Field(IntegerField):
