@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import logging
 import html.parser
+import re
 
 import misaka
 import flask
@@ -173,7 +174,17 @@ class HTMLStripper(html.parser.HTMLParser):
 
 def render_title(text, markup=True):
     """ Convert a Markdown title to HTML """
-    text = misaka.Markdown(TitleRenderer(), extensions=TITLE_EXTENSIONS)(text)
+
+    # HACK: If the title starts with something that looks like an ordered
+    # list, save it for later
+    match = re.match(r'(([0-9]+\.)+)( .*)', text)
+    if match:
+        pfx, text = match.group(1, 3)
+    else:
+        pfx = ''
+
+    text = pfx + misaka.Markdown(TitleRenderer(),
+                                 extensions=TITLE_EXTENSIONS)(text)
 
     if not markup:
         strip = HTMLStripper()
