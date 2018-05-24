@@ -151,12 +151,14 @@ class TitleRenderer(HtmlRenderer):
     def paragraph(content):
         return content
 
-    def list(self, content, is_ordered, is_block):
+    @staticmethod
+    def list(content, is_ordered, is_block):
         # pylint: disable=unused-argument
         print('list', content, is_ordered, is_block)
         return content
 
-    def listitem(self, content, is_ordered, is_block):
+    @staticmethod
+    def listitem(content, is_ordered, is_block):
         # pylint: disable=unused-argument
         print('listitem', content, is_ordered, is_block)
         if not is_ordered:

@@ -51,23 +51,26 @@ def publ(name, cfg):
         static=utils.static_url
     )
 
+    caching.init_app(app)
+
     if config.index_rescan_interval:
         app.before_request(scan_index)
 
     if 'CACHE_THRESHOLD' in config.cache:
         app.after_request(set_cache_expiry)
 
-    caching.init_app(app)
-
-    # Scan the index
-    model.setup()
-    scan_index(True)
-    index.background_scan(config.content_folder)
-
+    app.before_first_request(startup)
     return app
 
 
 last_scan = None  # pylint: disable=invalid-name
+
+
+def startup():
+    """ Startup routine for initiating the content indexer """
+    model.setup()
+    scan_index(True)
+    index.background_scan(config.content_folder)
 
 
 def scan_index(force=False):
