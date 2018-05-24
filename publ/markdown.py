@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import logging
+import html.parser
 
 import misaka
 import flask
@@ -138,105 +139,46 @@ def to_html(text, config, image_search_path):
     return flask.Markup(processor(text))
 
 
-class TitleRenderer(misaka.HtmlRenderer):
+class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
     # pylint: disable=missing-docstring
 
-    def __init__(self, markup):
-        super().__init__()
-        self._markup = markup
+    def __init__(self):
+        super().__init__({}, [])
 
     @staticmethod
-    def blockcode(text, lang=''):
-        # pylint: disable=unused-argument
-        return text
-
-    @staticmethod
-    def blockquote(text):
-        return text
-
-    @staticmethod
-    def header(text, level):
-        # pylint: disable=unused-argument
-        return text
-
-    @staticmethod
-    def hrule():
-        return ' '
-
-    @staticmethod
-    def list(text, is_ordered, is_block):
-        # pylint: disable=unused-argument
-        return text
-
-    @staticmethod
-    def listitem(text, is_ordered, is_block):
-        # pylint: disable=unused-argument
-        return text
-
-    @staticmethod
-    def paragraph(text):
-        return text
-
-    def codespan(self, text):
-        if self._markup:
-            return '<code>' + text + '</code>'
-        return text
-
-    def double_emphasis(self, text):
-        if self._markup:
-            return '<strong>' + text + '</strong>'
-        return text
-
-    def emphasis(self, text):
-        if self._markup:
-            return '<em>' + text + '</em>'
-        return text
-
-    @staticmethod
-    def quote(text):
-        return text
-
-    @staticmethod
-    def image(link, title='', alt=''):
-        # pylint: disable=unused-argument
-        return alt or ' '
-
-    @staticmethod
-    def linebreak():
-        return ' '
-
-    @staticmethod
-    def link(content, link, title=''):
-        # pylint: disable=unused-argument
+    def paragraph(content):
         return content
 
-    def triple_emphasis(self, text):
-        if self._markup:
-            return '<strong><em>' + text + '</em></strong>'
-        return text
 
-    def strikethrough(self, text):
-        if self._markup:
-            return '<del>' + text + '</del>'
-        return text
+class HTMLStripper(html.parser.HTMLParser):
+    """ A utility class to strip HTML from a string; based on
+    https://stackoverflow.com/a/925630/318857 """
+    # pylint: disable=missing-docstring,abstract-method
 
-    def math(self, text, displaymode):
-        if self._markup:
-            # pylint: disable=no-member
-            return super().math(text, displaymode)
-        return text
+    def __init__(self):
+        super().__init__()
 
-    def raw_html(self, text):
-        if self._markup:
-            return text
-        return flask.escape(text)
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.fed = []
 
-    @staticmethod
-    def normal_text(text):
-        return text
+    def handle_data(self, data):
+        self.fed.append(data)
+
+    def get_data(self):
+        return ''.join(self.fed)
 
 
 def render_title(text, markup=True):
     """ Convert a Markdown title to HTML """
-    return flask.Markup(misaka.Markdown(TitleRenderer(markup), extensions=TITLE_EXTENSIONS)(text))
+    text = flask.Markup(misaka.Markdown(
+        TitleRenderer(), extensions=TITLE_EXTENSIONS)(text))
+
+    if markup:
+        return text
+
+    strip = HTMLStripper()
+    strip.feed(text)
+    return strip.get_data()
