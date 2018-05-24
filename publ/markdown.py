@@ -14,9 +14,11 @@ import pygments.lexers
 
 from . import image, utils
 
-ENABLED_EXTENSIONS = [
+TITLE_EXTENSIONS = ('math', 'math-explicit', 'strikethrough')
+
+ENABLED_EXTENSIONS = (
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
-]
+)
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -25,7 +27,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting """
 
     def __init__(self, config, image_search_path):
-        super().__init__()
+        super().__init__(0, config.get('xhtml') and misaka.HTML_USE_XHTML or 0)
         self._config = config
         self._image_search_path = image_search_path
 
@@ -130,4 +132,107 @@ def to_html(text, config, image_search_path):
     """ Convert Markdown text to HTML """
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
-    return processor(text)
+
+    return flask.Markup(processor(text))
+
+
+class TitleRenderer(misaka.HtmlRenderer):
+    """ A renderer that is suitable for rendering out page titles and nothing else """
+
+    def __init__(self, markup):
+        super().__init__()
+        self._markup = markup
+
+    @staticmethod
+    def blockcode(text, lang=''):
+        # pylint: disable=unused-argument
+        return text
+
+    @staticmethod
+    def blockquote(text):
+        return text
+
+    @staticmethod
+    def header(text, level):
+        # pylint: disable=unused-argument
+        return text
+
+    @staticmethod
+    def hrule():
+        return ' '
+
+    @staticmethod
+    def list(text, is_ordered, is_block):
+        # pylint: disable=unused-argument
+        return text
+
+    @staticmethod
+    def listitem(text, is_ordered, is_block):
+        # pylint: disable=unused-argument
+        return text
+
+    @staticmethod
+    def paragraph(text):
+        return text
+
+    def codespan(self, text):
+        if self._markup:
+            return '<code>' + text + '</code>'
+        return text
+
+    def double_emphasis(self, text):
+        if self._markup:
+            return '<strong>' + text + '</strong>'
+        return text
+
+    def emphasis(self, text):
+        if self._markup:
+            return '<em>' + text + '</em>'
+        return text
+
+    @staticmethod
+    def quote(text):
+        return text
+
+    @staticmethod
+    def image(link, title='', alt=''):
+        # pylint: disable=unused-argument
+        return alt or ' '
+
+    @staticmethod
+    def linebreak():
+        return ' '
+
+    @staticmethod
+    def link(content, link, title=''):
+        # pylint: disable=unused-argument
+        return content
+
+    def triple_emphasis(self, text):
+        if self._markup:
+            return '<strong><em>' + text + '</em></strong>'
+        return text
+
+    def strikethrough(self, text):
+        if self._markup:
+            return '<del>' + text + '</del>'
+        return text
+
+    def math(self, text, displaymode):
+        if self._markup:
+            return super().math(text, displaymode)
+        return text
+
+    def raw_html(self, text):
+        if self._markup:
+            return text
+        return flask.escape(text)
+
+    @staticmethod
+    def normal_text(text):
+        return text
+
+
+def title(text, markup=True):
+    """ Convert a Markdown title to HTML """
+    return flask.Markup(misaka.Markdown(TitleRenderer(markup), extensions=TITLE_EXTENSIONS)(text))
