@@ -151,6 +151,18 @@ class TitleRenderer(HtmlRenderer):
     def paragraph(content):
         return content
 
+    def list(self, content, is_ordered, is_block):
+        # pylint: disable=unused-argument
+        print('list', content, is_ordered, is_block)
+        return content
+
+    def listitem(self, content, is_ordered, is_block):
+        # pylint: disable=unused-argument
+        print('listitem', content, is_ordered, is_block)
+        if not is_ordered:
+            return '* ' + content
+        raise ValueError("Not sure how we got here")
+
 
 class HTMLStripper(html.parser.HTMLParser):
     """ A utility class to strip HTML from a string; based on
@@ -175,14 +187,9 @@ class HTMLStripper(html.parser.HTMLParser):
 def render_title(text, markup=True):
     """ Convert a Markdown title to HTML """
 
-    # HACK: If the title starts with something that looks like an ordered
-    # list, save it for later
-    match = re.match(r'(([0-9]+\.)+)( .*)', text)
-    if match:
-        pfx, text = match.group(1, 3)
-    else:
-        pfx = ''
-
+    # HACK: If the title starts with something that looks like a list, save it
+    # for later
+    pfx, text = re.match(r'([0-9. ]*)(.*)', text).group(1, 2)
     text = pfx + misaka.Markdown(TitleRenderer(),
                                  extensions=TITLE_EXTENSIONS)(text)
 
