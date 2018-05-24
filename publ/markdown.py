@@ -173,12 +173,11 @@ class HTMLStripper(html.parser.HTMLParser):
 
 def render_title(text, markup=True):
     """ Convert a Markdown title to HTML """
-    text = flask.Markup(misaka.Markdown(
-        TitleRenderer(), extensions=TITLE_EXTENSIONS)(text))
+    text = misaka.Markdown(TitleRenderer(), extensions=TITLE_EXTENSIONS)(text)
 
-    if markup:
-        return text
+    if not markup:
+        strip = HTMLStripper()
+        strip.feed(text)
+        text = strip.get_data()
 
-    strip = HTMLStripper()
-    strip.feed(text)
-    return strip.get_data()
+    return flask.Markup(text)
