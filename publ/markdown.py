@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import logging
+import html.parser
 
 import misaka
 import flask
@@ -14,9 +15,11 @@ import pygments.lexers
 
 from . import image, utils
 
-ENABLED_EXTENSIONS = [
+TITLE_EXTENSIONS = ('math', 'math-explicit', 'strikethrough')
+
+ENABLED_EXTENSIONS = (
     'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
-]
+)
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -25,7 +28,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting """
 
     def __init__(self, config, image_search_path):
-        super().__init__()
+        # pylint: disable=no-member
+        super().__init__(0, config.get('xhtml') and misaka.HTML_USE_XHTML or 0)
+
         self._config = config
         self._image_search_path = image_search_path
 
@@ -130,4 +135,49 @@ def to_html(text, config, image_search_path):
     """ Convert Markdown text to HTML """
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
-    return processor(text)
+
+    return flask.Markup(processor(text))
+
+
+class TitleRenderer(HtmlRenderer):
+    """ A renderer that is suitable for rendering out page titles and nothing else """
+    # pylint: disable=missing-docstring
+
+    def __init__(self):
+        super().__init__({}, [])
+
+    @staticmethod
+    def paragraph(content):
+        return content
+
+
+class HTMLStripper(html.parser.HTMLParser):
+    """ A utility class to strip HTML from a string; based on
+    https://stackoverflow.com/a/925630/318857 """
+    # pylint: disable=missing-docstring,abstract-method
+
+    def __init__(self):
+        super().__init__()
+
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.fed = []
+
+    def handle_data(self, data):
+        self.fed.append(data)
+
+    def get_data(self):
+        return ''.join(self.fed)
+
+
+def render_title(text, markup=True):
+    """ Convert a Markdown title to HTML """
+    text = misaka.Markdown(TitleRenderer(), extensions=TITLE_EXTENSIONS)(text)
+
+    if not markup:
+        strip = HTMLStripper()
+        strip.feed(text)
+        text = strip.get_data()
+
+    return flask.Markup(text)

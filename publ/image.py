@@ -47,7 +47,23 @@ class Image:
         """ Implemented by the subclasses for actually emitting the HTML """
         pass
 
-    def get_css_background(self, **kwargs):
+    def get_css_background(self, uncomment=False, **kwargs):
+        """ Get the CSS background attributes for an element.
+
+        Additional arguments:
+
+        uncomment -- surround the attributes with `*/` and `/*` so that the
+            template tag can be kept inside a comment block, to keep syntax
+            highlighters happy
+        """
+
+        text = self._css_background(**kwargs)
+        if uncomment:
+            text = ' */ {} /* '.format(text)
+
+        return text
+
+    def _css_background(self, **kwargs):
         """ Build CSS background-image properties that apply this image.
 
         Returns: a CSS fragment. """
@@ -434,9 +450,9 @@ class LocalImage(Image):
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'title': title,
             'alt': alt_text
-        })
+        }, start_end=kwargs.get('xhtml'))
 
-    def get_css_background(self, **kwargs):
+    def _css_background(self, **kwargs):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
 
         # Get the 1x and 2x renditions
@@ -497,9 +513,9 @@ class RemoteImage(Image):
         attrs['width'] = width
         attrs['height'] = height
 
-        return utils.make_tag('img', attrs)
+        return utils.make_tag('img', attrs, start_end=kwargs.get('xhtml'))
 
-    def get_css_background(self, **kwargs):
+    def _css_background(self, **kwargs):
         """ Get the CSS background-image for the remote image """
         return 'background-image: url("{}");'.format(self.url)
 
@@ -515,11 +531,12 @@ class StaticImage(Image):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_rendition(output_scale, **kwargs)
 
-    def _img_tag(self, title='', alt_text='', **kwargs):
+    def get_img_tag(self, title='', alt_text='', **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_img_tag(title, alt_text, **kwargs)
 
     def get_css_background(self, **kwargs):
+        # pylint: disable=arguments-differ
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_css_background(**kwargs)
 
@@ -544,7 +561,7 @@ class ImageNotFound(Image):
         text += '</span>'
         return flask.Markup(text)
 
-    def get_css_background(self, **kwargs):
+    def _css_background(self, **kwargs):
         return '/* not found: {} */'.format(self.path)
 
 

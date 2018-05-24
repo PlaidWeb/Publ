@@ -52,17 +52,63 @@ class Entry:
         self._record = record   # index record
         self._message = None    # actual message payload, lazy-loaded
 
-        self.date = arrow.get(record.display_date)
+    @cached_property
+    def date(self):
+        """ Get the display date of the entry, as an Arrow object """
+        return arrow.get(self._record.display_date)
 
-        self.link = CallableProxy(self._link)
-        self.permalink = CallableProxy(self._permalink)
-        self.archive = CallableProxy(self._archive_link)
+    @cached_property
+    def link(self):
+        """ Get a link to this entry. Accepts the same parameters as permalink;
+        may be pre-redirected. """
+        return CallableProxy(self._link)
 
-        self.next = CallableProxy(self._next)
-        self.previous = CallableProxy(self._previous)
+    @cached_property
+    def permalink(self):
+        """ Get a canonical link to this entry. Accepts the following parameters:
 
+        absolute -- if True, return an absolute/portable link (default: False)
+        expand -- if True, expands the link to include the category and slug text;
+            if False, it will only be the entry ID (default: True)
+        """
+        return CallableProxy(self._permalink)
+
+    @cached_property
+    def archive(self):
+        """ Get a link to this entry in the context of a category template.
+        Accepts the following arguments:
+
+        paging -- Which pagination scheme to use; one of:
+            day -- the entry date's day
+            month -- the entry date's month
+            year -- the entry date's year
+            offset -- count-based pagination starting at the entry (default)
+        category -- Which category to generate the link against (default: the entry's category)
+        template -- Which template to generate the link for
+        """
+        return CallableProxy(self._archive_link)
+
+    @cached_property
+    def next(self):
+        """ Get the next entry in the category, ordered by date.
+
+        Accepts view parameters as arguments.
+        """
+        return CallableProxy(self._next)
+
+    @cached_property
+    def previous(self):
+        """ Get the previous entry in the category, ordered by date.
+
+        Accepts view parameters as arguments.
+        """
+        return CallableProxy(self._previous)
+
+    @cached_property
+    def category(self):
+        """ Get the category this entry belongs to. """
         from .category import Category  # pylint: disable=cyclic-import
-        self.category = Category(record.category)
+        return Category(self._record.category)
 
     def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
@@ -94,6 +140,18 @@ class Entry:
             args['start'] = self._record.id
 
         return flask.url_for('category', **args, _external=absolute)
+
+    @cached_property
+    def title(self):
+        """ Get the title of the entry. Accepts the following argument:
+
+        markup -- If True, convert it from Markdown to HTML; otherwise, strip
+            all markdown (default: True)
+        """
+        return CallableProxy(self._title)
+
+    def _title(self, markup=True):
+        return markdown.render_title(self._record.title, markup)
 
     @cached_property
     def image_search_path(self):
@@ -147,10 +205,11 @@ class Entry:
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
-            return flask.Markup(markdown.to_html(
+            return markdown.to_html(
                 text,
                 config=kwargs,
-                image_search_path=self.image_search_path))
+                image_search_path=self.image_search_path)
+
         return flask.Markup(text)
 
     def _get_card(self, text, **kwargs):
@@ -233,7 +292,7 @@ class Entry:
         if isinstance(other, int):
             return other == self._record.id
         # pylint:disable=protected-access
-        return other is self or other._record == self._record
+        return isinstance(other, Entry) and (other is self or other._record == self._record)
 
 
 def guess_title(basename):
