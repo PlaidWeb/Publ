@@ -27,7 +27,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting """
 
     def __init__(self, config, image_search_path):
+        # pylint: disable=no-member
         super().__init__(0, config.get('xhtml') and misaka.HTML_USE_XHTML or 0)
+
         self._config = config
         self._image_search_path = image_search_path
 
@@ -138,6 +140,7 @@ def to_html(text, config, image_search_path):
 
 class TitleRenderer(misaka.HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
+    # pylint: disable=missing-docstring
 
     def __init__(self, markup):
         super().__init__()
@@ -220,6 +223,7 @@ class TitleRenderer(misaka.HtmlRenderer):
 
     def math(self, text, displaymode):
         if self._markup:
+            # pylint: disable=no-member
             return super().math(text, displaymode)
         return text
 
@@ -233,6 +237,6 @@ class TitleRenderer(misaka.HtmlRenderer):
         return text
 
 
-def title(text, markup=True):
+def render_title(text, markup=True):
     """ Convert a Markdown title to HTML """
     return flask.Markup(misaka.Markdown(TitleRenderer(markup), extensions=TITLE_EXTENSIONS)(text))
