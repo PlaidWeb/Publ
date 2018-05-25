@@ -145,10 +145,12 @@ def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
 
-    if isinstance(error, http_error.NotFound) and index.is_indexing():
+    qsize = index.queue_length()
+    if isinstance(error, http_error.NotFound) and qsize:
         response = flask.make_response(render_error(
-            category, "Site reindex in progress", 503))
-        response.headers['Retry-After'] = 5
+            category, "Site reindex in progress (qs={})".format(qsize), 503))
+        response.headers['Retry-After'] = qsize
+        response.headers['Refresh'] = max(5, qsize / 5)
         return response, 503
 
     if isinstance(error, http_error.HTTPException):
