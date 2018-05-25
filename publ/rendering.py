@@ -209,7 +209,7 @@ def render_category(category='', template=None):
         return render_error(category, 'No such template', 404)
 
     view_spec = {'category': category}
-    for key in ['date', 'start', 'last', 'first', 'before', 'after']:
+    for key in ['date', 'start']:
         if key in request.args:
             view_spec[key] = request.args[key]
 

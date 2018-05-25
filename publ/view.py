@@ -101,16 +101,21 @@ class View:
 
     def _link(self, template='', absolute=False, category=None):
         args = {}
-        for k, val in self.spec.items():
-            if k in ['date', 'start', 'last', 'first', 'before', 'after']:
-                if isinstance(val, (str, int)):
-                    args[k] = val
-                elif hasattr(val, 'id'):
-                    # the item was an object, so we want the object's id
-                    args[k] = val.id
-                else:
-                    raise ValueError(
-                        "key {} is of type {}".format(k, type(val)))
+        if 'date' in self.spec:
+            args['date'] = self.spec['date']
+        else:
+            for k in OFFSET_PRIORITY:
+                if k in self.spec:
+                    val = self.spec[k]
+                    if isinstance(val, (str, int)):
+                        args['start'] = val
+                    elif hasattr(val, 'id'):
+                        # the item was an object, so we want the object's id
+                        args['start'] = val.id
+                    else:
+                        raise ValueError(
+                            "key {} is of type {}".format(k, type(val)))
+                    break
 
         return flask.url_for('category',
                              **args,
@@ -194,6 +199,14 @@ class View:
         if self._order_by == 'oldest':
             return self.first
         return min(self.entries, key=lambda x: (x.date, -x.id))
+
+    @cached_property
+    def paging(self):
+        """ Gets the pagination type; compatible with entry.archive(page_type=...) """
+        if 'date' in self.spec:
+            _, date_span, _ = utils.parse_date(self.spec['date'])
+            return date_span
+        return 'offset'
 
     @cached_property
     def _pagination(self):
