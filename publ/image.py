@@ -96,7 +96,7 @@ class Image:
         fullsize_args = {}
 
         if 'absolute' in kwargs:
-            fullsize_args = kwargs['absolute']
+            fullsize_args['absolute'] = kwargs['absolute']
 
         for key in ['width', 'height', 'quality', 'format', 'background']:
             fsk = 'fullsize_' + key
