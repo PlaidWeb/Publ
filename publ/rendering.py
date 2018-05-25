@@ -15,6 +15,7 @@ from . import config
 from . import path_alias
 from . import model
 from . import image
+from . import index
 from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
@@ -143,12 +144,20 @@ def render_error(category, error_message, error_codes, exception=None):
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
-    if isinstance(error, http_error.HTTPException) and error.code:
+
+    if isinstance(error, http_error.NotFound) and index.is_indexing():
+        response = flask.make_response(render_error(
+            category, "Site reindex in progress", 503))
+        response.headers['Retry-After'] = 5
+        return response, 503
+
+    if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
             'type': type(error).__name__,
             'str': error.description,
             'args': error.args
         })
+
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
