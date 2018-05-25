@@ -9,7 +9,7 @@ import base64
 
 import flask
 from flask import request, redirect, render_template, url_for
-from werkzeug.exceptions import HTTPException
+import werkzeug.exceptions as http_error
 
 from . import config
 from . import path_alias
@@ -143,7 +143,7 @@ def render_error(category, error_message, error_codes, exception=None):
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
     _, _, category = str.partition(request.path, '/')
-    if isinstance(error, HTTPException) and error.code:
+    if isinstance(error, http_error.HTTPException) and error.code:
         return render_error(category, error.name, error.code, exception={
             'type': type(error).__name__,
             'str': error.description,
@@ -183,15 +183,15 @@ def render_category(category='', template=None):
 
     # Forbidden template types
     if template and template.startswith('_'):
-        return render_error(category, 'Access denied', 403)
+        raise http_error.Forbidden("Template is private")
     if template in ['entry', 'error']:
-        return render_error(category, 'Unsupported template', 400)
+        raise http_error.BadRequest("Invalid view requested")
 
     if category:
         # See if there's any entries for the view...
         if not model.Entry.get_or_none((model.Entry.category == category) |
                                        (model.Entry.category.startswith(category + '/'))):
-            return render_error(category, 'No such category', 404)
+            raise http_error.NotFound("No such category")
 
     if not template:
         template = Category(category).get('Index-Template') or 'index'
@@ -206,7 +206,7 @@ def render_category(category='', template=None):
             return redirect(url_for('category', category=test_path))
 
         # nope, we just don't know what this is
-        return render_error(category, 'No such template', 404)
+        raise http_error.NotFound("No such view")
 
     view_spec = {'category': category}
     for key in ['date', 'id']:
@@ -242,7 +242,7 @@ def render_entry(entry_id, slug_text='', category=''):
             return redirect(path_redirect)
 
         logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
-        return render_error(category, 'Entry not found', 404)
+        raise http_error.NotFound("No such entry")
 
     # see if the file still exists
     if not os.path.isfile(record.file_path):
@@ -253,14 +253,14 @@ def render_entry(entry_id, slug_text='', category=''):
         if path_redirect:
             return redirect(path_redirect)
 
-        return render_error(category, 'Entry not found', 404)
+        raise http_error.NotFound("No such entry")
 
     # Show an access denied error if the entry has been set to draft mode
     if record.status == model.PublishStatus.DRAFT:
-        return render_error(category, 'Entry not available', 403)
+        raise http_error.Forbidden("Entry not available")
     # Show a gone error if the entry has been deleted
     if record.status == model.PublishStatus.GONE:
-        return render_error(category, 'Gone', [410, 404])
+        raise http_error.Gone()
 
     # read the entry from disk
     entry_obj = Entry(record)
@@ -268,7 +268,7 @@ def render_entry(entry_id, slug_text='', category=''):
     # does the entry-id header mismatch? If so the old one is invalid
     if int(entry_obj.get('Entry-ID')) != record.id:
         expire_record(record)
-        return render_error(category, 'Entry not found', 404)
+        return redirect(url_for('entry', entry_id=int(entry_obj.get('Entry-Id'))))
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -294,7 +294,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     tmpl = map_template(category, entry_template)
     if not tmpl:
-        return render_error(category, 'Entry template not found', 400)
+        raise http_error.BadRequest("Missing entry template")
 
     return render_publ_template(
         tmpl,

@@ -4,6 +4,7 @@ import time
 
 import arrow
 import flask
+import werkzeug.exceptions
 
 from . import config, rendering, model, index, caching, view, utils, async
 
@@ -41,6 +42,10 @@ def publ(name, cfg):
                      'async', async.image)
 
     app.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
+
+    app.config['TRAP_HTTP_EXCEPTIONS'] = True
+    app.register_error_handler(
+        werkzeug.exceptions.HTTPException, rendering.render_exception)
 
     if not app.debug:
         app.register_error_handler(Exception, rendering.render_exception)
