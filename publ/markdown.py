@@ -99,10 +99,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def paragraph(content):
         """ emit a paragraph, stripping out any leading or following empty paragraphs """
         text = '<p>' + content + '</p>'
+
         if text.startswith('<p></p>'):
             text = text[7:]
         if text.endswith('<p></p>'):
             text = text[:-7]
+        text = text.replace('<p> </p>', '')
+
         return text
 
     def _remap_path(self, path):
