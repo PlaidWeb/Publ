@@ -220,9 +220,10 @@ def render_category(category='', template=None):
         raise http_error.NotFound("No such view")
 
     view_spec = {'category': category}
-    for key in ['date', 'start']:
-        if key in request.args:
-            view_spec[key] = request.args[key]
+    if 'date' in request.args:
+        view_spec['date'] = request.args['date']
+    elif 'id' in request.args:
+        view_spec['start'] = request.args['id']
 
     view_obj = View(view_spec)
     return render_publ_template(

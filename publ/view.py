@@ -108,10 +108,10 @@ class View:
                 if k in self.spec:
                     val = self.spec[k]
                     if isinstance(val, (str, int)):
-                        args['start'] = val
+                        args['id'] = val
                     elif hasattr(val, 'start'):
                         # the item was an object, so we want the object's id
-                        args['start'] = val.id
+                        args['id'] = val.id
                     else:
                         raise ValueError(
                             "key {} is of type {}".format(k, type(val)))
