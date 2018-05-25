@@ -137,9 +137,9 @@ class Entry:
         elif paging == 'year':
             args['date'] = self.date.format(utils.YEAR_FORMAT)
         elif paging == 'offset' or not paging:
-            args['id'] = self._record.id
+            args['start'] = self._record.id
         else:
-            raise ValueError("Unknown paging type '%s'", paging)
+            raise ValueError("Unknown paging type '{}'".format(paging))
 
         return flask.url_for('category', **args, _external=absolute)
 
