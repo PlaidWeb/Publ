@@ -11,7 +11,7 @@ from . import model, utils, queries
 from .entry import Entry
 
 # Prioritization list for pagination
-OFFSET_PRIORITY = ['date', 'start', 'last', 'first']
+OFFSET_PRIORITY = ['date', 'id', 'last', 'first']
 
 # Prioritization list for pagination type
 #
@@ -71,11 +71,11 @@ class View:
 
         self.spec = spec
 
-        if 'start' in spec:
+        if 'id' in spec:
             if self._order_by == 'oldest':
-                self.spec['first'] = self.spec['start']
+                self.spec['first'] = self.spec['id']
             elif self._order_by == 'newest':
-                self.spec['last'] = self.spec['start']
+                self.spec['last'] = self.spec['id']
 
         self._where = queries.build_query(spec)
         self._query = model.Entry.select().where(self._where)
@@ -108,10 +108,10 @@ class View:
                 if k in self.spec:
                     val = self.spec[k]
                     if isinstance(val, (str, int)):
-                        args['start'] = val
+                        args['id'] = val
                     elif hasattr(val, 'id'):
                         # the item was an object, so we want the object's id
-                        args['start'] = val.id
+                        args['id'] = val.id
                     else:
                         raise ValueError(
                             "key {} is of type {}".format(k, type(val)))
