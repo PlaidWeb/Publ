@@ -165,6 +165,10 @@ class TitleRenderer(HtmlRenderer):
             return '* ' + content
         raise ValueError("Not sure how we got here")
 
+    @staticmethod
+    def header(content, level):
+        return content
+
 
 class HTMLStripper(html.parser.HTMLParser):
     """ A utility class to strip HTML from a string; based on

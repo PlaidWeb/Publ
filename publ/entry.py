@@ -137,7 +137,7 @@ class Entry:
         elif paging == 'year':
             args['date'] = self.date.format(utils.YEAR_FORMAT)
         elif paging == 'offset' or not paging:
-            args['start'] = self._record.id
+            args['id'] = self._record.id
         else:
             raise ValueError("Unknown paging type '%s'", paging)
 
