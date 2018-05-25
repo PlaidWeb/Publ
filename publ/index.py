@@ -4,6 +4,7 @@
 import os
 import logging
 import concurrent.futures
+import queue
 
 import watchdog.observers
 import watchdog.events
@@ -18,13 +19,16 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
 
-thread_pool = concurrent.futures.ThreadPoolExecutor(  # pylint: disable=invalid-name
+THREAD_POOL = concurrent.futures.ThreadPoolExecutor(
     max_workers=1,
     thread_name_prefix="Indexer")
 
+# Get the _work_queue attribute from the pool, if any
+WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
 
-def is_indexing():
-    return not thread_pool._work_queue.empty()
+
+def queue_length():
+    return WORK_QUEUE.qsize() if WORK_QUEUE else None
 
 
 def scan_file(fullpath, relpath, assign_id):
@@ -62,7 +66,7 @@ def scan_file(fullpath, relpath, assign_id):
     result = do_scan()
     if result is False and not assign_id:
         logger.info("Scheduling fixup for %s", fullpath)
-        thread_pool.submit(scan_file, fullpath, relpath, True)
+        THREAD_POOL.submit(scan_file, fullpath, relpath, True)
     elif result:
         set_fingerprint(fullpath)
 
@@ -100,7 +104,7 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
     def update_file(self, fullpath):
         """ Update a file """
         relpath = os.path.relpath(fullpath, self.content_dir)
-        thread_pool.submit(scan_file, fullpath, relpath, False)
+        THREAD_POOL.submit(scan_file, fullpath, relpath, False)
 
     def on_created(self, event):
         """ on_created handler """
@@ -148,7 +152,7 @@ def scan_index(content_dir):
             fingerprint = utils.file_fingerprint(fullpath)
             last_fingerprint = get_last_fingerprint(fullpath)
             if fingerprint != last_fingerprint:
-                thread_pool.submit(scan_file, fullpath, relpath, False)
+                scan_file(fullpath, relpath, False)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
-        thread_pool.submit(scan_directory, root, files)
+        THREAD_POOL.submit(scan_directory, root, files)
