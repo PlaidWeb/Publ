@@ -200,13 +200,19 @@ class Category:
 
     def _first(self, **spec):
         """ Get the earliest entry in this category, optionally including subcategories """
-        return entry.Entry(self._entries(spec).order_by(
-            model.Entry.local_date, model.Entry.id).get())
+        try:
+            return entry.Entry(self._entries(spec).order_by(
+                model.Entry.local_date, model.Entry.id).get())
+        except model.Entry.DoesNotExist:
+            return None
 
     def _last(self, **spec):
         """ Get the latest entry in this category, optionally including subcategories """
-        return entry.Entry(self._entries(spec).order_by(
-            -model.Entry.local_date, -model.Entry.id).get())
+        try:
+            return entry.Entry(self._entries(spec).order_by(
+                -model.Entry.local_date, -model.Entry.id).get())
+        except model.Entry.DoesNotExist:
+            return None
 
 
 def scan_file(fullpath, relpath):

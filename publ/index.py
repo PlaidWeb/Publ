@@ -23,6 +23,10 @@ thread_pool = concurrent.futures.ThreadPoolExecutor(  # pylint: disable=invalid-
     thread_name_prefix="Indexer")
 
 
+def is_indexing():
+    return not thread_pool._work_queue.empty()
+
+
 def scan_file(fullpath, relpath, assign_id):
     """ Scan a file for the index
 
