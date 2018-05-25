@@ -170,6 +170,7 @@ class TitleRenderer(HtmlRenderer):
 
     @staticmethod
     def header(content, level):
+        # pylint: disable=unused-argument
         return content
 
 

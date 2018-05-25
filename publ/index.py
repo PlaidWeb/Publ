@@ -4,7 +4,6 @@
 import os
 import logging
 import concurrent.futures
-import queue
 
 import watchdog.observers
 import watchdog.events
@@ -28,6 +27,7 @@ WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
 
 
 def queue_length():
+    """ Get the approximate length of the indexer work queue """
     return WORK_QUEUE.qsize() if WORK_QUEUE else None
 
 
