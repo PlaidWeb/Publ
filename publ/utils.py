@@ -90,6 +90,9 @@ MONTH_FORMAT = 'YYYY-MM'
 #: arrow format string for 'year' archives
 YEAR_FORMAT = 'YYYY'
 
+#: arrow format string for 'week' archives
+WEEK_FORMAT = 'YYYY-MM-DD_w'
+
 
 def parse_date(datestr):
     """ Parse a date expression into a tuple of:
@@ -100,17 +103,20 @@ def parse_date(datestr):
         datestr -- A date specification, in the format of YYYY-MM-DD (dashes optional)
     """
 
-    match = re.match(r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?$', datestr)
+    match = re.match(
+        r'([0-9]{4})(-?([0-9]{1,2}))?(-?([0-9]{1,2}))?(_w)?$', datestr)
     if not match:
         return (arrow.get(datestr,
                           tzinfo=config.timezone).replace(tzinfo=config.timezone),
                 'day', 'YYYY-MM-DD')
 
-    year, month, day = match.group(1, 3, 5)
+    year, month, day, week = match.group(1, 3, 5, 6)
     start = arrow.Arrow(year=int(year), month=int(
         month or 1), day=int(day or 1), tzinfo=config.timezone)
 
-    if day:
+    if week:
+        return start.span('week')[0], 'week', WEEK_FORMAT
+    elif day:
         return start, 'day', DAY_FORMAT
     elif month:
         return start, 'month', MONTH_FORMAT
