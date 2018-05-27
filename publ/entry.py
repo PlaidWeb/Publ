@@ -136,6 +136,8 @@ class Entry:
             args['date'] = self.date.format(utils.MONTH_FORMAT)
         elif paging == 'year':
             args['date'] = self.date.format(utils.YEAR_FORMAT)
+        elif paging == 'week':
+            args['date'] = self.date.span('week')[0].format(utils.WEEK_FORMAT)
         elif paging == 'offset' or not paging:
             args['id'] = self._record.id
         else:
