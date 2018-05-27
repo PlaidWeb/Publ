@@ -13,7 +13,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='Publ',
 
-    version='0.1.18',
+    version='0.1.19',
 
     description='A content-management system for flexible web-based publishing',
 
