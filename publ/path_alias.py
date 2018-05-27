@@ -5,7 +5,7 @@ from __future__ import absolute_import, with_statement
 
 from flask import url_for, redirect
 
-from . import model, entry
+from . import model
 
 
 def set_alias(alias, **kwargs):
@@ -41,6 +41,54 @@ def remove_alias(path):
     model.PathAlias.delete().where(model.PathAlias.path == path).execute()
 
 
+def get_alias(path):
+    """ Get a path alias for a single path
+
+    Returns a tuple of (url,is_permanent)
+    """
+    # pylint:disable=too-many-return-statements
+
+    record = model.PathAlias.get_or_none(model.PathAlias.path == path)
+
+    if not record:
+        return None, None
+
+    template = record.template if record.template != 'index' else None
+
+    if record.entry:
+        if record.template:
+            # a template was requested, so we go to the category page
+            category = (record.category.category
+                        if record.category else record.entry.category)
+            return url_for('category',
+                           start=record.entry.id,
+                           template=template,
+                           category=category), True
+
+        from . import entry  # pylint:disable=cyclic-import
+        outbound = entry.Entry(record.entry).get('Redirect-To')
+        if outbound:
+            # The entry has a Redirect-To (soft redirect) header
+            return outbound, False
+
+        return url_for('entry',
+                       entry_id=record.entry.id,
+                       category=record.entry.category,
+                       slug_text=record.entry.slug_text), True
+
+    if record.category:
+        return url_for('category',
+                       category=record.category.category,
+                       template=template), True
+
+    if record.url:
+        # This is an outbound URL that might be changed by the user, so
+        # we don't do a 301 Permanently moved
+        return record.url, False
+
+    return None, None
+
+
 def get_redirect(paths):
     """ Get a redirect from a path or list of paths
 
@@ -55,50 +103,8 @@ def get_redirect(paths):
         paths = [paths]
 
     for path in paths:
-        record = model.PathAlias.get_or_none(model.PathAlias.path == path)
-
-        if record:
-            if record.template:
-                # we want a specific template view
-
-                template = record.template
-                if template == 'index':
-                    # map this back to the category default
-                    template = None
-
-                if record.entry:
-                    category = (record.category.category
-                                if record.category else record.entry.category)
-                    return redirect(url_for('category',
-                                            start=record.entry.id,
-                                            template=template,
-                                            category=category), code=301)
-
-                if record.category:
-                    return redirect(url_for('category',
-                                            category=record.category.category,
-                                            template=template), code=301)
-
-            if record.entry:
-                outbound = entry.Entry(record.entry).get('Redirect-To')
-                if outbound:
-                    # The referred entry has a soft Redirect-To, so let's go
-                    # directly to it. We don't use a 301 because this is an
-                    # outbound redirection that the user might change.
-                    return redirect(outbound)
-                return redirect(url_for('entry',
-                                        entry_id=record.entry.id,
-                                        category=record.entry.category,
-                                        slug_text=record.entry.slug_text), code=301)
-
-            if record.category:
-                return redirect(url_for('category',
-                                        category=record.category.category,
-                                        template=record.template), code=301)
-
-            if record.url:
-                # This is an outbound URL that might be changed by the user, so
-                # we don't do a 301 Permanently moved
-                return redirect(record.url)
+        url, permanent = get_alias(path)
+        if url:
+            return redirect(url, 301 if permanent else 302)
 
     return None
