@@ -91,7 +91,7 @@ MONTH_FORMAT = 'YYYY-MM'
 YEAR_FORMAT = 'YYYY'
 
 #: arrow format string for 'week' archives
-WEEK_FORMAT = 'YYYY-MM-DD_w'
+WEEK_FORMAT = 'YYYYMMDD_w'
 
 
 def parse_date(datestr):
