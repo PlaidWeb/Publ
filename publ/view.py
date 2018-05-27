@@ -36,6 +36,14 @@ REVERSE_ORDER_BY = {
 }
 
 
+SPAN_FORMATS = {
+    'day': 'YYYY/MM/DD',
+    'week': 'YYYY/MM/DD',
+    'month': 'YYYY/MM',
+    'year': 'YYYY/MM'
+}
+
+
 class View:
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """ A view of entries """
@@ -324,7 +332,8 @@ class View:
             span_type = 'day'
             span_format = utils.DAY_FORMAT
 
-        date_format = formats.get(span_type, span_format)
+        date_format = formats.get(
+            span_type, SPAN_FORMATS.get(span_type, span_format))
 
         oldest = self.oldest.date.format(date_format)
         if len(self.entries) == 1:
