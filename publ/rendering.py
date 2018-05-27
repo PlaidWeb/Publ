@@ -73,7 +73,10 @@ def map_template(category, template_list):
 
 def get_redirect():
     """ Check to see if the current request is a redirection """
-    return path_alias.get_redirect([request.full_path, request.path])
+    alias = path_alias.get_redirect([request.full_path, request.path])
+    if alias:
+        return alias
+    return None
 
 
 def image_function(template=None, entry=None, category=None):
@@ -172,8 +175,8 @@ def render_path_alias(path):
 
     redir = path_alias.get_redirect('/' + path)
     if not redir:
-        return render_error('', 'Path redirection not found', 404)
-    return redirect(redir)
+        raise http_error.NotFound("Path redirection not found")
+    return redir
 
 
 @cache.cached(key_prefix=caching.make_category_key)
@@ -190,7 +193,7 @@ def render_category(category='', template=None):
     # See if this is an aliased path
     redir = get_redirect()
     if redir:
-        return redirect(redir)
+        return redir
 
     # Forbidden template types
     if template and template.startswith('_'):
@@ -251,7 +254,7 @@ def render_entry(entry_id, slug_text='', category=''):
         # It's not a valid entry, so see if it's a redirection
         path_redirect = get_redirect()
         if path_redirect:
-            return redirect(path_redirect)
+            return path_redirect
 
         logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
         raise http_error.NotFound("No such entry")
@@ -263,7 +266,7 @@ def render_entry(entry_id, slug_text='', category=''):
         # See if there's a redirection
         path_redirect = get_redirect()
         if path_redirect:
-            return redirect(path_redirect)
+            return path_redirect
 
         raise http_error.NotFound("No such entry")
 
@@ -287,7 +290,7 @@ def render_entry(entry_id, slug_text='', category=''):
         # This could still be a redirected path...
         path_redirect = get_redirect()
         if path_redirect:
-            return redirect(path_redirect)
+            return path_redirect
 
         # Redirect to the canonical URL
         return redirect(url_for('entry',
