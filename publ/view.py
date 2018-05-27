@@ -36,6 +36,14 @@ REVERSE_ORDER_BY = {
 }
 
 
+SPAN_FORMATS = {
+    'day': 'YYYY/MM/DD',
+    'week': 'YYYY/MM/DD',
+    'month': 'YYYY/MM',
+    'year': 'YYYY/MM'
+}
+
+
 class View:
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """ A view of entries """
@@ -244,10 +252,10 @@ class View:
 
     def _get_date_pagination(self, base, oldest_neighbor, newest_neighbor):
         """ Compute the pagination for date-based views """
-        _, _, date_format = utils.parse_date(self.spec['date'])
+        _, span, date_format = utils.parse_date(self.spec['date'])
 
         if newest_neighbor:
-            newer_date = newest_neighbor.date
+            newer_date = newest_neighbor.date.span(span)[0]
             newer_view = View({**base,
                                'order': self._order_by,
                                'date': newer_date.format(date_format)})
@@ -255,7 +263,7 @@ class View:
             newer_view = None
 
         if oldest_neighbor:
-            older_date = oldest_neighbor.date
+            older_date = oldest_neighbor.date.span(span)[0]
             older_view = View({**base,
                                'order': self._order_by,
                                'date': older_date.format(date_format)})
@@ -324,7 +332,8 @@ class View:
             span_type = 'day'
             span_format = utils.DAY_FORMAT
 
-        date_format = formats.get(span_type, span_format)
+        date_format = formats.get(
+            span_type, SPAN_FORMATS.get(span_type, span_format))
 
         oldest = self.oldest.date.format(date_format)
         if len(self.entries) == 1:
