@@ -205,7 +205,7 @@ class LocalImage(Image):
         LocalImage._thread_pool.submit(
             self._render, out_fullpath, size, box, flatten, kwargs, out_args)
 
-        return flask.url_for('async', filename=out_rel_path), size
+        return flask.url_for('async', filename=out_rel_path, _external=kwargs.get('absolute')), size
 
     @cached_property
     def _image(self):
