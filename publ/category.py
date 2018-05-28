@@ -191,7 +191,7 @@ class Category:
         subcats = {'/'.join(c) for c in subcats}
 
         # convert to a bunch of Category objects
-        return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
+        return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name or c.name)
 
     def _entries(self, spec):
         """ Return a model query to get our entry records """
@@ -229,7 +229,7 @@ def scan_file(fullpath, relpath):
         category = meta.get('Category', os.path.dirname(relpath))
         values = {
             'file_path': fullpath,
-            'sort_name': meta.get('Sort-Name') or category
+            'sort_name': meta.get('Sort-Name', '')
         }
 
         logger.debug("setting category %s to metafile %s", category, fullpath)
