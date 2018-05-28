@@ -15,7 +15,7 @@ class CardData():
     # pylint: disable=too-few-public-methods
 
     def __init__(self):
-        self.description = None
+        self.description = ''
         self.images = []
 
 
@@ -32,8 +32,9 @@ class CardParser(misaka.BaseRenderer):
 
     def paragraph(self, content):
         """ Turn the first paragraph of text into the summary text """
-        if not self._out.description:
-            self._out.description = content.strip()
+        if self._out.description:
+            self._out.description += '\n\n'
+        self._out.description += content
         return ' '
 
     def image(self, raw_url, title='', alt=''):
@@ -47,7 +48,7 @@ class CardParser(misaka.BaseRenderer):
         if title:
             image_specs += ' "{}"'.format(title)
 
-        _, container_args = image.parse_alt_text(alt)
+        alt, container_args = image.parse_alt_text(alt)
 
         spec_list = image.get_spec_list(image_specs, container_args)
 
@@ -78,14 +79,6 @@ class CardParser(misaka.BaseRenderer):
             # we tried™
             logger.exception("Got error on spec %s: %s", spec, err)
             return None
-
-        if path.startswith('@'):
-            # static image resource
-            return utils.static_url(path[1:], absolute=True)
-
-        if path.startswith('//') or '://' in path:
-            # remote image
-            return path
 
         img = image.get_image(path, self._image_search_path)
         if img:
