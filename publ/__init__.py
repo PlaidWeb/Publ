@@ -47,9 +47,6 @@ def publ(name, cfg):
     app.register_error_handler(
         werkzeug.exceptions.HTTPException, rendering.render_exception)
 
-    if not app.debug:
-        app.register_error_handler(Exception, rendering.render_exception)
-
     app.jinja_env.globals.update(  # pylint: disable=no-member
         get_view=view.get_view,
         arrow=arrow,
@@ -64,7 +61,16 @@ def publ(name, cfg):
     if 'CACHE_THRESHOLD' in config.cache:
         app.after_request(set_cache_expiry)
 
-    app.before_first_request(startup)
+    if app.debug:
+        # We're in debug mode so we don't want to scan until everything's up
+        # and running
+        app.before_first_request(startup)
+    else:
+        # In production, register the exception handler and scan the index
+        # immediately
+        app.register_error_handler(Exception, rendering.render_exception)
+        startup()
+
     return app
 
 
