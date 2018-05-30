@@ -5,7 +5,7 @@ import logging
 
 import misaka
 
-from . import image, utils
+from . import image
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
