@@ -30,7 +30,8 @@ EXTENSION_MAP = {
     '.html': 'text/html; charset=utf-8',
     '.xml': 'application/xml',
     '.json': 'application/json',
-    '.css': 'text/css'
+    '.css': 'text/css',
+    '.txt': 'text/plain'
 }
 
 
