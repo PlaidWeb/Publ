@@ -15,7 +15,7 @@ class CardData():
     # pylint: disable=too-few-public-methods
 
     def __init__(self):
-        self.description = ''
+        self.description = None
         self.images = []
 
 
@@ -32,9 +32,8 @@ class CardParser(misaka.BaseRenderer):
 
     def paragraph(self, content):
         """ Turn the first paragraph of text into the summary text """
-        if self._out.description:
-            self._out.description += '\n\n'
-        self._out.description += content
+        if not self._out.description:
+            self._out.description = content
         return ' '
 
     def image(self, raw_url, title='', alt=''):
