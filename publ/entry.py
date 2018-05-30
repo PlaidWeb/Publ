@@ -50,7 +50,6 @@ class Entry:
         """
 
         self._record = record   # index record
-        self._message = None    # actual message payload, lazy-loaded
 
     @cached_property
     def date(self):
@@ -162,45 +161,61 @@ class Entry:
         """ The relative image search path for this entry """
         return [os.path.dirname(self._record.file_path)] + self.category.image_search_path
 
-    def _load(self):
-        """ ensure the message payload is loaded """
-        # pylint: disable=attribute-defined-outside-init
+    @cached_property
+    def _message(self):
+        """ get the message payload """
+        filepath = self._record.file_path
+        try:
+            return load_message(filepath)
+        except FileNotFoundError:
+            expire_record(self._record)
+            return None
 
-        if not self._message:
-            filepath = self._record.file_path
-            try:
-                self._message = load_message(filepath)
-            except FileNotFoundError:
-                expire_record(self._record)
+    @cached_property
+    def _entry_content(self):
+        body, _, more = self._message.get_payload().partition('\n.....\n')
+        if not more and body.startswith('.....\n'):
+            # The entry began with a cut, which failed to parse.
+            # This rule is easier/faster than dealing with a regex from
+            # hell.
+            more = body[6:]
+            body = ''
 
-            body, _, more = self._message.get_payload().partition('\n.....\n')
-            if not more and body.startswith('.....\n'):
-                # The entry began with a cut, which failed to parse.
-                # This rule is easier/faster than dealing with a regex from
-                # hell.
-                more = body[6:]
-                body = ''
+        _, ext = os.path.splitext(self._record.file_path)
+        is_markdown = ext == '.md'
 
-            _, ext = os.path.splitext(filepath)
-            is_markdown = ext == '.md'
-            self.body = TrueCallableProxy(
-                self._get_markup,
-                body,
-                is_markdown) if body else CallableProxy(None)
-            self.more = TrueCallableProxy(
-                self._get_markup,
-                more,
-                is_markdown) if more else CallableProxy(None)
+        return body, more, is_markdown
 
-            self.last_modified = arrow.get(
-                os.stat(self._record.file_path).st_mtime).to(config.timezone)
+    @cached_property
+    def body(self):
+        """ Get the above-the-fold entry body text """
+        body, _, is_markdown = self._entry_content
+        return TrueCallableProxy(
+            self._get_markup,
+            body,
+            is_markdown) if body else CallableProxy(None)
 
-            self.card = TrueCallableProxy(
-                self._get_card,
-                body or more) if is_markdown else CallableProxy(None)
+    @cached_property
+    def more(self):
+        """ Get the below-the-fold entry body text """
+        _, more, is_markdown = self._entry_content
+        return TrueCallableProxy(
+            self._get_markup,
+            more,
+            is_markdown) if more else CallableProxy(None)
 
-            return True
-        return False
+    @cached_property
+    def card(self):
+        """ Get the entry's OpenGraph card """
+        body, more, is_markdown = self._entry_content
+        return TrueCallableProxy(
+            self._get_card,
+            body or more) if is_markdown else CallableProxy(None)
+
+    @cached_property
+    def last_modified(self):
+        """ Get the date of last file modification """
+        return arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
@@ -240,11 +255,6 @@ class Entry:
         if hasattr(self._record, name):
             return getattr(self._record, name)
 
-        if self._load():
-            # We just loaded which modifies our own attrs, so rerun the default
-            # logic
-            return getattr(self, name)
-
         return self._message.get(name)
 
     @staticmethod
@@ -283,13 +293,10 @@ class Entry:
 
     def get(self, name, default=None):
         """ Get a single header on an entry """
-
-        self._load()
         return self._message.get(name, default)
 
     def get_all(self, name):
         """ Get all related headers on an entry, as an iterable list """
-        self._load()
         return self._message.get_all(name) or []
 
     def __eq__(self, other):
