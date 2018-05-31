@@ -50,7 +50,8 @@ def publ(name, cfg):
     app.jinja_env.globals.update(  # pylint: disable=no-member
         get_view=view.get_view,
         arrow=arrow,
-        static=utils.static_url
+        static=utils.static_url,
+        get_template=rendering.get_template
     )
 
     caching.init_app(app)
