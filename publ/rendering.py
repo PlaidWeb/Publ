@@ -72,7 +72,7 @@ def map_template(category, template_list):
                 path = None
 
 
-def fragment(template, relation):
+def get_template(template, relation):
     """ Given an entry or a category, return the path to a related template """
     if isinstance(relation, Entry):
         path = relation.category.path
@@ -82,9 +82,7 @@ def fragment(template, relation):
         path = relation
 
     tmpl = map_template(path, template)
-    if tmpl:
-        return tmpl.filename
-    return None
+    return tmpl.filename if tmpl else None
 
 
 def get_redirect():
@@ -103,7 +101,7 @@ def image_function(template=None, entry=None, category=None):
     if entry is not None:
         path += entry.image_search_path
     if category is not None:
-        # Since the category might be a parent of the entry's category we add
+        # Since the category might be different than the entry's category we add
         # this too
         path += category.image_search_path
     if template is not None:

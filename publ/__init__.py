@@ -51,7 +51,7 @@ def publ(name, cfg):
         get_view=view.get_view,
         arrow=arrow,
         static=utils.static_url,
-        fragment=rendering.fragment
+        get_template=rendering.get_template
     )
 
     caching.init_app(app)
