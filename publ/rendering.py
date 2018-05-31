@@ -193,7 +193,7 @@ def render_path_alias(path):
     return redir
 
 
-@cache.cached(key_prefix=caching.make_category_key)
+@cache.cached(key_prefix=caching.make_category_key, unless=index.in_progress)
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -249,7 +249,7 @@ def render_category(category='', template=None):
         view=view_obj), {'Content-Type': mime_type(tmpl)}
 
 
-@cache.cached(key_prefix=caching.make_entry_key)
+@cache.cached(key_prefix=caching.make_entry_key, unless=index.in_progress)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
