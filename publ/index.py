@@ -31,6 +31,11 @@ def queue_length():
     return WORK_QUEUE.qsize() if WORK_QUEUE else None
 
 
+def in_progress():
+    """ Return if there's an index in progress """
+    return queue_length() > 0
+
+
 def scan_file(fullpath, relpath, assign_id):
     """ Scan a file for the index
 
