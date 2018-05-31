@@ -72,6 +72,21 @@ def map_template(category, template_list):
                 path = None
 
 
+def fragment(template, relation):
+    """ Given an entry or a category, return the path to a related template """
+    if isinstance(relation, Entry):
+        path = relation.category.path
+    elif isinstance(relation, Category):
+        path = relation.path
+    else:
+        path = relation
+
+    tmpl = map_template(path, template)
+    if tmpl:
+        return tmpl.filename
+    return None
+
+
 def get_redirect():
     """ Check to see if the current request is a redirection """
     alias = path_alias.get_redirect([request.full_path, request.path])
