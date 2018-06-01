@@ -137,7 +137,7 @@ def scan_index(force=False):
 
 def set_cache_expiry(req):
     """ Set the cache control headers """
-    if 'CACHE_THRESHOLD' in config.cache:
+    if 'CACHE_DEFAULT_TIMEOUT' in config.cache:
         req.headers['Cache-Control'] = (
-            'public, max-age={}'.format(config.cache['CACHE_THRESHOLD']))
+            'public, max-age={}'.format(config.cache['CACHE_DEFAULT_TIMEOUT']))
     return req
