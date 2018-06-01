@@ -5,8 +5,41 @@ import time
 import arrow
 import flask
 import werkzeug.exceptions
+import re
 
 from . import config, rendering, model, index, caching, view, utils, async
+
+
+class Publ(flask.Flask):
+    """ A Publ app; extends Flask so that we can add our own custom decorators """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._regex_map = []
+
+    def path_alias_regex(self, regex):
+        """ A decorator that adds a path-alias regular expression; calls add_path_regex """
+        def decorator(f):
+            self.add_path_regex(regex, f)
+        return decorator
+
+    def add_path_regex(self, regex, f):
+        """ Add a path-alias regex callback to the request router. Takes the following arguments:
+
+        regex -- The regular expression for the path-alias hook
+        f -- A function taking a re.match object on successful match, and returns a tuple of (url, is_permanent)
+        """
+        self._regex_map.append((regex, f))
+
+    def get_path_regex(self, path):
+        """ Evaluate the registered path-alias regular expressions """
+        for regex, f in self._regex_map:
+            match = re.match(regex, path)
+            if match:
+                return f(match)
+
+        return None, None
 
 
 def publ(name, cfg):
@@ -14,10 +47,10 @@ def publ(name, cfg):
 
     config.setup(cfg)
 
-    app = flask.Flask(name,
-                      template_folder=config.template_folder,
-                      static_folder=config.static_folder,
-                      static_url_path=config.static_url_path)
+    app = Publ(name,
+               template_folder=config.template_folder,
+               static_folder=config.static_folder,
+               static_url_path=config.static_url_path)
 
     for route in [
             '/',
