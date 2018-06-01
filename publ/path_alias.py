@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, with_statement
 
-from flask import url_for, redirect
+from flask import url_for, redirect, current_app
 
 from . import model
 
@@ -104,6 +104,10 @@ def get_redirect(paths):
 
     for path in paths:
         url, permanent = get_alias(path)
+        if url:
+            return redirect(url, 301 if permanent else 302)
+
+        url, permanent = current_app.get_path_regex(path)
         if url:
             return redirect(url, 301 if permanent else 302)
 

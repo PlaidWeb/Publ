@@ -87,9 +87,10 @@ def get_template(template, relation):
 
 def get_redirect():
     """ Check to see if the current request is a redirection """
-    alias = path_alias.get_redirect([request.full_path, request.path])
+    alias = path_alias.get_redirect(request.path)
     if alias:
         return alias
+
     return None
 
 
