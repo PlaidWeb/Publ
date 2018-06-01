@@ -1,11 +1,11 @@
 """ Publ entry point """
 
 import time
+import re
 
 import arrow
 import flask
 import werkzeug.exceptions
-import re
 
 from . import config, rendering, model, index, caching, view, utils, async
 
@@ -19,25 +19,33 @@ class Publ(flask.Flask):
         self._regex_map = []
 
     def path_alias_regex(self, regex):
-        """ A decorator that adds a path-alias regular expression; calls add_path_regex """
-        def decorator(f):
-            self.add_path_regex(regex, f)
+        """ A decorator that adds a path-alias regular expression; calls
+        add_path_regex """
+        def decorator(func):
+            """ Adds the function to the regular expression alias list """
+            self.add_path_regex(regex, func)
         return decorator
 
-    def add_path_regex(self, regex, f):
-        """ Add a path-alias regex callback to the request router. Takes the following arguments:
+    def add_path_regex(self, regex, func):
+        """ Add a path-alias regex callback to the request router. Takes the
+        following arguments:
 
         regex -- The regular expression for the path-alias hook
-        f -- A function taking a re.match object on successful match, and returns a tuple of (url, is_permanent)
+        f -- A function taking a `re.match` object on successful match, and
+            returns a tuple of `(url, is_permanent)`; url can be `None` if the
+            function decides it should not redirect after all.
+
+        The function may also use `flask.request.args` or the like if it needs
+        to make a determination based on query args.
         """
-        self._regex_map.append((regex, f))
+        self._regex_map.append((regex, func))
 
     def get_path_regex(self, path):
         """ Evaluate the registered path-alias regular expressions """
-        for regex, f in self._regex_map:
+        for regex, func in self._regex_map:
             match = re.match(regex, path)
             if match:
-                return f(match)
+                return func(match)
 
         return None, None
 
