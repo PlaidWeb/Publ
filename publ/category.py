@@ -113,7 +113,7 @@ class Category:
     @cached_property
     def sort_name(self):
         """ Get the sorting name of this category """
-        return self._record.sort_name if self._record else self.basename
+        return self._record.sort_name if self._record else self.name
 
     def _description(self, **kwargs):
         if self._meta:
