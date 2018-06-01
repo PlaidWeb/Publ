@@ -90,6 +90,7 @@ def get_redirect():
     alias = path_alias.get_redirect([request.full_path, request.path])
     if alias:
         return alias
+
     return None
 
 
