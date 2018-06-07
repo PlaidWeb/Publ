@@ -140,7 +140,7 @@ def to_html(text, config, image_search_path):
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
 
-    return flask.Markup(processor(text))
+    return flask.Markup(misaka.smartypants(processor(text)))
 
 
 class TitleRenderer(HtmlRenderer):
@@ -208,4 +208,4 @@ def render_title(text, markup=True):
         strip.feed(text)
         text = strip.get_data()
 
-    return flask.Markup(text)
+    return flask.Markup(misaka.smartypants(text))
