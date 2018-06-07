@@ -381,6 +381,7 @@ def save_file(fullpath, entry):
 
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
+    # pylint: disable=too-many-branches,too-many-statements
 
     # Since a file has changed, the lrucache is invalid.
     load_message.cache_clear()
