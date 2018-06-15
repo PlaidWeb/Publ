@@ -2,12 +2,14 @@
 
 import time
 import re
+import functools
 
 import arrow
 import flask
 import werkzeug.exceptions
 
 from . import config, rendering, model, index, caching, view, utils, async
+from . import maintenance, image
 
 
 class Publ(flask.Flask):
@@ -97,8 +99,19 @@ def publ(name, cfg):
 
     caching.init_app(app)
 
+    maint = maintenance.Maintenance()
+
     if config.index_rescan_interval:
-        app.before_request(scan_index)
+        maint.register(functools.partial(index.scan_index,
+                                         config.content_folder),
+                       config.index_rescan_interval)
+
+    if config.image_cache_interval and config.image_cache_age:
+        maint.register(functools.partial(image.clean_cache,
+                                         config.image_cache_age),
+                       config.image_cache_interval)
+
+    app.before_request(maint.run)
 
     if 'CACHE_THRESHOLD' in config.cache:
         app.after_request(set_cache_expiry)
@@ -122,17 +135,8 @@ last_scan = None  # pylint: disable=invalid-name
 def startup():
     """ Startup routine for initiating the content indexer """
     model.setup()
-    scan_index(True)
+    index.scan_index(config.content_folder)
     index.background_scan(config.content_folder)
-
-
-def scan_index(force=False):
-    """ Rescan the index if it's been more than a minute since the last scan """
-    global last_scan  # pylint: disable=invalid-name,global-statement
-    now = time.time()
-    if force or not last_scan or now - last_scan > config.index_rescan_interval:
-        index.scan_index(config.content_folder)
-        last_scan = now
 
 
 def set_cache_expiry(req):
