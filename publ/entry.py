@@ -216,7 +216,9 @@ class Entry:
     @cached_property
     def last_modified(self):
         """ Get the date of last file modification """
-        return arrow.get(os.stat(self._record.file_path).st_mtime).to(config.timezone)
+        if self.get('Last-Modified'):
+            return arrow.get(self.get('Last-Modified'))
+        return self.date
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
@@ -380,6 +382,7 @@ def save_file(fullpath, entry):
 
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
+    # pylint: disable=too-many-branches,too-many-statements
 
     # Since a file has changed, the lrucache is invalid.
     load_message.cache_clear()
@@ -398,9 +401,7 @@ def scan_file(fullpath, relpath, assign_id):
         if entry_id is None:
             return False
 
-        fixup_needed = (str(entry_id) != entry.get('Entry-ID')
-                        or 'Date' not in entry
-                        or 'UUID' not in entry)
+        fixup_needed = False
 
         basename = os.path.basename(relpath)
         title = entry['title'] or guess_title(basename)
@@ -415,14 +416,28 @@ def scan_file(fullpath, relpath, assign_id):
             'title': title,
         }
 
+        entry_date = None
         if 'Date' in entry:
-            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
-            del entry['Date']
-            entry['Date'] = entry_date.format()
-        else:
+            try:
+                entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+            except arrow.parser.ParserError:
+                entry_date = None
+        if entry_date is None:
             entry_date = arrow.get(
                 os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
+            fixup_needed = True
+
+        if 'Last-Modified' in entry:
+            last_modified_str = entry['Last-Modified']
+            try:
+                last_modified = arrow.get(
+                    last_modified_str, txinfo=config.timezone)
+            except arrow.parser.ParserError:
+                last_modified = arrow.get()
+                del entry['Last-Modified']
+                entry['Last-Modified'] = last_modified.format()
+                fixup_needed = True
 
         values['display_date'] = entry_date.datetime
         values['utc_date'] = entry_date.to('utc').datetime
@@ -438,11 +453,14 @@ def scan_file(fullpath, relpath, assign_id):
                                           record.id).execute()
 
         # Update the entry ID
-        del entry['Entry-ID']
-        entry['Entry-ID'] = str(record.id)
+        if str(record.id) != entry['Entry-ID']:
+            del entry['Entry-ID']
+            entry['Entry-ID'] = str(record.id)
+            fixup_needed = True
 
         if not 'UUID' in entry:
             entry['UUID'] = str(uuid.uuid4())
+            fixup_needed = True
 
         # add other relationships to the index
         for alias in entry.get_all('Path-Alias', []):

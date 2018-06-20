@@ -140,7 +140,11 @@ def to_html(text, config, image_search_path):
     processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
                                 extensions=ENABLED_EXTENSIONS)
 
-    return flask.Markup(processor(text))
+    text = processor(text)
+    if not config.get('no_smartquotes'):
+        text = misaka.smartypants(text)
+
+    return flask.Markup(text)
 
 
 class TitleRenderer(HtmlRenderer):
@@ -194,7 +198,7 @@ class HTMLStripper(html.parser.HTMLParser):
         return ''.join(self.fed)
 
 
-def render_title(text, markup=True):
+def render_title(text, markup=True, no_smartquotes=False):
     """ Convert a Markdown title to HTML """
 
     # HACK: If the title starts with something that looks like a list, save it
@@ -207,5 +211,8 @@ def render_title(text, markup=True):
         strip = HTMLStripper()
         strip.feed(text)
         text = strip.get_data()
+
+    if not no_smartquotes:
+        text = misaka.smartypants(text)
 
     return flask.Markup(text)
