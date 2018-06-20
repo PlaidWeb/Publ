@@ -13,6 +13,7 @@ import concurrent.futures
 import threading
 import tempfile
 import shutil
+import time
 
 import PIL.Image
 from werkzeug.utils import cached_property
@@ -118,6 +119,15 @@ class LocalImage(Image):
 
     _thread_pool = None
 
+    @staticmethod
+    def thread_pool():
+        """ Get the rendition threadpool """
+        if not LocalImage._thread_pool:
+            logger.info("Starting LocalImage threadpool")
+            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
+                thread_name_prefix="Renderer")
+        return LocalImage._thread_pool
+
     def __init__(self, record):
         """ Get the base image from an index record """
         super().__init__()
@@ -195,14 +205,10 @@ class LocalImage(Image):
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
         if os.path.isfile(out_fullpath):
+            os.utime(out_fullpath)
             return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
-        if not LocalImage._thread_pool:
-            logger.info("Starting LocalImage threadpool")
-            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
-                thread_name_prefix="Renderer")
-
-        LocalImage._thread_pool.submit(
+        LocalImage.thread_pool().submit(
             self._render, out_fullpath, size, box, flatten, kwargs, out_args)
 
         return flask.url_for('async', filename=out_rel_path, _external=kwargs.get('absolute')), size
@@ -468,6 +474,34 @@ class LocalImage(Image):
                 ss=image_set)
         return tmpl.format(s1x=img_1x, s2x=img_2x)
 
+    @staticmethod
+    def clean_cache(max_age):
+        """ Clean the rendition cache of files older than max_age seconds """
+        LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age)
+
+    @staticmethod
+    def _clean_cache(max_age):
+        threshold = time.time() - max_age
+
+        # delete expired files
+        for root, _, files in os.walk(os.path.join(config.static_folder,
+                                                   config.image_output_subdir)):
+            for file in files:
+                path = os.path.join(root, file)
+                if os.path.isfile(path) and os.stat(path).st_mtime < threshold:
+                    try:
+                        os.unlink(path)
+                        logger.info("Expired stale rendition %s (mtime=%d threshold=%d)",
+                                    path, os.stat(path).st_mtime, threshold)
+                    except FileNotFoundError:
+                        pass
+                if os.path.isdir(path) and next(os.scandir(path), None) is None:
+                    try:
+                        os.removedirs(path)
+                        logger.info("Removed empty cache directory %s", path)
+                    except OSError:
+                        logger.exception("Couldn't remove %s", path)
+
 
 class RemoteImage(Image):
     """ An image that points to a remote URL """
@@ -688,3 +722,14 @@ def get_spec_list(image_specs, container_args):
         spec_list = spec_list[:container_args['count']]
 
     return spec_list
+
+
+def clean_cache(max_age):
+    """ Clean the rendition cache of renditions which haven't been accessed in a while
+
+    Arguments:
+
+    max_age -- the TTL on a rendition, in seconds
+    """
+
+    LocalImage.clean_cache(max_age)
