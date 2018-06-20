@@ -121,6 +121,7 @@ class LocalImage(Image):
 
     @staticmethod
     def thread_pool():
+        """ Get the rendition threadpool """
         if not LocalImage._thread_pool:
             logger.info("Starting LocalImage threadpool")
             LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
@@ -475,13 +476,12 @@ class LocalImage(Image):
 
     @staticmethod
     def clean_cache(max_age):
+        """ Clean the rendition cache of files older than max_age seconds """
         LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age)
 
     @staticmethod
     def _clean_cache(max_age):
         threshold = time.time() - max_age
-
-        check_empty = []
 
         # delete expired files
         for root, _, files in os.walk(os.path.join(config.static_folder,
@@ -495,17 +495,12 @@ class LocalImage(Image):
                                     path, os.stat(path).st_mtime, threshold)
                     except FileNotFoundError:
                         pass
-
-        # delete empty directories
-        for root, _, _ in os.walk(os.path.join(config.static_folder,
-                                               config.image_output_subdir)):
-            check_dir = root
-            while check_dir and next(os.scandir(check_dir), None) is None:
-                try:
-                    os.removedirs(check_dir)
-                    logger.info("Removed empty cache directory %s", check_dir)
-                except OSError:
-                    logger.exception("oops")
+                if os.path.isdir(path) and next(os.scandir(path), None) is None:
+                    try:
+                        os.removedirs(path)
+                        logger.info("Removed empty cache directory %s", path)
+                    except OSError:
+                        logger.exception("Couldn't remove %s", path)
 
 
 class RemoteImage(Image):
