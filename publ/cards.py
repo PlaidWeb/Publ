@@ -5,7 +5,7 @@ import logging
 
 import misaka
 
-from . import image
+from . import image, markdown
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -91,6 +91,6 @@ def extract_card(text, config, image_search_path):
     """ Extract card data based on the provided texts. """
     card = CardData()
     parser = CardParser(card, config, image_search_path)
-    misaka.Markdown(parser)(text)
+    misaka.Markdown(parser, extensions=markdown.ENABLED_EXTENSIONS)(text)
 
     return card
