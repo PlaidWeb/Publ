@@ -116,13 +116,14 @@ class Entry:
 
         return self._permalink(*args, **kwargs)
 
-    def _permalink(self, absolute=False, expand=True):
+    def _permalink(self, absolute=False, expand=True, **kwargs):
         """ Returns a canonical URL for the item """
         return flask.url_for('entry',
                              entry_id=self._record.id,
                              category=self._record.category if expand else None,
                              slug_text=self._record.slug_text if expand else None,
-                             _external=absolute)
+                             _external=absolute,
+                             **kwargs)
 
     def _archive_link(self, paging=None, template='', category=None, absolute=False):
         args = {
