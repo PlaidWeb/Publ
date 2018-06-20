@@ -139,11 +139,12 @@ class Category:
             return self._meta.get_all(name) or []
         return None
 
-    def _link(self, template='', absolute=False):
+    def _link(self, template='', absolute=False, **kwargs):
         return url_for('category',
                        category=self.path,
                        template=template,
-                       _external=absolute)
+                       _external=absolute,
+                       **kwargs)
 
     def __str__(self):
         return self.path

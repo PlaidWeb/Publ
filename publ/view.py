@@ -107,7 +107,7 @@ class View:
     def __str__(self):
         return str(self._link())
 
-    def _link(self, template='', absolute=False, category=None):
+    def _link(self, template='', absolute=False, category=None, **kwargs):
         args = {}
         if 'date' in self.spec:
             args['date'] = self.spec['date']
@@ -130,7 +130,8 @@ class View:
                              template=template,
                              category=category if category else self.spec.get(
                                  'category'),
-                             _external=absolute)
+                             _external=absolute,
+                             **kwargs)
 
     @cached_property
     def first(self):
