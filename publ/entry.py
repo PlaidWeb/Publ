@@ -154,8 +154,8 @@ class Entry:
         """
         return CallableProxy(self._title)
 
-    def _title(self, markup=True):
-        return markdown.render_title(self._record.title, markup)
+    def _title(self, markup=True, no_smartquotes=False):
+        return markdown.render_title(self._record.title, markup, no_smartquotes)
 
     @cached_property
     def image_search_path(self):
