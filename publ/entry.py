@@ -7,12 +7,11 @@ import email
 import functools
 import logging
 import os
-import random
 import re
 import shutil
 import tempfile
 import uuid
-
+import hashlib
 import arrow
 import flask
 from werkzeug.utils import cached_property
@@ -346,17 +345,21 @@ def get_entry_id(entry, fullpath, assign_id):
             entry_id = by_filepath.id
 
     if not entry_id:
-        # We still don't have an ID; generate one randomly. Experiments find that this approach
-        # averages around 0.25 collisions per ID generated while keeping the
-        # entry ID reasonably short. count*N+C averages 1/(N-1) collisions
-        # per ID.
+        # We still don't have an ID; generate one pseudo-randomly, based on the
+        # entry file path. This approach averages around 0.25 collisions per ID
+        # generated while keeping the entry ID reasonably short. count*N+C
+        # averages 1/(N-1) collisions per ID.
 
         # database=None is to shut up pylint
         limit = max(10, model.Entry.select().count(database=None) * 5)
+        attempt = 0
 
-        entry_id = random.randint(1, limit)
-        while model.Entry.get_or_none(model.Entry.id == entry_id):
-            entry_id = random.randint(1, limit)
+        while not entry_id or model.Entry.get_or_none(model.Entry.id == entry_id):
+            # Stably generate a quasi-random entry ID from the file path
+            md5 = hashlib.md5()
+            md5.update("{} {}".format(fullpath, attempt).encode('utf-8'))
+            entry_id = int.from_bytes(md5.digest(), byteorder='big') % limit
+            attempt = attempt + 1
 
     if warn_duplicate is not False:
         logger.warning("Entry '%s' had ID %d, which belongs to '%s'. Reassigned to %d",
@@ -459,7 +462,8 @@ def scan_file(fullpath, relpath, assign_id):
             fixup_needed = True
 
         if not 'UUID' in entry:
-            entry['UUID'] = str(uuid.uuid4())
+            entry['UUID'] = str(uuid.uuid5(
+                uuid.NAMESPACE_URL, 'file://' + fullpath))
             fixup_needed = True
 
         # add other relationships to the index
