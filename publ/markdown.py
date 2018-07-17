@@ -16,10 +16,12 @@ import pygments.lexers
 
 from . import image, utils
 
-TITLE_EXTENSIONS = ('math', 'math-explicit', 'strikethrough')
+TITLE_EXTENSIONS = (
+    'strikethrough', 'math',
+)
 
 ENABLED_EXTENSIONS = (
-    'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math', 'math-explicit'
+    'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math',
 )
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
