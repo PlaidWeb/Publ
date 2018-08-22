@@ -426,6 +426,7 @@ def scan_file(fullpath, relpath, assign_id):
             except arrow.parser.ParserError:
                 entry_date = None
         if entry_date is None:
+            del entry['Date']
             entry_date = arrow.get(
                 os.stat(fullpath).st_ctime).to(config.timezone)
             entry['Date'] = entry_date.format()
