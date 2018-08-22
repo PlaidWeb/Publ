@@ -139,9 +139,8 @@ def startup():
     index.background_scan(config.content_folder)
 
 
-def set_cache_expiry(req):
+def set_cache_expiry(response):
     """ Set the cache control headers """
-    if 'CACHE_DEFAULT_TIMEOUT' in config.cache:
-        req.headers['Cache-Control'] = (
-            'public, max-age={}'.format(config.cache['CACHE_DEFAULT_TIMEOUT']))
-    return req
+    if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
+        response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
+    return response

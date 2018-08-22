@@ -14,7 +14,7 @@ static_url_path = '/static'
 image_output_subdir = '_img'
 index_rescan_interval = 7200
 image_cache_interval = 3600
-image_cache_age = 86400 * 7
+image_cache_age = 86400 * 7  # one week
 timezone = tz.tzlocal()
 cache = {}
 
