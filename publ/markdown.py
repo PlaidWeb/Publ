@@ -21,7 +21,7 @@ TITLE_EXTENSIONS = (
 )
 
 ENABLED_EXTENSIONS = (
-    'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'math'
+    'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
 )
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
