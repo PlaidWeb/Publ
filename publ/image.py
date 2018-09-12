@@ -14,6 +14,9 @@ import threading
 import tempfile
 import shutil
 import time
+import random
+import io
+from abc import ABC, abstractmethod
 
 import PIL.Image
 from werkzeug.utils import cached_property
@@ -25,9 +28,10 @@ from . import model, utils
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-class Image:
+class Image(ABC):
     """ Base class for image handlers """
 
+    @abstractmethod
     def get_rendition(self, output_scale=1, **kwargs):
         """ Get a rendition of the image with the specified output scale and specification.
 
@@ -44,6 +48,7 @@ class Image:
                 self._img_tag(title, alt_text, **kwargs),
                 title))
 
+    @abstractmethod
     def _img_tag(self, title, alt_text, **kwargs):
         """ Implemented by the subclasses for actually emitting the HTML """
         pass
@@ -64,6 +69,7 @@ class Image:
 
         return text
 
+    @abstractmethod
     def _css_background(self, **kwargs):
         """ Build CSS background-image properties that apply this image.
 
@@ -191,7 +197,7 @@ class LocalImage(Image):
                 out_spec.append('b' + str(bg_color))
 
         # Set JPEG quality
-        if (ext == '.jpg' or ext == '.jpeg') and kwargs.get('quality'):
+        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
             out_spec.append('q' + str(kwargs['quality']))
             out_args['quality'] = kwargs['quality']
 
@@ -556,6 +562,7 @@ class RemoteImage(Image):
 
 class StaticImage(Image):
     """ An image that points to a static resource """
+    # pylint:disable=protected-access
 
     def __init__(self, path):
         super().__init__()
@@ -565,14 +572,14 @@ class StaticImage(Image):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url).get_rendition(output_scale, **kwargs)
 
-    def get_img_tag(self, title='', alt_text='', **kwargs):
+    def _img_tag(self, title='', alt_text='', **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_img_tag(title, alt_text, **kwargs)
+        return RemoteImage(url)._img_tag(title, alt_text, **kwargs)
 
-    def get_css_background(self, **kwargs):
+    def _css_background(self, **kwargs):
         # pylint: disable=arguments-differ
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_css_background(**kwargs)
+        return RemoteImage(url)._css_background(**kwargs)
 
 
 class ImageNotFound(Image):
@@ -733,3 +740,33 @@ def clean_cache(max_age):
     """
 
     LocalImage.clean_cache(max_age)
+
+
+def get_async(filename):
+    """ Asynchronously fetch an image """
+
+    if os.path.isfile(os.path.join(config.static_folder, filename)):
+        return flask.redirect(flask.url_for('static', filename=filename))
+
+    retry_count = int(flask.request.args.get('retry_count', 0))
+    if retry_count < 10:
+        time.sleep(0.25)  # ghastly hack to get the client to backoff a bit
+        return flask.redirect(flask.url_for('async',
+                                            filename=filename,
+                                            cb=random.randint(0, 2**48),
+                                            retry_count=retry_count + 1))
+
+    # the image isn't available yet; generate a placeholder and let the
+    # client attempt to re-fetch periodically, maybe
+    vals = [int(b) for b in hashlib.md5(
+        filename.encode('utf-8')).digest()[0:12]]
+    placeholder = PIL.Image.new('RGB', (2, 2))
+    placeholder.putdata(list(zip(vals[0::3], vals[1::3], vals[2::3])))
+    outbytes = io.BytesIO()
+    placeholder.save(outbytes, "PNG")
+    outbytes.seek(0)
+
+    response = flask.make_response(
+        flask.send_file(outbytes, mimetype='image/png'))
+    response.headers['Refresh'] = 5
+    return response

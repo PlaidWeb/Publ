@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 "e1839a8" = {path = ".", editable = true}
+twine = "*"
 
 [dev-packages]
+pylint = "*"
 
-[requires]
-python_version = "3.6"
