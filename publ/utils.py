@@ -116,11 +116,11 @@ def parse_date(datestr):
 
     if week:
         return start.span('week')[0], 'week', WEEK_FORMAT
-    elif day:
+    if day:
         return start, 'day', DAY_FORMAT
-    elif month:
+    if month:
         return start, 'month', MONTH_FORMAT
-    elif year:
+    if year:
         return start, 'year', YEAR_FORMAT
 
     raise ValueError("Could not parse date: {}".format(datestr))
