@@ -49,12 +49,13 @@ class Category:
         self.path = path
         self.basename = os.path.basename(path)
 
+        # pylint: disable=assignment-from-no-return
         subcat_query = model.Entry.select(model.Entry.category).distinct()
         if path:
             subcat_query = subcat_query.where(
                 model.Entry.category.startswith(path + '/'))
         else:
-            subcat_query = subcat_query.where(model.Entry.category != path)
+            subcat_query = subcat_query.where(model.Entry.category != '')
 
         self._subcats_recursive = subcat_query.order_by(model.Entry.category)
 

@@ -86,6 +86,7 @@ class View:
                 self.spec['last'] = self.spec['start']
 
         self._where = queries.build_query(spec)
+        # pylint:disable=assignment-from-no-return
         self._query = model.Entry.select().where(self._where)
 
         self.range = utils.CallableProxy(self._view_name)

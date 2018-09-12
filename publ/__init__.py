@@ -8,7 +8,7 @@ import arrow
 import flask
 import werkzeug.exceptions
 
-from . import config, rendering, model, index, caching, view, utils, async
+from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
 
@@ -82,7 +82,7 @@ def publ(name, cfg):
                      'path_alias', rendering.render_path_alias)
 
     app.add_url_rule('/_async/<path:filename>',
-                     'async', async.image)
+                     'async', image.get_async)
 
     app.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
 
