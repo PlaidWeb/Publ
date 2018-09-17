@@ -23,17 +23,17 @@ PAGINATION_PRIORITY = ['date', 'count']
 PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
-ORDER_BY = {
-    'newest': [-model.Entry.local_date, -model.Entry.id],
-    'oldest': [model.Entry.local_date, model.Entry.id],
-    'title': [model.Entry.title, model.Entry.id]
-}
+# ORDER_BY = {
+#     'newest': [-model.Entry.local_date, -model.Entry.id],
+#     'oldest': [model.Entry.local_date, model.Entry.id],
+#     'title': [model.Entry.title, model.Entry.id]
+# }
 
-REVERSE_ORDER_BY = {
-    'newest': [model.Entry.local_date, model.Entry.id],
-    'oldest': [-model.Entry.local_date, -model.Entry.id],
-    'title': [-model.Entry.title, -model.Entry.id]
-}
+# REVERSE_ORDER_BY = {
+#     'newest': [model.Entry.local_date, model.Entry.id],
+#     'oldest': [-model.Entry.local_date, -model.Entry.id],
+#     'title': [-model.Entry.title, -model.Entry.id]
+# }
 
 
 SPAN_FORMATS = {
