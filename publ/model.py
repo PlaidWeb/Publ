@@ -5,30 +5,27 @@ from __future__ import absolute_import
 
 import logging
 import threading
+import datetime
 from enum import Enum
 
-import peewee
-from peewee import Proxy, Model, IntegerField, DateTimeField, CharField
-import playhouse.db_url
+from pony import orm
+from pony.orm.dbapiprovider import StrConverter
 
 from . import config
 
-DATABASE_PROXY = Proxy()
+db = orm.Database()  # pylint: disable=invalid-name
 lock = threading.Lock()  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-# Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 13
+# schema version; bump this number if it changes
+SCHEMA_VERSION = 100
 
 
-class BaseModel(Model):
-    """ Base model for our content index """
-    # pylint: disable=too-few-public-methods
-
-    class Meta:
-        """ database configuration """
-        database = DATABASE_PROXY
+class GlobalConfig(db.Entity):
+    """ Global configuration data """
+    key = orm.PrimaryKey(str)
+    int_value = orm.Optional(int)
 
 
 class PublishStatus(Enum):
@@ -40,115 +37,148 @@ class PublishStatus(Enum):
     GONE = 4  # Entry is gone, won't be coming back
     DELETED = 4  # synonym for GONE
 
-    @staticmethod
-    class Field(IntegerField):
-        """ Database mapping for PublishStatis """
 
-        def db_value(self, value):
-            """ map enum to database column """
-            return value.value
+class EnumConverter(StrConverter):
+    """ Convert between an Enum and an int
+        for database storage purposes. Source:
+        https://stackoverflow.com/q/31395663/318857
+    """
 
-        def python_value(self, value):
-            """ map database column to enum """
-            return PublishStatus(value)
+    def validate(self, val):
+        if not isinstance(val, Enum):
+            raise ValueError('Must be an Enum.  Got {}'.format(type(val)))
+        return val
+
+    def py2sql(self, val):
+        return val.name
+
+    def sql2py(self, value):
+        # Any enum type can be used, so py_type ensures the correct one is used
+        # to create the enum instance
+        return self.py_type[value]
 
 
-class Global(BaseModel):
-    """ key-value storage for the index itself """
-    key = CharField(unique=True)
-    int_value = IntegerField(null=True)
-    str_value = CharField(null=True)
-
-
-class FileFingerprint(BaseModel):
+class FileFingerprint(db.Entity):
     """ File modification time """
-    file_path = CharField(unique=True)
-    fingerprint = CharField()
+    file_path = orm.Required(str, unique=True)
+    fingerprint = orm.Required(str)
 
 
-class Entry(BaseModel):
+class Entry(db.Entity):
     """ Indexed entry """
-    file_path = CharField()
-    category = CharField()
-    status = PublishStatus.Field()
-    utc_date = DateTimeField()  # UTC-normalized, for ordering and visibility
-    local_date = DateTimeField()  # arbitrary timezone, for pagination
-    display_date = DateTimeField()  # The actual displayable date
-    slug_text = CharField()
-    entry_type = CharField()
-    redirect_url = CharField(null=True)
-    title = CharField(null=True)
+    file_path = orm.Required(str)
+    category = orm.Required(str)
+    status = orm.Required(PublishStatus)
 
-    class Meta:
-        """ meta info """
-        # pylint: disable=too-few-public-methods
-        indexes = (
-            (('category', 'entry_type', 'utc_date'), False),
-            (('category', 'entry_type', 'local_date'), False),
+    # UTC-normalized, for ordering and visibility
+    utc_date = orm.Required(datetime.datetime)
+
+    # arbitrary timezone, for pagination
+    local_date = orm.Required(datetime.datetime)
+
+    # The actual displayable date
+    display_date = orm.Required(datetime.datetime)
+
+    slug_text = orm.Required(str)
+    entry_type = orm.Required(str)
+    redirect_url = orm.Optional(str)
+    title = orm.Optional(str)
+
+    aliases = orm.Set("PathAlias")
+
+    orm.composite_index(category, entry_type, utc_date)
+    orm.composite_index(category, entry_type, local_date)
+
+    def is_visible(self, date=None):
+        """ Returns if this entry is visible relative to the provided date
+
+        date -- a datetime for reference, or None for right now (default)
+        """
+        return (
+            self.status == PublishStatus.PUBLISHED or
+            (
+                self.status == PublishStatus.SCHEDULED and
+                self.utc_date <= (date or arrow.utcnow().datetime)
+            )
         )
 
+    def is_visible_future(self):
+        """ Returns if this entry will ever be visible """
+        return (self.status == PublishStatus.PUBLISHED or
+                self.status == PublishStatus.SCHEDULED)
 
-class Category(BaseModel):
+    def in_category(self, category, recurse=False):
+        """ Returns if this entry is within the specified category
+
+        recurse -- whether to test for recursive subcategories as well
+        """
+
+        if not category and recurse:
+            return True
+
+        if recurse:
+            return self.category == category or self.category.startswith(category + '/')
+
+        return self.category == category
+
+
+class Category(db.Entity):
     """ Metadata for a category """
-    category = CharField(unique=True)
-    file_path = CharField()
-    sort_name = CharField()
+    category = orm.Required(str, unique=True)
+    file_path = orm.Required(str)
+    sort_name = orm.Required(str)
+
+    aliases = orm.Set("PathAlias")
 
 
-class PathAlias(BaseModel):
+class PathAlias(db.Entity):
     """ Path alias mapping """
-    path = CharField(unique=True)
-    url = CharField(null=True)
-    entry = peewee.ForeignKeyField(
-        Entry,
-        null=True,
-        backref='aliases')
-    category = peewee.ForeignKeyField(
-        Category,
-        null=True,
-        backref='aliases')
-    template = CharField(null=True)
+    path = orm.Required(str, unique=True)
+    url = orm.Optional(str)
+    entry = orm.Optional(Entry)
+    category = orm.Optional(Category)
+    template = orm.Optional(str)
 
 
-class Image(BaseModel):
+class Image(db.Entity):
     """ Image metadata """
-    file_path = CharField(unique=True)
-    checksum = CharField()
-    width = IntegerField()
-    height = IntegerField()
-    transparent = peewee.BooleanField()
-    fingerprint = CharField()
-
-ALL_TYPES = [
-    Global,
-    FileFingerprint,
-    Entry,
-    Category,
-    PathAlias,
-    Image,
-]
+    file_path = orm.Required(str, unique=True)
+    checksum = orm.Required(str)
+    width = orm.Required(int)
+    height = orm.Required(int)
+    transparent = orm.Required(bool)
+    fingerprint = orm.Required(str)
 
 
 def setup():
     """ Set up the database """
-    database = playhouse.db_url.connect(config.database)
-    DATABASE_PROXY.initialize(database)
 
-    rebuild = False
-    try:
-        cur_version = Global.get(key='schema_version').int_value
-        logger.info("Current schema version: %s", cur_version)
-        rebuild = cur_version != SCHEMA_VERSION
-    except:  # pylint: disable=bare-except
-        logger.info("Schema information not found")
-        rebuild = True
+    db.bind(**config.database_config, create_db=True)
+    db.provider.converter_classes.append((Enum, EnumConverter))
 
-    if rebuild:
-        logger.info("Updating database schema")
-        database.drop_tables(ALL_TYPES)
+    db.generate_mapping(create_tables=True)
 
-    database.create_tables(ALL_TYPES)
+    version = None
+    with orm.db_session:
+        try:
+            version = GlobalConfig['schema_version'].int_value
+        except orm.ObjectNotFound:
+            pass
 
-    version_record, _ = Global.get_or_create(key='schema_version')
-    version_record.int_value = SCHEMA_VERSION
-    version_record.save()
+    if version and version != SCHEMA_VERSION:
+        logger.info("Schema version %d -> %d; rebuilding database",
+                    version, SCHEMA_VERSION)
+        # rebuild the tables
+        db.drop_all_tables(with_all_data=True)
+        db.create_tables()
+        version = None
+    elif version:
+        logger.info("Schema version %d", version)
+    else:
+        logger.info("Schema version unset")
+
+    if not version:
+        with orm.db_session:
+            logger.info("Updating schema version")
+            db.GlobalConfig(key='schema_version', int_value=SCHEMA_VERSION)
+            orm.commit()

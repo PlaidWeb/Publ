@@ -54,7 +54,7 @@ setup(
         'Flask',
         'flask_caching',
         'arrow',
-        'peewee',
+        'pony',
         'misaka',
         'Pillow',
         'pygments',

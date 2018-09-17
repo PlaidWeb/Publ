@@ -6,7 +6,11 @@ from dateutil import tz
 
 # pylint: disable=invalid-name
 
-database = 'sqlite:///:memory:'
+database_config = {
+    'provider': 'sqlite',
+    'filename': ':memory:'
+}
+
 content_folder = 'content'
 template_folder = 'templates'
 static_folder = 'static'
