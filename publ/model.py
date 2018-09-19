@@ -22,6 +22,24 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 SCHEMA_VERSION = 100
 
 
+class EnumConverter(StrConverter):
+    """ Class to convert enums to strings in the database """
+
+    def validate(self, val, obj=None):
+        if not isinstance(val, Enum):
+            raise ValueError('Must be an Enum. Got {}'.format(val))
+        return val
+
+    def py2sql(self, val):
+        return val.name
+
+    def sql2py(self, val):
+        return self.py_type[val]
+
+    def sql_type(self):
+        return 'VARCHAR(30)'
+
+
 class GlobalConfig(db.Entity):
     """ Global configuration data """
     key = orm.PrimaryKey(str)
@@ -48,7 +66,7 @@ class Entry(db.Entity):
     """ Indexed entry """
     file_path = orm.Required(str)
     category = orm.Required(str)
-    status = orm.Required(int)
+    status = orm.Required(PublishStatus)
 
     # UTC-normalized, for ordering and visibility
     utc_date = orm.Required(datetime.datetime)
@@ -100,32 +118,36 @@ class Image(db.Entity):
 
 def setup():
     """ Set up the database """
-
     db.bind(**config.database_config, create_db=True)
+    db.provider.converter_classes.append((Enum, EnumConverter))
 
-    db.generate_mapping(create_tables=True)
+    rebuild = True
 
-    version = None
-    with orm.db_session:
-        try:
-            version = GlobalConfig['schema_version'].int_value
-        except orm.ObjectNotFound:
-            pass
-
-    if version and version != SCHEMA_VERSION:
-        logger.info("Schema version %d -> %d; rebuilding database",
-                    version, SCHEMA_VERSION)
-        # rebuild the tables
-        db.drop_all_tables(with_all_data=True)
+    try:
         db.generate_mapping(create_tables=True)
-        version = None
-    elif version:
-        logger.info("Schema version %d", version)
-    else:
-        logger.info("Schema version unset")
-
-    if not version:
         with orm.db_session:
-            logger.info("Updating schema version")
-            db.GlobalConfig(key='schema_version', int_value=SCHEMA_VERSION)
+            version = GlobalConfig.get(key='schema_version')
+            if version and version.int_value != SCHEMA_VERSION:
+                logger.info("Existing database has schema version %d",
+                            version.int_value)
+            else:
+                rebuild = False
+
+    except Exception as e:
+        logger.info("Got exception %s", e)
+
+    if rebuild:
+        logger.info("Rebuilding schema")
+        try:
+            db.drop_all_tables(with_all_data=True)
+            db.create_tables()
+        except Exception as e:
+            raise RuntimeError("Unable to change schema automatically; please " +
+                               "delete the existing database and try again.", e)
+
+    with orm.db_session:
+        if not GlobalConfig.get(key='schema_version'):
+            logger.info("setting schema version to %d", SCHEMA_VERSION)
+            GlobalConfig(key='schema_version',
+                         int_value=SCHEMA_VERSION)
             orm.commit()
