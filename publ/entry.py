@@ -347,11 +347,10 @@ def get_entry_id(entry, fullpath, assign_id):
     if not entry_id:
         # We still don't have an ID; generate one pseudo-randomly, based on the
         # entry file path. This approach averages around 0.25 collisions per ID
-        # generated while keeping the entry ID reasonably short. count*N+C
-        # averages 1/(N-1) collisions per ID.
+        # generated while keeping the entry ID reasonably short. In general,
+        # count*N averages 1/(N-1) collisions per ID.
 
-        # database=None is to shut up pylint
-        limit = max(10, model.Entry.select().count(database=None) * 5)
+        limit = max(10, orm.get(orm.count(e) for e in model.Entry) * 5)
         attempt = 0
 
         while not entry_id or model.Entry.get(id=entry_id):
