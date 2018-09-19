@@ -10,6 +10,7 @@ import base64
 import flask
 from flask import request, redirect, render_template, url_for
 import werkzeug.exceptions as http_error
+from pony.orm import db_session
 
 from . import config
 from . import path_alias
@@ -185,6 +186,7 @@ def render_exception(error):
     })
 
 
+@db_session
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for Dreamhost .php redirects) """
 
@@ -195,6 +197,7 @@ def render_path_alias(path):
 
 
 @cache.cached(key_prefix=caching.make_category_key, unless=index.in_progress)
+@db_session
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -218,8 +221,8 @@ def render_category(category='', template=None):
 
     if category:
         # See if there's any entries for the view...
-        if not model.Entry.get_or_none((model.Entry.category == category) |
-                                       (model.Entry.category.startswith(category + '/'))):
+        if not orm.select(e for e in model.Entry if e.category == category or
+                          e.category.startswith(category + '/')):
             raise http_error.NotFound("No such category")
 
     if not template:
@@ -230,7 +233,7 @@ def render_category(category='', template=None):
     if not tmpl:
        # this might actually be a malformed category URL
         test_path = os.path.join(category, template)
-        record = model.Entry.get_or_none(model.Entry.category == test_path)
+        record = model.Entry.get(category=test_path)
         if record:
             return redirect(url_for('category', category=test_path))
 
@@ -251,6 +254,7 @@ def render_category(category='', template=None):
 
 
 @cache.cached(key_prefix=caching.make_entry_key, unless=index.in_progress)
+@db_session
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
@@ -264,7 +268,7 @@ def render_entry(entry_id, slug_text='', category=''):
     # pylint: disable=too-many-return-statements
 
     # check if it's a valid entry
-    record = model.Entry.get_or_none(model.Entry.id == entry_id)
+    record = model.Entry.get(id=entry_id)
     if not record:
         # It's not a valid entry, so see if it's a redirection
         path_redirect = get_redirect()

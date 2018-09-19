@@ -38,26 +38,6 @@ class PublishStatus(Enum):
     DELETED = 4  # synonym for GONE
 
 
-class EnumConverter(StrConverter):
-    """ Convert between an Enum and an int
-        for database storage purposes. Source:
-        https://stackoverflow.com/q/31395663/318857
-    """
-
-    def validate(self, val):
-        if not isinstance(val, Enum):
-            raise ValueError('Must be an Enum.  Got {}'.format(type(val)))
-        return val
-
-    def py2sql(self, val):
-        return val.name
-
-    def sql2py(self, value):
-        # Any enum type can be used, so py_type ensures the correct one is used
-        # to create the enum instance
-        return self.py_type[value]
-
-
 class FileFingerprint(db.Entity):
     """ File modification time """
     file_path = orm.Required(str, unique=True)
@@ -68,7 +48,7 @@ class Entry(db.Entity):
     """ Indexed entry """
     file_path = orm.Required(str)
     category = orm.Required(str)
-    status = orm.Required(PublishStatus)
+    status = orm.Required(int)
 
     # UTC-normalized, for ordering and visibility
     utc_date = orm.Required(datetime.datetime)
@@ -88,38 +68,6 @@ class Entry(db.Entity):
 
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
-
-    def is_visible(self, date=None):
-        """ Returns if this entry is visible relative to the provided date
-
-        date -- a datetime for reference, or None for right now (default)
-        """
-        return (
-            self.status == PublishStatus.PUBLISHED or
-            (
-                self.status == PublishStatus.SCHEDULED and
-                self.utc_date <= (date or arrow.utcnow().datetime)
-            )
-        )
-
-    def is_visible_future(self):
-        """ Returns if this entry will ever be visible """
-        return (self.status == PublishStatus.PUBLISHED or
-                self.status == PublishStatus.SCHEDULED)
-
-    def in_category(self, category, recurse=False):
-        """ Returns if this entry is within the specified category
-
-        recurse -- whether to test for recursive subcategories as well
-        """
-
-        if not category and recurse:
-            return True
-
-        if recurse:
-            return self.category == category or self.category.startswith(category + '/')
-
-        return self.category == category
 
 
 class Category(db.Entity):
@@ -154,7 +102,6 @@ def setup():
     """ Set up the database """
 
     db.bind(**config.database_config, create_db=True)
-    db.provider.converter_classes.append((Enum, EnumConverter))
 
     db.generate_mapping(create_tables=True)
 
@@ -170,7 +117,7 @@ def setup():
                     version, SCHEMA_VERSION)
         # rebuild the tables
         db.drop_all_tables(with_all_data=True)
-        db.create_tables()
+        db.generate_mapping(create_tables=True)
         version = None
     elif version:
         logger.info("Schema version %d", version)

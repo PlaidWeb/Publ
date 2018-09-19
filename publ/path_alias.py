@@ -48,7 +48,7 @@ def get_alias(path):
     """
     # pylint:disable=too-many-return-statements
 
-    record = model.PathAlias.get_or_none(model.PathAlias.path == path)
+    record = model.PathAlias.get(path=path)
 
     if not record:
         return None, None

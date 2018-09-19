@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import arrow
 import flask
 from werkzeug.utils import cached_property
+from pony import orm
 
 from . import model, utils, queries
 from .entry import Entry
@@ -23,17 +24,17 @@ PAGINATION_PRIORITY = ['date', 'count']
 PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
-# ORDER_BY = {
-#     'newest': [-model.Entry.local_date, -model.Entry.id],
-#     'oldest': [model.Entry.local_date, model.Entry.id],
-#     'title': [model.Entry.title, model.Entry.id]
-# }
+ORDER_BY = {
+    'newest': (lambda e: (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id))),
+    'oldest': (lambda e: (model.Entry.local_date, model.Entry.id)),
+    'title': (lambda e: (model.Entry.title, model.Entry.id))
+}
 
-# REVERSE_ORDER_BY = {
-#     'newest': [model.Entry.local_date, model.Entry.id],
-#     'oldest': [-model.Entry.local_date, -model.Entry.id],
-#     'title': [-model.Entry.title, -model.Entry.id]
-# }
+REVERSE_ORDER_BY = {
+    'newest': (lambda e: (model.Entry.local_date, model.Entry.id)),
+    'oldest': (lambda e: (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id))),
+    'title': (lambda e: (orm.desc(model.Entry.title), orm.desc(model.Entry.id)))
+}
 
 
 SPAN_FORMATS = {
