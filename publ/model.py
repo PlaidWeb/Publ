@@ -4,17 +4,14 @@
 from __future__ import absolute_import
 
 import logging
-import threading
 import datetime
 from enum import Enum
 
 from pony import orm
-from pony.orm.dbapiprovider import StrConverter
 
 from . import config
 
 db = orm.Database()  # pylint: disable=invalid-name
-lock = threading.Lock()  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -114,18 +111,17 @@ def setup():
                             version.int_value)
             else:
                 rebuild = False
-
-    except Exception as e:
-        logger.info("Got exception %s", e)
+    except:  # pylint:disable=bare-except
+        logger.exception("Error mapping schema")
 
     if rebuild:
         logger.info("Rebuilding schema")
         try:
             db.drop_all_tables(with_all_data=True)
             db.create_tables()
-        except Exception as e:
-            raise RuntimeError("Unable to change schema automatically; please " +
-                               "delete the existing database and try again.", e)
+        except:
+            raise RuntimeError("Unable to upgrade schema automatically; please " +
+                               "delete the existing database and try again.")
 
     with orm.db_session:
         if not GlobalConfig.get(key='schema_version'):

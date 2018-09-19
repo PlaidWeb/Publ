@@ -34,8 +34,10 @@ def set_alias(alias, **kwargs):
     if record:
         record.set(**values)
     else:
-        pa = model.PathAlias(**values)
+        record = model.PathAlias(**values)
     orm.commit()
+
+    return record
 
 
 @orm.db_session

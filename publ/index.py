@@ -163,7 +163,7 @@ def scan_index(content_dir):
                 last_fingerprint = get_last_fingerprint(fullpath)
                 if fingerprint != last_fingerprint:
                     scan_file(fullpath, relpath, False)
-        except:
+        except:  # pylint:disable=bare-except
             logger.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
