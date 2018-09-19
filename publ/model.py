@@ -19,7 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 1
 
 
 class GlobalConfig(db.Entity):
@@ -60,7 +60,7 @@ class Entry(db.Entity):
     display_date = orm.Required(datetime.datetime)
 
     slug_text = orm.Required(str)
-    entry_type = orm.Required(str)
+    entry_type = orm.Optional(str)
     redirect_url = orm.Optional(str)
     title = orm.Optional(str)
 

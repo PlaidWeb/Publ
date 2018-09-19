@@ -60,8 +60,7 @@ class Category:
                 c for c in subcat_query if c.startswith(path + '/'))
         else:
             subcat_query = orm.select(c for c in subcat_query if c != '')
-
-        self._subcats_recursive = subcat_query.order_by(lambda c: c)
+        self._subcats_recursive = subcat_query
 
         self.link = utils.CallableProxy(self._link)
 
@@ -179,7 +178,7 @@ class Category:
 
         if recurse:
             # No need to filter
-            return [Category(e.category) for e in self._subcats_recursive]
+            return [Category(e) for e in self._subcats_recursive]
 
         # get all the subcategories, with only the first subdir added
 
@@ -187,7 +186,7 @@ class Category:
         parts = len(self.path.split('/')) + 1 if self.path else 1
 
         # get the subcategories
-        subcats = [e.category for e in self._subcats_recursive]
+        subcats = [e for e in self._subcats_recursive]
 
         # convert them into separated pathlists with only 'parts' parts
         subcats = [c.split('/')[:parts] for c in subcats]

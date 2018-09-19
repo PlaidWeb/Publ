@@ -75,8 +75,8 @@ def where_after_entry(query, ref):
     return orm.select(
         e for e in query
         if e.local_date > ref.local_date or
-        (e.local_date == entry.local_date and
-         e.id > entry.id
+        (e.local_date == ref.local_date and
+         e.id > ref.id
          )
     )
 

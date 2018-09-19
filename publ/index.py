@@ -7,6 +7,7 @@ import concurrent.futures
 
 import watchdog.observers
 import watchdog.events
+from pony import orm
 
 from . import entry
 from . import model
@@ -76,10 +77,10 @@ def scan_file(fullpath, relpath, assign_id):
         set_fingerprint(fullpath)
 
 
+@orm.db_session
 def get_last_fingerprint(fullpath):
     """ Get the last known modification time for a file """
-    record = model.FileFingerprint.get_or_none(
-        model.FileFingerprint.file_path == fullpath)
+    record = model.FileFingerprint.get(file_path=fullpath)
     if record:
         return record.fingerprint
     return None
