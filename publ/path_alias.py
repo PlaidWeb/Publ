@@ -4,10 +4,12 @@
 from __future__ import absolute_import, with_statement
 
 from flask import url_for, redirect, current_app
+from pony import orm
 
 from . import model
 
 
+@orm.db_session
 def set_alias(alias, **kwargs):
     """ Set a path alias.
 
@@ -28,9 +30,17 @@ def set_alias(alias, **kwargs):
     if len(spec) > 1:
         values['template'] = spec[1]
 
-    model.PathAlias.replace(**values).execute()
+    record = model.PathAlias.get(path=path)
+    if record:
+        record.set(**values)
+    else:
+        record = model.PathAlias(**values)
+    orm.commit()
+
+    return record
 
 
+@orm.db_session
 def remove_alias(path):
     """ Remove a path alias.
 
@@ -38,7 +48,8 @@ def remove_alias(path):
 
     path -- the path to remove the alias of
     """
-    model.PathAlias.delete().where(model.PathAlias.path == path).execute()
+    orm.delete(p for p in model.PathAlias if p.path == path)
+    orm.commit()
 
 
 def get_alias(path):
@@ -48,7 +59,7 @@ def get_alias(path):
     """
     # pylint:disable=too-many-return-statements
 
-    record = model.PathAlias.get_or_none(model.PathAlias.path == path)
+    record = model.PathAlias.get(path=path)
 
     if not record:
         return None, None

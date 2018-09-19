@@ -11,6 +11,7 @@ import functools
 import flask
 from flask import url_for
 from werkzeug.utils import cached_property
+from pony import orm
 
 from . import model
 from . import utils
@@ -31,7 +32,8 @@ def load_metafile(filepath):
             return email.message_from_file(file)
     except FileNotFoundError:
         logger.warning("Category file %s not found", filepath)
-        model.Category.delete().where(model.Category.file_path == filepath).execute()
+        orm.delete(c for c in model.Category if c.file_path == filepath)
+        orm.commit()
 
     return None
 
@@ -46,18 +48,19 @@ class Category:
         path -- the path to the category
         """
 
+        if path is None:
+            path = ''
+
         self.path = path
         self.basename = os.path.basename(path)
 
-        # pylint: disable=assignment-from-no-return
-        subcat_query = model.Entry.select(model.Entry.category).distinct()
+        subcat_query = orm.select(e.category for e in model.Entry)
         if path:
-            subcat_query = subcat_query.where(
-                model.Entry.category.startswith(path + '/'))
+            subcat_query = orm.select(
+                c for c in subcat_query if c.startswith(path + '/'))
         else:
-            subcat_query = subcat_query.where(model.Entry.category != '')
-
-        self._subcats_recursive = subcat_query.order_by(model.Entry.category)
+            subcat_query = orm.select(c for c in subcat_query if c != '')
+        self._subcats_recursive = subcat_query
 
         self.link = utils.CallableProxy(self._link)
 
@@ -65,8 +68,7 @@ class Category:
         self.first = utils.CallableProxy(self._first)
         self.last = utils.CallableProxy(self._last)
 
-        self._record = model.Category.get_or_none(
-            model.Category.category == path)
+        self._record = model.Category.get(category=path)
 
     @cached_property
     def _meta(self):
@@ -176,7 +178,7 @@ class Category:
 
         if recurse:
             # No need to filter
-            return [Category(e.category) for e in self._subcats_recursive]
+            return [Category(e) for e in self._subcats_recursive]
 
         # get all the subcategories, with only the first subdir added
 
@@ -184,7 +186,7 @@ class Category:
         parts = len(self.path.split('/')) + 1 if self.path else 1
 
         # get the subcategories
-        subcats = [e.category for e in self._subcats_recursive]
+        subcats = [e for e in self._subcats_recursive]
 
         # convert them into separated pathlists with only 'parts' parts
         subcats = [c.split('/')[:parts] for c in subcats]
@@ -197,26 +199,24 @@ class Category:
 
     def _entries(self, spec):
         """ Return a model query to get our entry records """
-        return model.Entry.select().where(
-            queries.build_query({**spec, 'category': self}))
+        return queries.build_query({**spec, 'category': self})
 
     def _first(self, **spec):
         """ Get the earliest entry in this category, optionally including subcategories """
-        try:
-            return entry.Entry(self._entries(spec).order_by(
-                model.Entry.local_date, model.Entry.id).get())
-        except model.Entry.DoesNotExist:
-            return None
+        for record in self._entries(spec).order_by(model.Entry.local_date,
+                                                   model.Entry.id)[:1]:
+            return entry.Entry(record)
+        return None
 
     def _last(self, **spec):
         """ Get the latest entry in this category, optionally including subcategories """
-        try:
-            return entry.Entry(self._entries(spec).order_by(
-                -model.Entry.local_date, -model.Entry.id).get())
-        except model.Entry.DoesNotExist:
-            return None
+        for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
+                                                   orm.desc(model.Entry.id))[:1]:
+            return entry.Entry(record)
+        return None
 
 
+@orm.db_session
 def scan_file(fullpath, relpath):
     """ scan a file and put it into the index """
 
@@ -226,23 +226,25 @@ def scan_file(fullpath, relpath):
     if not meta:
         return True
 
-    with model.lock:
-        # update the category meta file mapping
-        category = meta.get('Category', os.path.dirname(relpath))
-        values = {
-            'file_path': fullpath,
-            'sort_name': meta.get('Sort-Name', '')
-        }
+    # update the category meta file mapping
+    category = meta.get('Category', os.path.dirname(relpath))
+    values = {
+        'category': category,
+        'file_path': fullpath,
+        'sort_name': meta.get('Sort-Name', '')
+    }
 
-        logger.debug("setting category %s to metafile %s", category, fullpath)
-        record, created = model.Category.get_or_create(category=category,
-                                                       defaults=values)
-        if not created:
-            record.update(**values).where(model.Category.id ==
-                                          record.id).execute()
+    logger.debug("setting category %s to metafile %s", category, fullpath)
+    record = model.Category.get(category=category)
+    if record:
+        record.set(**values)
+    else:
+        record = model.Category(**values)
 
-        # update other relationships to the index
-        for alias in meta.get_all('Path-Alias', []):
-            path_alias.set_alias(alias, category=record)
+    # update other relationships to the index
+    for alias in meta.get_all('Path-Alias', []):
+        path_alias.set_alias(alias, category=record)
+
+    orm.commit()
 
     return record

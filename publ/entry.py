@@ -15,6 +15,7 @@ import hashlib
 import arrow
 import flask
 from werkzeug.utils import cached_property
+from pony import orm
 
 from . import config
 from . import model
@@ -259,12 +260,6 @@ class Entry:
 
         return self._message.get(name)
 
-    @staticmethod
-    def _get_first(query):
-        """ Get the first entry in a query result """
-        query = query.limit(1)
-        return Entry(query[0]) if query.count() else None
-
     def _pagination_default_spec(self, kwargs):
         category = kwargs.get('category', self._record.category)
         return {
@@ -277,21 +272,26 @@ class Entry:
         spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
-        return self._get_first(model.Entry.select().where(
-            queries.build_query(spec) &
-            queries.where_before_entry(self._record)
-        ).order_by(-model.Entry.local_date, -model.Entry.id))
+        query = queries.build_query(spec)
+        query = queries.where_before_entry(query, self._record)
+
+        for record in query.order_by(orm.desc(model.Entry.local_date),
+                                     orm.desc(model.Entry.id))[:1]:
+            return Entry(record)
+        return None
 
     def _next(self, **kwargs):
         """ Get the next item in any particular category """
         spec = self._pagination_default_spec(kwargs)
         spec.update(kwargs)
 
-        return self._get_first(
-            model.Entry.select().where(
-                queries.build_query(spec) &
-                queries.where_after_entry(self._record)
-            ).order_by(model.Entry.local_date, model.Entry.id))
+        query = queries.build_query(spec)
+        query = queries.where_after_entry(query, self._record)
+
+        for record in query.order_by(model.Entry.local_date,
+                                     model.Entry.id)[:1]:
+            return Entry(record)
+        return None
 
     def get(self, name, default=None):
         """ Get a single header on an entry """
@@ -326,7 +326,7 @@ def get_entry_id(entry, fullpath, assign_id):
 
     # See if we've inadvertently duplicated an entry ID
     if entry_id:
-        other_entry = model.Entry.get_or_none(model.Entry.id == entry_id)
+        other_entry = model.Entry.get(id=entry_id)
         if (other_entry
                 and other_entry.file_path != fullpath
                 and os.path.isfile(other_entry.file_path)):
@@ -340,21 +340,20 @@ def get_entry_id(entry, fullpath, assign_id):
 
     if not entry_id:
         # See if we already have an entry with this file path
-        by_filepath = model.Entry.get_or_none(file_path=fullpath)
+        by_filepath = model.Entry.get(file_path=fullpath)
         if by_filepath:
             entry_id = by_filepath.id
 
     if not entry_id:
         # We still don't have an ID; generate one pseudo-randomly, based on the
         # entry file path. This approach averages around 0.25 collisions per ID
-        # generated while keeping the entry ID reasonably short. count*N+C
-        # averages 1/(N-1) collisions per ID.
+        # generated while keeping the entry ID reasonably short. In general,
+        # count*N averages 1/(N-1) collisions per ID.
 
-        # database=None is to shut up pylint
-        limit = max(10, model.Entry.select().count(database=None) * 5)
+        limit = max(10, orm.get(orm.count(e) for e in model.Entry) * 5)
         attempt = 0
 
-        while not entry_id or model.Entry.get_or_none(model.Entry.id == entry_id):
+        while not entry_id or model.Entry.get(id=entry_id):
             # Stably generate a quasi-random entry ID from the file path
             md5 = hashlib.md5()
             md5.update("{} {}".format(fullpath, attempt).encode('utf-8'))
@@ -383,6 +382,7 @@ def save_file(fullpath, entry):
     shutil.move(tmpfile, fullpath)
 
 
+@orm.db_session
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
     # pylint: disable=too-many-branches,too-many-statements
@@ -394,98 +394,96 @@ def scan_file(fullpath, relpath, assign_id):
         entry = load_message(fullpath)
     except FileNotFoundError:
         # The file doesn't exist, so remove it from the index
-        record = model.Entry.get_or_none(file_path=fullpath)
+        record = model.Entry.get(file_path=fullpath)
         if record:
             expire_record(record)
         return True
 
-    with model.lock:
-        entry_id = get_entry_id(entry, fullpath, assign_id)
-        if entry_id is None:
-            return False
+    entry_id = get_entry_id(entry, fullpath, assign_id)
+    if entry_id is None:
+        return False
 
-        fixup_needed = False
+    fixup_needed = False
 
-        basename = os.path.basename(relpath)
-        title = entry['title'] or guess_title(basename)
+    basename = os.path.basename(relpath)
+    title = entry['title'] or guess_title(basename)
 
-        values = {
-            'file_path': fullpath,
-            'category': entry.get('Category', os.path.dirname(relpath)),
-            'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()],
-            'entry_type': entry.get('Entry-Type', ''),
-            'slug_text': make_slug(entry['Slug-Text'] or title),
-            'redirect_url': entry['Redirect-To'],
-            'title': title,
-        }
+    values = {
+        'file_path': fullpath,
+        'category': entry.get('Category', os.path.dirname(relpath)),
+        'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
+        'entry_type': entry.get('Entry-Type', ''),
+        'slug_text': make_slug(entry.get('Slug-Text', title)),
+        'redirect_url': entry.get('Redirect-To', ''),
+        'title': title,
+    }
 
-        entry_date = None
-        if 'Date' in entry:
-            try:
-                entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
-            except arrow.parser.ParserError:
-                entry_date = None
-        if entry_date is None:
-            del entry['Date']
-            entry_date = arrow.get(
-                os.stat(fullpath).st_ctime).to(config.timezone)
-            entry['Date'] = entry_date.format()
+    entry_date = None
+    if 'Date' in entry:
+        try:
+            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+        except arrow.parser.ParserError:
+            entry_date = None
+    if entry_date is None:
+        del entry['Date']
+        entry_date = arrow.get(
+            os.stat(fullpath).st_ctime).to(config.timezone)
+        entry['Date'] = entry_date.format()
+        fixup_needed = True
+
+    if 'Last-Modified' in entry:
+        last_modified_str = entry['Last-Modified']
+        try:
+            last_modified = arrow.get(
+                last_modified_str, txinfo=config.timezone)
+        except arrow.parser.ParserError:
+            last_modified = arrow.get()
+            del entry['Last-Modified']
+            entry['Last-Modified'] = last_modified.format()
             fixup_needed = True
 
-        if 'Last-Modified' in entry:
-            last_modified_str = entry['Last-Modified']
-            try:
-                last_modified = arrow.get(
-                    last_modified_str, txinfo=config.timezone)
-            except arrow.parser.ParserError:
-                last_modified = arrow.get()
-                del entry['Last-Modified']
-                entry['Last-Modified'] = last_modified.format()
-                fixup_needed = True
+    values['display_date'] = entry_date.datetime
+    values['utc_date'] = entry_date.to('utc').datetime
+    values['local_date'] = entry_date.naive
 
-        values['display_date'] = entry_date.datetime
-        values['utc_date'] = entry_date.to('utc').datetime
-        values['local_date'] = entry_date.naive
+    logger.debug("getting entry %s with id %d", fullpath, entry_id)
+    record = model.Entry.get(id=entry_id)
+    if record:
+        logger.debug("Reusing existing entry %d", record.id)
+        record.set(**values)
+    else:
+        record = model.Entry(id=entry_id, **values)
 
-        logger.debug("getting entry %s with id %d", fullpath, entry_id)
-        record, created = model.Entry.get_or_create(
-            id=entry_id, defaults=values)
+    # Update the entry ID
+    if str(record.id) != entry['Entry-ID']:
+        del entry['Entry-ID']
+        entry['Entry-ID'] = str(record.id)
+        fixup_needed = True
 
-        if not created:
-            logger.debug("Reusing existing entry %d", record.id)
-            record.update(**values).where(model.Entry.id ==
-                                          record.id).execute()
+    if not 'UUID' in entry:
+        entry['UUID'] = str(uuid.uuid5(
+            uuid.NAMESPACE_URL, 'file://' + fullpath))
+        fixup_needed = True
 
-        # Update the entry ID
-        if str(record.id) != entry['Entry-ID']:
-            del entry['Entry-ID']
-            entry['Entry-ID'] = str(record.id)
-            fixup_needed = True
+    # add other relationships to the index
+    for alias in entry.get_all('Path-Alias', []):
+        path_alias.set_alias(alias, entry=record)
+    for alias in entry.get_all('Path-Unalias', []):
+        path_alias.remove_alias(alias)
 
-        if not 'UUID' in entry:
-            entry['UUID'] = str(uuid.uuid5(
-                uuid.NAMESPACE_URL, 'file://' + fullpath))
-            fixup_needed = True
+    if fixup_needed:
+        save_file(fullpath, entry)
 
-        # add other relationships to the index
-        for alias in entry.get_all('Path-Alias', []):
-            path_alias.set_alias(alias, entry=record)
-        for alias in entry.get_all('Path-Unalias', []):
-            path_alias.remove_alias(alias)
-
-        if fixup_needed:
-            save_file(fullpath, entry)
-
-        return record
+    return record
 
 
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()
 
-    with model.lock:
-        # This entry no longer exists so delete it, and anything that references it
-        # SQLite doesn't support cascading deletes so let's just clean up
-        # manually
-        model.PathAlias.delete().where(model.PathAlias.entry == record).execute()
-        record.delete_instance(recursive=True)
+    # This entry no longer exists so delete it, and anything that references it
+    # SQLite doesn't support cascading deletes so let's just clean up
+    # manually
+    orm.delete(pa for pa in model.PathAlias if pa.entry == record)
+    record.delete()
+    orm.commit()
