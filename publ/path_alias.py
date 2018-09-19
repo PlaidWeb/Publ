@@ -30,10 +30,9 @@ def set_alias(alias, **kwargs):
     if len(spec) > 1:
         values['template'] = spec[1]
 
-    pa = model.PathAlias.get(path=path)
-    if pa:
-        for k, v in values.items():
-            pa.__setattr__(k, v)
+    record = model.PathAlias.get(path=path)
+    if record:
+        record.set(**values)
     else:
         pa = model.PathAlias(**values)
     orm.commit()
