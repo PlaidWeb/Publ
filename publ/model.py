@@ -47,7 +47,7 @@ class FileFingerprint(db.Entity):
 class Entry(db.Entity):
     """ Indexed entry """
     file_path = orm.Required(str)
-    category = orm.Required(str)
+    category = orm.Optional(str)
     status = orm.Required(int)
 
     # UTC-normalized, for ordering and visibility

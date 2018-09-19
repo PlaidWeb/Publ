@@ -21,6 +21,7 @@ from abc import ABC, abstractmethod
 import PIL.Image
 from werkzeug.utils import cached_property
 import flask
+from pony import orm
 
 from . import config
 from . import model, utils
@@ -606,6 +607,7 @@ class ImageNotFound(Image):
         return '/* not found: {} */'.format(self.path)
 
 
+@orm.db_session
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the
@@ -629,7 +631,7 @@ def get_image(path, search_path):
     if not file_path:
         return ImageNotFound(path)
 
-    record = model.Image.get_or_none(file_path=file_path)
+    record = model.Image.get(file_path=file_path)
     fingerprint = utils.file_fingerprint(file_path)
     if not record or record.fingerprint != fingerprint:
         # Reindex the file
@@ -649,11 +651,13 @@ def get_image(path, search_path):
             'fingerprint': fingerprint,
             'transparent': image.mode == 'RGBA'
         }
-        record, created = model.Image.get_or_create(
-            file_path=file_path, defaults=values)
-        if not created:
-            record.update(**values).where(model.Image.id ==
-                                          record.id).execute()
+        record = model.Image.get(file_path=file_path)
+        if record:
+            for k, v in values.items():
+                record.__setattr__(k, v)
+        else:
+            record = model.Image(file_path=file_path, **values)
+        orm.commit()
 
     return LocalImage(record)
 
