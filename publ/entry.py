@@ -452,8 +452,7 @@ def scan_file(fullpath, relpath, assign_id):
         record = model.Entry.get(id=entry_id)
         if record:
             logger.debug("Reusing existing entry %d", record.id)
-            for k, v in values.items():
-                record.__setattr__(k, v)
+            record.set(**values)
         else:
             record = model.Entry(id=entry_id, **values)
 

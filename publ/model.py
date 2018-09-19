@@ -59,7 +59,7 @@ class Entry(db.Entity):
     # The actual displayable date
     display_date = orm.Required(datetime.datetime)
 
-    slug_text = orm.Required(str)
+    slug_text = orm.Optional(str)
     entry_type = orm.Optional(str)
     redirect_url = orm.Optional(str)
     title = orm.Optional(str)
@@ -73,10 +73,9 @@ class Entry(db.Entity):
 class Category(db.Entity):
     """ Metadata for a category """
 
-    # optional because Pony treats '' as equivalent to NULL
-    category = orm.Optional(str, unique=True)
+    category = orm.Optional(str)
     file_path = orm.Required(str)
-    sort_name = orm.Required(str)
+    sort_name = orm.Optional(str)
 
     aliases = orm.Set("PathAlias")
 

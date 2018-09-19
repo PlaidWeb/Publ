@@ -645,6 +645,7 @@ def get_image(path, search_path):
 
         image = PIL.Image.open(file_path)
         values = {
+            'file_path': file_path,
             'checksum': md5.hexdigest(),
             'width': image.width,
             'height': image.height,
@@ -653,10 +654,9 @@ def get_image(path, search_path):
         }
         record = model.Image.get(file_path=file_path)
         if record:
-            for k, v in values.items():
-                record.__setattr__(k, v)
+            record.set(**values)
         else:
-            record = model.Image(file_path=file_path, **values)
+            record = model.Image(**values)
         orm.commit()
 
     return LocalImage(record)

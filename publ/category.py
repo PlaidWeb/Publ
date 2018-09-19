@@ -199,24 +199,21 @@ class Category:
 
     def _entries(self, spec):
         """ Return a model query to get our entry records """
-        return model.Entry.select().where(
-            queries.build_query({**spec, 'category': self}))
+        return queries.build_query({**spec, 'category': self})
 
     def _first(self, **spec):
         """ Get the earliest entry in this category, optionally including subcategories """
-        try:
-            return entry.Entry(self._entries(spec).order_by(
-                model.Entry.local_date, model.Entry.id).get())
-        except model.Entry.DoesNotExist:
-            return None
+        for record in self._entries(spec).order_by(model.Entry.local_date,
+                                                   model.Entry.id)[:1]:
+            return entry.Entry(record)
+        return None
 
     def _last(self, **spec):
         """ Get the latest entry in this category, optionally including subcategories """
-        try:
-            return entry.Entry(self._entries(spec).order_by(
-                -model.Entry.local_date, -model.Entry.id).get())
-        except model.Entry.DoesNotExist:
-            return None
+        for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
+                                                   orm.desc(model.Entry.id))[:1]:
+            return entry.Entry(record)
+        return None
 
 
 @orm.db_session
@@ -233,6 +230,7 @@ def scan_file(fullpath, relpath):
         # update the category meta file mapping
         category = meta.get('Category', os.path.dirname(relpath))
         values = {
+            'category': category,
             'file_path': fullpath,
             'sort_name': meta.get('Sort-Name', '')
         }
@@ -240,10 +238,9 @@ def scan_file(fullpath, relpath):
         logger.debug("setting category %s to metafile %s", category, fullpath)
         record = model.Category.get(category=category)
         if record:
-            for k, v in values.items():
-                record.__setattr__(k, v)
-            else:
-                record = model.Category(**values)
+            record.set(**values)
+        else:
+            record = model.Category(**values)
 
         # update other relationships to the index
         for alias in meta.get_all('Path-Alias', []):
