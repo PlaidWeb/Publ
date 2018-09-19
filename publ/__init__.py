@@ -135,7 +135,9 @@ last_scan = None  # pylint: disable=invalid-name
 
 def startup():
     """ Startup routine for initiating the content indexer """
+    print("setup")
     model.setup()
+    print("scan_index")
     index.scan_index(config.content_folder)
     index.background_scan(config.content_folder)
 
