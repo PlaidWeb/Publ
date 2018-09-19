@@ -399,93 +399,91 @@ def scan_file(fullpath, relpath, assign_id):
             expire_record(record)
         return True
 
-    with model.lock:
-        entry_id = get_entry_id(entry, fullpath, assign_id)
-        if entry_id is None:
-            return False
+    entry_id = get_entry_id(entry, fullpath, assign_id)
+    if entry_id is None:
+        return False
 
-        fixup_needed = False
+    fixup_needed = False
 
-        basename = os.path.basename(relpath)
-        title = entry['title'] or guess_title(basename)
+    basename = os.path.basename(relpath)
+    title = entry['title'] or guess_title(basename)
 
-        values = {
-            'file_path': fullpath,
-            'category': entry.get('Category', os.path.dirname(relpath)),
-            'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
-            'entry_type': entry.get('Entry-Type', ''),
-            'slug_text': make_slug(entry.get('Slug-Text', title)),
-            'redirect_url': entry.get('Redirect-To', ''),
-            'title': title,
-        }
+    values = {
+        'file_path': fullpath,
+        'category': entry.get('Category', os.path.dirname(relpath)),
+        'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
+        'entry_type': entry.get('Entry-Type', ''),
+        'slug_text': make_slug(entry.get('Slug-Text', title)),
+        'redirect_url': entry.get('Redirect-To', ''),
+        'title': title,
+    }
 
-        entry_date = None
-        if 'Date' in entry:
-            try:
-                entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
-            except arrow.parser.ParserError:
-                entry_date = None
-        if entry_date is None:
-            del entry['Date']
-            entry_date = arrow.get(
-                os.stat(fullpath).st_ctime).to(config.timezone)
-            entry['Date'] = entry_date.format()
+    entry_date = None
+    if 'Date' in entry:
+        try:
+            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+        except arrow.parser.ParserError:
+            entry_date = None
+    if entry_date is None:
+        del entry['Date']
+        entry_date = arrow.get(
+            os.stat(fullpath).st_ctime).to(config.timezone)
+        entry['Date'] = entry_date.format()
+        fixup_needed = True
+
+    if 'Last-Modified' in entry:
+        last_modified_str = entry['Last-Modified']
+        try:
+            last_modified = arrow.get(
+                last_modified_str, txinfo=config.timezone)
+        except arrow.parser.ParserError:
+            last_modified = arrow.get()
+            del entry['Last-Modified']
+            entry['Last-Modified'] = last_modified.format()
             fixup_needed = True
 
-        if 'Last-Modified' in entry:
-            last_modified_str = entry['Last-Modified']
-            try:
-                last_modified = arrow.get(
-                    last_modified_str, txinfo=config.timezone)
-            except arrow.parser.ParserError:
-                last_modified = arrow.get()
-                del entry['Last-Modified']
-                entry['Last-Modified'] = last_modified.format()
-                fixup_needed = True
+    values['display_date'] = entry_date.datetime
+    values['utc_date'] = entry_date.to('utc').datetime
+    values['local_date'] = entry_date.naive
 
-        values['display_date'] = entry_date.datetime
-        values['utc_date'] = entry_date.to('utc').datetime
-        values['local_date'] = entry_date.naive
+    logger.debug("getting entry %s with id %d", fullpath, entry_id)
+    record = model.Entry.get(id=entry_id)
+    if record:
+        logger.debug("Reusing existing entry %d", record.id)
+        record.set(**values)
+    else:
+        record = model.Entry(id=entry_id, **values)
 
-        logger.debug("getting entry %s with id %d", fullpath, entry_id)
-        record = model.Entry.get(id=entry_id)
-        if record:
-            logger.debug("Reusing existing entry %d", record.id)
-            record.set(**values)
-        else:
-            record = model.Entry(id=entry_id, **values)
+    # Update the entry ID
+    if str(record.id) != entry['Entry-ID']:
+        del entry['Entry-ID']
+        entry['Entry-ID'] = str(record.id)
+        fixup_needed = True
 
-        # Update the entry ID
-        if str(record.id) != entry['Entry-ID']:
-            del entry['Entry-ID']
-            entry['Entry-ID'] = str(record.id)
-            fixup_needed = True
+    if not 'UUID' in entry:
+        entry['UUID'] = str(uuid.uuid5(
+            uuid.NAMESPACE_URL, 'file://' + fullpath))
+        fixup_needed = True
 
-        if not 'UUID' in entry:
-            entry['UUID'] = str(uuid.uuid5(
-                uuid.NAMESPACE_URL, 'file://' + fullpath))
-            fixup_needed = True
+    # add other relationships to the index
+    for alias in entry.get_all('Path-Alias', []):
+        path_alias.set_alias(alias, entry=record)
+    for alias in entry.get_all('Path-Unalias', []):
+        path_alias.remove_alias(alias)
 
-        # add other relationships to the index
-        for alias in entry.get_all('Path-Alias', []):
-            path_alias.set_alias(alias, entry=record)
-        for alias in entry.get_all('Path-Unalias', []):
-            path_alias.remove_alias(alias)
+    if fixup_needed:
+        save_file(fullpath, entry)
 
-        if fixup_needed:
-            save_file(fullpath, entry)
-
-        return record
+    return record
 
 
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()
 
-    with model.lock:
-        # This entry no longer exists so delete it, and anything that references it
-        # SQLite doesn't support cascading deletes so let's just clean up
-        # manually
-        orm.delete(pa for pa in model.PathAlias if pa.entry == record)
-        record.delete()
-        orm.commit()
+    # This entry no longer exists so delete it, and anything that references it
+    # SQLite doesn't support cascading deletes so let's just clean up
+    # manually
+    orm.delete(pa for pa in model.PathAlias if pa.entry == record)
+    record.delete()
+    orm.commit()

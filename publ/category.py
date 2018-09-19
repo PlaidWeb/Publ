@@ -227,26 +227,25 @@ def scan_file(fullpath, relpath):
     if not meta:
         return True
 
-    with model.lock:
-        # update the category meta file mapping
-        category = meta.get('Category', os.path.dirname(relpath))
-        values = {
-            'category': category,
-            'file_path': fullpath,
-            'sort_name': meta.get('Sort-Name', '')
-        }
+    # update the category meta file mapping
+    category = meta.get('Category', os.path.dirname(relpath))
+    values = {
+        'category': category,
+        'file_path': fullpath,
+        'sort_name': meta.get('Sort-Name', '')
+    }
 
-        logger.debug("setting category %s to metafile %s", category, fullpath)
-        record = model.Category.get(category=category)
-        if record:
-            record.set(**values)
-        else:
-            record = model.Category(**values)
+    logger.debug("setting category %s to metafile %s", category, fullpath)
+    record = model.Category.get(category=category)
+    if record:
+        record.set(**values)
+    else:
+        record = model.Category(**values)
 
-        # update other relationships to the index
-        for alias in meta.get_all('Path-Alias', []):
-            path_alias.set_alias(alias, category=record)
+    # update other relationships to the index
+    for alias in meta.get_all('Path-Alias', []):
+        path_alias.set_alias(alias, category=record)
 
-        orm.commit()
+    orm.commit()
 
     return record
