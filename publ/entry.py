@@ -275,9 +275,9 @@ class Entry:
         query = queries.build_query(spec)
         query = queries.where_before_entry(query, self._record)
 
-        for entry in query.order_by(orm.desc(model.Entry.local_date),
-                                    orm.desc(model.Entry.id))[:1]:
-            return entry
+        for record in query.order_by(orm.desc(model.Entry.local_date),
+                                     orm.desc(model.Entry.id))[:1]:
+            return Entry(record)
         return None
 
     def _next(self, **kwargs):
@@ -288,9 +288,9 @@ class Entry:
         query = queries.build_query(spec)
         query = queries.where_after_entry(query, self._record)
 
-        for entry in query.order_by(model.Entry.local_date,
-                                    model.Entry.id)[:1]:
-            return entry
+        for record in query.order_by(model.Entry.local_date,
+                                     model.Entry.id)[:1]:
+            return Entry(record)
         return None
 
     def get(self, name, default=None):
