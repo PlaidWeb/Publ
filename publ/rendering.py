@@ -10,7 +10,7 @@ import base64
 import flask
 from flask import request, redirect, render_template, url_for
 import werkzeug.exceptions as http_error
-from pony.orm import db_session
+from pony import orm
 
 from . import config
 from . import path_alias
@@ -186,7 +186,7 @@ def render_exception(error):
     })
 
 
-@db_session
+@orm.db_session
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for Dreamhost .php redirects) """
 
@@ -197,7 +197,7 @@ def render_path_alias(path):
 
 
 @cache.cached(key_prefix=caching.make_category_key, unless=index.in_progress)
-@db_session
+@orm.db_session
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -254,7 +254,7 @@ def render_category(category='', template=None):
 
 
 @cache.cached(key_prefix=caching.make_entry_key, unless=index.in_progress)
-@db_session
+@orm.db_session
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
