@@ -54,7 +54,6 @@ class Category:
         self.path = path
         self.basename = os.path.basename(path)
 
-        # pylint: disable=assignment-from-no-return
         subcat_query = orm.select(e.category for e in model.Entry)
         if path:
             subcat_query = orm.select(
