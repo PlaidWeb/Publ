@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import arrow
 import flask
 from werkzeug.utils import cached_property
+from pony import orm
 
 from . import model, utils, queries
 from .entry import Entry
@@ -24,15 +25,15 @@ PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
 #: Ordering queries for different sort orders
 ORDER_BY = {
-    'newest': [-model.Entry.local_date, -model.Entry.id],
-    'oldest': [model.Entry.local_date, model.Entry.id],
-    'title': [model.Entry.title, model.Entry.id]
+    'newest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'oldest': (model.Entry.local_date, model.Entry.id),
+    'title': (model.Entry.title, model.Entry.id)
 }
 
 REVERSE_ORDER_BY = {
-    'newest': [model.Entry.local_date, model.Entry.id],
-    'oldest': [-model.Entry.local_date, -model.Entry.id],
-    'title': [-model.Entry.title, -model.Entry.id]
+    'newest': (model.Entry.local_date, model.Entry.id),
+    'oldest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'title': (orm.desc(model.Entry.title), orm.desc(model.Entry.id))
 }
 
 
@@ -85,16 +86,16 @@ class View:
             elif self._order_by == 'newest':
                 self.spec['last'] = self.spec['start']
 
-        self._where = queries.build_query(spec)
-        # pylint:disable=assignment-from-no-return
-        self._query = model.Entry.select().where(self._where)
+        self._query = queries.build_query(spec)
 
         self.range = utils.CallableProxy(self._view_name)
 
-        if 'count' in spec:
-            self._query = self._query.limit(spec['count'])
+        self._query = self._query.order_by(*ORDER_BY[self._order_by])
 
-        self._entries = self._query.order_by(*ORDER_BY[self._order_by])
+        if 'count' in spec:
+            self._entries = self._query[:spec['count']]
+        else:
+            self._entries = self._query[:]
 
         self.link = utils.CallableProxy(self._link)
 

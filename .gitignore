@@ -4,3 +4,4 @@ __pycache__
 build/
 dist/
 Publ.egg-info/
+*.db

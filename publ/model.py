@@ -4,31 +4,25 @@
 from __future__ import absolute_import
 
 import logging
-import threading
+import datetime
 from enum import Enum
 
-import peewee
-from peewee import Proxy, Model, IntegerField, DateTimeField, CharField
-import playhouse.db_url
+from pony import orm
 
 from . import config
 
-DATABASE_PROXY = Proxy()
-lock = threading.Lock()  # pylint: disable=invalid-name
+db = orm.Database()  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-# Schema version; bump this whenever an existing table changes
-SCHEMA_VERSION = 13
+# schema version; bump this number if it changes
+SCHEMA_VERSION = 1
 
 
-class BaseModel(Model):
-    """ Base model for our content index """
-    # pylint: disable=too-few-public-methods
-
-    class Meta:
-        """ database configuration """
-        database = DATABASE_PROXY
+class GlobalConfig(db.Entity):
+    """ Global configuration data """
+    key = orm.PrimaryKey(str)
+    int_value = orm.Optional(int)
 
 
 class PublishStatus(Enum):
@@ -40,115 +34,98 @@ class PublishStatus(Enum):
     GONE = 4  # Entry is gone, won't be coming back
     DELETED = 4  # synonym for GONE
 
-    @staticmethod
-    class Field(IntegerField):
-        """ Database mapping for PublishStatis """
 
-        def db_value(self, value):
-            """ map enum to database column """
-            return value.value
-
-        def python_value(self, value):
-            """ map database column to enum """
-            return PublishStatus(value)
-
-
-class Global(BaseModel):
-    """ key-value storage for the index itself """
-    key = CharField(unique=True)
-    int_value = IntegerField(null=True)
-    str_value = CharField(null=True)
-
-
-class FileFingerprint(BaseModel):
+class FileFingerprint(db.Entity):
     """ File modification time """
-    file_path = CharField(unique=True)
-    fingerprint = CharField()
+    file_path = orm.PrimaryKey(str)
+    fingerprint = orm.Required(str)
 
 
-class Entry(BaseModel):
+class Entry(db.Entity):
     """ Indexed entry """
-    file_path = CharField()
-    category = CharField()
-    status = PublishStatus.Field()
-    utc_date = DateTimeField()  # UTC-normalized, for ordering and visibility
-    local_date = DateTimeField()  # arbitrary timezone, for pagination
-    display_date = DateTimeField()  # The actual displayable date
-    slug_text = CharField()
-    entry_type = CharField()
-    redirect_url = CharField(null=True)
-    title = CharField(null=True)
+    file_path = orm.Required(str)
+    category = orm.Optional(str)
+    status = orm.Required(int)
 
-    class Meta:
-        """ meta info """
-        # pylint: disable=too-few-public-methods
-        indexes = (
-            (('category', 'entry_type', 'utc_date'), False),
-            (('category', 'entry_type', 'local_date'), False),
-        )
+    # UTC-normalized, for ordering and visibility
+    utc_date = orm.Required(datetime.datetime)
+
+    # arbitrary timezone, for pagination
+    local_date = orm.Required(datetime.datetime)
+
+    # The actual displayable date
+    display_date = orm.Required(datetime.datetime)
+
+    slug_text = orm.Optional(str)
+    entry_type = orm.Optional(str)
+    redirect_url = orm.Optional(str)
+    title = orm.Optional(str)
+
+    aliases = orm.Set("PathAlias")
+
+    orm.composite_index(category, entry_type, utc_date)
+    orm.composite_index(category, entry_type, local_date)
 
 
-class Category(BaseModel):
+class Category(db.Entity):
     """ Metadata for a category """
-    category = CharField(unique=True)
-    file_path = CharField()
-    sort_name = CharField()
+
+    category = orm.Optional(str)
+    file_path = orm.Required(str)
+    sort_name = orm.Optional(str)
+
+    aliases = orm.Set("PathAlias")
 
 
-class PathAlias(BaseModel):
+class PathAlias(db.Entity):
     """ Path alias mapping """
-    path = CharField(unique=True)
-    url = CharField(null=True)
-    entry = peewee.ForeignKeyField(
-        Entry,
-        null=True,
-        backref='aliases')
-    category = peewee.ForeignKeyField(
-        Category,
-        null=True,
-        backref='aliases')
-    template = CharField(null=True)
+    path = orm.PrimaryKey(str)
+    url = orm.Optional(str)
+    entry = orm.Optional(Entry)
+    category = orm.Optional(Category)
+    template = orm.Optional(str)
 
 
-class Image(BaseModel):
+class Image(db.Entity):
     """ Image metadata """
-    file_path = CharField(unique=True)
-    checksum = CharField()
-    width = IntegerField()
-    height = IntegerField()
-    transparent = peewee.BooleanField()
-    fingerprint = CharField()
-
-ALL_TYPES = [
-    Global,
-    FileFingerprint,
-    Entry,
-    Category,
-    PathAlias,
-    Image,
-]
+    file_path = orm.PrimaryKey(str)
+    checksum = orm.Required(str)
+    width = orm.Required(int)
+    height = orm.Required(int)
+    transparent = orm.Required(bool)
+    fingerprint = orm.Required(str)
 
 
 def setup():
     """ Set up the database """
-    database = playhouse.db_url.connect(config.database)
-    DATABASE_PROXY.initialize(database)
+    db.bind(**config.database_config, create_db=True)
 
-    rebuild = False
+    rebuild = True
+
     try:
-        cur_version = Global.get(key='schema_version').int_value
-        logger.info("Current schema version: %s", cur_version)
-        rebuild = cur_version != SCHEMA_VERSION
-    except:  # pylint: disable=bare-except
-        logger.info("Schema information not found")
-        rebuild = True
+        db.generate_mapping(create_tables=True)
+        with orm.db_session:
+            version = GlobalConfig.get(key='schema_version')
+            if version and version.int_value != SCHEMA_VERSION:
+                logger.info("Existing database has schema version %d",
+                            version.int_value)
+            else:
+                rebuild = False
+    except:  # pylint:disable=bare-except
+        logger.exception("Error mapping schema")
 
     if rebuild:
-        logger.info("Updating database schema")
-        database.drop_tables(ALL_TYPES)
+        logger.info("Rebuilding schema")
+        try:
+            db.drop_all_tables(with_all_data=True)
+            db.create_tables()
+        except:
+            raise RuntimeError("Unable to upgrade schema automatically; please " +
+                               "delete the existing database and try again.")
 
-    database.create_tables(ALL_TYPES)
-
-    version_record, _ = Global.get_or_create(key='schema_version')
-    version_record.int_value = SCHEMA_VERSION
-    version_record.save()
+    with orm.db_session:
+        if not GlobalConfig.get(key='schema_version'):
+            logger.info("setting schema version to %d", SCHEMA_VERSION)
+            GlobalConfig(key='schema_version',
+                         int_value=SCHEMA_VERSION)
+            orm.commit()

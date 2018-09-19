@@ -7,6 +7,7 @@ import concurrent.futures
 
 import watchdog.observers
 import watchdog.events
+from pony import orm
 
 from . import entry
 from . import model
@@ -76,27 +77,30 @@ def scan_file(fullpath, relpath, assign_id):
         set_fingerprint(fullpath)
 
 
+@orm.db_session
 def get_last_fingerprint(fullpath):
     """ Get the last known modification time for a file """
-    record = model.FileFingerprint.get_or_none(
-        model.FileFingerprint.file_path == fullpath)
+    record = model.FileFingerprint.get(file_path=fullpath)
     if record:
         return record.fingerprint
     return None
 
 
+@orm.db_session
 def set_fingerprint(fullpath, fingerprint=None):
     """ Set the last known modification time for a file """
     try:
         fingerprint = fingerprint or utils.file_fingerprint(fullpath)
 
-        record, created = model.FileFingerprint.get_or_create(
-            file_path=fullpath, defaults={'fingerprint': fingerprint})
-        if not created:
+        record = model.FileFingerprint.get(file_path=fullpath)
+        if record:
             record.fingerprint = fingerprint
-            record.save()
+        else:
+            record = model.FileFingerprint(
+                file_path=fullpath, fingerprint=fingerprint)
+        orm.commit()
     except FileNotFoundError:
-        model.FileFingerprint.delete().where(model.FileFingerprint.file_path == fullpath)
+        orm.delete(fp for fp in model.FileFingerprint if fp.file_path == fullpath)
 
 
 class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
@@ -150,14 +154,17 @@ def scan_index(content_dir):
 
     def scan_directory(root, files):
         """ Helper function to scan a single directory """
-        for file in files:
-            fullpath = os.path.join(root, file)
-            relpath = os.path.relpath(fullpath, content_dir)
+        try:
+            for file in files:
+                fullpath = os.path.join(root, file)
+                relpath = os.path.relpath(fullpath, content_dir)
 
-            fingerprint = utils.file_fingerprint(fullpath)
-            last_fingerprint = get_last_fingerprint(fullpath)
-            if fingerprint != last_fingerprint:
-                scan_file(fullpath, relpath, False)
+                fingerprint = utils.file_fingerprint(fullpath)
+                last_fingerprint = get_last_fingerprint(fullpath)
+                if fingerprint != last_fingerprint:
+                    scan_file(fullpath, relpath, False)
+        except:  # pylint:disable=bare-except
+            logger.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
         THREAD_POOL.submit(scan_directory, root, files)
