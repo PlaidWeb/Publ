@@ -19,8 +19,8 @@ def where_entry_visible(query, date=None):
 
     return orm.select(
         e for e in query
-        if e.status == model.PublishStatus.PUBLISHED.name or
-        (e.status == model.PublishStatus.SCHEDULED.name and
+        if e.status == model.PublishStatus.PUBLISHED.value or
+        (e.status == model.PublishStatus.SCHEDULED.value and
          (e.utc_date <= (date or arrow.utcnow().datetime))
          )
     )
@@ -31,8 +31,8 @@ def where_entry_visible_future(query):
 
     return orm.select(
         e for e in query
-        if e.status in (model.PublishStatus.PUBLISHED.name,
-                        model.PublishStatus.SCHEDULED.name))
+        if e.status in (model.PublishStatus.PUBLISHED.value,
+                        model.PublishStatus.SCHEDULED.value))
 
 
 def where_entry_category(query, category, recurse=False):
