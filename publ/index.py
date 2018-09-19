@@ -100,7 +100,7 @@ def set_fingerprint(fullpath, fingerprint=None):
                 file_path=fullpath, fingerprint=fingerprint)
         orm.commit()
     except FileNotFoundError:
-        model.FileFingerprint.delete().where(model.FileFingerprint.file_path == fullpath)
+        orm.delete(fp for fp in model.FileFingerprint if fp.file_path == fullpath)
 
 
 class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
