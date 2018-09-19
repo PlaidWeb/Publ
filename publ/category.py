@@ -11,6 +11,7 @@ import functools
 import flask
 from flask import url_for
 from werkzeug.utils import cached_property
+from pony import orm
 
 from . import model
 from . import utils
@@ -46,6 +47,9 @@ class Category:
         path -- the path to the category
         """
 
+        if path is None:
+            path = ''
+
         self.path = path
         self.basename = os.path.basename(path)
 
@@ -65,8 +69,7 @@ class Category:
         self.first = utils.CallableProxy(self._first)
         self.last = utils.CallableProxy(self._last)
 
-        self._record = model.Category.get_or_none(
-            model.Category.category == path)
+        self._record = model.Category.get(category=path)
 
     @cached_property
     def _meta(self):

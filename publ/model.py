@@ -19,25 +19,7 @@ lock = threading.Lock()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 100
-
-
-class EnumConverter(StrConverter):
-    """ Class to convert enums to strings in the database """
-
-    def validate(self, val, obj=None):
-        if not isinstance(val, Enum):
-            raise ValueError('Must be an Enum. Got {}'.format(val))
-        return val
-
-    def py2sql(self, val):
-        return val.name
-
-    def sql2py(self, val):
-        return self.py_type[val]
-
-    def sql_type(self):
-        return 'VARCHAR(30)'
+SCHEMA_VERSION = 3
 
 
 class GlobalConfig(db.Entity):
@@ -58,7 +40,7 @@ class PublishStatus(Enum):
 
 class FileFingerprint(db.Entity):
     """ File modification time """
-    file_path = orm.Required(str, unique=True)
+    file_path = orm.PrimaryKey(str)
     fingerprint = orm.Required(str)
 
 
@@ -66,7 +48,7 @@ class Entry(db.Entity):
     """ Indexed entry """
     file_path = orm.Required(str)
     category = orm.Required(str)
-    status = orm.Required(PublishStatus)
+    status = orm.Required(int)
 
     # UTC-normalized, for ordering and visibility
     utc_date = orm.Required(datetime.datetime)
@@ -90,7 +72,9 @@ class Entry(db.Entity):
 
 class Category(db.Entity):
     """ Metadata for a category """
-    category = orm.Required(str, unique=True)
+
+    # optional because Pony treats '' as equivalent to NULL
+    category = orm.Optional(str, unique=True)
     file_path = orm.Required(str)
     sort_name = orm.Required(str)
 
@@ -99,7 +83,7 @@ class Category(db.Entity):
 
 class PathAlias(db.Entity):
     """ Path alias mapping """
-    path = orm.Required(str, unique=True)
+    path = orm.PrimaryKey(str)
     url = orm.Optional(str)
     entry = orm.Optional(Entry)
     category = orm.Optional(Category)
@@ -108,7 +92,7 @@ class PathAlias(db.Entity):
 
 class Image(db.Entity):
     """ Image metadata """
-    file_path = orm.Required(str, unique=True)
+    file_path = orm.PrimaryKey(str)
     checksum = orm.Required(str)
     width = orm.Required(int)
     height = orm.Required(int)
@@ -119,7 +103,6 @@ class Image(db.Entity):
 def setup():
     """ Set up the database """
     db.bind(**config.database_config, create_db=True)
-    db.provider.converter_classes.append((Enum, EnumConverter))
 
     rebuild = True
 
