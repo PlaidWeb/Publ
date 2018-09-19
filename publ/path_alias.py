@@ -34,8 +34,8 @@ def set_alias(alias, **kwargs):
     if pa:
         for k, v in values.items():
             pa.__setattr__(k, v)
-        else:
-            pa = model.PathAlias(**values)
+    else:
+        pa = model.PathAlias(**values)
     orm.commit()
 
 
