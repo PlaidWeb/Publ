@@ -219,6 +219,7 @@ class Category:
             return None
 
 
+@orm.db_session
 def scan_file(fullpath, relpath):
     """ scan a file and put it into the index """
 
@@ -237,14 +238,17 @@ def scan_file(fullpath, relpath):
         }
 
         logger.debug("setting category %s to metafile %s", category, fullpath)
-        record, created = model.Category.get_or_create(category=category,
-                                                       defaults=values)
-        if not created:
-            record.update(**values).where(model.Category.id ==
-                                          record.id).execute()
+        record = model.Category.get(category=category)
+        if record:
+            for k, v in values.items():
+                record.__setattr__(k, v)
+            else:
+                record = model.Category(**values)
 
         # update other relationships to the index
         for alias in meta.get_all('Path-Alias', []):
             path_alias.set_alias(alias, category=record)
+
+        orm.commit()
 
     return record
