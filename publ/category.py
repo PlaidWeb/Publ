@@ -185,11 +185,9 @@ class Category:
         # number of path components to ingest
         parts = len(self.path.split('/')) + 1 if self.path else 1
 
-        # get the subcategories
-        subcats = [e for e in self._subcats_recursive]
-
-        # convert them into separated pathlists with only 'parts' parts
-        subcats = [c.split('/')[:parts] for c in subcats]
+        # convert the subcategories into separated pathlists with only 'parts'
+        # parts
+        subcats = [c.split('/')[:parts] for c in self._subcats_recursive]
 
         # join them back into a path, and make unique
         subcats = {'/'.join(c) for c in subcats}
