@@ -50,14 +50,14 @@ class Category:
         self.basename = os.path.basename(path)
 
         # pylint: disable=assignment-from-no-return
-        subcat_query = model.Entry.select(model.Entry.category).distinct()
+        subcat_query = orm.select(e.category for e in model.Entry)
         if path:
-            subcat_query = subcat_query.where(
-                model.Entry.category.startswith(path + '/'))
+            subcat_query = orm.select(
+                c for c in subcat_query if c.startswith(path + '/'))
         else:
-            subcat_query = subcat_query.where(model.Entry.category != '')
+            subcat_query = orm.select(c for c in subcat_query if c != '')
 
-        self._subcats_recursive = subcat_query.order_by(model.Entry.category)
+        self._subcats_recursive = subcat_query.order_by(lambda c: c)
 
         self.link = utils.CallableProxy(self._link)
 

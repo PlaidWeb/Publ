@@ -4,11 +4,12 @@
 from __future__ import absolute_import, with_statement
 
 import arrow
+from pony import orm
 
 from . import model, utils
 
 
-def where_entry_visible(date=None):
+def where_entry_visible(query, date=None):
     """ Generate a where clause for currently-visible entries
 
     Arguments:
@@ -16,104 +17,119 @@ def where_entry_visible(date=None):
     date -- The date to generate it relative to (defaults to right now)
     """
 
-    return (
-        (model.Entry.status == model.PublishStatus.PUBLISHED) |
-        (
-            (model.Entry.status == model.PublishStatus.SCHEDULED) &
-            (model.Entry.utc_date <= (date or arrow.utcnow().datetime))
-        )
+    return orm.select(
+        e for e in query
+        if e.status == model.PublishStatus.PUBLISHED.value or
+        (e.status == model.PublishStatus.SCHEDULED.value and
+         (e.utc_date <= (date or arrow.utcnow().datetime))
+         )
     )
 
 
-def where_entry_visible_future():
+def where_entry_visible_future(query):
     """ Generate a where clause for entries that are visible now or in the future """
-    return (
-        (model.Entry.status == model.PublishStatus.PUBLISHED) |
-        (model.Entry.status == model.PublishStatus.SCHEDULED)
-    )
+
+    return orm.select(
+        e for e in query
+        if e.status in (model.PublishStatus.PUBLISHED.value,
+                        model.PublishStatus.SCHEDULED.value))
 
 
-def where_entry_category(category, recurse=False):
+def where_entry_category(query, category, recurse=False):
     """ Generate a where clause for a particular category """
 
-    if category or not recurse:
-        cat_where = (model.Entry.category == str(category))
+    category = str(category)
+    if category and recurse:
+        # We're recursing and aren't in /, so add the prefix clause
+        return orm.select(
+            e for e in query
+            if e.category == category or e.category.startswith(category + '/')
+        )
 
-        if recurse:
-            # We're recursing and aren't in /, so add the prefix clause
-            cat_where = cat_where | (
-                model.Entry.category.startswith(str(category) + '/'))
-    else:
-        cat_where = True
+    if not recurse:
+        # We're not recursing, so we need an exact match on a possibly-empty
+        # category
+        return orm.select(e for e in query if e.category == category)
 
-    return cat_where
+    # We're recursing and have no category, which means we're doing nothing
+    return query
 
 
-def where_before_entry(entry):
+def where_before_entry(query, ref):
     """ Generate a where clause for prior entries
 
-    entry -- The entry of reference
+    ref -- The entry of reference
     """
-    return (model.Entry.local_date < entry.local_date) | (
-        (model.Entry.local_date == entry.local_date) &
-        (model.Entry.id < entry.id)
+    return orm.select(
+        e for e in query
+        if e.local_date < ref.local_date or
+        (e.local_date == ref.local_date and e.id < ref.id)
     )
 
 
-def where_after_entry(entry):
+def where_after_entry(query, ref):
     """ Generate a where clause for later entries
 
-    entry -- the entry of reference
+    ref -- the entry of reference
     """
-    return (model.Entry.local_date > entry.local_date) | (
-        (model.Entry.local_date == entry.local_date) &
-        (model.Entry.id > entry.id)
+    return orm.select(
+        e for e in query
+        if e.local_date > ref.local_date or
+        (e.local_date == entry.local_date and
+         e.id > entry.id
+         )
     )
 
 
-def where_entry_last(entry):
+def where_entry_last(query, ref):
     """ Generate a where clause where this is the last entry
 
-    entry -- the entry of reference
+    ref -- the entry of reference
     """
-    return (model.Entry.local_date < entry.local_date) | (
-        (model.Entry.local_date == entry.local_date) &
-        (model.Entry.id <= entry.id)
+    return orm.select(
+        e for e in query
+        if e.local_date < ref.local_date or
+        (e.local_date == ref.local_date and
+         e.id <= ref.id
+         )
     )
 
 
-def where_entry_first(entry):
+def where_entry_first(query, ref):
     """ Generate a where clause where this is the first entry
 
-    entry -- the entry of reference
+    ref -- the entry of reference
     """
-    return (model.Entry.local_date > entry.local_date) | (
-        (model.Entry.local_date == entry.local_date) &
-        (model.Entry.id >= entry.id)
+    return orm.select(
+        e for e in query
+        if e.local_date > ref.local_date or
+        (e.local_date == ref.local_date and
+         e.id >= ref.id
+         )
     )
 
 
-def where_entry_type(entry_type):
+def where_entry_type(query, entry_type):
     """ Generate a where clause for entries of certain types
 
     entry_type -- one or more entries to check against
     """
     if isinstance(entry_type, list):
-        return model.Entry.entry_type << entry_type
-    return model.Entry.entry_type == entry_type
+        return orm.select(e for e in query if e.entry_type in entry_type)
+    return orm.select(e for e in query if e.entry_type == entry_type)
 
 
-def where_entry_type_not(entry_type):
+def where_entry_type_not(query, entry_type):
     """ Generate a where clause for entries that aren't of certain types
 
     entry_type -- one or more entries to check against
     """
     if isinstance(entry_type, list):
-        return model.Entry.entry_type.not_in(entry_type)
-    return model.Entry.entry_type != entry_type
+        return orm.select(e for e in query if e.entry_type not in entry_type)
+    return orm.select(e for e in query if e.entry_type != entry_type)
 
 
-def where_entry_date(datespec):
+def where_entry_date(query, datespec):
     """ Where clause for entries which match a textual date spec
 
     datespec -- The date spec to check for, in YYYY[[-]MM[[-]DD]] format
@@ -121,8 +137,11 @@ def where_entry_date(datespec):
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
-    return ((model.Entry.local_date >= start_date.naive) &
-            (model.Entry.local_date <= end_date.naive))
+    return orm.select(
+        e for e in query if
+        e.local_date >= start_date.naive and
+        e.local_date <= end_date.naive
+    )
 
 
 def get_entry(entry):
@@ -132,7 +151,7 @@ def get_entry(entry):
         return entry
 
     if isinstance(entry, (int, str)):
-        return model.Entry.get(model.Entry.id == int(entry))
+        return model.Entry.get(id=int(entry))
     raise ValueError("entry is of unknown type {}".format(type(entry)))
 
 
@@ -152,37 +171,39 @@ def build_query(spec):
         after -- get entries from after this one
     """
 
+    query = model.Entry.select()
+
     # primarily restrict by publication status
     if spec.get('future', False):
-        where = where_entry_visible_future()
+        query = where_entry_visible_future(query)
     else:
-        where = where_entry_visible()
+        query = where_entry_visible(query)
 
     # restrict by category
     if spec.get('category') is not None or spec.get('recurse'):
         path = str(spec.get('category', ''))
         recurse = spec.get('recurse', False)
-        where = where & where_entry_category(path, recurse)
+        query = where_entry_category(query, path, recurse)
 
     if spec.get('entry_type'):
-        where = where & where_entry_type(spec['entry_type'])
+        query = where_entry_type(query, spec['entry_type'])
 
     if spec.get('entry_type_not'):
-        where = where & where_entry_type_not(spec['entry_type_not'])
+        query = where_entry_type_not(query, spec['entry_type_not'])
 
     if spec.get('date'):
-        where = where & where_entry_date(spec['date'])
+        query = where_entry_date(query, spec['date'])
 
     if spec.get('last'):
-        where = where & where_entry_last(get_entry(spec['last']))
+        query = where_entry_last(query, get_entry(spec['last']))
 
     if spec.get('first'):
-        where = where & where_entry_first(get_entry(spec['first']))
+        query = where_entry_first(query, get_entry(spec['first']))
 
     if spec.get('before'):
-        where = where & where_before_entry(get_entry(spec['before']))
+        query = where_before_entry(query, get_entry(spec['before']))
 
     if spec.get('after'):
-        where = where & where_after_entry(get_entry(spec['after']))
+        query = where_after_entry(query, get_entry(spec['after']))
 
-    return where
+    return query
