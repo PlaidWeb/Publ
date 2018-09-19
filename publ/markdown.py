@@ -151,31 +151,32 @@ def to_html(text, config, image_search_path):
 
 class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
-    # pylint: disable=missing-docstring
 
     def __init__(self):
         super().__init__({}, [])
 
     @staticmethod
     def paragraph(content):
+        """ Passthrough """
         return content
 
     @staticmethod
     def list(content, is_ordered, is_block):
+        """ Passthrough """
         # pylint: disable=unused-argument
-        print('list', content, is_ordered, is_block)
         return content
 
     @staticmethod
     def listitem(content, is_ordered, is_block):
+        """ Just add the * back on """
         # pylint: disable=unused-argument
-        print('listitem', content, is_ordered, is_block)
         if not is_ordered:
             return '* ' + content
         raise ValueError("Not sure how we got here")
 
     @staticmethod
     def header(content, level):
+        """ Passthrough """
         # pylint: disable=unused-argument
         return content
 
@@ -183,7 +184,6 @@ class TitleRenderer(HtmlRenderer):
 class HTMLStripper(html.parser.HTMLParser):
     """ A utility class to strip HTML from a string; based on
     https://stackoverflow.com/a/925630/318857 """
-    # pylint: disable=missing-docstring,abstract-method
 
     def __init__(self):
         super().__init__()
@@ -194,10 +194,16 @@ class HTMLStripper(html.parser.HTMLParser):
         self.fed = []
 
     def handle_data(self, data):
+        """ Append the text data """
         self.fed.append(data)
 
     def get_data(self):
+        """ Concatenate the output """
         return ''.join(self.fed)
+
+    def error(self, message):
+        """ Deprecated, per https://bugs.python.org/issue31844 """
+        return message
 
 
 def render_title(text, markup=True, no_smartquotes=False):
