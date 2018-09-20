@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 class Image(ABC):
     """ Base class for image handlers """
 
+    def __init__(self, search_path):
+        self.search_path = search_path
+
     @abstractmethod
     def get_rendition(self, output_scale=1, **kwargs):
         """ Get a rendition of the image with the specified output scale and specification.
@@ -43,14 +46,43 @@ class Image(ABC):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
+
+        style = []
+
+        if 'style' in kwargs:
+            if isinstance(kwargs['style'], (list, tuple)):
+                style += kwargs['style']
+            else:
+                style.append(kwargs['style'])
+
+        if 'shape' in kwargs:
+            shape = self._get_shape_style(**kwargs)
+            if shape:
+                style.append("shape-outside: url('{}')".format(shape))
+
+        if 'style' in kwargs:
+            kwargs = {**kwargs}
+            del kwargs['style']
+
         return flask.Markup(
             self._wrap_link_target(
                 kwargs,
-                self._img_tag(title, alt_text, **kwargs),
+                self._img_tag(title, alt_text, style, **kwargs),
                 title))
 
+    def _get_shape_style(self, **kwargs):
+        shape = kwargs['shape']
+        if shape is True:
+            # if the shape is True, just return the base rendition
+            url, _ = self.get_rendition(1, **kwargs)
+        else:
+            # otherwise, the usual rules apply
+            other_image = get_image(shape, self.search_path)
+            url, _ = other_image.get_rendition(1, **kwargs)
+        return url
+
     @abstractmethod
-    def _img_tag(self, title, alt_text, **kwargs):
+    def _img_tag(self, title, alt_text, style, **kwargs):
         """ Implemented by the subclasses for actually emitting the HTML """
         pass
 
@@ -135,9 +167,10 @@ class LocalImage(Image):
                 thread_name_prefix="Renderer")
         return LocalImage._thread_pool
 
-    def __init__(self, record):
+    def __init__(self, record, search_path):
         """ Get the base image from an index record """
-        super().__init__()
+        super().__init__(search_path)
+
         self._record = record
         self._lock = threading.Lock()
 
@@ -447,7 +480,7 @@ class LocalImage(Image):
 
         return image.convert('RGB')
 
-    def _img_tag(self, title='', alt_text='', **kwargs):
+    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
         """ Get an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
@@ -461,6 +494,9 @@ class LocalImage(Image):
             'width': size[0],
             'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
+            'style': ';'.join(style) if style else None,
+            'class': kwargs.get('img_class'),
+            'id': kwargs.get('img_id'),
             'title': title,
             'alt': alt_text
         }, start_end=kwargs.get('xhtml'))
@@ -518,18 +554,20 @@ class RemoteImage(Image):
         'fill': 'cover'
     }
 
-    def __init__(self, url):
-        super().__init__()
+    def __init__(self, url, search_path):
+        super().__init__(search_path)
         self.url = url
 
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint: disable=unused-argument
         return self.url, None
 
-    def _img_tag(self, title='', alt_text='', **kwargs):
+    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
         attrs = {
             'title': title,
-            'alt': alt_text
+            'alt': alt_text,
+            'class': kwargs.get('img_class'),
+            'id': kwargs.get('img_id'),
         }
 
         # try to fudge the sizing
@@ -537,15 +575,17 @@ class RemoteImage(Image):
         height = kwargs.get('height')
         size_mode = kwargs.get('resize', 'fit')
 
+        style_parts = [*style] if style else []
+
         if width and height and size_mode != 'stretch':
-            attrs['style'] = ';'.join([
+            style_parts += [
                 'background-image:url(\'{}\')'.format(html.escape(self.url)),
                 'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
                 'background-position:{:.1f}% {:.1f}%'.format(
                     kwargs.get('fill_crop_x', 0.5) * 100,
                     kwargs.get('fill_crop_y', 0.5) * 100),
                 'background-repeat:no-repeat'
-            ])
+            ]
             attrs['src'] = flask.url_for(
                 'chit', _external=kwargs.get('absolute'))
         else:
@@ -553,6 +593,9 @@ class RemoteImage(Image):
 
         attrs['width'] = width
         attrs['height'] = height
+
+        if style_parts:
+            attrs['style'] = ';'.join(style_parts)
 
         return utils.make_tag('img', attrs, start_end=kwargs.get('xhtml'))
 
@@ -565,36 +608,36 @@ class StaticImage(Image):
     """ An image that points to a static resource """
     # pylint:disable=protected-access
 
-    def __init__(self, path):
-        super().__init__()
+    def __init__(self, path, search_path):
+        super().__init__(search_path)
         self.path = path
 
     def get_rendition(self, output_scale=1, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url).get_rendition(output_scale, **kwargs)
+        return RemoteImage(url, self.search_path).get_rendition(output_scale, **kwargs)
 
-    def _img_tag(self, title='', alt_text='', **kwargs):
+    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url)._img_tag(title, alt_text, **kwargs)
+        return RemoteImage(url, self.search_path)._img_tag(title, alt_text, style, **kwargs)
 
     def _css_background(self, **kwargs):
         # pylint: disable=arguments-differ
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url)._css_background(**kwargs)
+        return RemoteImage(url, self.search_path)._css_background(**kwargs)
 
 
 class ImageNotFound(Image):
     """ A fake image that prints out appropriate error messages for missing images """
 
-    def __init__(self, path):
-        super().__init__()
+    def __init__(self, path, search_path):
+        super().__init__(search_path)
         self.path = path
 
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=unused-argument
         return 'missing file ' + self.path
 
-    def _img_tag(self, title='', alt_text='', **kwargs):
+    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
         # pylint:disable=unused-argument
         text = '<span class="error">Image not found: <code>{}</code>'.format(
             html.escape(self.path))
@@ -618,10 +661,10 @@ def get_image(path, search_path):
     """
 
     if path.startswith('@'):
-        return StaticImage(path[1:])
+        return StaticImage(path[1:], search_path)
 
     if path.startswith('//') or '://' in path:
-        return RemoteImage(path)
+        return RemoteImage(path, search_path)
 
     if os.path.isabs(path):
         file_path = utils.find_file(os.path.relpath(
@@ -629,7 +672,7 @@ def get_image(path, search_path):
     else:
         file_path = utils.find_file(path, search_path)
     if not file_path:
-        return ImageNotFound(path)
+        return ImageNotFound(path, search_path)
 
     record = model.Image.get(file_path=file_path)
     fingerprint = utils.file_fingerprint(file_path)
@@ -659,7 +702,7 @@ def get_image(path, search_path):
             record = model.Image(**values)
         orm.commit()
 
-    return LocalImage(record)
+    return LocalImage(record, search_path)
 
 
 def parse_arglist(args):
