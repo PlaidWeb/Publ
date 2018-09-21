@@ -72,13 +72,20 @@ class Image(ABC):
 
     def _get_shape_style(self, **kwargs):
         shape = kwargs['shape']
+
+        # Only pull in size-related attributes (e.g. no format, background,
+        # etc.)
+        size_args = {k: v for k, v in kwargs.items() if k in (
+            'width', 'height', 'max_width', 'max_height'
+        )}
+
         if shape is True:
             # if the shape is True, just return the base rendition
-            url, _ = self.get_rendition(1, **kwargs)
+            url, _ = self.get_rendition(1, **size_args)
         else:
             # otherwise, the usual rules apply
             other_image = get_image(shape, self.search_path)
-            url, _ = other_image.get_rendition(1, **kwargs)
+            url, _ = other_image.get_rendition(1, **size_args)
         return url
 
     @abstractmethod
