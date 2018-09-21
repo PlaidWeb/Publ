@@ -507,7 +507,7 @@ class LocalImage(Image):
             'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'style': ';'.join(style) if style else None,
-            'class': kwargs.get('img_class', kwargs.get('class')),
+            'class': kwargs.get('class', kwargs.get('img_class')),
             'id': kwargs.get('img_id'),
             'title': title,
             'alt': alt_text
@@ -578,7 +578,7 @@ class RemoteImage(Image):
         attrs = {
             'title': title,
             'alt': alt_text,
-            'class': kwargs.get('img_class'),
+            'class': kwargs.get('class', kwargs.get('img_class')),
             'id': kwargs.get('img_id'),
         }
 
