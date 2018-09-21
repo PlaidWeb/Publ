@@ -16,6 +16,7 @@ import shutil
 import time
 import random
 import io
+import errno
 from abc import ABC, abstractmethod
 
 import PIL.Image
@@ -72,7 +73,9 @@ class Image(ABC):
                     self._img_tag(title, alt_text, style, **kwargs),
                     title))
         except FileNotFoundError as error:
-            return flask.Markup('<span class="error">File not found: {}</span>'.format(error))
+            return flask.Markup(
+                '<span class="error">File not found: {}</span>'.format(
+                    error.filename))
 
     def _get_shape_style(self, **kwargs):
         shape = kwargs['shape']
@@ -647,7 +650,8 @@ class ImageNotFound(Image):
 
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=unused-argument
-        raise FileNotFoundError(self.path)
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
     def _img_tag(self, title='', alt_text='', style=None, **kwargs):
         # pylint:disable=unused-argument
