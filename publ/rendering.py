@@ -290,10 +290,10 @@ def render_entry(entry_id, slug_text='', category=''):
         raise http_error.NotFound("No such entry")
 
     # Show an access denied error if the entry has been set to draft mode
-    if record.status == model.PublishStatus.DRAFT:
+    if record.status == model.PublishStatus.DRAFT.value:
         raise http_error.Forbidden("Entry not available")
     # Show a gone error if the entry has been deleted
-    if record.status == model.PublishStatus.GONE:
+    if record.status == model.PublishStatus.GONE.value:
         raise http_error.Gone()
 
     # read the entry from disk
