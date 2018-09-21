@@ -49,20 +49,20 @@ class Image(ABC):
 
         style = []
 
-        if 'style' in kwargs:
-            if isinstance(kwargs['style'], (list, tuple)):
-                style += kwargs['style']
-            else:
-                style.append(kwargs['style'])
+        for kw in ('style', 'img_style'):
+            if kw in kwargs:
+                if isinstance(kwargs['style'], (list, tuple)):
+                    style += kwargs['style']
+                else:
+                    style.append(kwargs['style'])
+
+                kwargs = {**kwargs}
+                del kwargs[kw]
 
         if 'shape' in kwargs:
             shape = self._get_shape_style(**kwargs)
             if shape:
                 style.append("shape-outside: url('{}')".format(shape))
-
-        if 'style' in kwargs:
-            kwargs = {**kwargs}
-            del kwargs['style']
 
         return flask.Markup(
             self._wrap_link_target(
@@ -295,6 +295,7 @@ class LocalImage(Image):
 
                 if flatten:
                     image = self.flatten(image, kwargs.get('background'))
+                    image = image.convert('RGB')
 
                 if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
                     image = image.quantize(kwargs.get('quantize', 256))
@@ -700,7 +701,7 @@ def get_image(path, search_path):
             'width': image.width,
             'height': image.height,
             'fingerprint': fingerprint,
-            'transparent': image.mode == 'RGBA'
+            'transparent': image.mode in ('RGBA', 'P')
         }
         record = model.Image.get(file_path=file_path)
         if record:
