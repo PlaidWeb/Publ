@@ -61,10 +61,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                        container_args,
                                        alt)
 
-        if text and (
-            'div_class' in container_args or
-            'div_style' in container_args
-        ):
+        if text and ('div_class' in container_args or
+                     'div_style' in container_args):
             text = '</p>{tag}{text}</div><p>'.format(
                 tag=utils.make_tag('div',
                                    {'class': container_args.get('div_class'),

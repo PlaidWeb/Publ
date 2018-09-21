@@ -49,15 +49,15 @@ class Image(ABC):
 
         style = []
 
-        for kw in ('img_style', 'style'):
-            if kw in kwargs:
+        for key in ('img_style', 'style'):
+            if key in kwargs:
                 if isinstance(kwargs['style'], (list, tuple)):
-                    style += kwargs[kw]
+                    style += kwargs[key]
                 else:
-                    style.append(kwargs[kw])
+                    style.append(kwargs[key])
 
                 kwargs = {**kwargs}
-                del kwargs[kw]
+                del kwargs[key]
 
         if 'shape' in kwargs:
             shape = self._get_shape_style(**kwargs)
