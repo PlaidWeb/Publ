@@ -49,12 +49,12 @@ class Image(ABC):
 
         style = []
 
-        for kw in ('style', 'img_style'):
+        for kw in ('img_style', 'style'):
             if kw in kwargs:
                 if isinstance(kwargs['style'], (list, tuple)):
-                    style += kwargs['style']
+                    style += kwargs[kw]
                 else:
-                    style.append(kwargs['style'])
+                    style.append(kwargs[kw])
 
                 kwargs = {**kwargs}
                 del kwargs[kw]
@@ -503,7 +503,7 @@ class LocalImage(Image):
             'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'style': ';'.join(style) if style else None,
-            'class': kwargs.get('img_class'),
+            'class': kwargs.get('img_class', kwargs.get('class')),
             'id': kwargs.get('img_id'),
             'title': title,
             'alt': alt_text
