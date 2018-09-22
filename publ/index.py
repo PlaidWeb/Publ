@@ -86,7 +86,7 @@ def get_last_fingerprint(fullpath):
     return None
 
 
-@orm.db_session
+@orm.db_session(immediate=True)
 def set_fingerprint(fullpath, fingerprint=None):
     """ Set the last known modification time for a file """
     try:
