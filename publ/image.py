@@ -666,7 +666,7 @@ class ImageNotFound(Image):
         return '/* not found: {} */'.format(self.path)
 
 
-@orm.db_session
+@orm.db_session(immediate=True)
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the

@@ -214,7 +214,7 @@ class Category:
         return None
 
 
-@orm.db_session
+@orm.db_session(immediate=True)
 def scan_file(fullpath, relpath):
     """ scan a file and put it into the index """
 

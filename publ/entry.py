@@ -382,7 +382,7 @@ def save_file(fullpath, entry):
     shutil.move(tmpfile, fullpath)
 
 
-@orm.db_session
+@orm.db_session(immediate=True)
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
     # pylint: disable=too-many-branches,too-many-statements
@@ -477,6 +477,7 @@ def scan_file(fullpath, relpath, assign_id):
     return record
 
 
+@orm.db_session(immediate=True)
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()
