@@ -233,7 +233,8 @@ def render_category(category='', template=None):
     if not tmpl:
        # this might actually be a malformed category URL
         test_path = os.path.join(category, template)
-        record = model.Entry.get(category=test_path)
+        record = orm.select(
+            e for e in model.Entry if e.category == test_path).exists()
         if record:
             return redirect(url_for('category', category=test_path))
 
