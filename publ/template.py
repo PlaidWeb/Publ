@@ -20,7 +20,9 @@ class Template:
         """
         self.name = name
         self.filename = filename
-        self.last_modified = arrow.get(os.stat(file_path).st_mtime)
+        self.file_path = file_path
+        self.mtime = os.stat(file_path).st_mtime
+        self.last_modified = arrow.get(self.mtime)
 
     def __str__(self):
         return self.name

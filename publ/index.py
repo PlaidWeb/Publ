@@ -27,6 +27,13 @@ THREAD_POOL = concurrent.futures.ThreadPoolExecutor(
 WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
 
 
+def last_modified():
+    """ information about the most recently scanned file """
+    return last_modified.mtime, last_modified.file
+last_modified.file = None
+last_modified.mtime = None
+
+
 def queue_length():
     """ Get the approximate length of the indexer work queue """
     return WORK_QUEUE.qsize() if WORK_QUEUE else None
@@ -75,6 +82,11 @@ def scan_file(fullpath, relpath, assign_id):
         THREAD_POOL.submit(scan_file, fullpath, relpath, True)
     elif result:
         set_fingerprint(fullpath)
+
+    mtime = os.stat(fullpath).st_mtime
+    if not last_modified.mtime or mtime > last_modified.mtime:
+        last_modified.mtime = mtime
+        last_modified.file = fullpath
 
 
 @orm.db_session
