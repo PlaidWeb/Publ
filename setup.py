@@ -21,7 +21,7 @@ setup(
 
     long_description_content_type='text/markdown',
 
-    url='https://github.com/fluffy-critter/Publ',
+    url='https://github.com/PlaidWeb/Publ',
 
     author='fluffy',
     author_email='fluffy@beesbuzz.biz',
@@ -68,9 +68,9 @@ setup(
 
     project_urls={
         'Main Site': 'http://publ.beesbuzz.biz',
-        'Bug Reports': 'https://github.com/fluffy-critter/Publ/issues',
+        'Bug Reports': 'https://github.com/PlaidWeb/Publ/issues',
         'Funding': 'https://patreon.com/fluffy',
-        'Source': 'https://github.com/fluffy-critter/Publ/',
+        'Source': 'https://github.com/PlaidWeb/Publ/',
         'Discord': 'https://discord.gg/xADP3ja'
     },
 )
