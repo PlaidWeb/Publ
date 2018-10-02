@@ -90,12 +90,9 @@ def not_modified(etag, mtime):
     """ Return True if the request indicates that the client's cache is valid """
 
     if request.if_none_match.contains(etag):
-        # The ETag matched, so it's definitely the same file
         return True
 
     if request.if_modified_since:
-        # Check the modification time; this also covers the case where ETags vary
-        # because of load balancers having different file fingerprints
         mod_time = arrow.get(int(mtime))
         if request.if_modified_since >= mod_time:
             return True
