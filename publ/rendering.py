@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import os
 import logging
 import base64
+import email.utils
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -196,7 +197,7 @@ def render_path_alias(path):
     return redir
 
 
-@cache.cached(key_prefix=caching.make_category_key, unless=index.in_progress)
+@cache.cached(key_prefix="category/%s", query_string=True, unless=caching.do_not_cache)
 @orm.db_session
 def render_category(category='', template=None):
     """ Render a category page.
@@ -241,6 +242,11 @@ def render_category(category='', template=None):
         # nope, we just don't know what this is
         raise http_error.NotFound("No such view")
 
+    # We now know what's going to be rendered, let's get a caching tag for it
+    etag, last_modified = caching.get_view_cache_tag(tmpl)
+    if caching.not_modified(etag, last_modified):
+        return 'Not modified', 304
+
     view_spec = {'category': category}
     if 'date' in request.args:
         view_spec['date'] = request.args['date']
@@ -251,10 +257,12 @@ def render_category(category='', template=None):
     return render_publ_template(
         tmpl,
         category=Category(category),
-        view=view_obj), {'Content-Type': mime_type(tmpl)}
+        view=view_obj), {'Content-Type': mime_type(tmpl),
+                         'ETag': etag,
+                         'Last-Modified': email.utils.formatdate(last_modified)}
 
 
-@cache.cached(key_prefix=caching.make_entry_key, unless=index.in_progress)
+@cache.cached(key_prefix="entry/%s", query_string=True, unless=caching.do_not_cache)
 @orm.db_session
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
@@ -331,10 +339,16 @@ def render_entry(entry_id, slug_text='', category=''):
     if not tmpl:
         raise http_error.BadRequest("Missing entry template")
 
+    etag, last_modified = caching.get_view_cache_tag(tmpl, record)
+    if caching.not_modified(etag, last_modified):
+        return 'Not modified', 304
+
     return render_publ_template(
         tmpl,
         entry=entry_obj,
-        category=Category(category)), {'Content-Type': mime_type(tmpl)}
+        category=Category(category)), {'Content-Type': mime_type(tmpl),
+                                       'ETag': etag,
+                                       'Last-Modified': email.utils.formatdate(last_modified)}
 
 
 def render_transparent_chit():
