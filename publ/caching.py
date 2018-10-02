@@ -4,6 +4,7 @@
 import os
 import hashlib
 import datetime
+import arrow
 
 from flask_caching import Cache
 from flask import request
@@ -60,23 +61,27 @@ def get_view_cache_tag(template, entry=None):
     candidates = []
 
     # If no entry is specified, check the most recently indexed file
-    if not entry and index.last_modified.file:
+    if index.last_modified.file:
         candidates.append(index.last_modified())
 
     # check the template file
     candidates.append((template.mtime, template.file_path))
 
-    # check the most recently-published entry
-    if not entry:
-        with orm.db_session:
-            last_published = queries.build_query({}).order_by(
-                orm.desc(model.Entry.utc_date))[:1]
-            if last_published:
-                entry = last_published[0]
-
     if entry:
+        # Use the entry in question
         entry_file = entry.file_path
         candidates.append((os.stat(entry_file).st_mtime, entry_file))
+
+    # check the most recently-published entry (even on entry views, since this
+    # can affect prev/next links)
+    with orm.db_session:
+        last_published = queries.build_query({}).order_by(
+            orm.desc(model.Entry.utc_date))[:1]
+        if last_published:
+            # We actually want the publish time, not the file modification time
+            last_entry = last_published[0]
+            last_pubtime = arrow.get(last_entry.utc_date).timestamp
+            candidates.append((last_pubtime, last_entry.file_path))
 
     last_mtime, last_file = max(candidates)
     return get_cache_tag(last_file, last_mtime)
@@ -89,7 +94,7 @@ def not_modified(etag, mtime):
         return True
 
     if request.if_modified_since:
-        mod_time = datetime.datetime.utcfromtimestamp(int(mtime))
+        mod_time = arrow.get(int(mtime))
         if request.if_modified_since >= mod_time:
             return True
 
