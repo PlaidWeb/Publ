@@ -42,7 +42,7 @@ def do_not_cache():
 def get_cache_tag(file, mtime):
     """ Get the ETag,Last-Modified for a file """
     etag = hashlib.md5(utils.file_fingerprint(
-        file).encode('utf-8')).hexdigest()[:8]
+        file).encode('utf-8')).hexdigest()[:16]
     return etag, mtime
 
 
