@@ -59,7 +59,7 @@ setup(
         'Pillow',
         'pygments',
         'watchdog',
-        'awesome-slugify'
+        'awesome-slugify',
     ],
 
     extras_require={
@@ -73,4 +73,6 @@ setup(
         'Source': 'https://github.com/PlaidWeb/Publ/',
         'Discord': 'https://discord.gg/xADP3ja'
     },
+
+    python_requires=">=3.6",
 )
