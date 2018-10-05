@@ -3,8 +3,9 @@
 
 import os
 import hashlib
-import arrow
+import datetime
 
+import arrow
 from flask_caching import Cache
 from flask import request
 from pony import orm
@@ -93,7 +94,7 @@ def not_modified(etag, mtime):
         return True
 
     if request.if_modified_since:
-        mod_time = arrow.get(int(mtime))
+        mod_time = datetime.datetime.utcfromtimestamp(int(mtime))
         if request.if_modified_since >= mod_time:
             return True
 
