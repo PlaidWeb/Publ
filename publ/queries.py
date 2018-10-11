@@ -35,6 +35,13 @@ def where_entry_visible_future(query):
                         model.PublishStatus.SCHEDULED.value))
 
 
+def where_entry_deleted(query):
+    """ Generate a where clause for entries that have been deleted """
+    return orm.select(
+        e for e in query
+        if e.status == model.PublishStatus.GONE.value)
+
+
 def where_entry_category(query, category, recurse=False):
     """ Generate a where clause for a particular category """
 
@@ -176,6 +183,8 @@ def build_query(spec):
     # primarily restrict by publication status
     if spec.get('future', False):
         query = where_entry_visible_future(query)
+    elif spec.get('deleted', False):
+        query = where_entry_deleted(query)
     else:
         query = where_entry_visible(query)
 
