@@ -28,10 +28,12 @@ WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
 
 
 def last_modified():
-    """ information about the most recently scanned file """
-    return last_modified.mtime, last_modified.file
-last_modified.file = None
-last_modified.mtime = None
+    """ information about the most recently modified file """
+    files = model.FileFingerprint.select().order_by(
+        orm.desc(model.FileFingerprint.file_mtime))
+    for file in files:
+        return file.file_mtime, file.file_path
+    return None, None
 
 
 def queue_length():
@@ -83,11 +85,6 @@ def scan_file(fullpath, relpath, assign_id):
     elif result:
         set_fingerprint(fullpath)
 
-    mtime = os.stat(fullpath).st_mtime
-    if not last_modified.mtime or mtime > last_modified.mtime:
-        last_modified.mtime = mtime
-        last_modified.file = fullpath
-
 
 @orm.db_session
 def get_last_fingerprint(fullpath):
@@ -106,10 +103,13 @@ def set_fingerprint(fullpath, fingerprint=None):
 
         record = model.FileFingerprint.get(file_path=fullpath)
         if record:
-            record.fingerprint = fingerprint
+            record.set(fingerprint=fingerprint,
+                       file_mtime=os.stat(fullpath).st_mtime)
         else:
             record = model.FileFingerprint(
-                file_path=fullpath, fingerprint=fingerprint)
+                file_path=fullpath,
+                fingerprint=fingerprint,
+                file_mtime=os.stat(fullpath).st_mtime)
         orm.commit()
     except FileNotFoundError:
         orm.delete(fp for fp in model.FileFingerprint if fp.file_path == fullpath)

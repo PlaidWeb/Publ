@@ -61,8 +61,7 @@ def get_view_cache_tag(template, entry=None):
     candidates = []
 
     # If no entry is specified, check the most recently indexed file
-    if index.last_modified.file:
-        candidates.append(index.last_modified())
+    candidates.append(index.last_modified())
 
     # check the template file
     candidates.append((template.mtime, template.file_path))
@@ -83,7 +82,7 @@ def get_view_cache_tag(template, entry=None):
             last_pubtime = arrow.get(last_entry.utc_date).timestamp
             candidates.append((last_pubtime, last_entry.file_path))
 
-    candidates = sorted(candidates, reverse=True)
+    candidates = sorted([c for c in candidates if c[0] and c[1]], reverse=True)
     for mtime, file in candidates:
         try:
             return get_cache_tag(file, mtime)
