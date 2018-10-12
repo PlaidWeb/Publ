@@ -83,8 +83,14 @@ def get_view_cache_tag(template, entry=None):
             last_pubtime = arrow.get(last_entry.utc_date).timestamp
             candidates.append((last_pubtime, last_entry.file_path))
 
-    last_mtime, last_file = max(candidates)
-    return get_cache_tag(last_file, last_mtime)
+    candidates = sorted(candidates, reverse=True)
+    for mtime, file in candidates:
+        try:
+            return get_cache_tag(file, mtime)
+        except FileNotFoundError:
+            # The file disappeared before we could get the cache tag
+            pass
+    return None, None
 
 
 def not_modified(etag, mtime):

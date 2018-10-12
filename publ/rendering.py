@@ -189,7 +189,7 @@ def render_exception(error):
 
 @orm.db_session
 def render_path_alias(path):
-    """ Render a known path-alias (used primarily for Dreamhost .php redirects) """
+    """ Render a known path-alias (used primarily for forced .php redirects) """
 
     redir = path_alias.get_redirect('/' + path)
     if not redir:
