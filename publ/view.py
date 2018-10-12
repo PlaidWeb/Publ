@@ -155,7 +155,7 @@ class View:
         """ Gets the deleted entries from the view """
         query = queries.build_query({**self.spec,
                                      'future': False,
-                                     'deleted': True})
+                                     '_deleted': True})
         return [Entry(e) for e in query]
 
     @cached_property
