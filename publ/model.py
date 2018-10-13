@@ -99,7 +99,12 @@ class Image(db.Entity):
 
 def setup():
     """ Set up the database """
-    db.bind(**config.database_config, create_db=True)
+    try:
+        db.bind(**config.database_config)
+    except OSError:
+        # Attempted to connect to a file-based database where the file didn't
+        # exist
+        db.bind(**config.database_config, create_db=True)
 
     rebuild = True
 

@@ -164,6 +164,7 @@ def background_scan(content_dir):
 def scan_index(content_dir):
     """ Scan all files in a content directory """
 
+    @orm.db_session
     def scan_directory(root, files):
         """ Helper function to scan a single directory """
         try:
