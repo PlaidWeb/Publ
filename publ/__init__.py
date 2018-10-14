@@ -13,7 +13,7 @@ from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
 
-class Publ(flask.Flask):
+class _PublApp(flask.Flask):
     """ A Publ app; extends Flask so that we can add our own custom decorators """
 
     def __init__(self, *args, **kwargs):
@@ -58,10 +58,10 @@ def publ(name, cfg):
 
     config.setup(cfg)
 
-    app = Publ(name,
-               template_folder=config.template_folder,
-               static_folder=config.static_folder,
-               static_url_path=config.static_url_path)
+    app = _PublApp(name,
+                   template_folder=config.template_folder,
+                   static_folder=config.static_folder,
+                   static_url_path=config.static_url_path)
 
     for route in [
             '/',
