@@ -187,7 +187,7 @@ def render_exception(error):
     })
 
 
-@orm.db_session
+@orm.db_session(retry=5)
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for forced .php redirects) """
 
@@ -198,7 +198,7 @@ def render_path_alias(path):
 
 
 @cache.cached(key_prefix="category/%s", query_string=True, unless=caching.do_not_cache)
-@orm.db_session
+@orm.db_session(retry=5)
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -263,7 +263,7 @@ def render_category(category='', template=None):
 
 
 @cache.cached(key_prefix="entry/%s", query_string=True, unless=caching.do_not_cache)
-@orm.db_session
+@orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
