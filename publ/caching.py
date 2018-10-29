@@ -3,8 +3,9 @@
 
 import os
 import hashlib
-import arrow
+import datetime
 
+import arrow
 from flask_caching import Cache
 from flask import request
 from pony import orm
@@ -60,8 +61,7 @@ def get_view_cache_tag(template, entry=None):
     candidates = []
 
     # If no entry is specified, check the most recently indexed file
-    if index.last_modified.file:
-        candidates.append(index.last_modified())
+    candidates.append(index.last_modified())
 
     # check the template file
     candidates.append((template.mtime, template.file_path))
@@ -82,8 +82,14 @@ def get_view_cache_tag(template, entry=None):
             last_pubtime = arrow.get(last_entry.utc_date).timestamp
             candidates.append((last_pubtime, last_entry.file_path))
 
-    last_mtime, last_file = max(candidates)
-    return get_cache_tag(last_file, last_mtime)
+    candidates = sorted([c for c in candidates if c[0] and c[1]], reverse=True)
+    for mtime, file in candidates:
+        try:
+            return get_cache_tag(file, mtime)
+        except FileNotFoundError:
+            # The file disappeared before we could get the cache tag
+            pass
+    return None, None
 
 
 def not_modified(etag, mtime):
@@ -93,7 +99,7 @@ def not_modified(etag, mtime):
         return True
 
     if request.if_modified_since:
-        mod_time = arrow.get(int(mtime))
+        mod_time = datetime.datetime.utcfromtimestamp(int(mtime))
         if request.if_modified_since >= mod_time:
             return True
 

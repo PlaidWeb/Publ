@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 class GlobalConfig(db.Entity):
@@ -39,6 +39,7 @@ class FileFingerprint(db.Entity):
     """ File modification time """
     file_path = orm.PrimaryKey(str)
     fingerprint = orm.Required(str)
+    file_mtime = orm.Required(float, index=True)
 
 
 class Entry(db.Entity):
@@ -98,7 +99,12 @@ class Image(db.Entity):
 
 def setup():
     """ Set up the database """
-    db.bind(**config.database_config, create_db=True)
+    try:
+        db.bind(**config.database_config)
+    except OSError:
+        # Attempted to connect to a file-based database where the file didn't
+        # exist
+        db.bind(**config.database_config, create_db=True)
 
     rebuild = True
 

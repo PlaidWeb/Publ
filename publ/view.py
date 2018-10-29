@@ -151,6 +151,14 @@ class View:
         return [Entry(e) for e in self._entries]
 
     @cached_property
+    def deleted(self):
+        """ Gets the deleted entries from the view """
+        query = queries.build_query({**self.spec,
+                                     'future': False,
+                                     '_deleted': True})
+        return [Entry(e) for e in query]
+
+    @cached_property
     def count(self):
         """ Returns the number of entries in the view """
         return len(self.entries)
