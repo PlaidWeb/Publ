@@ -83,7 +83,7 @@ class Image(ABC):
         # Only pull in size-related attributes (e.g. no format, background,
         # etc.)
         size_args = {k: v for k, v in kwargs.items() if k in (
-            'width', 'height', 'max_width', 'max_height'
+            'width', 'height', 'max_width', 'max_height', 'absolute'
         )}
 
         if shape is True:

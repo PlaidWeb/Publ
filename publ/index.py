@@ -4,6 +4,7 @@
 import os
 import logging
 import concurrent.futures
+import threading
 
 import watchdog.observers
 import watchdog.events
@@ -27,11 +28,39 @@ THREAD_POOL = concurrent.futures.ThreadPoolExecutor(
 WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
 
 
+class ConcurrentSet:
+    """ Simple quasi-atomic set """
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.set = set()
+
+    def add(self, item):
+        """ Add an item to the set, and return whether it was newly added """
+        with self.lock:
+            if item in self.set:
+                return False
+            self.set.add(item)
+            return True
+
+    def remove(self, item):
+        """ Remove an item from the set, returning if it was present """
+        with self.lock:
+            if item in self.set:
+                self.set.remove(item)
+                return True
+            return False
+
+SCHEDULED_FILES = ConcurrentSet()
+
+
 def last_modified():
-    """ information about the most recently scanned file """
-    return last_modified.mtime, last_modified.file
-last_modified.file = None
-last_modified.mtime = None
+    """ information about the most recently modified file """
+    files = model.FileFingerprint.select().order_by(
+        orm.desc(model.FileFingerprint.file_mtime))
+    for file in files:
+        return file.file_mtime, file.file_path
+    return None, None
 
 
 def queue_length():
@@ -80,13 +109,11 @@ def scan_file(fullpath, relpath, assign_id):
     if result is False and not assign_id:
         logger.info("Scheduling fixup for %s", fullpath)
         THREAD_POOL.submit(scan_file, fullpath, relpath, True)
-    elif result:
-        set_fingerprint(fullpath)
-
-    mtime = os.stat(fullpath).st_mtime
-    if not last_modified.mtime or mtime > last_modified.mtime:
-        last_modified.mtime = mtime
-        last_modified.file = fullpath
+    else:
+        logger.debug("%s complete", fullpath)
+        if result:
+            set_fingerprint(fullpath)
+        SCHEDULED_FILES.remove(fullpath)
 
 
 @orm.db_session
@@ -106,10 +133,13 @@ def set_fingerprint(fullpath, fingerprint=None):
 
         record = model.FileFingerprint.get(file_path=fullpath)
         if record:
-            record.fingerprint = fingerprint
+            record.set(fingerprint=fingerprint,
+                       file_mtime=os.stat(fullpath).st_mtime)
         else:
             record = model.FileFingerprint(
-                file_path=fullpath, fingerprint=fingerprint)
+                file_path=fullpath,
+                fingerprint=fingerprint,
+                file_mtime=os.stat(fullpath).st_mtime)
         orm.commit()
     except FileNotFoundError:
         orm.delete(fp for fp in model.FileFingerprint if fp.file_path == fullpath)
@@ -124,30 +154,32 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
 
     def update_file(self, fullpath):
         """ Update a file """
-        relpath = os.path.relpath(fullpath, self.content_dir)
-        THREAD_POOL.submit(scan_file, fullpath, relpath, False)
+        if SCHEDULED_FILES.add(fullpath):
+            logger.debug("Scheduling reindex of %s", fullpath)
+            relpath = os.path.relpath(fullpath, self.content_dir)
+            THREAD_POOL.submit(scan_file, fullpath, relpath, False)
 
     def on_created(self, event):
         """ on_created handler """
-        logger.info("file created: %s", event.src_path)
+        logger.debug("file created: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_modified(self, event):
         """ on_modified handler """
-        logger.info("file modified: %s", event.src_path)
+        logger.debug("file modified: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_moved(self, event):
         """ on_moved handler """
-        logger.info("file moved: %s -> %s", event.src_path, event.dest_path)
+        logger.debug("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):
         """ on_deleted handler """
-        logger.info("File deleted: %s", event.src_path)
+        logger.debug("File deleted: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
@@ -173,7 +205,7 @@ def scan_index(content_dir):
 
                 fingerprint = utils.file_fingerprint(fullpath)
                 last_fingerprint = get_last_fingerprint(fullpath)
-                if fingerprint != last_fingerprint:
+                if fingerprint != last_fingerprint and SCHEDULED_FILES.add(fullpath):
                     scan_file(fullpath, relpath, False)
         except:  # pylint:disable=bare-except
             logger.exception("Got error parsing directory %s", root)

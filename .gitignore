@@ -110,3 +110,4 @@ static/_img/
 logs/
 tmp/
 index.db
+*.db
