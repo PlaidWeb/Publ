@@ -416,6 +416,7 @@ def scan_file(fullpath, relpath, assign_id):
         'slug_text': make_slug(entry.get('Slug-Text', title)),
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
+        'entry_template': entry.get('Entry-Template', '')
     }
 
     entry_date = None
