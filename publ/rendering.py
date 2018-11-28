@@ -243,7 +243,7 @@ def render_category(category='', template=None):
         raise http_error.NotFound("No such view")
 
     # We now know what's going to be rendered, let's get a caching tag for it
-    etag, last_modified = caching.get_view_cache_tag(tmpl)
+    etag, last_modified = caching.get_view_cache_tag(tmpl, category=category)
     if caching.not_modified(etag, last_modified):
         return 'Not modified', 304
 
@@ -305,14 +305,6 @@ def render_entry(entry_id, slug_text='', category=''):
     if record.status == model.PublishStatus.GONE.value:
         raise http_error.Gone()
 
-    # read the entry from disk
-    entry_obj = Entry(record)
-
-    # does the entry-id header mismatch? If so the old one is invalid
-    if int(entry_obj.get('Entry-ID')) != record.id:
-        expire_record(record)
-        return redirect(url_for('entry', entry_id=int(entry_obj.get('Entry-Id'))))
-
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
         # This could still be a redirected path...
@@ -327,11 +319,11 @@ def render_entry(entry_id, slug_text='', category=''):
                                 slug_text=record.slug_text))
 
     # if the entry canonically redirects, do that now
-    entry_redirect = entry_obj.get('Redirect-To')
+    entry_redirect = record.redirect_url
     if entry_redirect:
         return redirect(entry_redirect)
 
-    entry_template = (entry_obj.get('Entry-Template')
+    entry_template = (record.entry_template
                       or Category(category).get('Entry-Template')
                       or 'entry')
 
@@ -339,9 +331,19 @@ def render_entry(entry_id, slug_text='', category=''):
     if not tmpl:
         raise http_error.BadRequest("Missing entry template")
 
-    etag, last_modified = caching.get_view_cache_tag(tmpl, record)
+    # Get the viewable entry
+    entry_obj = Entry(record)
+
+    # Check the caching
+    etag, last_modified = caching.get_view_cache_tag(
+        tmpl, category=category, entry=entry_obj)
     if caching.not_modified(etag, last_modified):
         return 'Not modified', 304
+
+    # does the entry-id header mismatch? If so the old one is invalid
+    if int(entry_obj.get('Entry-ID')) != record.id:
+        expire_record(record)
+        return redirect(url_for('entry', entry_id=int(entry_obj.get('Entry-Id'))))
 
     return render_publ_template(
         tmpl,

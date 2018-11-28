@@ -47,12 +47,13 @@ def get_cache_tag(file, mtime):
     return etag, mtime
 
 
-def get_view_cache_tag(template, entry=None):
+def get_view_cache_tag(template, category=None, entry=None):
     """ Get a pessimistic cache tag for a view
 
     Arguments:
 
     template -- the template file being used to render
+    category -- the category the view is in
     entry -- the entry to use; defaults to the most recently-published entry
 
     Returns (etag,last-modified)
@@ -60,27 +61,31 @@ def get_view_cache_tag(template, entry=None):
 
     candidates = []
 
-    # If no entry is specified, check the most recently indexed file
-    candidates.append(index.last_modified())
-
     # check the template file
     candidates.append((template.mtime, template.file_path))
 
     if entry:
-        # Use the entry in question
-        entry_file = entry.file_path
-        candidates.append((os.stat(entry_file).st_mtime, entry_file))
+        # Use the entry in question, and its potentially navigable siblings
+        candidates += [(os.stat(e.file_path).st_mtime, e.file_path)
+                       for e in (entry,
+                                 entry.next(category=category),
+                                 entry.previous(category=category),
+                                 entry.next(category=category, recurse=True),
+                                 entry.previous(category=category, recurse=True)) if e]
+    else:
+        # If no entry is specified, check the most recently indexed file
+        candidates.append(index.last_modified())
 
-    # check the most recently-published entry (even on entry views, since this
-    # can affect prev/next links)
-    with orm.db_session:
-        last_published = queries.build_query({}).order_by(
-            orm.desc(model.Entry.utc_date))[:1]
-        if last_published:
-            # We actually want the publish time, not the file modification time
-            last_entry = last_published[0]
-            last_pubtime = arrow.get(last_entry.utc_date).timestamp
-            candidates.append((last_pubtime, last_entry.file_path))
+        # check the most recently-published entry
+        with orm.db_session:
+            last_published = queries.build_query({'category': category, 'recurse': True}).order_by(
+                orm.desc(model.Entry.utc_date))[:1]
+            if last_published:
+                # We actually want the publish time, not the file modification
+                # time
+                last_entry = last_published[0]
+                last_pubtime = arrow.get(last_entry.utc_date).timestamp
+                candidates.append((last_pubtime, last_entry.file_path))
 
     candidates = sorted([c for c in candidates if c[0] and c[1]], reverse=True)
     for mtime, file in candidates:
