@@ -1,20 +1,13 @@
 # caching.py
 """ Useful caching functions """
 
-import os
 import hashlib
-import datetime
 
-import arrow
 from flask_caching import Cache
 from flask import request
-from pony import orm
 
 from . import config
 from . import index
-from . import utils
-from . import queries
-from . import model
 
 cache = Cache()  # pylint: disable=invalid-name
 

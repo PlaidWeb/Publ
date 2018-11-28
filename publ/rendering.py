@@ -6,7 +6,6 @@ from __future__ import absolute_import, with_statement
 import os
 import logging
 import base64
-import email.utils
 
 import flask
 from flask import request, redirect, render_template, url_for
