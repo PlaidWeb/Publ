@@ -59,7 +59,7 @@ setup(
         'Pillow',
         'pygments',
         'watchdog',
-        'awesome-slugify',
+        'awesome-slugify'
     ],
 
     extras_require={
