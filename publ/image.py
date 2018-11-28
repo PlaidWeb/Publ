@@ -785,13 +785,14 @@ def get_spec_list(image_specs, container_args):
     container argument list """
 
     spec_list = [spec.strip() for spec in image_specs.split('|')]
+    original_count = len(spec_list)
 
     if 'count' in container_args:
         if 'count_offset' in container_args:
             spec_list = spec_list[container_args['count_offset']:]
         spec_list = spec_list[:container_args['count']]
 
-    return spec_list
+    return spec_list, original_count
 
 
 def clean_cache(max_age):

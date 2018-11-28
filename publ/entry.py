@@ -476,7 +476,7 @@ def scan_file(fullpath, relpath, assign_id):
         path_alias.remove_alias(alias)
 
     if fixup_needed:
-        logger.info("Fixing up entry %s")
+        logger.info("Fixing up entry %s", fullpath)
         save_file(fullpath, entry)
 
     return record
