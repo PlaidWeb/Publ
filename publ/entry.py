@@ -472,7 +472,9 @@ def scan_file(fullpath, relpath, assign_id):
     for alias in entry.get_all('Path-Unalias', []):
         path_alias.remove_alias(alias)
 
-    if fixup_needed:
+    if fixup_needed and values['status'] in (model.PublishStatus.SCHEDULED.value, model.PublishStatus.PUBLISHED.value):
+        logger.info("Fixing up entry %s (status=%s)",
+                    fullpath, model.PublishStatus(values['status']))
         save_file(fullpath, entry)
 
     return record
