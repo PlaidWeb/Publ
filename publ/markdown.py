@@ -49,10 +49,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             that there are more images to be seen. This string gets two template
             arguments, `{count}` which is the total number of images in the set,
             and `{remain}` which is the number of images omitted from the set.
-        more_link -- If `more_text` is shown, this will format the text in a link
-            to this location. Otherwise the text will be inside a `<span>`
-        more_class -- If `more_text` is shown, specifies the CSS class for the
-            `<a>` or `<span>`.
+        more_link -- If `more_text` is shown, this will format the text as a link to this location.
+        more_class -- If `more_text` is shown, wraps it in a `<div>` with this class.
         """
         # pylint: disable=too-many-locals
 
@@ -75,16 +73,17 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                        alt)
 
         if original_count > len(spec_list) and 'more_text' in container_args:
-            more_text = container_args['more_text'].format(count=original_count,
-                                                           remain=original_count - len(spec_list))
-
-            if 'more_link' in container_args or 'more_class' in container_args:
-                more_tag = 'a' if 'more_link' in container_args else 'span'
-                more_text = '{tag}{text}</{more_tag}>'.format(
-                    tag=utils.make_tag(more_tag, {'class': container_args.get('more_class'),
-                                                  'href': container_args.get('more_link')}),
-                    more_tag=more_tag,
-                    text=more_text)
+            more_text = container_args['more_text'].format(
+                count=original_count,
+                remain=original_count - len(spec_list))
+            if 'more_link' in container_args:
+                more_text = '{a}{text}</a>'.format(
+                    text=more_text,
+                    a=utils.make_tag('a', {'href': container_args['more_link']}))
+            if 'more_class' in container_args:
+                more_text = '{div}{text}</div>'.format(
+                    text=more_text,
+                    div=utils.make_tag('div', {'class': container_args['more_class']}))
             text += flask.Markup(more_text)
 
         if text and ('div_class' in container_args or
