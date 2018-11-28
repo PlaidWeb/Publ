@@ -179,7 +179,7 @@ def make_tag(name, attrs, start_end=False):
     if start_end:
         text += ' /'
     text += '>'
-    return text
+    return flask.Markup(text)
 
 
 def file_fingerprint(fullpath):

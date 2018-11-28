@@ -49,7 +49,7 @@ class CardParser(misaka.BaseRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
-        spec_list = image.get_spec_list(image_specs, container_args)
+        spec_list, _ = image.get_spec_list(image_specs, container_args)
 
         for spec in spec_list:
             if not spec:
