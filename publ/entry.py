@@ -51,6 +51,9 @@ class Entry:
 
         self._record = record   # index record
 
+    def __repr__(self):
+        return repr((self._record.id, self._record.file_path))
+
     @cached_property
     def date(self):
         """ Get the display date of the entry, as an Arrow object """

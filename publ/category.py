@@ -70,6 +70,9 @@ class Category:
 
         self._record = model.Category.get(category=path)
 
+    def __repr__(self):
+        return repr(self.path)
+
     @cached_property
     def _meta(self):
         if self._record and self._record.file_path:
