@@ -38,7 +38,22 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._image_search_path = image_search_path
 
     def image(self, raw_url, title='', alt=''):
-        """ Adapt a standard Markdown image to a generated rendition """
+        """ Adapt a standard Markdown image to a generated rendition set.
+
+        Container arguments used (in addition to the rendition tags):
+
+        div_class -- The CSS class name to use on any wrapper div
+        div_style -- Additional CSS styles to apply to the wrapper div
+        count -- The maximum number of images to show at once
+        more_text -- If there are more than `count` images, add this text indicating
+            that there are more images to be seen. This string gets two template
+            arguments, `{count}` which is the total number of images in the set,
+            and `{remain}` which is the number of images omitted from the set.
+        more_link -- If `more_text` is shown, this will format the text in a link
+            to this location. Otherwise the text will be inside a `<span>`
+        more_class -- If `more_text` is shown, specifies the CSS class for the
+            `<a>` or `<span>`.
+        """
         # pylint: disable=too-many-locals
 
         text = ''
@@ -51,15 +66,26 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         container_args = {**self._config, **container_args}
 
-        spec_list = image.get_spec_list(image_specs, container_args)
+        spec_list, original_count = image.get_spec_list(
+            image_specs, container_args)
 
         for spec in spec_list:
-            if not spec:
-                continue
-
             text += self._render_image(spec,
                                        container_args,
                                        alt)
+
+        if original_count > len(spec_list) and 'more_text' in container_args:
+            more_text = container_args['more_text'].format(count=original_count,
+                                                           remain=original_count - len(spec_list))
+
+            if 'more_link' in container_args or 'more_class' in container_args:
+                more_tag = 'a' if 'more_link' in container_args else 'span'
+                more_text = '{tag}{text}</{more_tag}>'.format(
+                    tag=utils.make_tag(more_tag, {'class': container_args.get('more_class'),
+                                                  'href': container_args.get('more_link')}),
+                    more_tag=more_tag,
+                    text=more_text)
+            text += flask.Markup(more_text)
 
         if text and ('div_class' in container_args or
                      'div_style' in container_args):
