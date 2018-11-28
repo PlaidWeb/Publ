@@ -476,8 +476,7 @@ def scan_file(fullpath, relpath, assign_id):
         path_alias.remove_alias(alias)
 
     if fixup_needed:
-        logger.info("Fixing up entry %s",
-                    fullpath, model.PublishStatus(values['status']))
+        logger.info("Fixing up entry %s")
         save_file(fullpath, entry)
 
     return record
