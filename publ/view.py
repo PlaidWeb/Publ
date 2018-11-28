@@ -106,6 +106,9 @@ class View:
         else:
             self.type = None
 
+    def __repr__(self):
+        return repr(self.spec)
+
     def __str__(self):
         return str(self._link())
 

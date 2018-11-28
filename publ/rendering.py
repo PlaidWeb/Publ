@@ -6,7 +6,6 @@ from __future__ import absolute_import, with_statement
 import os
 import logging
 import base64
-import email.utils
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -115,9 +114,13 @@ def image_function(template=None, entry=None, category=None):
     return lambda filename: image.get_image(filename, path)
 
 
+@cache.memoize(unless=caching.do_not_cache)
 def render_publ_template(template, **kwargs):
-    """ Render out a template, providing the image function based on the args """
-    return render_template(
+    """ Render out a template, providing the image function based on the args.
+
+    Returns tuple of (rendered text, etag)
+    """
+    text = render_template(
         template.filename,
         template=template,
         image=image_function(
@@ -126,6 +129,8 @@ def render_publ_template(template, **kwargs):
             entry=kwargs.get('entry')),
         **kwargs
     )
+
+    return text, caching.get_etag(text)
 
 
 def render_error(category, error_message, error_codes, exception=None):
@@ -155,7 +160,7 @@ def render_error(category, error_message, error_codes, exception=None):
         return render_publ_template(
             template,
             error={'code': error_code, 'message': error_message},
-            exception=exception), error_code
+            exception=exception)[0], error_code
 
     # no template found, so fall back to default Flask handler
     return flask.abort(error_code)
@@ -197,7 +202,6 @@ def render_path_alias(path):
     return redir
 
 
-@cache.cached(key_prefix="category/%s", query_string=True, unless=caching.do_not_cache)
 @orm.db_session(retry=5)
 def render_category(category='', template=None):
     """ Render a category page.
@@ -242,11 +246,6 @@ def render_category(category='', template=None):
         # nope, we just don't know what this is
         raise http_error.NotFound("No such view")
 
-    # We now know what's going to be rendered, let's get a caching tag for it
-    etag, last_modified = caching.get_view_cache_tag(tmpl, category=category)
-    if caching.not_modified(etag, last_modified):
-        return 'Not modified', 304
-
     view_spec = {'category': category}
     if 'date' in request.args:
         view_spec['date'] = request.args['date']
@@ -254,15 +253,19 @@ def render_category(category='', template=None):
         view_spec['start'] = request.args['id']
 
     view_obj = View(view_spec)
-    return render_publ_template(
+
+    rendered, etag = render_publ_template(
         tmpl,
         category=Category(category),
-        view=view_obj), {'Content-Type': mime_type(tmpl),
-                         'ETag': etag,
-                         'Last-Modified': email.utils.formatdate(last_modified)}
+        view=view_obj)
+
+    if request.if_none_match.contains(etag):
+        return 'Not modified', 304
+
+    return rendered, {'Content-Type': mime_type(tmpl),
+                      'ETag': etag}
 
 
-@cache.cached(key_prefix="entry/%s", query_string=True, unless=caching.do_not_cache)
 @orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
@@ -334,27 +337,29 @@ def render_entry(entry_id, slug_text='', category=''):
     # Get the viewable entry
     entry_obj = Entry(record)
 
-    # Check the caching
-    etag, last_modified = caching.get_view_cache_tag(
-        tmpl, category=category, entry=entry_obj)
-    if caching.not_modified(etag, last_modified):
-        return 'Not modified', 304
-
     # does the entry-id header mismatch? If so the old one is invalid
     if int(entry_obj.get('Entry-ID')) != record.id:
         expire_record(record)
         return redirect(url_for('entry', entry_id=int(entry_obj.get('Entry-Id'))))
 
-    return render_publ_template(
+    rendered, etag = render_publ_template(
         tmpl,
         entry=entry_obj,
-        category=Category(category)), {'Content-Type': mime_type(tmpl),
-                                       'ETag': etag,
-                                       'Last-Modified': email.utils.formatdate(last_modified)}
+        category=Category(category))
+
+    if request.if_none_match.contains(etag):
+        return 'Not modified', 304
+
+    return rendered, {'Content-Type': mime_type(tmpl),
+                      'ETag': etag}
 
 
 def render_transparent_chit():
     """ Render a transparent chit for external, sized images """
+
+    if request.if_none_match.contains('chit') or request.if_modified_since:
+        return 'Not modified', 304
+
     out_bytes = base64.b64decode(
         "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-    return out_bytes, {'Content-Type': 'image/gif'}
+    return out_bytes, {'Content-Type': 'image/gif', 'ETag': 'chit'}
