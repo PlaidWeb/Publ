@@ -70,8 +70,14 @@ class Category:
 
         self._record = model.Category.get(category=path)
 
+    def _key(self):
+        return Category, self.path
+
     def __repr__(self):
-        return repr(self.path)
+        return repr(self._key())
+
+    def __hash__(self):
+        return hash(self._key())
 
     @cached_property
     def _meta(self):

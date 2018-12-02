@@ -51,8 +51,14 @@ class Entry:
 
         self._record = record   # index record
 
+    def _key(self):
+        return Entry, self._record.id, self._record.file_path
+
     def __repr__(self):
-        return repr((self._record.id, self._record.file_path))
+        return repr(self._key())
+
+    def __hash__(self):
+        return hash(self._key())
 
     @cached_property
     def date(self):
