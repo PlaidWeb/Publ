@@ -27,5 +27,11 @@ class Template:
     def __str__(self):
         return self.name
 
+    def _key(self):
+        return Template, self.file_path
+
     def __repr__(self):
-        return repr(self.file_path)
+        return repr(self._key())
+
+    def __hash__(self):
+        return hash(self._key())

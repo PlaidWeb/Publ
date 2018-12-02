@@ -37,6 +37,16 @@ class Image(ABC):
         self.search_path = search_path
 
     @abstractmethod
+    def _key(self):
+        pass
+
+    def __repr__(self):
+        return repr((self._key(), repr(self.search_path)))
+
+    def __hash__(self):
+        return hash((self._key(), repr(self.search_path)))
+
+    @abstractmethod
     def get_rendition(self, output_scale=1, **kwargs):
         """ Get a rendition of the image with the specified output scale and specification.
 
@@ -187,6 +197,9 @@ class LocalImage(Image):
 
         self._record = record
         self._lock = threading.Lock()
+
+    def _key(self):
+        return LocalImage, self._record
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -573,6 +586,9 @@ class RemoteImage(Image):
         super().__init__(search_path)
         self.url = url
 
+    def _key(self):
+        return RemoteImage, self.url
+
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint: disable=unused-argument
         return self.url, None
@@ -627,6 +643,9 @@ class StaticImage(Image):
         super().__init__(search_path)
         self.path = path
 
+    def _key(self):
+        return StaticImage, self.path
+
     def get_rendition(self, output_scale=1, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url, self.search_path).get_rendition(output_scale, **kwargs)
@@ -647,6 +666,9 @@ class ImageNotFound(Image):
     def __init__(self, path, search_path):
         super().__init__(search_path)
         self.path = path
+
+    def _key(self):
+        return ImageNotFound, self.path
 
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=unused-argument
