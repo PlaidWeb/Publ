@@ -86,8 +86,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
                     div=utils.make_tag('div', {'class': container_args['more_class']}))
             text += flask.Markup(more_text)
 
-        if text and ('div_class' in container_args or
-                     'div_style' in container_args):
+        if text and (container_args.get('div_class') or
+                     container_args.get('div_style')):
             text = '</p>{tag}{text}</div><p>'.format(
                 tag=utils.make_tag('div',
                                    {'class': container_args.get('div_class'),
@@ -127,6 +127,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
     @staticmethod
     def paragraph(content):
         """ emit a paragraph, stripping out any leading or following empty paragraphs """
+
+        # if the content contains a top-level div then don't wrap it in a <p>
+        # tag
+        if content.startswith('<div') and content.endswith('</div>'):
+            return content
+
         text = '<p>' + content + '</p>'
 
         if text.startswith('<p></p>'):
