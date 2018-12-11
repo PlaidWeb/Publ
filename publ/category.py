@@ -20,6 +20,7 @@ from . import queries
 from . import path_alias
 from . import markdown
 from . import config
+from . import caching
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -38,7 +39,7 @@ def load_metafile(filepath):
     return None
 
 
-class Category:
+class Category(caching.Memoizable):
     """ Wrapper for category information """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
@@ -72,12 +73,6 @@ class Category:
 
     def _key(self):
         return Category, self.path
-
-    def __repr__(self):
-        return repr(self._key())
-
-    def __hash__(self):
-        return hash(self._key())
 
     @cached_property
     def _meta(self):
@@ -165,9 +160,6 @@ class Category:
         if isinstance(other, str):
             return other == self.path
         return other.path == self.path
-
-    def __hash__(self):
-        return hash(self.path)
 
     def __lt__(self, other):
         return self.path < other.path

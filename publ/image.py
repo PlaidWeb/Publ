@@ -64,7 +64,7 @@ class Image(ABC):
 
             for key in ('img_style', 'style'):
                 if key in kwargs:
-                    if isinstance(kwargs['style'], (list, tuple)):
+                    if isinstance(kwargs[key], (list, tuple)):
                         style += kwargs[key]
                     else:
                         style.append(kwargs[key])
