@@ -24,6 +24,7 @@ from . import path_alias
 from . import markdown
 from . import utils
 from . import cards
+from . import caching
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -36,7 +37,7 @@ def load_message(filepath):
         return email.message_from_file(file)
 
 
-class Entry:
+class Entry(caching.Memoizable):
     """ A wrapper for an entry. Lazily loads the actual message data when
     necessary.
     """
@@ -53,12 +54,6 @@ class Entry:
 
     def _key(self):
         return Entry, self._record.id, self._record.file_path
-
-    def __repr__(self):
-        return repr(self._key())
-
-    def __hash__(self):
-        return hash(self._key())
 
     @cached_property
     def date(self):

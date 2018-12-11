@@ -2,12 +2,12 @@
 """ Useful caching functions """
 
 import hashlib
+from abc import ABC, abstractmethod
 
 from flask_caching import Cache
 from flask import request
 
 from . import config
-from . import index
 
 cache = Cache()  # pylint: disable=invalid-name
 
@@ -19,6 +19,8 @@ def init_app(app):
 
 def do_not_cache():
     """ Return whether we should cache a page render """
+
+    from . import index  # pylint: disable=cyclic-import
 
     if index.in_progress():
         # We are reindexing the site
@@ -46,3 +48,17 @@ def get_etag(text):
     """ Compute the etag for the rendered text"""
 
     return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+
+class Memoizable(ABC):
+    """ Add this interface to a method to make it stably memoizable with the declared _key """
+
+    @abstractmethod
+    def _key(self):
+        pass
+
+    def __repr__(self):
+        return repr(self._key())
+
+    def __hash__(self):
+        return hash(self._key())
