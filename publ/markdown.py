@@ -88,7 +88,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         if text and (container_args.get('div_class') or
                      container_args.get('div_style')):
-            text = '</p>{tag}{text}</div><p>'.format(
+            text = '{tag}{text}</div>'.format(
                 tag=utils.make_tag('div',
                                    {'class': container_args.get('div_class'),
                                     'style': container_args.get('div_style')}),
@@ -131,7 +131,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         # if the content contains a top-level div then don't wrap it in a <p>
         # tag
         if content.startswith('<div') and content.endswith('</div>'):
-            return content
+            return '\n' + content + '\n'
 
         text = '<p>' + content + '</p>'
 
