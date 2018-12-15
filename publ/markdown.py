@@ -134,14 +134,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return content
 
         text = '<p>' + content + '</p>'
-
-        if text.startswith('<p></p>'):
-            text = text[7:]
-        if text.endswith('<p></p>'):
-            text = text[:-7]
-        text = text.replace('<p> </p>', '')
-
-        return text
+        text = re.sub(r'<p>\s*</p>', r'', text)
+        return text or ' '
 
     def _remap_path(self, path):
         """ Remap a path to an appropriate URL """
