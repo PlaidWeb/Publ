@@ -98,7 +98,7 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(None)
 
     @cached_property
-    def image_search_path(self):
+    def search_path(self):
         """ Get the image search path for the category """
         return [os.path.join(config.content_folder, self.path)]
 
@@ -125,7 +125,7 @@ class Category(caching.Memoizable):
     def _description(self, **kwargs):
         if self._meta:
             return flask.Markup(markdown.to_html(self._meta.get_payload(), config=kwargs,
-                                                 image_search_path=self.image_search_path))
+                                                 search_path=self.search_path))
         return None
 
     def __getattr__(self, name):
