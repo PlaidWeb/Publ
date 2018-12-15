@@ -28,14 +28,20 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
-    """ Customized renderer for enhancing Markdown formatting """
+    """ Customized renderer for enhancing Markdown formatting
 
-    def __init__(self, config, image_search_path):
+    Constructor arguments:
+
+    config -- The configuration for the Markdown tags
+    search_path -- Directories to look in for resolving relatively-linked files
+    """
+
+    def __init__(self, config, search_path):
         # pylint: disable=no-member
         super().__init__(0, config.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
         self._config = config
-        self._image_search_path = image_search_path
+        self._search_path = search_path
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.
@@ -155,7 +161,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         composite_args = {**container_args, **image_args}
 
         try:
-            img = image.get_image(path, self._image_search_path)
+            img = image.get_image(path, self._search_path)
         except Exception as err:  # pylint: disable=broad-except
             logger.exception("Got error on image %s: %s", path, err)
             return ('<span class="error">Error loading image {}: {}</span>'.format(
@@ -164,9 +170,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return img.get_img_tag(title, alt_text, **composite_args)
 
 
-def to_html(text, config, image_search_path):
+def to_html(text, config, search_path):
     """ Convert Markdown text to HTML """
-    processor = misaka.Markdown(HtmlRenderer(config, image_search_path),
+    processor = misaka.Markdown(HtmlRenderer(config, search_path),
                                 extensions=ENABLED_EXTENSIONS)
 
     text = processor(text)
