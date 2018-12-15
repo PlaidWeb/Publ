@@ -12,7 +12,7 @@ import arrow
 import flask
 import slugify
 
-from . import config
+from . import config, model
 
 
 class CallableProxy:
@@ -142,6 +142,37 @@ def find_file(path, search_path):
         if os.path.isfile(candidate):
             return candidate
 
+    return None
+
+
+def find_entry(rel_path, search_path):
+    """ Find an entry by relative path. Arguments:
+
+    path -- the entry's filename (or entry ID)
+    search_path -- a list of directories to check in
+
+    Returns: the resolved Entry object
+    """
+
+    from . import entry  # pylint:disable=cyclic-import
+
+    try:
+        entry_id = int(rel_path)
+        record = model.Entry.get(id=entry_id)
+        if record:
+            return entry.Entry(record)
+    except ValueError:
+        pass
+
+    if rel_path.startswith('/'):
+        search_path = [config.content_folder]
+        rel_path = '.' + rel_path
+
+    for where in search_path:
+        abspath = os.path.normpath(os.path.join(where, rel_path))
+        record = model.Entry.get(file_path=abspath)
+        if record:
+            return entry.Entry(record)
     return None
 
 
