@@ -162,9 +162,9 @@ class Entry(caching.Memoizable):
         return markdown.render_title(self._record.title, markup, no_smartquotes)
 
     @cached_property
-    def image_search_path(self):
+    def search_path(self):
         """ The relative image search path for this entry """
-        return [os.path.dirname(self._record.file_path)] + self.category.image_search_path
+        return [os.path.dirname(self._record.file_path)] + self.category.search_path
 
     @cached_property
     def _message(self):
@@ -234,7 +234,7 @@ class Entry(caching.Memoizable):
             return markdown.to_html(
                 text,
                 config=kwargs,
-                image_search_path=self.image_search_path)
+                search_path=self.search_path)
 
         return flask.Markup(text)
 
@@ -248,7 +248,7 @@ class Entry(caching.Memoizable):
         tags = og_tag('og:title', self.title)
         tags += og_tag('og:url', self.link(absolute=True))
 
-        card = cards.extract_card(text, kwargs, self.image_search_path)
+        card = cards.extract_card(text, kwargs, self.search_path)
         for image in card.images:
             tags += og_tag('og:image', image)
         if card.description:
