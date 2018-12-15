@@ -147,9 +147,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Remap a path to an appropriate URL """
 
         if not path.startswith('//') and not '://' in path:
-            found = utils.find_entry(path, self._search_path)
-            if found:
-                return found.link(self._config)
+            entry = utils.find_entry(path, self._search_path)
+            if entry:
+                return entry.link(self._config)
         return utils.remap_link_target(path, self._config.get('absolute'))
 
     def _render_image(self, spec, container_args, alt_text=None):
