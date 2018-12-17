@@ -226,8 +226,7 @@ def scan_file(fullpath, relpath):
         return True
 
     # update the category meta file mapping
-    category = meta.get(
-        'Category', utils.get_category(os.path.dirname(relpath)))
+    category = meta.get('Category', utils.get_category(relpath))
     values = {
         'category': category,
         'file_path': fullpath,
