@@ -332,7 +332,7 @@ def get_entry_id(entry, fullpath, assign_id):
     if entry_id:
         other_entry = model.Entry.get(id=entry_id)
         if (other_entry
-                and other_entry.file_path != fullpath
+                and not os.path.samefile(other_entry.file_path, fullpath)
                 and os.path.isfile(other_entry.file_path)):
             warn_duplicate = entry_id
             entry_id = None
