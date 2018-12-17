@@ -121,7 +121,7 @@ def render_publ_template(template, **kwargs):
     Returns tuple of (rendered text, etag)
     """
     text = render_template(
-        os.path.normpath(template.filename),
+        template.filename,
         template=template,
         image=image_function(
             template=template,
