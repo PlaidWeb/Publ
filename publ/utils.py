@@ -253,3 +253,8 @@ def remap_link_target(path, absolute=False):
         return urllib.parse.urljoin(flask.request.url, path)
 
     return path
+
+
+def get_category(filename):
+    """ Get a default category name from a filename in a cross-platform manner """
+    return '/'.join(os.path.dirname(filename).split(os.sep))
