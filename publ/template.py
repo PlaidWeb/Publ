@@ -20,7 +20,8 @@ class Template:
         """
         self.name = name
 
-        # on Windows, Flask expects template filenames to be /-separated
+        # Flask expects template filenames to be /-separated regardless of
+        # platform
         if os.sep != '/':
             self.filename = '/'.join(os.path.normpath(filename).split(os.sep))
         else:
