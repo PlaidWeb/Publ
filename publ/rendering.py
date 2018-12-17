@@ -362,4 +362,5 @@ def render_transparent_chit():
 
     out_bytes = base64.b64decode(
         "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-    return out_bytes, {'Content-Type': 'image/gif', 'ETag': 'chit'}
+    return out_bytes, {'Content-Type': 'image/gif', 'ETag': 'chit',
+                       'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
