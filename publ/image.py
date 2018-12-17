@@ -606,14 +606,16 @@ class RemoteImage(Image):
         height = kwargs.get('height')
         size_mode = kwargs.get('resize', 'fit')
 
-        max_width = kwargs.get('max_width', width)
-        max_height = kwargs.get('max_height', height)
-        if max_width < width:
-            height = height * max_width / width if height else None
-            width = max_width
-        if max_height < height:
-            width = width * max_height / height if width else None
-            height = max_height
+        if 'max_width' in kwargs:
+            max_width = kwargs['max_width']
+            if width is None or max_width < width:
+                height = height * max_width / width if height is not None else None
+                width = max_width
+        if 'max_height' in kwargs:
+            max_height = kwargs.get['max_height']
+            if height is None or max_height < height:
+                width = width * max_height / height if width is not None else None
+                height = max_height
 
         style_parts = [*style] if style else []
 

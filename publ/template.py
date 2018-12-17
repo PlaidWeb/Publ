@@ -19,7 +19,14 @@ class Template:
         file_path -- The full path to the template
         """
         self.name = name
-        self.filename = filename
+
+        # Flask expects template filenames to be /-separated regardless of
+        # platform
+        if os.sep != '/':
+            self.filename = '/'.join(os.path.normpath(filename).split(os.sep))
+        else:
+            self.filename = filename
+
         self.file_path = file_path
         self.mtime = os.stat(file_path).st_mtime
         self.last_modified = arrow.get(self.mtime)
