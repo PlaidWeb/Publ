@@ -189,6 +189,10 @@ def static_url(path, absolute=False):
     path -- the path to the file (relative to the static files directory)
     absolute -- whether the link should be absolute or relative
     """
+
+    if os.sep != '/':
+        path = '/'.join(path.split(os.sep))
+
     return flask.url_for('static', filename=path, _external=absolute)
 
 
