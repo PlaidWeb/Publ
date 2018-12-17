@@ -189,6 +189,10 @@ def static_url(path, absolute=False):
     path -- the path to the file (relative to the static files directory)
     absolute -- whether the link should be absolute or relative
     """
+
+    if os.sep != '/':
+        path = '/'.join(path.split(os.sep))
+
     return flask.url_for('static', filename=path, _external=absolute)
 
 
@@ -253,3 +257,8 @@ def remap_link_target(path, absolute=False):
         return urllib.parse.urljoin(flask.request.url, path)
 
     return path
+
+
+def get_category(filename):
+    """ Get a default category name from a filename in a cross-platform manner """
+    return '/'.join(os.path.dirname(filename).split(os.sep))

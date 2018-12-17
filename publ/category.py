@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 def load_metafile(filepath):
     """ Load a metadata file from the filesystem """
     try:
-        with open(filepath, 'r') as file:
+        with open(filepath, 'r', encoding='utf-8') as file:
             return email.message_from_file(file)
     except FileNotFoundError:
         logger.warning("Category file %s not found", filepath)
@@ -226,7 +226,7 @@ def scan_file(fullpath, relpath):
         return True
 
     # update the category meta file mapping
-    category = meta.get('Category', os.path.dirname(relpath))
+    category = meta.get('Category', utils.get_category(relpath))
     values = {
         'category': category,
         'file_path': fullpath,

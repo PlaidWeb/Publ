@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 @functools.lru_cache(10)
 def load_message(filepath):
     """ Load a message from the filesystem """
-    with open(filepath, 'r') as file:
+    with open(filepath, 'r', encoding='utf-8') as file:
         return email.message_from_file(file)
 
 
@@ -332,7 +332,7 @@ def get_entry_id(entry, fullpath, assign_id):
     if entry_id:
         other_entry = model.Entry.get(id=entry_id)
         if (other_entry
-                and other_entry.file_path != fullpath
+                and not os.path.samefile(other_entry.file_path, fullpath)
                 and os.path.isfile(other_entry.file_path)):
             warn_duplicate = entry_id
             entry_id = None
@@ -414,7 +414,7 @@ def scan_file(fullpath, relpath, assign_id):
 
     values = {
         'file_path': fullpath,
-        'category': entry.get('Category', os.path.dirname(relpath)),
+        'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
         'entry_type': entry.get('Entry-Type', ''),
         'slug_text': make_slug(entry.get('Slug-Text', title)),
