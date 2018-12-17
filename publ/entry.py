@@ -414,7 +414,7 @@ def scan_file(fullpath, relpath, assign_id):
 
     values = {
         'file_path': fullpath,
-        'category': entry.get('Category', os.path.dirname(relpath)),
+        'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
         'entry_type': entry.get('Entry-Type', ''),
         'slug_text': make_slug(entry.get('Slug-Text', title)),
