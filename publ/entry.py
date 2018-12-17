@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 @functools.lru_cache(10)
 def load_message(filepath):
     """ Load a message from the filesystem """
-    with open(filepath, 'r') as file:
+    with open(filepath, 'r', encoding='utf-8') as file:
         return email.message_from_file(file)
 
 
