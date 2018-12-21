@@ -245,7 +245,7 @@ class Entry(caching.Memoizable):
             """ produce an OpenGraph tag with the given key and value """
             return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
 
-        tags = og_tag('og:title', self.title)
+        tags = og_tag('og:title', self.title(markup=False))
         tags += og_tag('og:url', self.link(absolute=True))
 
         card = cards.extract_card(text, kwargs, self.search_path)
