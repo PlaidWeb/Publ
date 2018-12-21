@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class GlobalConfig(db.Entity):
@@ -54,8 +54,9 @@ class Entry(db.Entity):
     # arbitrary timezone, for pagination
     local_date = orm.Required(datetime.datetime)
 
-    # The actual displayable date
-    display_date = orm.Required(datetime.datetime)
+    # The actual displayable date - stored as string to guarantee the timezone
+    # is maintained
+    display_date = orm.Required(str)
 
     slug_text = orm.Optional(str)
     entry_type = orm.Optional(str)

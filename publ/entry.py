@@ -447,7 +447,7 @@ def scan_file(fullpath, relpath, assign_id):
             entry['Last-Modified'] = last_modified.format()
             fixup_needed = True
 
-    values['display_date'] = entry_date.datetime
+    values['display_date'] = entry_date.isoformat()
     values['utc_date'] = entry_date.to('utc').datetime
     values['local_date'] = entry_date.naive
 
