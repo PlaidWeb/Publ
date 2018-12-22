@@ -27,13 +27,13 @@ PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 ORDER_BY = {
     'newest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
     'oldest': (model.Entry.local_date, model.Entry.id),
-    'title': (model.Entry.title, model.Entry.id)
+    'title': (model.Entry.sort_title, model.Entry.id)
 }
 
 REVERSE_ORDER_BY = {
     'newest': (model.Entry.local_date, model.Entry.id),
     'oldest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
-    'title': (orm.desc(model.Entry.title), orm.desc(model.Entry.id))
+    'title': (orm.desc(model.Entry.sort_title), orm.desc(model.Entry.id))
 }
 
 
