@@ -23,6 +23,7 @@ file hierarchy.
 * Use external tools for site content editing
 * Be CDN-friendly
 * High-DPI images and image sets as first-class citizens
+* Interoperate with everything that's open for interoperation (especially [IndieWeb](http://indieweb.org))
 
 ## See it in action
 
@@ -40,3 +41,9 @@ The file system is the ground truth for all site data, and while it does use a
 database as a content index, the actual choice of database shouldn't matter all
 that much. I am targeting SQLite for development, but mysql and Postgres should
 be supported as well.
+
+## Additional resources
+
+The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of the templates, site content, and configuration for the [Publ site](http://publ.beesbuzz.biz).
+
+The [Publ-templates-beesbuzz.biz](https://github.com/PlaidWeb/Publ-templates-beesbuzz.biz) repository provides a stripped-down sample site based on [my personal homepage](http://beesbuzz.biz).
