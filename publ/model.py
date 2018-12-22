@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class GlobalConfig(db.Entity):
@@ -61,7 +61,9 @@ class Entry(db.Entity):
     slug_text = orm.Optional(str)
     entry_type = orm.Optional(str)
     redirect_url = orm.Optional(str)   # maps to Redirect-To
+
     title = orm.Optional(str)
+    sort_title = orm.Optional(str)
 
     aliases = orm.Set("PathAlias")
 
@@ -69,6 +71,7 @@ class Entry(db.Entity):
 
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
+    orm.composite_index(category, entry_type, sort_title)
 
 
 class Category(db.Entity):
