@@ -330,12 +330,16 @@ def get_entry_id(entry, fullpath, assign_id):
 
     # See if we've inadvertently duplicated an entry ID
     if entry_id:
-        other_entry = model.Entry.get(id=entry_id)
-        if (other_entry
-                and not os.path.samefile(other_entry.file_path, fullpath)
-                and os.path.isfile(other_entry.file_path)):
-            warn_duplicate = entry_id
-            entry_id = None
+        try:
+            other_entry = model.Entry.get(id=entry_id)
+            if (other_entry
+                    and os.path.isfile(other_entry.file_path)
+                    and not os.path.samefile(other_entry.file_path, fullpath)):
+                warn_duplicate = entry_id
+                entry_id = None
+        except FileNotFoundError:
+            # the other file doesn't exist, so just let it go
+            pass
 
     # Do we need to assign a new ID?
     if not entry_id and not assign_id:
