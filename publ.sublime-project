@@ -1,0 +1,9 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+            "folder_exclude_patterns": ["__pycache__", "*.egg-info", "build", "dist"]
+		}
+	]
+}
