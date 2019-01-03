@@ -111,3 +111,4 @@ logs/
 tmp/
 index.db
 *.db
+publ.sublime-workspace
