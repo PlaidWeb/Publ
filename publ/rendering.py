@@ -159,6 +159,7 @@ def render_error(category, error_message, error_codes, exception=None):
     if template:
         return render_publ_template(
             template,
+            _url_root=request.url_root,
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code
 
@@ -256,6 +257,7 @@ def render_category(category='', template=None):
 
     rendered, etag = render_publ_template(
         tmpl,
+        _url_root=request.url_root,
         category=Category(category),
         view=view_obj)
 
@@ -344,6 +346,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     rendered, etag = render_publ_template(
         tmpl,
+        _url_root=request.url_root,
         entry=entry_obj,
         category=Category(category))
 
