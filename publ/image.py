@@ -510,7 +510,7 @@ class LocalImage(Image):
 
         return image.convert('RGB')
 
-    def _get_renditions(kwargs):
+    def _get_renditions(self, kwargs):
         """ Get a bunch of renditions; returns a tuple of 1x, 2x, size """
         img_1x, size = self.get_rendition(
             1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
@@ -523,7 +523,7 @@ class LocalImage(Image):
         """ Get an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
-        img_1x, img_2x, size = self.get_renditions(kwargs)
+        img_1x, img_2x, size = self._get_renditions(kwargs)
 
         return utils.make_tag('img', {
             'src': img_1x,
@@ -541,7 +541,7 @@ class LocalImage(Image):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
 
         # Get the 1x and 2x renditions
-        img_1x, img_2x, size = self.get_renditions(kwargs)
+        img_1x, img_2x, size = self._get_renditions(kwargs)
 
         tmpl = 'background-image: url("{s1x}");'
         if img_1x != img_2x:
