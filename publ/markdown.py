@@ -146,11 +146,19 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def _remap_path(self, path):
         """ Remap a path to an appropriate URL """
 
+        # Remote or static URL: do the thing
         if not path.startswith('//') and not '://' in path:
             path, sep, anchor = path.partition('#')
             entry = utils.find_entry(path, self._search_path)
             if entry:
                 return entry.link(self._config) + sep + anchor
+
+        # Image URL: do the thing
+        img_path, img_args, _ = image.parse_image_spec(path)
+        img = image.get_image(img_path, self._search_path)
+        if isinstance(img, image.LocalImage):
+            path, _ = img.get_rendition(**img_args)
+
         return utils.remap_link_target(path, self._config.get('absolute'))
 
     def _render_image(self, spec, container_args, alt_text=None):
