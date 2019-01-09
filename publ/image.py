@@ -261,6 +261,8 @@ class LocalImage(Image):
         if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
             out_spec.append('q' + str(kwargs['quality']))
             out_args['quality'] = kwargs['quality']
+        if ext in ('.jpg', '.jpeg'):
+            out_args['optimize'] = True
 
         # Build the output filename
         out_basename = '_'.join([str(s) for s in out_spec]) + ext
@@ -508,14 +510,20 @@ class LocalImage(Image):
 
         return image.convert('RGB')
 
-    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
-        """ Get an <img> tag for this image, hidpi-aware """
-
-        # Get the 1x and 2x renditions
+    def _get_renditions(kwargs):
+        """ Get a bunch of renditions; returns a tuple of 1x, 2x, size """
         img_1x, size = self.get_rendition(
             1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
         img_2x, _ = self.get_rendition(
             2, **utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
+
+        return (img_1x, img_2x, size)
+
+    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
+        """ Get an <img> tag for this image, hidpi-aware """
+
+        # Get the 1x and 2x renditions
+        img_1x, img_2x, size = self.get_renditions(kwargs)
 
         return utils.make_tag('img', {
             'src': img_1x,
@@ -533,10 +541,7 @@ class LocalImage(Image):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
 
         # Get the 1x and 2x renditions
-        img_1x, _ = self.get_rendition(
-            1, **utils.remap_args(kwargs, {"quality": "quality_ldpi"}))
-        img_2x, _ = self.get_rendition(
-            2, **utils.remap_args(kwargs, {"quality": "quality_hdpi"}))
+        img_1x, img_2x, size = self.get_renditions(kwargs)
 
         tmpl = 'background-image: url("{s1x}");'
         if img_1x != img_2x:
@@ -814,8 +819,8 @@ def parse_image_spec(spec):
 
 
 def get_spec_list(image_specs, container_args):
-    """ Given a list of specs and a set of container args, return the final
-    container argument list """
+    """ Given a list of specs and a set of container args, return a tuple of
+    the final container argument list and the original list size """
 
     spec_list = [spec.strip() for spec in image_specs.split('|')]
     original_count = len(spec_list)
