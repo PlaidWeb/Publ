@@ -51,7 +51,6 @@ class Image(ABC):
         """ Get a rendition of the image with the specified output scale and specification.
 
         Returns: a tuple of (url, size) for the image. """
-        pass
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         """ Build a <img> tag for the image with the specified options.
@@ -108,7 +107,6 @@ class Image(ABC):
     @abstractmethod
     def _img_tag(self, title, alt_text, style, **kwargs):
         """ Implemented by the subclasses for actually emitting the HTML """
-        pass
 
     def get_css_background(self, uncomment=False, **kwargs):
         """ Get the CSS background attributes for an element.
@@ -131,7 +129,6 @@ class Image(ABC):
         """ Build CSS background-image properties that apply this image.
 
         Returns: a CSS fragment. """
-        pass
 
     def __call__(self, *args, **kwargs):
         url, _ = self.get_rendition(*args, **kwargs)
@@ -545,7 +542,7 @@ class LocalImage(Image):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
 
         # Get the 1x and 2x renditions
-        img_1x, img_2x, size = self._get_renditions(kwargs)
+        img_1x, img_2x, _ = self._get_renditions(kwargs)
 
         tmpl = 'background-image: url("{s1x}");'
         if img_1x != img_2x:
