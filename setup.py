@@ -53,7 +53,7 @@ setup(
     install_requires=[
         'Flask',
         'flask_caching',
-        'arrow',
+        'arrow>=0.13.0',
         'pony',
         'misaka',
         'Pillow',
