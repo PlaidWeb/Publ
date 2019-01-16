@@ -481,7 +481,9 @@ def scan_file(fullpath, relpath, assign_id):
     for alias in entry.get_all('Path-Unalias', []):
         path_alias.remove_alias(alias)
 
-    if fixup_needed:
+    if record.status == model.PublishStatus.DRAFT.value:
+        logger.info("Not touching draft entry %s", fullpath)
+    elif fixup_needed:
         logger.info("Fixing up entry %s", fullpath)
         save_file(fullpath, entry)
 
