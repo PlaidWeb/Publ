@@ -445,7 +445,7 @@ def scan_file(fullpath, relpath, assign_id):
         last_modified_str = entry['Last-Modified']
         try:
             last_modified = arrow.get(
-                last_modified_str, txinfo=config.timezone)
+                last_modified_str, tzinfo=config.timezone)
         except arrow.parser.ParserError:
             last_modified = arrow.get()
             del entry['Last-Modified']
