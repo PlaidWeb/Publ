@@ -4,6 +4,8 @@
 from setuptools import setup, find_packages
 from os import path
 
+import publ
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
@@ -13,7 +15,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='Publ',
 
-    version='0.3.14',
+    version=publ.__version__,
 
     description='A content-management system for flexible web-based publishing',
 
