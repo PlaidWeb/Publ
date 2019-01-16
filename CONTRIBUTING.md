@@ -1,4 +1,4 @@
-## Contributing to Publ
+# Contributing to Publ
 
 Thank you so much for wanting to help make web publishing better!
 
@@ -21,7 +21,8 @@ as it sets out general guidelines for interactions.
     the same content as it had at the time of snapshot (assuming content hasn't
     been reordered, added, or changed since then, of course).
 
-    As a point of comparison, Tumblr paginates with `/page/N` suffixes; if someone finds and saves
+    As a point of comparison, many blogging systems (Tumblr, LiveJournal, WordPress, etc.)
+    paginate with `/page/N` suffixes; if someone finds and saves
     a page like, say, [http://tumblr.beesbuzz.biz/page/5](http://tumblr.beesbuzz.biz/page/5)
     because they like a piece of content that was on it, if they come back later the
     content will have probably disappeared from that page. This is especially bad
@@ -31,10 +32,10 @@ as it sets out general guidelines for interactions.
     a category page and an entry permalink to share content with their friends
     or future selves.
 
-* Templates should be writeable by people who aren't programmers.
+* Templates should be writable by people who aren't programmers.
 
-    Throughout the code there is a common pattern where things derive from
-    `SelfStrCall`, a wrapper which allows a string value to also take additional
+    Throughout the code there is a common pattern where properties are wrapped by
+    `CallableProxy`, which allows a function return to also take additional
     function parameters. This is bad Python practice, but it makes for more
     sensible/intuitive template functionality.
 
@@ -44,17 +45,16 @@ as it sets out general guidelines for interactions.
     write, as users won't have to think about whether something is a property
     or a function — why should they even have to know what those things are?
 
-    (That said, if there's a more Pythonic approach to handling this use
-    case, please feel free to [open an issue](http://github.com/fluffy-critter/Publ/issues/new/)
-    or, better yet, implement a change and submit a pull request!)
+    Templates themselves should also always be maintainable by people with only
+    a basic understanding of HTML. Fortunately, most of this is handled by Jinja.
 
 ## What to be familiar with
 
-This project is built using Python 3, [Flask](http://flask.pocoo.org), and
-[Peewee](http://peewee.readthedocs.io). The use of Flask also implies the usage
-of [Jinja](http://jinja.pocoo.org). The primary intended format for users to
+This project is built using Python 3, [Flask](http://flask.pocoo.org)+[Jinja](http://jinja.pocoo.org),
+and [Pony](http://ponyorm.com). The primary intended format for users to
 interact with is Markdown, specifically the flavor expressed by
-[Misaka](http://misaka.61924.nl).
+[Misaka](http://misaka.61924.nl), but pure-HTML entries should also be treated
+as first-class, citizens.
 
 ## Code quality
 
@@ -74,7 +74,7 @@ it working on the live site. If the functionality is regarding indexing or entry
 rewriting, a best effort should be made to ensure it still works.
 
 Any new functionality should also come with updates to the appropriate sections
-of the manual.
+of the [manual](https://github.com/PlaidWeb/Publ-site).
 
 Code should attempt to be self-documenting, but should also be commented to
 explain what's going on, at least at a high level.
