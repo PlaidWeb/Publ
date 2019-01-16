@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ category.name or 'My simple site' }}</title>
+</head>
+
+<body>
+<h1>{{ category.name or 'My simple site'}}</h1>
+{% for entry in view.entries %}
+<article>
+<h2><a href="{{entry.permalink}}">{{ entry.title }}</a></h2>
+{{ entry.body }}
+
+{% if entry.more %}
+<a rel="more" href="{{entry.permalink}}">More...</a>
+{% endif %}
+</article>
+{% endfor %}
+
+</body>
+</html>

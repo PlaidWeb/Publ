@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ entry.title }}</title>
+</head>
+
+<body>
+<h1><a href="{{category.link}}">{{ category.name or 'My simple site' }}</a></h1>
+<article>
+<h2>{{ entry.title }}</h2>
+
+{{ entry.body }}
+{{ entry.more }}
+</article>
+
+</body>
+</html>
