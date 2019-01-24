@@ -4,11 +4,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-publ = {editable = true,path = "."}
 pylint = "*"
 twine = "*"
 
 [packages]
+publ = {editable = true,path = "."}
 
 [requires]
 python_version = "3.7"
