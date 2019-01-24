@@ -92,6 +92,16 @@ class Entry(caching.Memoizable):
         return CallableProxy(self._archive_link)
 
     @cached_property
+    def type(self):
+        """ An alias for entry_type """
+        return self.entry_type
+
+    @cached_property
+    def status(self):
+        """ Returns a string version of the entry status """
+        return Model.PublishStatus(self.status)
+
+    @cached_property
     def next(self):
         """ Get the next entry in the category, ordered by date.
 
