@@ -237,12 +237,12 @@ def render_category(category='', template=None):
     tmpl = map_template(category, template)
 
     if not tmpl:
-       # this might actually be a malformed category URL
-        test_path = os.path.join(category, template)
+        # this might actually be a malformed category URL
+        test_path = '/'.join((category, template))
         record = orm.select(
             e for e in model.Entry if e.category == test_path).exists()
         if record:
-            return redirect(url_for('category', category=test_path))
+            return redirect(url_for('category', category=test_path, **request.args))
 
         # nope, we just don't know what this is
         raise http_error.NotFound("No such view")
