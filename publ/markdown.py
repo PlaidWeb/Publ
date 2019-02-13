@@ -1,7 +1,5 @@
 # markdown.py
-""" handler for markdown formatting """
-
-from __future__ import absolute_import
+""" markdown formatting functionality """
 
 import logging
 import html.parser
@@ -247,10 +245,6 @@ class HTMLStripper(html.parser.HTMLParser):
     def get_data(self):
         """ Concatenate the output """
         return ''.join(self.fed)
-
-    def error(self, message):
-        """ Deprecated, per https://bugs.python.org/issue31844 """
-        return message
 
 
 def render_title(text, markup=True, no_smartquotes=False):
