@@ -12,7 +12,7 @@ from pony.orm import db_session
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
-__version__ = '0.3.14'
+__version__ = '0.3.15'
 
 
 class _PublApp(flask.Flask):
