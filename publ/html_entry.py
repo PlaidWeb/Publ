@@ -77,7 +77,6 @@ class HTMLEntry(utils.HTMLTransform):
         img = image.get_image(img_path, self._search_path)
 
         for key, val in img_args.items():
-            print(key, val)
             if val and key not in config:
                 config[key] = val
 
