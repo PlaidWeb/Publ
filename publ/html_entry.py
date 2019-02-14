@@ -1,16 +1,13 @@
 # html_entry.py
 """ HTML entry processing functionality """
 
-import html.parser
-
 import misaka
 import flask
 
-from . import utils
-from . import image
+from . import utils, links, image
 
 
-class HTMLEntry(html.parser.HTMLParser):
+class HTMLEntry(utils.HTMLTransform):
     """ An HTML manipulator to fixup src and href attributes """
 
     def __init__(self, config, search_path):
@@ -19,18 +16,8 @@ class HTMLEntry(html.parser.HTMLParser):
         self._search_path = search_path
         self._config = config
 
-        self.reset()
-        self.strict = False
-        self.convert_charrefs = False
-        self.fed = []
-
     def handle_data(self, data):
-        """ Simply append the text data """
-        self.fed.append(data)
-
-    def get_data(self):
-        """ Concatenate the output """
-        return ''.join(self.fed)
+        self.append(data)
 
     def handle_starttag(self, tag, attrs):
         """ Handle a start tag """
@@ -38,15 +25,11 @@ class HTMLEntry(html.parser.HTMLParser):
 
     def handle_endtag(self, tag):
         """ Handle an end tag """
-        self.fed.append('</' + tag + '>')
+        self.append('</' + tag + '>')
 
     def handle_startendtag(self, tag, attrs):
         """ Handle a self-closing tag """
         self._handle_tag(tag, attrs, True)
-
-    def error(self, message):
-        """ Deprecated, per https://bugs.python.org/issue31844 """
-        return message
 
     def _handle_tag(self, tag, attrs, self_closing):
         """ Handle a tag.
@@ -61,12 +44,14 @@ class HTMLEntry(html.parser.HTMLParser):
         # Remap the attributes
         out_attrs = []
         for key, val in attrs:
-            if key.lower() == 'href':
-                out_attrs.append((key, self._remap_path(val)))
+            if (key.lower() == 'href'
+                    or (key.lower() == 'src' and not tag.lower() == 'img')):
+                out_attrs.append((key, links.remap_path(
+                    val, self._search_path, self._config.get('absolute'))))
             else:
                 out_attrs.append((key, val))
 
-        self.fed.append(
+        self.append(
             utils.make_tag(
                 tag,
                 out_attrs,
@@ -77,46 +62,39 @@ class HTMLEntry(html.parser.HTMLParser):
         """
 
         path = None
-        config = self._config
+        config = {**self._config}
 
         for key, val in attrs:
             if key.lower() == 'width' or key.lower() == 'height':
                 try:
-                    config = {**config, key.lower(): int(val)}
+                    config[key.lower()] = int(val)
                 except ValueError:
                     pass
             elif key.lower() == 'src':
                 path = val
 
-        img = image.get_image(path, self._search_path)
+        img_path, img_args, _ = image.parse_image_spec(path)
+        img = image.get_image(img_path, self._search_path)
+
+        print('img_args', img_args)
+        print(config)
+
+        for key, val in img_args.items():
+            print(key, val)
+            if val and key not in config:
+                config[key] = val
 
         try:
             img_attrs = {k: v for k, v in img.get_img_attrs(**config)}
         except FileNotFoundError as error:
             return [('data-publ-error', 'file not found: {}'.format(error.filename))]
 
+        # return the original attr list with the computed overrides in place
         return [(key, val) for key, val in attrs if key not in img_attrs] + list(img_attrs.items())
-
-    def _remap_path(self, path):
-        """ Remap a link target to an appropriate URL """
-
-        # Remote or static URL: do the thing
-        if not path.startswith('//') and not '://' in path:
-            path, sep, anchor = path.partition('#')
-            entry = utils.find_entry(path, self._search_path)
-            if entry:
-                return entry.link(self._config) + sep + anchor
-
-        # Image URL: do the thing
-        img_path, img_args, _ = image.parse_image_spec(path)
-        img = image.get_image(img_path, self._search_path)
-        if isinstance(img, image.LocalImage):
-            path, _ = img.get_rendition(**img_args)
-
-        return utils.remap_link_target(path, self._config.get('absolute'))
 
 
 def process(text, config, search_path):
+    """ Process an HTML entry's HTML """
     processor = HTMLEntry(config, search_path)
     processor.feed(text)
     text = processor.get_data()

@@ -6,6 +6,7 @@ from __future__ import absolute_import, with_statement
 import re
 import os
 import html
+import html.parser
 import urllib.parse
 
 import arrow
@@ -270,3 +271,34 @@ def remap_link_target(path, absolute=False):
 def get_category(filename):
     """ Get a default category name from a filename in a cross-platform manner """
     return '/'.join(os.path.dirname(filename).split(os.sep))
+
+
+class HTMLTransform(html.parser.HTMLParser):
+    """ Wrapper to HTMLParser to make it easier to build a SAX-style processor.
+
+    You will probably want to implement:
+        handle_starttag(self, tag, attrs)
+        handle_endtag(self, tag)
+        handle_data(self, data)
+        handle_startendtag(self, tag, attrs)
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = False
+        self._fed = []
+
+    def append(self, item):
+        """ Append some text to the output """
+        self._fed.append(item)
+
+    def get_data(self):
+        """ Concatenate the output """
+        return ''.join(self._fed)
+
+    def error(self, message):
+        """ Deprecated, per https://bugs.python.org/issue31844 """
+        return message
