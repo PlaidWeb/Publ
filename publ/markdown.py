@@ -2,7 +2,6 @@
 """ markdown formatting functionality """
 
 import logging
-import html.parser
 import re
 
 import misaka
@@ -12,7 +11,7 @@ import pygments
 import pygments.formatters
 import pygments.lexers
 
-from . import image, utils
+from . import image, utils, links
 
 TITLE_EXTENSIONS = (
     'strikethrough', 'math',
@@ -119,7 +118,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def link(self, content, link, title=''):
         """ Emit a link, potentially remapped based on our embed or static rules """
 
-        link = self._remap_path(link)
+        link = links.remap_path(link, self._search_path,
+                                self._config.get('absolute'))
 
         return '{}{}</a>'.format(
             utils.make_tag('a', {
@@ -140,24 +140,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
         text = '<p>' + content + '</p>'
         text = re.sub(r'<p>\s*</p>', r'', text)
         return text or ' '
-
-    def _remap_path(self, path):
-        """ Remap a path to an appropriate URL """
-
-        # Remote or static URL: do the thing
-        if not path.startswith('//') and not '://' in path:
-            path, sep, anchor = path.partition('#')
-            entry = utils.find_entry(path, self._search_path)
-            if entry:
-                return entry.link(self._config) + sep + anchor
-
-        # Image URL: do the thing
-        img_path, img_args, _ = image.parse_image_spec(path)
-        img = image.get_image(img_path, self._search_path)
-        if isinstance(img, image.LocalImage):
-            path, _ = img.get_rendition(**img_args)
-
-        return utils.remap_link_target(path, self._config.get('absolute'))
 
     def _render_image(self, spec, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
@@ -226,25 +208,11 @@ class TitleRenderer(HtmlRenderer):
         return content
 
 
-class HTMLStripper(html.parser.HTMLParser):
-    """ A utility class to strip HTML from a string; based on
-    https://stackoverflow.com/a/925630/318857 """
-
-    def __init__(self):
-        super().__init__()
-
-        self.reset()
-        self.strict = False
-        self.convert_charrefs = True
-        self.fed = []
+class HTMLStripper(utils.HTMLTransform):
+    """ Strip all HTML tags from a document """
 
     def handle_data(self, data):
-        """ Append the text data """
-        self.fed.append(data)
-
-    def get_data(self):
-        """ Concatenate the output """
-        return ''.join(self.fed)
+        self.append(data)
 
 
 def render_title(text, markup=True, no_smartquotes=False):

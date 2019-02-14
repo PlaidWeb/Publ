@@ -677,9 +677,9 @@ class StaticImage(Image):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url, self.search_path).get_rendition(output_scale, **kwargs)
 
-    def get_img_attrs(self, title='', alt_text='', style=None, **kwargs):
+    def get_img_attrs(self, style=None, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url, self.search_path).get_img_attrs(title, alt_text, style, **kwargs)
+        return RemoteImage(url, self.search_path).get_img_attrs(style, **kwargs)
 
     def _css_background(self, **kwargs):
         # pylint: disable=arguments-differ
