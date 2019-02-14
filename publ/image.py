@@ -52,13 +52,21 @@ class Image(ABC):
 
         Returns: a tuple of (url, size) for the image. """
 
+    @abstractmethod
+    def get_img_attrs(self, style=None, **kwargs):
+        """ Get an attribute list (src, srcset, style, et al) for the image.
+
+        style -- an optional list of CSS style fragments
+
+        Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
+        """
+
     def get_img_tag(self, title='', alt_text='', **kwargs):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
 
         try:
-
             style = []
 
             for key in ('img_style', 'style'):
@@ -76,15 +84,25 @@ class Image(ABC):
                 if shape:
                     style.append("shape-outside: url('{}')".format(shape))
 
+            attrs = {
+                'alt_text': alt_text,
+                'title': title,
+                **self.get_img_attrs(style, **kwargs)
+            }
+
             return flask.Markup(
                 self._wrap_link_target(
                     kwargs,
-                    self._img_tag(title, alt_text, style, **kwargs),
+                    utils.make_tag(
+                        'img', attrs, start_end=kwargs.get('xhtml')),
                     title))
         except FileNotFoundError as error:
-            return flask.Markup(
-                '<span class="error">File not found: {}</span>'.format(
-                    error.filename))
+            text = '<span class="error">Image not found: <code>{}</code>'.format(
+                html.escape(error.filename))
+            if ' ' in error.filename:
+                text += ' (Did you forget a <code>|</code>?)'
+            text += '</span>'
+            return flask.Markup(text)
 
     def _get_shape_style(self, **kwargs):
         shape = kwargs['shape']
@@ -103,10 +121,6 @@ class Image(ABC):
             other_image = get_image(shape, self.search_path)
             url, _ = other_image.get_rendition(1, **size_args)
         return url
-
-    @abstractmethod
-    def _img_tag(self, title, alt_text, style, **kwargs):
-        """ Implemented by the subclasses for actually emitting the HTML """
 
     def get_css_background(self, uncomment=False, **kwargs):
         """ Get the CSS background attributes for an element.
@@ -520,23 +534,21 @@ class LocalImage(Image):
 
         return (img_1x, img_2x, size)
 
-    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
+    def get_img_attrs(self, style=None, **kwargs):
         """ Get an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
 
-        return utils.make_tag('img', {
+        return {
             'src': img_1x,
             'width': size[0],
             'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
             'style': ';'.join(style) if style else None,
             'class': kwargs.get('class', kwargs.get('img_class')),
-            'id': kwargs.get('img_id'),
-            'title': title,
-            'alt': alt_text
-        }, start_end=kwargs.get('xhtml'))
+            'id': kwargs.get('img_id')
+        }
 
     def _css_background(self, **kwargs):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
@@ -599,10 +611,8 @@ class RemoteImage(Image):
         # pylint: disable=unused-argument
         return self.url, None
 
-    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
+    def get_img_attrs(self, style=None, **kwargs):
         attrs = {
-            'title': title,
-            'alt': alt_text,
             'class': kwargs.get('class', kwargs.get('img_class')),
             'id': kwargs.get('img_id'),
         }
@@ -645,7 +655,7 @@ class RemoteImage(Image):
         if style_parts:
             attrs['style'] = ';'.join(style_parts)
 
-        return utils.make_tag('img', attrs, start_end=kwargs.get('xhtml'))
+        return attrs
 
     def _css_background(self, **kwargs):
         """ Get the CSS background-image for the remote image """
@@ -667,9 +677,9 @@ class StaticImage(Image):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
         return RemoteImage(url, self.search_path).get_rendition(output_scale, **kwargs)
 
-    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
+    def get_img_attrs(self, style=None, **kwargs):
         url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url, self.search_path)._img_tag(title, alt_text, style, **kwargs)
+        return RemoteImage(url, self.search_path).get_img_attrs(style, **kwargs)
 
     def _css_background(self, **kwargs):
         # pylint: disable=arguments-differ
@@ -692,14 +702,10 @@ class ImageNotFound(Image):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
-    def _img_tag(self, title='', alt_text='', style=None, **kwargs):
+    def get_img_attrs(self, style=None, **kwargs):
         # pylint:disable=unused-argument
-        text = '<span class="error">Image not found: <code>{}</code>'.format(
-            html.escape(self.path))
-        if ' ' in self.path:
-            text += ' (Did you forget a <code>|</code>?)'
-        text += '</span>'
-        return flask.Markup(text)
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
     def _css_background(self, **kwargs):
         return '/* not found: {} */'.format(self.path)
