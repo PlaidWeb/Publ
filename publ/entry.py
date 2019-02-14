@@ -25,6 +25,7 @@ from . import markdown
 from . import utils
 from . import cards
 from . import caching
+from . import html_entry
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -99,7 +100,7 @@ class Entry(caching.Memoizable):
     @cached_property
     def status(self):
         """ Returns a string version of the entry status """
-        return Model.PublishStatus(self.status)
+        return model.PublishStatus(self.status)
 
     @cached_property
     def next(self):
@@ -246,7 +247,10 @@ class Entry(caching.Memoizable):
                 config=kwargs,
                 search_path=self.search_path)
 
-        return flask.Markup(text)
+        return html_entry.process(
+            text,
+            config=kwargs,
+            search_path=self.search_path)
 
     def _get_card(self, text, **kwargs):
         """ Render out the tags for a Twitter/OpenGraph card for this entry. """
