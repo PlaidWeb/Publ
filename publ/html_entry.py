@@ -87,7 +87,7 @@ class HTMLEntry(utils.HTMLTransform):
             return [('data-publ-error', 'file not found: {}'.format(error.filename))]
 
         # return the original attr list with the computed overrides in place
-        return [(key, val) for key, val in attrs if key not in img_attrs] + [i for i in img_attrs.items()]
+        return [(key, val) for key, val in attrs if key not in img_attrs] + list(img_attrs.items())
 
 
 def process(text, config, search_path):
