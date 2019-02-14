@@ -58,7 +58,7 @@ class Image(ABC):
 
         style -- an optional list of CSS style fragments
 
-        Returns: a list of tuples e.g. [('src','foo.jpg'),('srcset','foo.jpg 1x, bar.jpg 2x')]
+        Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
@@ -84,11 +84,11 @@ class Image(ABC):
                 if shape:
                     style.append("shape-outside: url('{}')".format(shape))
 
-            attrs = [
-                ('alt_text', alt_text),
-                ('title', title if title else None),
-                *self.get_img_attrs(style, **kwargs)
-            ]
+            attrs = {
+                'alt_text': alt_text,
+                'title': title,
+                **self.get_img_attrs(style, **kwargs)
+            }
 
             return flask.Markup(
                 self._wrap_link_target(
@@ -540,16 +540,15 @@ class LocalImage(Image):
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
 
-        return [
-            ('src', img_1x),
-            ('width', size[0]),
-            ('height', size[1]),
-            ('srcset', "{} 1x, {} 2x".format(img_1x, img_2x)
-             if img_1x != img_2x else None),
-            ('style', ';'.join(style) if style else None),
-            ('class', kwargs.get('class', kwargs.get('img_class'))),
-            ('id', kwargs.get('img_id'))
-        ]
+        return {
+            'src': img_1x,
+            'width': size[0],
+            'height': size[1],
+            'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
+            'style': ';'.join(style) if style else None,
+            'class': kwargs.get('class', kwargs.get('img_class')),
+            'id': kwargs.get('img_id')
+        }
 
     def _css_background(self, **kwargs):
         """ Get the CSS specifiers for this as a hidpi-capable background image """
@@ -613,10 +612,10 @@ class RemoteImage(Image):
         return self.url, None
 
     def get_img_attrs(self, style=None, **kwargs):
-        attrs = [
-            ('class', kwargs.get('class', kwargs.get('img_class'))),
-            ('id', kwargs.get('img_id')),
-        ]
+        attrs = {
+            'class': kwargs.get('class', kwargs.get('img_class')),
+            'id': kwargs.get('img_id'),
+        }
 
         # try to fudge the sizing
         max_width = kwargs.get('max_width')
@@ -645,15 +644,16 @@ class RemoteImage(Image):
                     kwargs.get('fill_crop_y', 0.5) * 100),
                 'background-repeat:no-repeat'
             ]
-            attrs.append(('src', flask.url_for(
-                'chit', _external=kwargs.get('absolute'))))
+            attrs['src'] = flask.url_for(
+                'chit', _external=kwargs.get('absolute'))
         else:
-            attrs.append(('src', self.url))
+            attrs['src'] = self.url
 
-        attrs += [('width', width), ('height', height)]
+        attrs['width'] = width
+        attrs['height'] = height
 
         if style_parts:
-            attrs.append(('style', ';'.join(style_parts)))
+            attrs['style'] = ';'.join(style_parts)
 
         return attrs
 

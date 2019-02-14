@@ -76,21 +76,18 @@ class HTMLEntry(utils.HTMLTransform):
         img_path, img_args, _ = image.parse_image_spec(path)
         img = image.get_image(img_path, self._search_path)
 
-        print('img_args', img_args)
-        print(config)
-
         for key, val in img_args.items():
             print(key, val)
             if val and key not in config:
                 config[key] = val
 
         try:
-            img_attrs = {k: v for k, v in img.get_img_attrs(**config)}
+            img_attrs = img.get_img_attrs(**config)
         except FileNotFoundError as error:
             return [('data-publ-error', 'file not found: {}'.format(error.filename))]
 
         # return the original attr list with the computed overrides in place
-        return [(key, val) for key, val in attrs if key not in img_attrs] + list(img_attrs.items())
+        return [(key, val) for key, val in attrs if key not in img_attrs] + [i for i in img_attrs.items()]
 
 
 def process(text, config, search_path):
