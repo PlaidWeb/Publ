@@ -1,8 +1,6 @@
 # image.py
 ''' Managing image renditions '''
 
-from __future__ import absolute_import, with_statement
-
 import os
 import hashlib
 import logging

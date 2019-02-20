@@ -1,8 +1,6 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
-from __future__ import absolute_import, with_statement
-
 import re
 import os
 import html

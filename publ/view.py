@@ -1,8 +1,6 @@
 # view.py
 """ A view of entries """
 
-from __future__ import absolute_import, with_statement
-
 import arrow
 import flask
 from werkzeug.utils import cached_property

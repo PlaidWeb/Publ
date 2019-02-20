@@ -1,8 +1,6 @@
 # item.py
 """ Functions for handling content items """
 
-from __future__ import absolute_import, with_statement
-
 import email
 import functools
 import logging

@@ -1,8 +1,6 @@
 # path_alias.py
 """ Handling for URL aliases """
 
-from __future__ import absolute_import, with_statement
-
 from flask import url_for, redirect, current_app
 from pony import orm
 

@@ -1,8 +1,6 @@
 # queries.py
 """ Collection of commonly-used queries """
 
-from __future__ import absolute_import, with_statement
-
 import arrow
 from pony import orm
 
