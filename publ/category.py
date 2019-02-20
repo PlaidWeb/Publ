@@ -1,8 +1,6 @@
 # category.py
 """ The Category object passed to entry and category views """
 
-from __future__ import absolute_import
-
 import os
 import logging
 import email
