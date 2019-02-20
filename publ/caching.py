@@ -64,4 +64,5 @@ class Memoizable(ABC):
         return hash(self._key())
 
     def __eq__(self, other):
+        # pylint: disable=protected-access
         return self._key() == other._key()
