@@ -171,6 +171,13 @@ class Category(caching.Memoizable):
             return Category(os.path.dirname(self.path))
         return None
 
+    @cached_property
+    def root(self):
+        """ Get the root category object. Equivalent to `breadcrumb[0]` but faster/easier. """
+        if self.path:
+            return Category(None)
+        return self
+
     def _get_subcats(self, recurse=False):
         """ Get the subcategories of this category
 
