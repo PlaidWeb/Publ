@@ -184,8 +184,10 @@ class Entry(caching.Memoizable):
         try:
             return load_message(filepath)
         except FileNotFoundError:
-            expire_record(self._record)
-            return None
+            expire_file(filepath)
+            empty = email.message.Message()
+            empty.set_payload('')
+            return empty
 
     @cached_property
     def _entry_content(self):
@@ -502,6 +504,15 @@ def scan_file(fullpath, relpath, assign_id):
         save_file(fullpath, entry)
 
     return record
+
+
+@orm.db_session(immediate=True)
+def expire_file(filepath):
+    """ Expire a record for a missing file """
+    load_message.cache_clear()
+    orm.delete(pa for pa in model.PathAlias if pa.entry.file_path == filepath)
+    orm.delete(item for item in model.Entry if item.file_path == filepath)
+    orm.commit()
 
 
 @orm.db_session(immediate=True)
