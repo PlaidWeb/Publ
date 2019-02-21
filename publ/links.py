@@ -13,7 +13,7 @@ def remap_path(path, search_path, absolute=False):
         path, sep, anchor = path.partition('#')
         entry = utils.find_entry(path, search_path)
         if entry:
-            return entry.link(absolute=absolute) + sep + anchor
+            return entry.permalink(absolute=absolute) + sep + anchor
 
     # Image URL: do the thing
     img_path, img_args, _ = image.parse_image_spec(path)
