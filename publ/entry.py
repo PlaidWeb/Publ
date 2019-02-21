@@ -126,7 +126,8 @@ class Entry(caching.Memoizable):
     def _link(self, *args, **kwargs):
         """ Returns a link, potentially pre-redirected """
         if self._record.redirect_url:
-            return links.remap_path(self._record.redirect_url, self.search_path, kwargs.get('absolute'))
+            return links.remap_path(self._record.redirect_url,
+                                    self.search_path, kwargs.get('absolute'))
 
         return self._permalink(*args, **kwargs)
 
