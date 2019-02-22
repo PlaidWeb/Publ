@@ -187,30 +187,30 @@ def build_query(spec):
         query = where_entry_visible(query)
 
     # restrict by category
-    if spec.get('category') is not None or spec.get('recurse'):
+    if spec.get('category') is not None:
         path = str(spec.get('category', ''))
         recurse = spec.get('recurse', False)
         query = where_entry_category(query, path, recurse)
 
-    if spec.get('entry_type'):
+    if 'entry_type' in spec:
         query = where_entry_type(query, spec['entry_type'])
 
-    if spec.get('entry_type_not'):
+    if 'entry_type_not' in spec:
         query = where_entry_type_not(query, spec['entry_type_not'])
 
     if spec.get('date'):
         query = where_entry_date(query, spec['date'])
 
-    if spec.get('last'):
+    if 'last' in spec:
         query = where_entry_last(query, get_entry(spec['last']))
 
-    if spec.get('first'):
+    if 'first' in spec:
         query = where_entry_first(query, get_entry(spec['first']))
 
-    if spec.get('before'):
+    if 'before' in spec:
         query = where_before_entry(query, get_entry(spec['before']))
 
-    if spec.get('after'):
+    if 'after' in spec:
         query = where_after_entry(query, get_entry(spec['after']))
 
     return query

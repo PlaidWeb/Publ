@@ -37,6 +37,7 @@ def load_message(filepath):
         return email.message_from_file(file)
 
 
+@functools.lru_cache(10)
 class Entry(caching.Memoizable):
     """ A wrapper for an entry. Lazily loads the actual message data when
     necessary.
