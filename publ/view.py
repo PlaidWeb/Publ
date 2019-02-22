@@ -97,7 +97,7 @@ class View:
 
         self.link = utils.CallableProxy(self._link)
 
-        if 'date' in self.spec:
+        if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
         elif 'count' in self.spec:
             self.type = 'count'
