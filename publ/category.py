@@ -119,7 +119,14 @@ class Category(caching.Memoizable):
     @cached_property
     def sort_name(self):
         """ Get the sorting name of this category """
-        return self._record.sort_name if self._record else self.name
+        if self._record and self._record.sort_name:
+            return self._record.sort_name
+        return self.name
+
+    @cached_property
+    def sort_breadcrumb(self):
+        """ Get the sortable breadcrumb of this category """
+        return tuple(c.sort_name for c in self.breadcrumb)
 
     def _description(self, **kwargs):
         if self._meta:
@@ -185,7 +192,7 @@ class Category(caching.Memoizable):
 
         if recurse:
             # No need to filter
-            return [Category(e) for e in self._subcats_recursive]
+            return sorted([Category(e) for e in self._subcats_recursive], key=lambda c: c.sort_breadcrumb)
 
         # get all the subcategories, with only the first subdir added
 
