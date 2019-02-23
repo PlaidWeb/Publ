@@ -192,7 +192,8 @@ class Category(caching.Memoizable):
 
         if recurse:
             # No need to filter
-            return sorted([Category(e) for e in self._subcats_recursive], key=lambda c: c.sort_breadcrumb)
+            return sorted([Category(e) for e in self._subcats_recursive],
+                          key=lambda c: c.sort_breadcrumb)
 
         # get all the subcategories, with only the first subdir added
 
