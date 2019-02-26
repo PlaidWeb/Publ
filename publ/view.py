@@ -229,6 +229,18 @@ class View:
         return 'offset'
 
     @cached_property
+    def pages(self):
+        """ Gets a list of all pages for this view """
+        cur = self
+        pages = []
+        while cur.previous:
+            cur = cur.previous
+        while cur:
+            pages.append(cur)
+            cur = cur.next
+        return pages
+
+    @cached_property
     def _pagination(self):
         """ Compute the neighboring pages from this view.
 
