@@ -62,6 +62,21 @@ class Entry(caching.Memoizable):
         return arrow.get(self._record.display_date)
 
     @cached_property
+    def date_year(self):
+        """ Get the entry date' year, useful for grouping """
+        return self.date.format(utils.YEAR_FORMAT)
+
+    @cached_property
+    def date_month(self):
+        """ Get the entry date's month, useful for grouping """
+        return self.date.format(utils.MONTH_FORMAT)
+
+    @cached_property
+    def date_day(self):
+        """ Get the entry date's day, useful for grouping """
+        return self.date.format(utils.DAY_FORMAT)
+
+    @cached_property
     def link(self):
         """ Get a link to this entry. Accepts the same parameters as permalink;
         may be pre-redirected. """
