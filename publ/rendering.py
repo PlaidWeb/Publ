@@ -131,6 +131,7 @@ def render_publ_template(template, **kwargs):
     return text, caching.get_etag(text)
 
 
+@orm.db_session(retry=5)
 def render_error(category, error_message, error_codes, exception=None):
     """ Render an error page.
 
@@ -158,6 +159,7 @@ def render_error(category, error_message, error_codes, exception=None):
         return render_publ_template(
             template,
             _url_root=request.url_root,
+            category=Category(category),
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code
 
