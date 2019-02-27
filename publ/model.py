@@ -14,7 +14,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 class GlobalConfig(db.Entity):
@@ -95,10 +95,14 @@ class Image(db.Entity):
     """ Image metadata """
     file_path = orm.PrimaryKey(str)
     checksum = orm.Required(str)
-    width = orm.Required(int)
-    height = orm.Required(int)
-    transparent = orm.Required(bool)
     fingerprint = orm.Required(str)
+
+    width = orm.Optional(int)
+    height = orm.Optional(int)
+    transparent = orm.Optional(bool)
+
+    is_asset = orm.Required(bool, default=False)
+    asset_name = orm.Optional(str, index=True)
 
 
 def setup():
