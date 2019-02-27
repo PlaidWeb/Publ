@@ -590,26 +590,25 @@ class LocalImage(Image):
                         logger.exception("Couldn't remove %s", path)
 
 
-class RemoteImage(Image):
-    """ An image that points to a remote URL """
+class ExternalImage(Image):
+    """ Base class for images which are rendered by external means """
+
+    @abstractmethod
+    def _get_url(self, absolute):
+        """ Implemented by subclasses to actually map the URL """
 
     CSS_SIZE_MODE = {
         'fit': 'contain',
         'fill': 'cover'
     }
 
-    def __init__(self, url, search_path):
-        super().__init__(search_path)
-        self.url = url
-
-    def _key(self):
-        return RemoteImage, self.url
-
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint: disable=unused-argument
-        return self.url, None
+        return self._get_url(kwargs.get('absolute')), None
 
     def get_img_attrs(self, style=None, **kwargs):
+        url = self._get_url(kwargs.get('absolute'))
+
         attrs = {
             'class': kwargs.get('class', kwargs.get('img_class')),
             'id': kwargs.get('img_id'),
@@ -635,7 +634,7 @@ class RemoteImage(Image):
 
         if width and height and size_mode != 'stretch':
             style_parts += [
-                'background-image:url(\'{}\')'.format(html.escape(self.url)),
+                'background-image:url(\'{}\')'.format(html.escape(url)),
                 'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
                 'background-position:{:.1f}% {:.1f}%'.format(
                     kwargs.get('fill_crop_x', 0.5) * 100,
@@ -645,7 +644,7 @@ class RemoteImage(Image):
             attrs['src'] = flask.url_for(
                 'chit', _external=kwargs.get('absolute'))
         else:
-            attrs['src'] = self.url
+            attrs['src'] = url
 
         attrs['width'] = width
         attrs['height'] = height
@@ -657,12 +656,40 @@ class RemoteImage(Image):
 
     def _css_background(self, **kwargs):
         """ Get the CSS background-image for the remote image """
-        return 'background-image: url("{}");'.format(self.url)
+        return 'background-image: url("{}");'.format(self._get_url(kwargs.get('absolute')))
 
 
-class StaticImage(Image):
+class FileAsset(ExternalImage):
+    """ An 'image' which is actually a static file asset """
+
+    def __init__(self, record, search_path):
+        super().__init__(search_path)
+        self.filename = record.asset_name
+
+    def _key(self):
+        return FileAsset, self.filename
+
+    def _get_url(self, absolute):
+        return flask.url_for('asset', filename=self.filename, _external=absolute)
+
+
+class RemoteImage(ExternalImage):
+    """ An image that points to a remote URL """
+
+    def __init__(self, url, search_path):
+        super().__init__(search_path)
+        self.url = url
+
+    def _key(self):
+        return RemoteImage, self.url
+
+    def _get_url(self, absolute):
+        # pylint: disable=unused-argument
+        return self.url
+
+
+class StaticImage(ExternalImage):
     """ An image that points to a static resource """
-    # pylint:disable=protected-access
 
     def __init__(self, path, search_path):
         super().__init__(search_path)
@@ -671,18 +698,8 @@ class StaticImage(Image):
     def _key(self):
         return StaticImage, self.path
 
-    def get_rendition(self, output_scale=1, **kwargs):
-        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url, self.search_path).get_rendition(output_scale, **kwargs)
-
-    def get_img_attrs(self, style=None, **kwargs):
-        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url, self.search_path).get_img_attrs(style, **kwargs)
-
-    def _css_background(self, **kwargs):
-        # pylint: disable=arguments-differ
-        url = utils.static_url(self.path, absolute=kwargs.get('absolute'))
-        return RemoteImage(url, self.search_path)._css_background(**kwargs)
+    def _get_url(self, absolute):
+        return utils.static_url(self.path, absolute)
 
 
 class ImageNotFound(Image):
@@ -710,6 +727,52 @@ class ImageNotFound(Image):
 
 
 @orm.db_session(immediate=True)
+def _get_asset(file_path):
+    """ Get the database record for an asset file """
+    record = model.Image.get(file_path=file_path)
+    fingerprint = utils.file_fingerprint(file_path)
+    if not record or record.fingerprint != fingerprint:
+        # Reindex the file
+        logger.info("Updating image %s -> %s", file_path, fingerprint)
+
+        # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
+        md5 = hashlib.md5()
+        with open(file_path, 'rb') as file:
+            for chunk in iter(lambda: file.read(16384), b""):
+                md5.update(chunk)
+
+        values = {
+            'file_path': file_path,
+            'checksum': md5.hexdigest(),
+            'fingerprint': fingerprint,
+        }
+
+        try:
+            image = PIL.Image.open(file_path)
+        except IOError:
+            image = None
+
+        if image:
+            values['width'] = image.width
+            values['height'] = image.height
+            values['transparent'] = image.mode in ('RGBA', 'P')
+            values['is_asset'] = False
+        else:
+            # PIL could not figure out what file type this is, so treat it as
+            # an asset
+            values['is_asset'] = True
+            values['asset_name'] = os.path.join(values['checksum'][:5],
+                                                os.path.basename(file_path))
+        record = model.Image.get(file_path=file_path)
+        if record:
+            record.set(**values)
+        else:
+            record = model.Image(**values)
+        orm.commit()
+
+    return record
+
+
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the
@@ -733,34 +796,9 @@ def get_image(path, search_path):
     if not file_path:
         return ImageNotFound(path, search_path)
 
-    record = model.Image.get(file_path=file_path)
-    fingerprint = utils.file_fingerprint(file_path)
-    if not record or record.fingerprint != fingerprint:
-        # Reindex the file
-        logger.info("Updating image %s -> %s", file_path, fingerprint)
-
-        # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
-        md5 = hashlib.md5()
-        with open(file_path, 'rb') as file:
-            for chunk in iter(lambda: file.read(16384), b""):
-                md5.update(chunk)
-
-        image = PIL.Image.open(file_path)
-        values = {
-            'file_path': file_path,
-            'checksum': md5.hexdigest(),
-            'width': image.width,
-            'height': image.height,
-            'fingerprint': fingerprint,
-            'transparent': image.mode in ('RGBA', 'P')
-        }
-        record = model.Image.get(file_path=file_path)
-        if record:
-            record.set(**values)
-        else:
-            record = model.Image(**values)
-        orm.commit()
-
+    record = _get_asset(file_path)
+    if record.is_asset:
+        return FileAsset(record, search_path)
     return LocalImage(record, search_path)
 
 

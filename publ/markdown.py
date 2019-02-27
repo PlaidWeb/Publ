@@ -118,8 +118,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def link(self, content, link, title=''):
         """ Emit a link, potentially remapped based on our embed or static rules """
 
-        link = links.remap_path(link, self._search_path,
-                                self._config.get('absolute'))
+        link = links.resolve(link, self._search_path,
+                             self._config.get('absolute'))
 
         return '{}{}</a>'.format(
             utils.make_tag('a', {
