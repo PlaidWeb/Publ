@@ -91,6 +91,9 @@ def publ(name, cfg):
 
     app.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
 
+    app.add_url_rule('/_file/<path:filename>',
+                     'asset', rendering.retrieve_asset)
+
     app.config['TRAP_HTTP_EXCEPTIONS'] = True
     app.register_error_handler(
         werkzeug.exceptions.HTTPException, rendering.render_exception)

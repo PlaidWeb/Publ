@@ -367,3 +367,16 @@ def render_transparent_chit():
         "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
     return out_bytes, {'Content-Type': 'image/gif', 'ETag': 'chit',
                        'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
+
+
+@orm.db_session(retry=5)
+def retrieve_asset(filename):
+    """ Retrieves a non-image asset associated with an entry """
+
+    record = model.Image.get(asset_name=filename)
+    if not record:
+        raise http_error.NotFound("File not found")
+    if not record.is_asset:
+        raise http_error.Forbidden()
+
+    return flask.send_file(record.file_path, conditional=True)

@@ -46,7 +46,7 @@ class HTMLEntry(utils.HTMLTransform):
         for key, val in attrs:
             if (key.lower() == 'href'
                     or (key.lower() == 'src' and not tag.lower() == 'img')):
-                out_attrs.append((key, links.remap_path(
+                out_attrs.append((key, links.resolve(
                     val, self._search_path, self._config.get('absolute'))))
             else:
                 out_attrs.append((key, val))
