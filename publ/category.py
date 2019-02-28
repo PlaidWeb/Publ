@@ -234,6 +234,7 @@ def scan_file(fullpath, relpath):
     """ scan a file and put it into the index """
 
     load_metafile.cache_clear()
+    Category.cache_clear()
 
     meta = load_metafile(fullpath)
     if not meta:
