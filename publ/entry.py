@@ -535,6 +535,7 @@ def expire_file(filepath):
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()
+    Entry.cache_clear()
 
     # This entry no longer exists so delete it, and anything that references it
     # SQLite doesn't support cascading deletes so let's just clean up
