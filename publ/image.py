@@ -259,6 +259,7 @@ class LocalImage(Image):
         if size and (size[0] < self._record.width or size[1] < self._record.height):
             out_spec.append('x'.join([str(v) for v in size]))
         if box:
+            # pylint:disable=not-an-iterable
             out_spec.append('-'.join([str(v) for v in box]))
 
         # Set RGBA flattening options
@@ -418,7 +419,7 @@ class LocalImage(Image):
         width = min(round(width), input_w)
         height = min(round(height), input_h)
 
-        return (width, height), ()
+        return (width, height), None
 
     def get_rendition_fill_size(self, spec, output_scale):
         """ Determine the scale-crop size given the provided spec """
@@ -513,7 +514,7 @@ class LocalImage(Image):
         width = width * output_scale
         height = height * output_scale
 
-        return (round(width), round(height)), ()
+        return (round(width), round(height)), None
 
     @staticmethod
     def flatten(image, bgcolor=None):
