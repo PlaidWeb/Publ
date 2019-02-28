@@ -80,6 +80,7 @@ class TrueCallableProxy(CallableProxy):
     def __len__(self):
         return True
 
+
 #: arrow format string for 'day' archives
 DAY_FORMAT = 'YYYY-MM-DD'
 

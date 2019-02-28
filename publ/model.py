@@ -1,6 +1,8 @@
 # model.py
 """ Database schema for the content index """
 
+# pylint: disable=too-few-public-methods
+
 import logging
 import datetime
 from enum import Enum

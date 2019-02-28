@@ -1,13 +1,11 @@
 """ Publ entry point """
 
-import time
 import re
 import functools
 
 import arrow
 import flask
 import werkzeug.exceptions
-from pony.orm import db_session
 
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
