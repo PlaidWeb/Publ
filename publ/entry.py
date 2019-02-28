@@ -37,7 +37,6 @@ def load_message(filepath):
         return email.message_from_file(file)
 
 
-@functools.lru_cache(10)
 class Entry(caching.Memoizable):
     """ A wrapper for an entry. Lazily loads the actual message data when
     necessary.
@@ -535,7 +534,6 @@ def expire_file(filepath):
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()
-    Entry.cache_clear()
 
     # This entry no longer exists so delete it, and anything that references it
     # SQLite doesn't support cascading deletes so let's just clean up
