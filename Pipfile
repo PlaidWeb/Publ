@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 twine = "*"
+flake8 = "*"
 
 [packages]
 publ = {editable = true,path = "."}

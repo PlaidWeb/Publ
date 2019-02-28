@@ -1,7 +1,7 @@
 """Setup for Publ packaging"""
 
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
+from setuptools import setup
 from os import path
 
 import publ
@@ -67,7 +67,7 @@ setup(
     ],
 
     extras_require={
-        'dev': ['pylint', 'twine'],
+        'dev': ['pylint', 'twine', 'flake8'],
     },
 
     project_urls={

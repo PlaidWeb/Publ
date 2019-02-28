@@ -501,7 +501,7 @@ def scan_file(fullpath, relpath, assign_id):
         entry['Entry-ID'] = str(record.id)
         fixup_needed = True
 
-    if not 'UUID' in entry:
+    if 'UUID' not in entry:
         entry['UUID'] = str(uuid.uuid5(
             uuid.NAMESPACE_URL, 'file://' + fullpath))
         fixup_needed = True

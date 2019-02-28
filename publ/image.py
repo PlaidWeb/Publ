@@ -302,7 +302,8 @@ class LocalImage(Image):
 
         return image
 
-    def _render(self, path, size, box, flatten, kwargs, out_args):  # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-arguments
+    def _render(self, path, size, box, flatten, kwargs, out_args):
         image = self._image
 
         with self._lock:
@@ -344,6 +345,7 @@ class LocalImage(Image):
             except Exception:  # pylint: disable=broad-except
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
+    # pylint:enable=too-many-arguments
 
     def get_rendition_size(self, spec, output_scale):
         """
@@ -416,7 +418,7 @@ class LocalImage(Image):
         width = min(round(width), input_w)
         height = min(round(height), input_h)
 
-        return (width, height), None
+        return (width, height), ()
 
     def get_rendition_fill_size(self, spec, output_scale):
         """ Determine the scale-crop size given the provided spec """
@@ -511,7 +513,7 @@ class LocalImage(Image):
         width = width * output_scale
         height = height * output_scale
 
-        return (round(width), round(height)), None
+        return (round(width), round(height)), ()
 
     @staticmethod
     def flatten(image, bgcolor=None):

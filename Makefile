@@ -1,11 +1,15 @@
-all: pylint
+all: pylint flake8
 
 .PHONY: pylint
 pylint:
 	pipenv run pylint -f colorized publ
 
+.PHONY: flake8
+flake8:
+	pipenv run flake8
+
 .PHONY: build
-build: pylint
+build: pylint flake8
 	pipenv run python3 setup.py sdist
 	pipenv run python3 setup.py bdist_wheel
 
