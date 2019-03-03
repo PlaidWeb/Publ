@@ -215,6 +215,7 @@ class LocalImage(Image):
         return LocalImage, self._record
 
     def get_rendition(self, output_scale=1, **kwargs):
+        # pylint:disable=too-many-locals
         """
         Get the rendition for this image, generating it if necessary.
         Returns a tuple of `(relative_path, width, height)`, where relative_path
@@ -228,6 +229,7 @@ class LocalImage(Image):
         scale -- the downsample factor for the base rendition
         scale_min_width -- the minimum width after downsampling
         scale_min_height -- the minimum height after downsampling
+        crop -- box to crop the original image into (left, top, right, bottom)
         width -- the width to target
         height -- the height to target
         max_width -- the maximum width
@@ -254,6 +256,10 @@ class LocalImage(Image):
         out_args = {}
         if ext in ['.png', '.jpg', '.jpeg']:
             out_args['optimize'] = True
+
+        crop = kwargs.get('crop')
+        if crop:
+            out_spec.append('c'.join([str(v) for v in crop]))
 
         size, box = self.get_rendition_size(kwargs, output_scale)
         if size and (size[0] < self._record.width or size[1] < self._record.height):
@@ -292,7 +298,7 @@ class LocalImage(Image):
             return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
         LocalImage.thread_pool().submit(
-            self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+            self._render, out_fullpath, crop, size, box, flatten, kwargs, out_args)
 
         return flask.url_for('async', filename=out_rel_path, _external=kwargs.get('absolute')), size
 
@@ -304,7 +310,7 @@ class LocalImage(Image):
         return image
 
     # pylint:disable=too-many-arguments
-    def _render(self, path, size, box, flatten, kwargs, out_args):
+    def _render(self, path, crop, size, box, flatten, kwargs, out_args):
         image = self._image
 
         with self._lock:
@@ -325,6 +331,9 @@ class LocalImage(Image):
                 paletted = image.mode == 'P'
                 if paletted:
                     image = image.convert('RGBA')
+
+                if crop:
+                    image = image.crop(box=crop)
 
                 if size:
                     image = image.resize(size=size, box=box,
@@ -355,24 +364,29 @@ class LocalImage(Image):
         Returns tuple of (size,box)
         """
 
-        mode = spec.get('resize', 'fit')
+        crop = spec.get('crop')
+        if crop:
+            input_w = crop[2] - crop[0] # right - left component of crop box
+            input_h = crop[3] - crop[1] # bottom - top component of crop box
+        else:
+            input_w = self._record.width  # original image width
+            input_h = self._record.height  # original image height
 
+        mode = spec.get('resize', 'fit')
         if mode == 'fit':
-            return self.get_rendition_fit_size(spec, output_scale)
+            return self.get_rendition_fit_size(spec, input_w, input_h, output_scale)
 
         if mode == 'fill':
-            return self.get_rendition_fill_size(spec, output_scale)
+            return self.get_rendition_fill_size(spec, input_w, input_h, output_scale)
 
         if mode == 'stretch':
-            return self.get_rendition_stretch_size(spec, output_scale)
+            return self.get_rendition_stretch_size(spec, input_w, input_h, output_scale)
 
         raise ValueError("Unknown resize mode {}".format(mode))
 
-    def get_rendition_fit_size(self, spec, output_scale):
+    @staticmethod
+    def get_rendition_fit_size(spec, input_w, input_h, output_scale):
         """ Determine the scaled size based on the provided spec """
-
-        input_w = self._record.width  # input width
-        input_h = self._record.height  # input height
 
         width = input_w
         height = input_h
@@ -421,11 +435,9 @@ class LocalImage(Image):
 
         return (width, height), None
 
-    def get_rendition_fill_size(self, spec, output_scale):
+    @staticmethod
+    def get_rendition_fill_size(spec, input_w, input_h, output_scale):
         """ Determine the scale-crop size given the provided spec """
-
-        input_w = self._record.width
-        input_h = self._record.height
 
         width = input_w
         height = input_h
@@ -474,11 +486,12 @@ class LocalImage(Image):
 
         return (round(width), round(height)), (box_x, box_y, box_x + box_w, box_y + box_h)
 
-    def get_rendition_stretch_size(self, spec, output_scale):
+    @staticmethod
+    def get_rendition_stretch_size(spec, input_w, input_h, output_scale):
         """ Determine the scale-crop size given the provided spec """
 
-        width = self._record.width
-        height = self._record.height
+        width = input_w
+        height = input_h
 
         scale = spec.get('scale')
         if scale:
