@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+{% set view = view(recurse=True,count=10) %}
+
+<feed xmlns="http://www.w3.org/2005/Atom"
+    xmlns:fh="http://purl.org/syndication/history/1.0"
+    xmlns:at="http://purl.org/atompub/tombstones/1.0">
+
+    <title>{{category.name}}</title>
+    <subtitle>A test feed</subtitle>
+    <link href="{{ view.link(template='feed',absolute=True) }}" rel="self" />
+    <link href="{{ category.link(template='feed',absolute=True) }}" rel="current" />
+    {% if view.next %}
+    <link href="{{ view.next.first.archive('month','feed',absolute=True) }}" rel="prev-archive" />
+    {% endif %}
+    {% if view.previous %}
+    <link href="{{ view.previous.last.archive('month','feed',absolute=True) }}" rel="next-archive" />
+    {% endif %}
+    <link href="{{ category.link(absolute=True) }}" />
+    {% if request.args %}<fh:archive />{% endif %}
+    <id>tag:{{request.host}},{{template.last_modified.format('YYYY-MM-DD')}}:{{category.path or "_all"}}</id>
+    <updated>{{view(recurse=True).last_modified.isoformat()}}</updated>
+
+    {% for entry in view.entries %}
+    <entry>
+        <title>{{entry.title(markup=False,no_smartquotes=True)}}</title>
+        <link href="{{ entry.permalink(absolute=True) }}" rel="alternate" type="text/html" />
+        <published>{{entry.date.isoformat()}}</published>
+        <updated>{{entry.last_modified.isoformat()}}</updated>
+        <id>urn:uuid:{{entry.uuid}}</id>
+        <author><name>{{ entry.author if entry.author else "fluffy" }}</name></author>
+        <content type="html">
+<![CDATA[
+{{entry.body(max_width=320,
+    max_height=320,
+    link=entry.link(absolute=True),
+    absolute=True,
+    count=3)}}
+{% if entry.more %}
+{{entry.more(max_width=320,
+    max_height=320,
+    link=entry.link(absolute=True),
+    absolute=True,
+    count=3)}}
+{% endif %}
+]]>
+        </content>
+    </entry>
+    {% endfor %}
+
+    {% for entry in view.deleted %}
+    <at:deleted-entry ref="urn:uuid:{{entry.uuid}}" when="{{entry.last_modified.isoformat()}}">
+        <link>{{entry.permalink(absolute=True)}}</link>
+    </at:deleted-entry>
+    {% endfor %}
+</feed>

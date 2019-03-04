@@ -112,3 +112,4 @@ tmp/
 index.db
 *.db
 publ.sublime-workspace
+tests/static/_img
