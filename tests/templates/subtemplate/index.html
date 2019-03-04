@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html><head>Fragment test</head>
+<body>
+{% for entry in view(recurse=True).entries %}
+<h1>{{entry.title}}</h1>
+{% set sub = get_template('_fragment', entry) %}
+<h2>{{ sub }}</h2>
+{% include sub %}
+{% endfor %}
+</body></html>

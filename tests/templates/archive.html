@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Publ {{category.path or ''}}</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
+</head>
+<body>
+
+{% set view = view(count=30,recurse=True) %}
+
+<h1>Publ: {{category.name or "Yet another site generator"}}</h1>
+
+<div id="nav" class="sidebar">
+
+    <h2>Navigation</h2>
+
+    <ul>
+    {% if category.parent %}
+    <li class="cat-up"><a href="{{category.parent.link}}">Up one level</a></li>
+    {% endif %}
+
+    {% for subcat in category.subcats %}
+    <li class="cat-down"><a href="{{subcat.link}}">{{subcat.name}}</a></li>
+    {% endfor %}
+
+    <li class="github"><a href="http://github.com/fluffy-critter/Publ">Github</a></li>
+
+    {% for entry in view(entry_type='sidebar').entries %}
+    <li class="sblink"><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
+    </ul>
+
+</div>
+
+<div id="content">
+<ul>
+{% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>
+<ul>
+    <li><a href="{{entry.archive('day',template.name,category)}}">by day</a></li>
+    <li><a href="{{entry.archive('month',template.name,category)}}">by month</a></li>
+    <li><a href="{{entry.archive('year',template.name,category)}}">by year</a></li>
+    <li><a href="{{entry.archive('id',template.name,category)}}">by id</a></li>
+</ul></li>
+{% endfor %}
+</ul>
+
+{% if view.previous %}
+<p><a href="{{view.previous.link(absolute=True)}}">previous page</a></p>
+{% endif %}
+{% if view.next %}
+<p><a href="{{view.next.link(absolute=True)}}">next page</a></p>
+{%endif %}
+
+</div>
+</body></html>
