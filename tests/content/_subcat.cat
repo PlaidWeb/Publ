@@ -1,5 +1,5 @@
 Name: Rewritten subcategory
-Category: tests/sub/category
+Category: sub/category
 Path-Alias: /tests/subcat
 Index-Template: _alternate_index
 
