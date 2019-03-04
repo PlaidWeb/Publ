@@ -1,7 +1,10 @@
 import os
 import logging
 
+import flask
+
 import publ
+import publ.image
 
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,6 +23,15 @@ config = {
         'CACHE_NO_NULL_WARNING': True
     },
 }
+
 app = publ.publ(__name__, config)
+
+
+@app.route('/favicon.ico')
+def favicon():
+    logo = publ.image.get_image('rawr.jpg', ['tests/content'])
+    img, _ = logo.get_rendition(format='ico')
+    return flask.redirect(img)
+
 if __name__ == "__main__":
     app.run(port=os.environ.get('PORT', 5000))
