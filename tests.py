@@ -33,5 +33,6 @@ def favicon():
     img, _ = logo.get_rendition(format='ico')
     return flask.redirect(img)
 
+
 if __name__ == "__main__":
     app.run(port=os.environ.get('PORT', 5000))
