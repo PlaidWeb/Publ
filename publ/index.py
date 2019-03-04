@@ -194,6 +194,20 @@ def background_scan(content_dir):
     observer.start()
 
 
+@orm.db_session
+def prune_missing(table):
+    """ Prune any files which are missing from the specified table """
+    try:
+        for item in table.select():
+            if not os.path.isfile(item.file_path):
+                with orm.db_session:
+                    logger.info("File disappeared: %s", item.file_path)
+                    item.delete()
+                    orm.commit()
+    except:
+        logger.exception("Error pruning %s", table)
+
+
 def scan_index(content_dir):
     """ Scan all files in a content directory """
 
@@ -213,3 +227,6 @@ def scan_index(content_dir):
 
     for root, _, files in os.walk(content_dir, followlinks=True):
         THREAD_POOL.submit(scan_directory, root, files)
+
+    for table in (model.Entry, model.Category, model.Image, model.FileFingerprint):
+        THREAD_POOL.submit(prune_missing, table)
