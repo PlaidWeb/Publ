@@ -1,7 +1,11 @@
 import os
+import logging
+
 import publ
 
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
+
+logging.basicConfig(level=logging.INFO)
 
 config = {
     # Leave this off to do an in-memory database
@@ -12,6 +16,9 @@ config = {
     'content_folder': 'tests/content',
     'template_folder': 'tests/templates',
     'static_folder': 'tests/static',
+    'cache': {
+        'CACHE_NO_NULL_WARNING': True
+    },
 }
 app = publ.publ(__name__, config)
 if __name__ == "__main__":

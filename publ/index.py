@@ -194,16 +194,14 @@ def background_scan(content_dir):
     observer.start()
 
 
-@orm.db_session
+@orm.db_session(immediate=True)
 def prune_missing(table):
     """ Prune any files which are missing from the specified table """
     try:
         for item in table.select():
             if not os.path.isfile(item.file_path):
-                with orm.db_session:
-                    logger.info("File disappeared: %s", item.file_path)
-                    item.delete()
-                    orm.commit()
+                logger.info("File disappeared: %s", item.file_path)
+                item.delete()
     except:
         logger.exception("Error pruning %s", table)
 
