@@ -507,10 +507,9 @@ def scan_file(fullpath, relpath, assign_id):
         fixup_needed = True
 
     # add other relationships to the index
+    path_alias.remove_aliases(record)
     for alias in entry.get_all('Path-Alias', []):
         path_alias.set_alias(alias, entry=record)
-    for alias in entry.get_all('Path-Unalias', []):
-        path_alias.remove_alias(alias)
 
     if record.status == model.PublishStatus.DRAFT.value:
         logger.info("Not touching draft entry %s", fullpath)

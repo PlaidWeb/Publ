@@ -33,8 +33,8 @@ def set_alias(alias, **kwargs):
         record.set(**values)
     else:
         record = model.PathAlias(**values)
-    orm.commit()
 
+    orm.commit()
     return record
 
 
@@ -47,6 +47,19 @@ def remove_alias(path):
     path -- the path to remove the alias of
     """
     orm.delete(p for p in model.PathAlias if p.path == path)
+    orm.commit()
+
+
+@orm.db_session
+def remove_aliases(target):
+    """ Remove all aliases to a destination """
+
+    if isinstance(target, model.Entry):
+        orm.delete(p for p in model.PathAlias if p.entry == target)
+    elif isinstance(target, model.Category):
+        orm.delete(p for p in model.PathAlias if p.category == target)
+    else:
+        raise TypeError("Unknown type {}".format(type(target)))
     orm.commit()
 
 
