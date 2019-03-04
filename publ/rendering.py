@@ -253,6 +253,11 @@ def render_category(category='', template=None):
     elif 'id' in request.args:
         view_spec['start'] = request.args['id']
 
+    if 'tag' in request.args:
+        view_spec['tag'] = request.args.getlist('tag')
+        if len(view_spec['tag']) == 1:
+            view_spec['tag'] = request.args['tag']
+
     view_obj = View(view_spec)
 
     rendered, etag = render_publ_template(
