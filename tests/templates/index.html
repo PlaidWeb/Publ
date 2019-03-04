@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{category.name}}</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+<body id="{{template.name}}">
+
+<header>
+<h1>{{category.name}}</h1>
+{% if category.description %}
+<div class="description">{{category.description}}</div>
+{% endif %}
+</header>
+
+<div id="nav" class="sidebar">
+
+    <h2>Navigation</h2>
+
+    {% block navigation %}
+    <ul>
+    {% if category.parent %}
+    <li class="cat-up"><a href="{{category.parent.link}}">{{category.parent.name or "Main page"}}</a></li>
+    {% endif %}
+
+    {% for subcat in category.subcats %}
+    <li class="cat-down"><a href="{{subcat.link}}">{{subcat.name}}</a></li>
+    {% endfor %}
+
+    {% for entry in view(category='',entry_type='sidebar').entries %}
+    <li class="{{entry.get('Redirect-To') and 'extlink' or 'sblink'}}"><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
+    </ul>
+    {% endblock %}
+
+</div>
+
+{% block content %}
+<div id="content">
+    {% set content = view(entry_type_not='sidebar',count=20) %}
+
+    <div class="nav">
+        {% if content.previous %}
+        <a href="{{content.previous.link}}" class="previous">Previous page</a>
+        {% endif %}
+
+        {% if content.next %}
+        <a href="{{content.next.link}}" class="next">Next page</a>
+        {% endif %}
+    </div>
+
+    <div class="entries">
+
+        {% for entry in content.entries %}
+
+        <article class="h-entry entry">
+        {% block entry scoped %}
+        <h2 class="p-name">
+            {%- if entry.more or entry['redirect-to'] %}<a class="u-url" href="{{entry.link}}">{{entry.title}}</a>
+            {%- else -%}
+            {{entry.title}}
+            {%- endif -%}
+        </h2>
+
+        <section class="p-summary">
+        {{entry.body(width=320,height=320)}}
+        </section>
+        {% endblock %}
+
+        </article>
+        {% endfor %}
+
+    </div>
+
+    <div class="nav">
+        {% if content.previous %}
+        <a href="{{content.previous.link}}" class="previous">Previous page</a>
+        {% endif %}
+
+        {% if content.next %}
+        <a href="{{content.next.link}}" class="next">Next page</a>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+</body></html>

@@ -1,0 +1,6 @@
+Name: Rewritten subcategory
+Category: tests/sub/category
+Path-Alias: /tests/subcat
+Index-Template: _alternate_index
+
+This category uses a category rewrite, and also has a separate index template.
