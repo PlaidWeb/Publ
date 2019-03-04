@@ -383,3 +383,21 @@ class View:
 def get_view(**kwargs):
     """ Wrapper function for constructing a view from scratch """
     return View(input_spec=kwargs)
+
+
+def parse_view_spec(args):
+    """ Parse a view specification from a request arg list """
+
+    view_spec = {}
+
+    if 'date' in args:
+        view_spec['date'] = args['date']
+    elif 'id' in args:
+        view_spec['start'] = args['id']
+
+    if 'tag' in args:
+        view_spec['tag'] = args.getlist('tag')
+        if len(view_spec['tag']) == 1:
+            view_spec['tag'] = args['tag']
+
+    return view_spec
