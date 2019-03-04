@@ -47,3 +47,10 @@ be supported as well.
 The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of the templates, site content, and configuration for the [Publ site](http://publ.beesbuzz.biz).
 
 The [Publ-templates-beesbuzz.biz](https://github.com/PlaidWeb/Publ-templates-beesbuzz.biz) repository provides a stripped-down sample site based on [my personal homepage](http://beesbuzz.biz).
+
+## Authors
+
+In order of first contribution:
+
+* [fluffy](https://github.com/fluffy-critter)
+* [karinassuni](https://github.com/karinassuni)
