@@ -84,11 +84,10 @@ class View:
             elif self._order_by == 'newest':
                 self.spec['last'] = self.spec['start']
 
-        self._query = queries.build_query(spec)
+        self._query = queries.build_query(
+            spec).order_by(*ORDER_BY[self._order_by])
 
         self.range = utils.CallableProxy(self._view_name)
-
-        self._query = self._query.order_by(*ORDER_BY[self._order_by])
 
         if 'count' in spec:
             self._entries = self._query[:spec['count']]
@@ -127,6 +126,9 @@ class View:
                         raise ValueError(
                             "key {} is of type {}".format(k, type(val)))
                     break
+
+        if 'tag' in self.spec:
+            args['tag'] = self.spec['tag']
 
         return flask.url_for('category',
                              **args,
@@ -379,3 +381,21 @@ class View:
 def get_view(**kwargs):
     """ Wrapper function for constructing a view from scratch """
     return View(input_spec=kwargs)
+
+
+def parse_view_spec(args):
+    """ Parse a view specification from a request arg list """
+
+    view_spec = {}
+
+    if 'date' in args:
+        view_spec['date'] = args['date']
+    elif 'id' in args:
+        view_spec['start'] = args['id']
+
+    if 'tag' in args:
+        view_spec['tag'] = args.getlist('tag')
+        if len(view_spec['tag']) == 1:
+            view_spec['tag'] = args['tag']
+
+    return view_spec

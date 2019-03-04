@@ -66,12 +66,22 @@ class Entry(db.Entity):
     sort_title = orm.Optional(str)
 
     aliases = orm.Set("PathAlias")
+    tags = orm.Set("EntryTag")
 
     entry_template = orm.Optional(str)  # maps to Entry-Template
 
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
     orm.composite_index(category, entry_type, sort_title)
+
+
+class EntryTag(db.Entity):
+    """ Tags for an entry """
+    entry = orm.Required(Entry)
+    key = orm.Required(str)  # the search key
+
+    orm.composite_key(entry, key)
+    orm.composite_key(key, entry)
 
 
 class Category(db.Entity):

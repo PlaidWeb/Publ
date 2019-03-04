@@ -42,7 +42,7 @@ class Entry(caching.Memoizable):
     necessary.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def __init__(self, record):
         """ Construct an Entry wrapper
@@ -101,6 +101,7 @@ class Entry(caching.Memoizable):
             month -- the entry date's month
             year -- the entry date's year
             offset -- count-based pagination starting at the entry (default)
+        tag -- which tag(s) to filter on
         category -- Which category to generate the link against (default: the entry's category)
         template -- Which template to generate the link for
         """
@@ -110,6 +111,11 @@ class Entry(caching.Memoizable):
     def type(self):
         """ An alias for entry_type """
         return self.entry_type
+
+    @cached_property
+    def tags(self):
+        """ Get the original (non-normalized) tags for the entry """
+        return self.get_all('Tag')
 
     @cached_property
     def status(self):
@@ -155,7 +161,8 @@ class Entry(caching.Memoizable):
                              _external=absolute,
                              **kwargs)
 
-    def _archive_link(self, paging=None, template='', category=None, absolute=False):
+    def _archive_link(self, paging=None, template='', category=None, absolute=False, tag=None):
+        # pylint:disable=too-many-arguments
         args = {
             'template': template,
             'category': category if category is not None else self.category,
@@ -172,6 +179,9 @@ class Entry(caching.Memoizable):
             args['id'] = self._record.id
         else:
             raise ValueError("Unknown paging type '{}'".format(paging))
+
+        if tag:
+            args['tag'] = tag
 
         return flask.url_for('category', **args, _external=absolute)
 
@@ -424,7 +434,7 @@ def save_file(fullpath, entry):
 @orm.db_session(immediate=True)
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
     # Since a file has changed, the lrucache is invalid.
     load_message.cache_clear()
@@ -510,6 +520,17 @@ def scan_file(fullpath, relpath, assign_id):
     path_alias.remove_aliases(record)
     for alias in entry.get_all('Path-Alias', []):
         path_alias.set_alias(alias, entry=record)
+
+    with orm.db_session:
+        set_tags = {t.lower() for t in entry.get_all('Tag', [])}
+        for tag in record.tags:
+            if tag.key in set_tags:
+                set_tags.remove(tag.key)
+            else:
+                tag.delete()
+        for tag in set_tags:
+            model.EntryTag(entry=record, key=tag)
+        orm.commit()
 
     if record.status == model.PublishStatus.DRAFT.value:
         logger.info("Not touching draft entry %s", fullpath)

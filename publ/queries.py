@@ -119,7 +119,7 @@ def where_entry_type(query, entry_type):
 
     entry_type -- one or more entries to check against
     """
-    if isinstance(entry_type, list):
+    if isinstance(entry_type, (list, set, tuple)):
         return orm.select(e for e in query if e.entry_type in entry_type)
     return orm.select(e for e in query if e.entry_type == entry_type)
 
@@ -129,9 +129,17 @@ def where_entry_type_not(query, entry_type):
 
     entry_type -- one or more entries to check against
     """
-    if isinstance(entry_type, list):
+    if isinstance(entry_type, (list, set, tuple)):
         return orm.select(e for e in query if e.entry_type not in entry_type)
     return orm.select(e for e in query if e.entry_type != entry_type)
+
+
+def where_entry_tag(query, tag):
+    """ Generate a where clause for entries with the given tag """
+    if isinstance(tag, (list, set, tuple)):
+        tags = [t.lower() for t in tag]
+        return orm.select(e for e in query for t in e.tags if t.key in tags)
+    return orm.select(e for e in query for t in e.tags if t.key == tag.lower())
 
 
 def where_entry_date(query, datespec):
@@ -198,6 +206,9 @@ def build_query(spec):
     if spec.get('entry_type_not') is not None:
         query = where_entry_type_not(query, spec['entry_type_not'])
 
+    if spec.get('tag') is not None:
+        query = where_entry_tag(query, spec['tag'])
+
     if spec.get('date') is not None:
         query = where_entry_date(query, spec['date'])
 
@@ -213,4 +224,4 @@ def build_query(spec):
     if spec.get('after') is not None:
         query = where_after_entry(query, get_entry(spec['after']))
 
-    return query
+    return query.distinct()

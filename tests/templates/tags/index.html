@@ -1,0 +1,48 @@
+{% set view = view(count=10) %}
+
+<h1>Tagging test</h1>
+
+<p>Spec: <code>{{view.spec}}</code></p>
+
+<p><a href="{{view(tag=None).link}}">clear all tags</a></p>
+
+<h2>Current tag: {{view.spec['tag']}}</h2>
+
+<ul>
+{% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
+    {% for tag in entry.get_all('Tag') %}
+    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
+    {% endfor %}
+</ul></li>
+{% endfor %}
+{% if view.previous %}<li><a href="{{view.previous.link}}">previous</a></li>{% endif %}
+{% if view.next %}<a href="{{view.next.link}}">next</a>{% endif %}
+</ul>
+
+{% set other = view(tag='foo') %}
+<h2><a href="{{other.link}}">Entries tagged 'foo'</a></h2>
+
+<ul>
+{% for entry in other.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
+    {% for tag in entry.tags %}
+    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
+    {% endfor %}
+</ul></li>
+{% endfor %}
+</ul>
+
+{% set other = view(tag=('hello','bar')) %}
+<h2><a href="{{other.link}}">Entries tagged 'hello' or 'bar'</a></h2>
+
+<ul>
+{% for entry in other.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
+    {% for tag in entry.tags %}
+    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
+    {% endfor %}
+</ul></li>
+{% endfor %}
+</ul>
+
