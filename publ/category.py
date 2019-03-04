@@ -37,7 +37,6 @@ def load_metafile(filepath):
     return None
 
 
-@functools.lru_cache(10)
 class Category(caching.Memoizable):
     """ Wrapper for category information """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
