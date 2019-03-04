@@ -18,7 +18,7 @@ from . import index
 from .entry import Entry, expire_record
 from .category import Category
 from .template import Template
-from .view import View
+from . import view
 from . import caching
 from .caching import cache
 
@@ -247,18 +247,9 @@ def render_category(category='', template=None):
         # nope, we just don't know what this is
         raise http_error.NotFound("No such view")
 
-    view_spec = {'category': category}
-    if 'date' in request.args:
-        view_spec['date'] = request.args['date']
-    elif 'id' in request.args:
-        view_spec['start'] = request.args['id']
-
-    if 'tag' in request.args:
-        view_spec['tag'] = request.args.getlist('tag')
-        if len(view_spec['tag']) == 1:
-            view_spec['tag'] = request.args['tag']
-
-    view_obj = View(view_spec)
+    view_spec = view.parse_view_spec(request.args)
+    view_spec['category'] = category
+    view_obj = view.View(view_spec)
 
     rendered, etag = render_publ_template(
         tmpl,

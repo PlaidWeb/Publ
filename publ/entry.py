@@ -42,7 +42,7 @@ class Entry(caching.Memoizable):
     necessary.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def __init__(self, record):
         """ Construct an Entry wrapper
@@ -162,6 +162,7 @@ class Entry(caching.Memoizable):
                              **kwargs)
 
     def _archive_link(self, paging=None, template='', category=None, absolute=False, tag=None):
+        # pylint:disable=too-many-arguments
         args = {
             'template': template,
             'category': category if category is not None else self.category,
@@ -433,7 +434,7 @@ def save_file(fullpath, entry):
 @orm.db_session(immediate=True)
 def scan_file(fullpath, relpath, assign_id):
     """ scan a file and put it into the index """
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
     # Since a file has changed, the lrucache is invalid.
     load_message.cache_clear()
