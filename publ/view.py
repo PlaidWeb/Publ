@@ -69,8 +69,10 @@ class View:
                 break
 
         # pull in the first page type that appears
+        paginated = False
         for pagination in PAGINATION_PRIORITY:
             if pagination in input_spec:
+                paginated = True
                 spec[pagination] = input_spec[pagination]
                 break
 
@@ -78,7 +80,7 @@ class View:
 
         self.spec = spec
 
-        if 'start' in spec:
+        if 'start' in spec and paginated:
             if self._order_by == 'oldest':
                 self.spec['first'] = self.spec['start']
             elif self._order_by == 'newest':
