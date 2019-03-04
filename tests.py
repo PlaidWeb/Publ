@@ -9,6 +9,9 @@ config = {
         'provider': 'sqlite',
         'filename': os.path.join(APP_PATH, 'index.db')
     },
+    'content_folder': 'tests/content',
+    'template_folder': 'tests/templates',
+    'static_folder': 'tests/static',
 }
 app = publ.publ(__name__, config)
 if __name__ == "__main__":
