@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class GlobalConfig(db.Entity):
