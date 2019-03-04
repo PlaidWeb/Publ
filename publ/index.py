@@ -202,7 +202,7 @@ def prune_missing(table):
             if not os.path.isfile(item.file_path):
                 logger.info("File disappeared: %s", item.file_path)
                 item.delete()
-    except:
+    except:  # pylint:disable=bare-except
         logger.exception("Error pruning %s", table)
 
 

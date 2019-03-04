@@ -259,7 +259,7 @@ class LocalImage(Image):
 
         crop = kwargs.get('crop')
         if crop:
-            out_spec.append('c'.join([str(v) for v in crop]))
+            out_spec.append('c' + '-'.join([str(v) for v in crop]))
 
         size, box = self.get_rendition_size(kwargs, output_scale)
         if size and (size[0] < self._record.width or size[1] < self._record.height):
@@ -309,8 +309,8 @@ class LocalImage(Image):
 
         return image
 
-    # pylint:disable=too-many-arguments
     def _render(self, path, crop, size, box, flatten, kwargs, out_args):
+        # pylint:disable=too-many-arguments
         image = self._image
 
         with self._lock:
@@ -355,7 +355,6 @@ class LocalImage(Image):
             except Exception:  # pylint: disable=broad-except
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
-    # pylint:enable=too-many-arguments
 
     def get_rendition_size(self, spec, output_scale):
         """
@@ -366,8 +365,8 @@ class LocalImage(Image):
 
         crop = spec.get('crop')
         if crop:
-            input_w = crop[2] - crop[0] # right - left component of crop box
-            input_h = crop[3] - crop[1] # bottom - top component of crop box
+            input_w = crop[2] - crop[0]  # right - left component of crop box
+            input_h = crop[3] - crop[1]  # bottom - top component of crop box
         else:
             input_w = self._record.width  # original image width
             input_h = self._record.height  # original image height

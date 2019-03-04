@@ -1,5 +1,4 @@
 import random
-import arrow
 
 for _ in range(0, 100):
     date = '2012-01-{:0>2} {:0>2}:00:00{:0=+3}:00'.format(random.randint(
