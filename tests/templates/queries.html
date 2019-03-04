@@ -1,0 +1,45 @@
+<h1>Query tests</h1>
+
+<h2>category=None,entry_type=None</h2>
+
+<ul>
+{% for item in get_view(category=None,entry_type=None).entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
+
+<h2>category=category.root,entry_type_not=None</h2>
+
+<ul>
+{% for item in get_view(category=category.root,entry_type_not=None).entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
+
+<h2>entry_type_not=None</h2>
+<ul>
+{% for item in get_view(entry_type_not=None).entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
+
+<h2>entry_type_not=''</h2>
+<ul>
+{% for item in get_view(entry_type_not='').entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
+
+<h2>id=None</h2>
+<ul>
+{% for item in get_view(id=None).entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
+
+<h2>date=None</h2>
+<ul>
+{% for item in get_view(date=None).entries %}
+<li>{{item.title}} ({{item.entry_type}})</li>
+{% endfor %}
+</ul>
