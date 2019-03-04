@@ -254,6 +254,7 @@ def scan_file(fullpath, relpath):
         record = model.Category(**values)
 
     # update other relationships to the index
+    path_alias.remove_aliases(record)
     for alias in meta.get_all('Path-Alias', []):
         path_alias.set_alias(alias, category=record)
 
