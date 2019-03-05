@@ -310,7 +310,8 @@ class LocalImage(Image):
         return image
 
     @staticmethod
-    def _cropToBox(crop):
+    def _crop_to_box(crop):
+        # pylint:disable=invalid-name
         x, y, w, h = crop
         return (x, y, x + w, y + h)
 
@@ -338,7 +339,7 @@ class LocalImage(Image):
                     image = image.convert('RGBA')
 
                 if crop:
-                    image = image.crop(box=self._cropToBox(crop))
+                    image = image.crop(box=self._crop_to_box(crop))
 
                 if size:
                     image = image.resize(size=size, box=box,
