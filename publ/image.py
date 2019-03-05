@@ -371,20 +371,22 @@ class LocalImage(Image):
 
         crop = spec.get('crop')
         if crop:
-            _, _, input_w, input_h = crop
+            # Use the cropping rectangle size
+            _, _, width, height = crop
         else:
-            input_w = self._record.width  # original image width
-            input_h = self._record.height  # original image height
+            # Use the original image size
+            width = self._record.width
+            height = self._record.height
 
         mode = spec.get('resize', 'fit')
         if mode == 'fit':
-            return self.get_rendition_fit_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_fit_size(spec, width, height, output_scale)
 
         if mode == 'fill':
-            return self.get_rendition_fill_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_fill_size(spec, width, height, output_scale)
 
         if mode == 'stretch':
-            return self.get_rendition_stretch_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_stretch_size(spec, width, height, output_scale)
 
         raise ValueError("Unknown resize mode {}".format(mode))
 
