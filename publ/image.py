@@ -257,18 +257,10 @@ class LocalImage(Image):
         if ext in ['.png', '.jpg', '.jpeg']:
             out_args['optimize'] = True
 
-        crop = kwargs.get('crop')
-        if isinstance(crop, str):
-            crop = tuple(int(p.strip()) for p in crop.split(','))
+        crop = self._parse_tuple_string(kwargs.get('crop'))
 
         size, box = self.get_rendition_size(kwargs, output_scale, crop)
-
-        if crop:
-            if box:
-                box = (box[0] + crop[0], box[1] + crop[1],
-                       box[2] + crop[0], box[3] + crop[1])
-            else:
-                box = self._crop_to_box(crop)
+        box = self._adjust_crop_box(box, crop)
 
         if size and (size[0] < self._record.width or size[1] < self._record.height):
             out_spec.append('x'.join([str(v) for v in size]))
@@ -319,12 +311,36 @@ class LocalImage(Image):
         return image
 
     @staticmethod
+    def _adjust_crop_box(box, crop):
+        """ Given a fit box and a crop box, adjust one to the other """
+
+        if crop and box:
+            # Both boxes are the same size; just line them up.
+            return (box[0] + crop[0], box[1] + crop[1],
+                    box[2] + crop[0], box[3] + crop[1])
+
+        if crop:
+            # We don't have a fit box, so just convert the crop box
+            return (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
+
+        # We don't have a crop box, so return the fit box (even if it's None)
+        return box
+
+    @staticmethod
+    def _parse_tuple_string(argument):
+        """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
+        if isinstance(argument, str):
+            return tuple(int(p.strip()) for p in argument.split(','))
+        return argument
+
+    @staticmethod
     def _crop_to_box(crop):
         # pylint:disable=invalid-name
         x, y, w, h = crop
         return (x, y, x + w, y + h)
 
     def _render(self, path, size, box, flatten, kwargs, out_args):
+        # pylint:disable=too-many-arguments
         image = self._image
 
         with self._lock:
