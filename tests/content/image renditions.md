@@ -93,6 +93,18 @@ rawr.jpg "image 3"
     "different crops for thumbnail as fullsize")
 ```
 
+![{100,100}](
+  croptest.png{crop='119,142,343,247',resize='fit'} "fit crop"
+| croptest.png{crop='119,142,343,247',resize='fill'} "fill crop")
+
+```
+![{100,100}](
+  croptest.png{crop='119,142,343,247',resize='fit'} "fit crop"
+| croptest.png{crop='119,142,343,247',resize='fill'} "fill crop")
+```
+
+
+
 Inline image with a gallery class: ![{div_class="images"}](rawr.jpg{32,32}) should still be a block element
 
 Inline image with no gallery class: ![{div_class=None}](rawr.jpg{32,32}) should be inline

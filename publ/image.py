@@ -258,12 +258,21 @@ class LocalImage(Image):
             out_args['optimize'] = True
 
         crop = kwargs.get('crop')
-        if crop:
-            out_spec.append('c'.join([str(v) for v in crop]))
+        if isinstance(crop, str):
+            crop = tuple(int(p.strip()) for p in crop.split(','))
 
-        size, box = self.get_rendition_size(kwargs, output_scale)
+        size, box = self.get_rendition_size(kwargs, output_scale, crop)
+
+        if crop:
+            if box:
+                box = (box[0] + crop[0], box[1] + crop[1],
+                       box[2] + crop[0], box[3] + crop[1])
+            else:
+                box = self._crop_to_box(crop)
+
         if size and (size[0] < self._record.width or size[1] < self._record.height):
             out_spec.append('x'.join([str(v) for v in size]))
+
         if box:
             # pylint:disable=not-an-iterable
             out_spec.append('-'.join([str(v) for v in box]))
@@ -298,7 +307,7 @@ class LocalImage(Image):
             return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
         LocalImage.thread_pool().submit(
-            self._render, out_fullpath, crop, size, box, flatten, kwargs, out_args)
+            self._render, out_fullpath, size, box, flatten, kwargs, out_args)
 
         return flask.url_for('async', filename=out_rel_path, _external=kwargs.get('absolute')), size
 
@@ -315,8 +324,7 @@ class LocalImage(Image):
         x, y, w, h = crop
         return (x, y, x + w, y + h)
 
-    def _render(self, path, crop, size, box, flatten, kwargs, out_args):
-        # pylint:disable=too-many-arguments
+    def _render(self, path, size, box, flatten, kwargs, out_args):
         image = self._image
 
         with self._lock:
@@ -337,9 +345,6 @@ class LocalImage(Image):
                 paletted = image.mode == 'P'
                 if paletted:
                     image = image.convert('RGBA')
-
-                if crop:
-                    image = image.crop(box=self._crop_to_box(crop))
 
                 if size:
                     image = image.resize(size=size, box=box,
@@ -362,14 +367,13 @@ class LocalImage(Image):
                 logger.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
 
-    def get_rendition_size(self, spec, output_scale):
+    def get_rendition_size(self, spec, output_scale, crop):
         """
         Wrapper to determine the overall rendition size and cropping box
 
         Returns tuple of (size,box)
         """
 
-        crop = spec.get('crop')
         if crop:
             # Use the cropping rectangle size
             _, _, width, height = crop
