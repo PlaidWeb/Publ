@@ -79,10 +79,12 @@ rawr.jpg "image 3"
 ![alt text](rawr.jpg{120,crop=(0,0,240,352)} "test crop (left half of rawr.jpg, scaled down)")
 ```
 
-![i can see you](rawr.jpg{gallery_id='crops',crop=(107,72,196,154),fullsize_crop=(95,69,435,315)} "different crops for thumbnail as fullsize")
+![i can see you](rawr.jpg{gallery_id='crops',crop=(107,72,89,82),fullsize_crop=(95,69,340,246)}
+    "different crops for thumbnail as fullsize")
 
 ```
-![i can see you](rawr.jpg{gallery_id='crops',crop=(107,72,196,154),fullsize_crop=(95,69,435,315)} "different crops for thumbnail as fullsize")
+![i can see you](rawr.jpg{gallery_id='crops',crop=(107,72,89,82),fullsize_crop=(95,69,340,246)}
+    "different crops for thumbnail as fullsize")
 ```
 
 Inline image with a gallery class: ![{div_class="images"}](rawr.jpg{32,32}) should still be a block element
