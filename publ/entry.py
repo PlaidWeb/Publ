@@ -522,7 +522,12 @@ def scan_file(fullpath, relpath, assign_id):
         path_alias.set_alias(alias, entry=record)
 
     with orm.db_session:
-        set_tags = {t.lower() for t in entry.get_all('Tag', [])}
+        set_tags = {
+            t.lower()
+            for t in entry.get_all('Tag', [])
+            + entry.get_all('Hidden-Tag', [])
+        }
+
         for tag in record.tags:
             if tag.key in set_tags:
                 set_tags.remove(tag.key)
