@@ -259,7 +259,7 @@ class LocalImage(Image):
 
         crop = kwargs.get('crop')
         if crop:
-            out_spec.append('c' + '-'.join([str(v) for v in crop]))
+            out_spec.append('c'.join([str(v) for v in crop]))
 
         size, box = self.get_rendition_size(kwargs, output_scale)
         if size and (size[0] < self._record.width or size[1] < self._record.height):
@@ -309,6 +309,12 @@ class LocalImage(Image):
 
         return image
 
+    @staticmethod
+    def _crop_to_box(crop):
+        # pylint:disable=invalid-name
+        x, y, w, h = crop
+        return (x, y, x + w, y + h)
+
     def _render(self, path, crop, size, box, flatten, kwargs, out_args):
         # pylint:disable=too-many-arguments
         image = self._image
@@ -333,7 +339,7 @@ class LocalImage(Image):
                     image = image.convert('RGBA')
 
                 if crop:
-                    image = image.crop(box=crop)
+                    image = image.crop(box=self._crop_to_box(crop))
 
                 if size:
                     image = image.resize(size=size, box=box,
@@ -365,21 +371,22 @@ class LocalImage(Image):
 
         crop = spec.get('crop')
         if crop:
-            input_w = crop[2] - crop[0]  # right - left component of crop box
-            input_h = crop[3] - crop[1]  # bottom - top component of crop box
+            # Use the cropping rectangle size
+            _, _, width, height = crop
         else:
-            input_w = self._record.width  # original image width
-            input_h = self._record.height  # original image height
+            # Use the original image size
+            width = self._record.width
+            height = self._record.height
 
         mode = spec.get('resize', 'fit')
         if mode == 'fit':
-            return self.get_rendition_fit_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_fit_size(spec, width, height, output_scale)
 
         if mode == 'fill':
-            return self.get_rendition_fill_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_fill_size(spec, width, height, output_scale)
 
         if mode == 'stretch':
-            return self.get_rendition_stretch_size(spec, input_w, input_h, output_scale)
+            return self.get_rendition_stretch_size(spec, width, height, output_scale)
 
         raise ValueError("Unknown resize mode {}".format(mode))
 
