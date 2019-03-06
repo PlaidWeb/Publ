@@ -89,14 +89,10 @@ class View:
         self._query = queries.build_query(
             spec).order_by(*ORDER_BY[self._order_by])
 
-        self.range = utils.CallableProxy(self._view_name)
-
         if 'count' in spec:
             self._entries = self._query[:spec['count']]
         else:
             self._entries = self._query[:]
-
-        self.link = utils.CallableProxy(self._link)
 
         if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
@@ -243,6 +239,23 @@ class View:
             pages.append(cur)
             cur = cur.next
         return pages
+
+    @cached_property
+    def range(self):
+        return utils.CallableProxy(self._view_name)
+
+    @cached_property
+    def link(self):
+        return utils.CallableProxy(self._link)
+
+    @cached_property
+    def tags(self):
+        tag_list = self.spec.get('tag')
+        if tag_list is None:
+            return []
+        if isinstance(tag_list, list):
+            return tag_list
+        return [tag_list]
 
     @cached_property
     def _pagination(self):
