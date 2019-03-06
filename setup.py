@@ -73,9 +73,8 @@ setup(
     project_urls={
         'Main Site': 'http://publ.beesbuzz.biz',
         'Bug Reports': 'https://github.com/PlaidWeb/Publ/issues',
-        'Funding': 'https://patreon.com/fluffy',
         'Source': 'https://github.com/PlaidWeb/Publ/',
-        'Discord': 'https://discord.gg/xADP3ja'
+        'Discord': 'https://beesbuzz.biz/discord'
     },
 
     python_requires=">=3.5",
