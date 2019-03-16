@@ -250,9 +250,8 @@ class View:
 
     @cached_property
     def tags(self):
-        tag_list = self.spec.get('tag')
-        if tag_list is None:
-            return []
+        """ Returns a list of all the tags applied to this view """
+        tag_list = self.spec.get('tag', [])
         if isinstance(tag_list, list):
             return tag_list
         return [tag_list]
