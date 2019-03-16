@@ -242,10 +242,12 @@ class View:
 
     @cached_property
     def range(self):
+        """ Gets a localizable string describing the view range """
         return utils.CallableProxy(self._view_name)
 
     @cached_property
     def link(self):
+        """ Gets a link back to this view """
         return utils.CallableProxy(self._link)
 
     @cached_property
