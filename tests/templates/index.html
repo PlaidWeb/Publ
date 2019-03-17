@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>{{category.name}}</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
@@ -58,15 +59,16 @@
         <article class="h-entry entry">
         {% block entry scoped %}
         <h2 class="p-name">
-            {%- if entry.more or entry['redirect-to'] %}<a class="u-url" href="{{entry.link}}">{{entry.title}}</a>
-            {%- else -%}
-            {{entry.title}}
-            {%- endif -%}
+            <a class="u-url" href="{{entry.link}}">{{entry.title}}</a>
         </h2>
 
         <section class="p-summary">
         {{entry.body(width=320,height=320)}}
         </section>
+
+        {% if entry.more %}
+        <div><a href="{{entry.link}}">read body</a></div>
+        {%endif%}
         {% endblock %}
 
         </article>
