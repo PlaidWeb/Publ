@@ -83,7 +83,7 @@ class Image(ABC):
                     style.append("shape-outside: url('{}')".format(shape))
 
             attrs = {
-                'alt_text': alt_text,
+                'alt': alt_text,
                 'title': title,
                 **self.get_img_attrs(style, **kwargs)
             }
