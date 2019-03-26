@@ -15,6 +15,7 @@ import time
 import random
 import io
 import errno
+import functools
 from abc import ABC, abstractmethod
 
 import PIL.Image
@@ -26,6 +27,9 @@ from . import config
 from . import model, utils
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+# Bump this if any defaults or processing changes
+RENDITION_VERSION = 1
 
 
 class Image(ABC):
@@ -356,6 +360,11 @@ class LocalImage(Image):
                 pass
 
             _, ext = os.path.splitext(path)
+
+            try:
+                image = _fix_orientation(image)
+            except:
+                logger.exception('wtf')
 
             try:
                 paletted = image.mode == 'P'
@@ -768,6 +777,40 @@ class ImageNotFound(Image):
         return '/* not found: {} */'.format(self.path)
 
 
+def _fix_orientation(image):
+    """ adapted from https://stackoverflow.com/a/30462851/318857
+
+        Apply Image.transpose to ensure 0th row of pixels is at the visual
+        top of the image, and 0th column is the visual left-hand side.
+        Return the original image if unable to determine the orientation.
+
+        As per CIPA DC-008-2012, the orientation field contains an integer,
+        1 through 8. Other values are reserved.
+    """
+
+    exif_orientation_tag = 0x0112
+    exif_transpose_sequences = [
+        [],
+        [],
+        [PIL.Image.FLIP_LEFT_RIGHT],
+        [PIL.Image.ROTATE_180],
+        [PIL.Image.FLIP_TOP_BOTTOM],
+        [PIL.Image.FLIP_LEFT_RIGHT, PIL.Image.ROTATE_90],
+        [PIL.Image.ROTATE_270],
+        [PIL.Image.FLIP_TOP_BOTTOM, PIL.Image.ROTATE_90],
+        [PIL.Image.ROTATE_90],
+    ]
+
+    try:
+        orientation = image._getexif()[exif_orientation_tag]
+        sequence = exif_transpose_sequences[orientation]
+        return functools.reduce(type(image).transpose, sequence, image)
+    except (TypeError, AttributeError, KeyError):
+        # either no EXIF tags or no orientation tag
+        pass
+    return image
+
+
 @orm.db_session(immediate=True)
 def _get_asset(file_path):
     """ Get the database record for an asset file """
@@ -779,6 +822,7 @@ def _get_asset(file_path):
 
         # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
         md5 = hashlib.md5()
+        md5.update(bytes(RENDITION_VERSION))
         with open(file_path, 'rb') as file:
             for chunk in iter(lambda: file.read(16384), b""):
                 md5.update(chunk)
@@ -791,6 +835,7 @@ def _get_asset(file_path):
 
         try:
             image = PIL.Image.open(file_path)
+            image = _fix_orientation(image)
         except IOError:
             image = None
 

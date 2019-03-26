@@ -2,6 +2,7 @@ Title: Image attributes
 Date: 2018-09-21 00:38:19-07:00
 Entry-ID: 516
 UUID: b1042af0-6485-5580-8731-c123a9c5c530
+Category: images
 
 Tests of `div_class`, `img_class`, `div_style`, `img_style`, and `style`
 
