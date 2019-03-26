@@ -75,7 +75,7 @@ setup(
         'Bug Reports': 'https://github.com/PlaidWeb/Publ/issues',
         'Source': 'https://github.com/PlaidWeb/Publ/',
         'Discord': 'https://beesbuzz.biz/discord',
-        'Funding': 'https://liberapay.com/fluffy'
+        'Funding': 'https://liberapay.com/PlaidWeb'
     },
 
     python_requires=">=3.5",
