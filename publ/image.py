@@ -815,7 +815,8 @@ def _fix_orientation(image):
 def _get_asset(file_path):
     """ Get the database record for an asset file """
     record = model.Image.get(file_path=file_path)
-    fingerprint = utils.file_fingerprint(file_path)
+    fingerprint = ','.join((utils.file_fingerprint(file_path),
+                            str(RENDITION_VERSION)))
     if not record or record.fingerprint != fingerprint:
         # Reindex the file
         logger.info("Updating image %s -> %s", file_path, fingerprint)
