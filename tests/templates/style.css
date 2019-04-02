@@ -209,3 +209,7 @@ header h1 {
     float: right;
     shape-margin: 1ex;
 }
+
+.p-summary {
+    display: none;
+}

@@ -256,6 +256,17 @@ class Entry(caching.Memoizable):
             body or more) if is_markdown else CallableProxy(None)
 
     @cached_property
+    def summary(self):
+        """ Get the entry's summary text """
+        if self.get('Summary'):
+            return flask.Markup(self.get('Summary'))
+
+        body, more, is_markdown = self._entry_content
+        return TrueCallableProxy(
+            self._get_summary,
+            body or more) if is_markdown else CallableProxy(None)
+
+    @cached_property
     def last_modified(self):
         """ Get the date of last file modification """
         if self.get('Last-Modified'):
@@ -293,9 +304,16 @@ class Entry(caching.Memoizable):
         for image in card.images:
             tags += og_tag('og:image', image)
         if card.description:
-            tags += og_tag('og:description', card.description)
+            tags += og_tag('og:description',
+                           self.get('Summary', card.description))
 
         return flask.Markup(tags)
+
+    def _get_summary(self, text, **kwargs):
+        """ Render out just the summary """
+
+        card = cards.extract_card(text, kwargs, self.search_path)
+        return flask.Markup(card.description)
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
