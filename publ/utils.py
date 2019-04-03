@@ -10,6 +10,7 @@ import urllib.parse
 import arrow
 import flask
 import slugify
+from werkzeug.utils import cached_property
 
 from . import config, model
 
@@ -27,23 +28,19 @@ class CallableProxy:
         """
 
         self._func = func if func else (lambda **kwargs: '')
-        self._has_default = False
         self._default_args = args
         self._default_kwargs = kwargs
 
-    def _get_default(self):
+    @cached_property
+    def _default(self):
         """ Get the default function return """
 
-        # pylint: disable=attribute-defined-outside-init
-        if not self._has_default:
-            if self._default_args:
-                self._default = self._func(
-                    *self._default_args,
-                    **self._default_kwargs)
-            else:
-                self._default = self._func(**self._default_kwargs)
-            self._has_default = True
-        return self._default
+        if self._default_args:
+            return self._func(
+                *self._default_args,
+                **self._default_kwargs)
+
+        return self._func(**self._default_kwargs)
 
     def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
@@ -55,19 +52,19 @@ class CallableProxy:
         return self._func(*pos_args, **kwargs)
 
     def __getattr__(self, name):
-        return getattr(self._get_default(), name)
+        return getattr(self._default, name)
 
-    def __nonzero__(self):
-        return self._get_default().__nonzero__()
+    def __bool__(self):
+        return not not self._default
 
     def __len__(self):
-        return 1 if self._get_default() else 0
+        return 1 if self._default else 0
 
     def __str__(self):
-        return str(self._get_default())
+        return str(self._default)
 
     def __iter__(self):
-        return self._get_default().__iter__()
+        return self._default.__iter__()
 
 
 class TrueCallableProxy(CallableProxy):

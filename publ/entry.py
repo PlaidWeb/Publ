@@ -259,7 +259,7 @@ class Entry(caching.Memoizable):
     def summary(self):
         """ Get the entry's summary text """
         if self.get('Summary'):
-            return flask.Markup(self.get('Summary'))
+            return self.get('Summary')
 
         body, more, is_markdown = self._entry_content
         return TrueCallableProxy(
@@ -313,7 +313,7 @@ class Entry(caching.Memoizable):
         """ Render out just the summary """
 
         card = cards.extract_card(text, kwargs, self.search_path)
-        return flask.Markup(card.description)
+        return flask.Markup((card.description or '').strip())
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """

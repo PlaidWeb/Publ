@@ -49,7 +49,11 @@
             <div class="posted">Last updated: <time class="dt-posted" datetime="{{entry.date.isoformat()}}">{{entry.last_modified.format('YYYY-MM-DD h:mm A')}} ({{entry.last_modified.humanize()}})</time>
             </div>
             <div class="source_file">Source file: <tt>{{entry.file_path}}</tt></div>
-            <div class="p-summary">{{entry.summary}}</div>
+            {% if entry.summary %}
+                <div class="p-summary">{{entry.summary}}</div>
+            {% else %}
+                <!-- summary is empty -->
+            {% endif %}
 
             <div class="entry e-content">
             {{entry.body}}
