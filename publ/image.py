@@ -1,5 +1,6 @@
 # image.py
 ''' Managing image renditions '''
+# pylint:disable=too-many-lines
 
 import os
 import hashlib
@@ -361,10 +362,7 @@ class LocalImage(Image):
 
             _, ext = os.path.splitext(path)
 
-            try:
-                image = _fix_orientation(image)
-            except:
-                logger.exception('wtf')
+            image = _fix_orientation(image)
 
             try:
                 paletted = image.mode == 'P'
@@ -802,6 +800,7 @@ def _fix_orientation(image):
     ]
 
     try:
+        # pylint:disable=protected-access
         orientation = image._getexif()[exif_orientation_tag]
         sequence = exif_transpose_sequences[orientation]
         return functools.reduce(type(image).transpose, sequence, image)
