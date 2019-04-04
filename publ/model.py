@@ -74,6 +74,12 @@ class Entry(db.Entity):
     orm.composite_index(category, entry_type, local_date)
     orm.composite_index(category, entry_type, sort_title)
 
+    @property
+    def visible(self):
+        """ Returns true if the entry should be viewable """
+        return self.status not in (PublishStatus.DRAFT.value,
+                                   PublishStatus.GONE.value)
+
 
 class EntryTag(db.Entity):
     """ Tags for an entry """

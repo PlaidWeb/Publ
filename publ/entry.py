@@ -536,8 +536,9 @@ def scan_file(fullpath, relpath, assign_id):
 
     # add other relationships to the index
     path_alias.remove_aliases(record)
-    for alias in entry.get_all('Path-Alias', []):
-        path_alias.set_alias(alias, entry=record)
+    if record.visible:
+        for alias in entry.get_all('Path-Alias', []):
+            path_alias.set_alias(alias, entry=record)
 
     with orm.db_session:
         set_tags = {

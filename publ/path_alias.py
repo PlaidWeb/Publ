@@ -77,7 +77,7 @@ def get_alias(path):
 
     template = record.template if record.template != 'index' else None
 
-    if record.entry:
+    if record.entry and record.entry.visible:
         if record.template:
             # a template was requested, so we go to the category page
             category = (record.category.category
