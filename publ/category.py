@@ -5,6 +5,7 @@ import os
 import logging
 import email
 import functools
+import collections
 
 import flask
 from flask import url_for
@@ -21,6 +22,8 @@ from . import config
 from . import caching
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+TagCount = collections.namedtuple('TagCount', ['tag', 'count'])
 
 
 @functools.lru_cache(10)
@@ -158,6 +161,22 @@ class Category(caching.Memoizable):
     def sort_breadcrumb(self):
         """ Get the sortable breadcrumb of this category """
         return tuple(c.sort_name for c in self.breadcrumb)
+
+    @cached_property
+    def tags(self):
+        """ Get the list of tags associated with this category's entries.
+
+        Takes optional view arguments (including recurse)
+
+        Returns a list of category.TagCount tuples like `(tag='foo', count=5)`
+        """
+        return utils.CallableProxy(self._tags)
+
+    def _tags(self, **spec):
+        entries = self._entries(spec)
+        tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
+                          for e in entries for tag in e.tags)
+        return [TagCount(key, count) for (key, count) in tags]
 
     def _description(self, **kwargs):
         if self._meta:
