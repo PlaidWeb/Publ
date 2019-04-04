@@ -238,7 +238,8 @@ def render_category(category='', template=None):
 
     if not tmpl:
         # this might actually be a malformed category URL
-        test_path = '/'.join((category, template))
+        test_path = '/'.join((category, template)) if category else template
+        logger.debug("Checking for malformed category %s", test_path)
         record = orm.select(
             e for e in model.Entry if e.category == test_path).exists()
         if record:
