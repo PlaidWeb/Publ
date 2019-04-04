@@ -4,6 +4,13 @@
 
 <p><a href="{{view(tag=None).link}}">clear all tags</a></p>
 
+<h2>Available tags:</h2>
+<ul>
+    {% for name,count in category.tags %}
+    <li><a href="{{view(tag=name)}}">{{name}}</a> ({{count}})</li>
+    {% endfor %}
+</ul>
+
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
 <ul>

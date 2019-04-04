@@ -23,7 +23,7 @@ from . import caching
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-TagCount = collections.namedtuple('TagCount', ['tag', 'count'])
+TagCount = collections.namedtuple('TagCount', ['name', 'count'])
 
 
 @functools.lru_cache(10)
