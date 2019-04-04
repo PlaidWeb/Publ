@@ -61,16 +61,48 @@ class Category(caching.Memoizable):
             subcat_query = orm.select(c for c in subcat_query if c != '')
         self._subcats_recursive = subcat_query
 
-        self.link = utils.CallableProxy(self._link)
-
-        self.subcats = utils.CallableProxy(self._get_subcats)
-        self.first = utils.CallableProxy(self._first)
-        self.last = utils.CallableProxy(self._last)
-
         self._record = model.Category.get(category=path)
 
     def _key(self):
         return Category, self.path
+
+    @cached_property
+    def link(self):
+        """ Returns a link to the category.
+
+        Takes optional view arguments, as well as the following optional arguments:
+
+        template -- which template to generate the link against
+
+        """
+        return utils.CallableProxy(self._link)
+
+    @cached_property
+    def subcats(self):
+        """ Returns a list of subcategories.
+
+        Takes the following arguments:
+
+        recurse -- whether to include their subcategories as well (default: False)
+
+        """
+        return utils.CallableProxy(self._get_subcats)
+
+    @cached_property
+    def first(self):
+        """ Returns the first entry in the category.
+
+        Takes optional view arguments.
+        """
+        return utils.CallableProxy(self._first)
+
+    @cached_property
+    def last(self):
+        """ Returns the last entry in the category.
+
+        Takes optional view arguments.
+        """
+        return utils.CallableProxy(self._last)
 
     @cached_property
     def _meta(self):
