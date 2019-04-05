@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tag browsing</title>
+</head>
+<body>
+
+    <h1>Tag browsing</h1>
+
+    <p><a href="{{view}}">back to index</a></p>
+
+    <h2>This level</h2>
+
+    <ul>
+        {% for name,count in category.tags|sort(attribute='count',reverse=True) %}
+        <li><a href="{{view(tag=name)}}">{{name}}</a> {{count}}
+            <ul>
+                {% for entry in view(tag=name).entries %}
+                <li><a href="{{entry.link}}">{{entry.title}}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Recursive</h2>
+
+    <ul>
+        {% for name,count in category.tags(recurse=True)|sort(attribute='count',reverse=True) %}
+        <li><a href="{{view(tag=name)}}">{{name}}</a> {{count}}
+            <ul>
+                {% for entry in view(tag=name,recurse=True).entries %}
+                <li><a href="{{entry.link}}">{{entry.title}}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+
+</body>
+</html>
