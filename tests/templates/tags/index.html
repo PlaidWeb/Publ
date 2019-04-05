@@ -2,7 +2,7 @@
 
 <p>Spec: <code>{{view.spec}}</code></p>
 
-<p><a href="{{view(tag=None).link}}">clear all tags</a></p>
+<p><a href="{{view(tag=None).link}}">clear all tags</a> <a href="browse">tag browser</a></p>
 
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
@@ -18,29 +18,17 @@
 {% if view.next %}<a href="{{view.next.link}}">next</a>{% endif %}
 </ul>
 
-{% set other = view(tag='foo') %}
-<h2><a href="{{other.link}}">Entries tagged <code>'foo'</code></a></h2>
+{% for restrict in ['foo',['hello','bar']] %}
+{% set other = view(tag=restrict,recurse=True) %}
+<h2>Entries tagged <a href="{{other}}"><code>{{restrict}}</code></a></h2>
 
 <ul>
 {% for entry in other.entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
     {% for tag in entry.tags %}
-    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
+    <li><a href="{{view(tag=tag)}}">{{ tag }}</a></li>
     {% endfor %}
 </ul></li>
 {% endfor %}
 </ul>
-
-{% set other = view(tag=('hello','bar')) %}
-<h2><a href="{{other.link}}">Entries tagged <code>'hello'</code> or <code>'bar'</code></a></h2>
-
-<ul>
-{% for entry in other.entries %}
-<li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
-    {% for tag in entry.tags %}
-    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
-    {% endfor %}
-</ul></li>
 {% endfor %}
-</ul>
-

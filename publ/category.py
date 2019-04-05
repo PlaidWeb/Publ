@@ -5,6 +5,7 @@ import os
 import logging
 import email
 import functools
+import collections
 
 import flask
 from flask import url_for
@@ -21,6 +22,8 @@ from . import config
 from . import caching
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+TagCount = collections.namedtuple('TagCount', ['name', 'count'])
 
 
 @functools.lru_cache(10)
@@ -61,16 +64,48 @@ class Category(caching.Memoizable):
             subcat_query = orm.select(c for c in subcat_query if c != '')
         self._subcats_recursive = subcat_query
 
-        self.link = utils.CallableProxy(self._link)
-
-        self.subcats = utils.CallableProxy(self._get_subcats)
-        self.first = utils.CallableProxy(self._first)
-        self.last = utils.CallableProxy(self._last)
-
         self._record = model.Category.get(category=path)
 
     def _key(self):
         return Category, self.path
+
+    @cached_property
+    def link(self):
+        """ Returns a link to the category.
+
+        Takes optional view arguments, as well as the following optional arguments:
+
+        template -- which template to generate the link against
+
+        """
+        return utils.CallableProxy(self._link)
+
+    @cached_property
+    def subcats(self):
+        """ Returns a list of subcategories.
+
+        Takes the following arguments:
+
+        recurse -- whether to include their subcategories as well (default: False)
+
+        """
+        return utils.CallableProxy(self._get_subcats)
+
+    @cached_property
+    def first(self):
+        """ Returns the first entry in the category.
+
+        Takes optional view arguments.
+        """
+        return utils.CallableProxy(self._first)
+
+    @cached_property
+    def last(self):
+        """ Returns the last entry in the category.
+
+        Takes optional view arguments.
+        """
+        return utils.CallableProxy(self._last)
 
     @cached_property
     def _meta(self):
@@ -126,6 +161,22 @@ class Category(caching.Memoizable):
     def sort_breadcrumb(self):
         """ Get the sortable breadcrumb of this category """
         return tuple(c.sort_name for c in self.breadcrumb)
+
+    @cached_property
+    def tags(self):
+        """ Get the list of tags associated with this category's entries.
+
+        Takes optional view arguments (including recurse)
+
+        Returns a list of category.TagCount tuples like `(tag='foo', count=5)`
+        """
+        return utils.CallableProxy(self._tags)
+
+    def _tags(self, **spec):
+        entries = self._entries(spec)
+        tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
+                          for e in entries for tag in e.tags)
+        return [TagCount(key, count) for (key, count) in tags]
 
     def _description(self, **kwargs):
         if self._meta:
