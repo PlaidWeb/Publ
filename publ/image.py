@@ -56,6 +56,9 @@ class Image(ABC):
         Returns: a tuple of (url, size) for the image. """
 
     @abstractmethod
+    def _get_img_attrs(self, style=None, **kwargs):
+        pass
+
     def get_img_attrs(self, style=None, **kwargs):
         """ Get an attribute list (src, srcset, style, et al) for the image.
 
@@ -64,10 +67,25 @@ class Image(ABC):
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
+        if 'prefix' in kwargs:
+            attr_prefixes = kwargs.get('prefix')
+            if isinstance(kwargs['prefix'], str):
+                attr_prefixes = [attr_prefixes]
+
+            for prefix in attr_prefixes:
+                for k, v in kwargs.items():
+                    if k.startswith(prefix):
+                        print(k, v)
+                        kwargs[k[len(prefix):]] = v
+
+        return self._get_img_attrs(style, **kwargs)
+
     def get_img_tag(self, title='', alt_text='', **kwargs):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
+
+        kwargs = {**kwargs}
 
         try:
             style = []
@@ -79,7 +97,6 @@ class Image(ABC):
                     else:
                         style.append(kwargs[key])
 
-                    kwargs = {**kwargs}
                     del kwargs[key]
 
             if 'shape' in kwargs:
@@ -581,8 +598,8 @@ class LocalImage(Image):
 
         return (img_1x, img_2x, size)
 
-    def get_img_attrs(self, style=None, **kwargs):
-        """ Get an <img> tag for this image, hidpi-aware """
+    def _get_img_attrs(self, style=None, **kwargs):
+        """ Get the attributes of an an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
@@ -655,7 +672,7 @@ class ExternalImage(Image):
         # pylint: disable=unused-argument
         return self._get_url(kwargs.get('absolute')), None
 
-    def get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style=None, **kwargs):
         url = self._get_url(kwargs.get('absolute'))
 
         attrs = {
@@ -766,7 +783,7 @@ class ImageNotFound(Image):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
-    def get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style=None, **kwargs):
         # pylint:disable=unused-argument
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
