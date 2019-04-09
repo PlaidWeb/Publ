@@ -41,6 +41,7 @@ class Image(ABC):
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
+        add = {}
         if 'prefix' in kwargs:
             attr_prefixes = kwargs.get('prefix')
             if isinstance(kwargs['prefix'], str):
@@ -49,28 +50,24 @@ class Image(ABC):
             for prefix in attr_prefixes:
                 for k, val in kwargs.items():
                     if k.startswith(prefix):
-                        kwargs[k[len(prefix):]] = val
+                        add[k[len(prefix):]] = val
 
-        return self._get_img_attrs(style, **kwargs)
+        return self._get_img_attrs(style, {**kwargs, **add})
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
 
-        kwargs = {**kwargs}
-
         try:
             style = []
 
             for key in ('img_style', 'style'):
                 if key in kwargs:
-                    if isinstance(kwargs[key], (list, tuple)):
-                        style += kwargs[key]
+                    if isinstance(kwargs[key], (list, tuple, set)):
+                        style += list(kwargs[key])
                     else:
                         style.append(kwargs[key])
-
-                    del kwargs[key]
 
             if 'shape' in kwargs:
                 shape = self._get_shape_style(**kwargs)

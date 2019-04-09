@@ -24,7 +24,7 @@ class ExternalImage(Image):
         # pylint: disable=unused-argument
         return self._get_url(kwargs.get('absolute')), None
 
-    def _get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style, kwargs):
         url = self._get_url(kwargs.get('absolute'))
 
         attrs = {

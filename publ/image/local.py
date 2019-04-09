@@ -442,7 +442,7 @@ class LocalImage(Image):
 
         return (img_1x, img_2x, size)
 
-    def _get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style, kwargs):
         """ Get the attributes of an an <img> tag for this image, hidpi-aware """
 
         # Get the 1x and 2x renditions
