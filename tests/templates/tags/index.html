@@ -4,13 +4,26 @@
 
 <p><a href="{{view(tag=None).link}}">clear all tags</a> <a href="browse">tag browser</a></p>
 
+<h2>Tag browser</h2>
+
+    <ul>
+        {% for name,count in category.tags(recurse=True)|sort(attribute='count',reverse=True) %}
+        <li><a href="{{view(tag=name)}}">{{name}}</a> {{count}}
+            [<a href="{{view.tag_add(name)}}">+</a>]
+            [<a href="{{view.tag_remove(name)}}">-</a>]
+            [<a href="{{view.tag_toggle(name)}}">x</a>]
+
+        </li>
+        {% endfor %}
+    </ul>
+
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
 <ul>
-{% for entry in view.entries %}
+{% for entry in view(recurse=True).entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
     {% for tag in entry.get_all('Tag') %}
-    <li><a href="{{view(tag=tag).link}}">{{ tag }}</a></li>
+    <li><a href="{{view.tag_toggle(tag).link}}">{{ tag }}</a></li>
     {% endfor %}
 </ul></li>
 {% endfor %}
@@ -26,9 +39,10 @@
 {% for entry in other.entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
     {% for tag in entry.tags %}
-    <li><a href="{{view(tag=tag)}}">{{ tag }}</a></li>
+    <li><a href="{{view.tag_toggle(tag)}}">{{ tag }}</a></li>
     {% endfor %}
 </ul></li>
 {% endfor %}
 </ul>
 {% endfor %}
+
