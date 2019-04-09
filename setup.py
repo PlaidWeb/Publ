@@ -1,7 +1,7 @@
 """Setup for Publ packaging"""
 
 # Always prefer setuptools over distutils
-from setuptools import setup
+from setuptools import setup, find_packages
 from os import path
 
 import publ
@@ -52,7 +52,7 @@ setup(
 
     keywords='website cms publishing blog photogallery sharing',
 
-    packages=['publ'],
+    packages=find_packages(),
 
     install_requires=[
         'Flask',
