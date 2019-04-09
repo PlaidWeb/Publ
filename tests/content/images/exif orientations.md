@@ -1,5 +1,4 @@
 Title: EXIF orientations
-Category: images
 Date: 2019-03-25 22:43:57-07:00
 Entry-ID: 366
 UUID: 818e6e3d-9913-5f53-9ccc-5aa0a97387d7
