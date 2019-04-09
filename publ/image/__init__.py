@@ -85,7 +85,7 @@ class ImageNotFound(Image):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
-    def _get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style, kwargs):
         # pylint:disable=unused-argument
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)

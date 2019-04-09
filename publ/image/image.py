@@ -30,7 +30,7 @@ class Image(ABC):
         Returns: a tuple of (url, size) for the image. """
 
     @abstractmethod
-    def _get_img_attrs(self, style=None, **kwargs):
+    def _get_img_attrs(self, style, kwargs):
         pass
 
     def get_img_attrs(self, style=None, **kwargs):
