@@ -352,7 +352,15 @@ class View:
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
 
-    def toggle_tag(self, *tags):
+    def tag_add(self, *tags):
+        """ Return a view with the specified tags added """
+        return View({**self.spec, 'tag': list(set(self.tags) | set(tags))})
+
+    def tag_remove(self, *tags):
+        """ Return a view with the specified tags removed """
+        return View({**self.spec, 'tag': list(set(self.tags) - set(tags))})
+
+    def tag_toggle(self, *tags):
         """ Return a view with the specified tags toggled """
         return View({**self.spec, 'tag': list(set(self.tags) ^ set(tags))})
 
