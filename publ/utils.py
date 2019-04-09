@@ -55,7 +55,7 @@ class CallableProxy:
         return getattr(self._default, name)
 
     def __bool__(self):
-        return not not self._default
+        return bool(self._default)
 
     def __len__(self):
         return 1 if self._default else 0
@@ -71,7 +71,7 @@ class TrueCallableProxy(CallableProxy):
     """ A version of CallableProxy that is always truthy """
     # pylint: disable=too-few-public-methods
 
-    def __nonzero__(self):
+    def __bool__(self):
         return True
 
     def __len__(self):

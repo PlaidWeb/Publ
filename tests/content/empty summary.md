@@ -4,7 +4,7 @@ Entry-ID: 928
 UUID: 0796d093-29d3-5a14-b6fa-e47cc9e66f37
 
 
-![](rawr.jpg)
+![](images/rawr.jpg)
 
 .....
 
