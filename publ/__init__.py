@@ -10,7 +10,7 @@ import werkzeug.exceptions
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
-__version__ = '0.3.21'
+__version__ = '0.3.22'
 
 
 class _PublApp(flask.Flask):
