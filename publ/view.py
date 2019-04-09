@@ -254,9 +254,9 @@ class View:
     def tags(self):
         """ Returns a list of all the tags applied to this view """
         tag_list = self.spec.get('tag', [])
-        if isinstance(tag_list, list):
-            return tag_list
-        return [tag_list]
+        if isinstance(tag_list, (list, set, tuple)):
+            return list(tag_list)
+        return {tag_list}
 
     @cached_property
     def _pagination(self):
@@ -351,6 +351,15 @@ class View:
 
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
+
+    def toggle_tag(self, tags):
+        """ Return a view with the specified tags toggled """
+        if isinstance(tags, (list, set, tuple)):
+            tags = set(tags)
+        else:
+            tags = {tags}
+
+        return View({**self.spec, 'tag': list(set(self.tags) ^ tags)})
 
     def _view_name(self, **formats):
         if not any(k for k in PAGINATION_SPECS if k in self.spec):
