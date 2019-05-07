@@ -29,7 +29,7 @@ app = publ.publ(__name__, config)
 
 @app.route('/favicon.ico')
 def favicon():
-    logo = publ.image.get_image('rawr.jpg', ['tests/content'])
+    logo = publ.image.get_image('images/rawr.jpg', ['tests/content'])
     img, _ = logo.get_rendition(format='ico')
     return flask.redirect(img)
 
