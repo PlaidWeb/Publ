@@ -24,3 +24,6 @@ and a file attachment via `<audio>`:
 
 <audio src="boop.mp3" controls>
 
+Also, a missing image should still get the `data-publ` debug attribute:
+
+<img src="MISSING_FILE.png">
