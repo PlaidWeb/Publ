@@ -31,6 +31,15 @@ class HTMLEntry(utils.HTMLTransform):
         """ Handle an end tag """
         self.append('</' + tag + '>')
 
+    def handle_entityref(self, name):
+        self.append('&' + name + ';')
+
+    def handle_charref(self, name):
+        self.append('&#' + name + ';')
+
+    def handle_comment(self, data):
+        self.append('<!--' + data + '-->')
+
     def handle_startendtag(self, tag, attrs):
         """ Handle a self-closing tag """
         self._handle_tag(tag, attrs, True)
