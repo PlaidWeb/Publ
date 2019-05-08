@@ -30,9 +30,9 @@ class Image(ABC):
         Returns: a tuple of (url, size) for the image. """
 
     @abstractmethod
-    def _get_img_attrs(self, kwargs, style_list):
+    def _get_img_attrs(self, kwargs, style_parts):
         """ Get the img attributes for the given rendition arguments. Style parts
-        should be appended to the style_list instead.
+        should be appended to the style_parts instead.
         """
 
     def get_img_attrs(self, **kwargs):
@@ -67,7 +67,7 @@ class Image(ABC):
 
         shape = self._get_shape_style(params)
         if shape:
-            style.append("shape-outside: url('{}')".format(shape))
+            styles.append("shape-outside: url('{}')".format(shape))
 
         def set_val(key, val):
             if val is not None:

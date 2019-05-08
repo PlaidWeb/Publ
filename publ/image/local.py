@@ -444,6 +444,7 @@ class LocalImage(Image):
 
     def _get_img_attrs(self, kwargs, style_parts):
         """ Get the attributes of an an <img> tag for this image, hidpi-aware """
+        # pylint:disable=unused-argument
 
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
