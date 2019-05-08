@@ -1,10 +1,14 @@
 # html_entry.py
 """ HTML entry processing functionality """
 
+import logging
+
 import misaka
 import flask
 
 from . import utils, links, image
+
+LOGGER = logging.getLogger(__name__)
 
 
 class HTMLEntry(utils.HTMLTransform):
@@ -44,8 +48,9 @@ class HTMLEntry(utils.HTMLTransform):
         # Remap the attributes
         out_attrs = []
         for key, val in attrs:
+            print(key, val)
             if (key.lower() == 'href'
-                    or (key.lower() == 'src' and not tag.lower() == 'img')):
+                    or (key.lower() == 'src' and tag.lower() != 'img')):
                 out_attrs.append((key, links.resolve(
                     val, self._search_path, self._config.get('absolute'))))
             else:
@@ -63,6 +68,7 @@ class HTMLEntry(utils.HTMLTransform):
 
         path = None
         config = {**self._config}
+        is_rewritten = False
 
         for key, val in attrs:
             if key.lower() == 'width' or key.lower() == 'height':
@@ -72,6 +78,14 @@ class HTMLEntry(utils.HTMLTransform):
                     pass
             elif key.lower() == 'src':
                 path = val
+            elif key == 'data-publ-rewritten':
+                is_rewritten = True
+
+        if is_rewritten:
+            # This img tag was already rewritten by a previous processor, so just
+            # remove that attribute and return the tag's original attributes
+            LOGGER.info("Detected already-rewritten image; %s", attrs)
+            return [(key, val) for key, val in attrs if key != 'data-publ-rewritten']
 
         img_path, img_args, _ = image.parse_image_spec(path)
         img = image.get_image(img_path, self._search_path)
@@ -83,7 +97,9 @@ class HTMLEntry(utils.HTMLTransform):
         try:
             img_attrs = img.get_img_attrs(**config)
         except FileNotFoundError as error:
-            return [('data-publ-error', 'file not found: {}'.format(error.filename))]
+            img_attrs = {
+                'data-publ-error': 'file not found: {}'.format(error.filename)
+            }
 
         # return the original attr list with the computed overrides in place
         return [(key, val) for key, val in attrs

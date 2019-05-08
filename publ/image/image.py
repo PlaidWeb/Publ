@@ -66,6 +66,8 @@ class Image(ABC):
         set_val('id', params.get('img_id', params.get('id')))
         set_val('style', ';'.join(styles) if styles else None)
 
+        set_val('data-publ-rewritten', params.get('_mark_rewritten'))
+
         return attrs
 
     def get_img_tag(self, title='', alt_text='', **kwargs):

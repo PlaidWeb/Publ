@@ -201,6 +201,9 @@ def make_tag(name, attrs, start_end=False):
     name -- the name of the tag (p, div, etc.)
     attrs -- a dict of attributes to apply to the tag
     start_end -- whether this tag should be self-closing
+
+    If an attribute's value is None it will be written as a standalone attribute,
+    e.g. <audio controls>. To suppress it entirely, make the value explicitly False.
     """
 
     text = '<' + name
@@ -213,9 +216,11 @@ def make_tag(name, attrs, start_end=False):
         raise TypeError("Unhandled attrs type " + str(type(attrs)))
 
     for key, val in attr_list:
-        if val is not None:
-            escaped = html.escape(str(val), False).replace('"', '&#34;')
-            text += ' {}="{}"'.format(key, escaped)
+        if val is not False:
+            text += ' {}'.format(key)
+            if val is not None:
+                escaped = html.escape(str(val), False).replace('"', '&#34;')
+                text += '="{}"'.format(escaped)
     if start_end:
         text += ' /'
     text += '>'

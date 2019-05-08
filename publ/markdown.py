@@ -11,7 +11,7 @@ import pygments
 import pygments.formatters
 import pygments.lexers
 
-from . import image, utils, links
+from . import image, utils, links, html_entry
 
 TITLE_EXTENSIONS = (
     'strikethrough', 'math',
@@ -124,7 +124,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return '{}{}</a>'.format(
             utils.make_tag('a', {
                 'href': link,
-                'title': title if title else None
+                'title': title if title else False
             }),
             content)
 
@@ -161,17 +161,23 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
 
-        return img.get_img_tag(title, alt_text, **composite_args)
+        return img.get_img_tag(title, alt_text, **composite_args, _mark_rewritten=True)
 
 
 def to_html(text, config, search_path):
     """ Convert Markdown text to HTML """
+
+    # first process as Markdown
     processor = misaka.Markdown(HtmlRenderer(config, search_path),
                                 extensions=ENABLED_EXTENSIONS)
-
     text = processor(text)
+
+    # convert smartquotes, if so configured
     if not config.get('no_smartquotes'):
         text = misaka.smartypants(text)
+
+    # now filter through html_entry to rewrite local src/href links
+    text = html_entry.process(text, config, search_path)
 
     return flask.Markup(text)
 
