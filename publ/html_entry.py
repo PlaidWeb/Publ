@@ -62,7 +62,6 @@ class HTMLEntry(utils.HTMLTransform):
         # Remap the attributes
         out_attrs = []
         for key, val in attrs:
-            print(key, val)
             if (key.lower() == 'href'
                     or (key.lower() == 'src' and tag.lower() != 'img')):
                 out_attrs.append((key, links.resolve(
