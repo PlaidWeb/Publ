@@ -24,7 +24,7 @@ class ExternalImage(Image):
         # pylint: disable=unused-argument
         return self._get_url(kwargs.get('absolute')), None
 
-    def _get_img_attrs(self, style, kwargs):
+    def _get_img_attrs(self, kwargs, style_parts):
         url = self._get_url(kwargs.get('absolute'))
 
         attrs = {
@@ -48,8 +48,6 @@ class ExternalImage(Image):
                 width = width * max_height / height
             height = max_height
 
-        style_parts = [*style] if style else []
-
         if width and height and size_mode != 'stretch':
             style_parts += [
                 'background-image:url(\'{}\')'.format(html.escape(url)),
@@ -66,9 +64,6 @@ class ExternalImage(Image):
 
         attrs['width'] = width
         attrs['height'] = height
-
-        if style_parts:
-            attrs['style'] = ';'.join(style_parts)
 
         return attrs
 

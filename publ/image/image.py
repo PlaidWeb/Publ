@@ -30,18 +30,18 @@ class Image(ABC):
         Returns: a tuple of (url, size) for the image. """
 
     @abstractmethod
-    def _get_img_attrs(self, style, kwargs):
-        pass
+    def _get_img_attrs(self, kwargs, style_list):
+        """ Get the img attributes for the given rendition arguments. Style parts
+        should be appended to the style_list instead.
+        """
 
-    def get_img_attrs(self, style=None, **kwargs):
-        """ Get an attribute list (src, srcset, style, et al) for the image.
-
-        style -- an optional list of CSS style fragments
+    def get_img_attrs(self, **kwargs):
+        """ Get an attribute list (src, style, et al) for the image.
 
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
-        add = {}
+        prefixed = {}
         if 'prefix' in kwargs:
             attr_prefixes = kwargs.get('prefix')
             if isinstance(kwargs['prefix'], str):
@@ -50,9 +50,34 @@ class Image(ABC):
             for prefix in attr_prefixes:
                 for k, val in kwargs.items():
                     if k.startswith(prefix):
-                        add[k[len(prefix):]] = val
+                        prefixed[k[len(prefix):]] = val
 
-        return self._get_img_attrs(style, {**kwargs, **add})
+        params = {**kwargs, **prefixed}
+
+        styles = []
+        attrs = self._get_img_attrs(params, styles)
+
+        for key in ('img_style', 'style'):
+            img_style = params.get(key)
+            if img_style:
+                if isinstance(img_style, (list, set, tuple)):
+                    styles += img_style
+                else:
+                    styles.append(img_style)
+
+        shape = self._get_shape_style(params)
+        if shape:
+            style.append("shape-outside: url('{}')".format(shape))
+
+        def set_val(key, val):
+            if val is not None:
+                attrs[key] = val
+
+        set_val('class', params.get('img_class', params.get('class')))
+        set_val('id', params.get('img_id', params.get('id')))
+        set_val('style', ';'.join(styles) if styles else None)
+
+        return attrs
 
     def get_img_tag(self, title='', alt_text='', **kwargs):
         """ Build a <img> tag for the image with the specified options.
@@ -60,24 +85,10 @@ class Image(ABC):
         Returns: an HTML fragment. """
 
         try:
-            style = []
-
-            for key in ('img_style', 'style'):
-                if key in kwargs:
-                    if isinstance(kwargs[key], (list, tuple, set)):
-                        style += list(kwargs[key])
-                    else:
-                        style.append(kwargs[key])
-
-            if 'shape' in kwargs:
-                shape = self._get_shape_style(**kwargs)
-                if shape:
-                    style.append("shape-outside: url('{}')".format(shape))
-
             attrs = {
                 'alt': alt_text,
                 'title': title,
-                **self.get_img_attrs(style, **kwargs)
+                **self.get_img_attrs(**kwargs)
             }
 
             return flask.Markup(
@@ -94,13 +105,15 @@ class Image(ABC):
             text += '</span>'
             return flask.Markup(text)
 
-    def _get_shape_style(self, **kwargs):
-        shape = kwargs['shape']
+    def _get_shape_style(self, kwargs):
+        shape = kwargs.get('shape')
+        if not shape:
+            return None
 
         # Only pull in size-related attributes (e.g. no format, background,
         # etc.)
         size_args = {k: v for k, v in kwargs.items() if k in (
-            'width', 'height', 'max_width', 'max_height', 'absolute'
+            'width', 'height', 'max_width', 'max_height', 'absolute', 'crop'
         )}
 
         if shape is True:
