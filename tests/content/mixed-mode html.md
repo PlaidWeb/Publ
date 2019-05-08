@@ -12,6 +12,14 @@ So should an HTML image:
 <a href="images/notsmiley.png"><img src="images/notsmiley.png" title="This is a local image!" width=240></a>
 <a href="images/boxes.svg"><img src="images/boxes.svg" title="This is a file asset!" width=240></a>
 
+and here's a Markdown link containing an HTML image:
+
+[<img src="images/rawr.jpg" width=160>](images/rawr.jpg)
+
+and an HTML link containing a Markdown image:
+
+<a href="images/rawr.jpg">![](images/rawr.jpg{width=160})</a>
+
 and a file attachment via `<audio>`:
 
 <audio src="boop.mp3" controls>
