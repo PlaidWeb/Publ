@@ -97,7 +97,7 @@ class HTMLEntry(utils.HTMLTransform):
         if is_rewritten:
             # This img tag was already rewritten by a previous processor, so just
             # remove that attribute and return the tag's original attributes
-            LOGGER.info("Detected already-rewritten image; %s", attrs)
+            LOGGER.debug("Detected already-rewritten image; %s", attrs)
             return [(key, val) for key, val in attrs if key != 'data-publ-rewritten']
 
         img_path, img_args, _ = image.parse_image_spec(path)
