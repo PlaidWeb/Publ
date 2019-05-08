@@ -161,7 +161,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
 
-        return img.get_img_tag(title, alt_text, **composite_args)
+        return img.get_img_tag(title, alt_text, **composite_args, _mark_rewritten=True)
 
 
 def to_html(text, config, search_path):
@@ -177,7 +177,7 @@ def to_html(text, config, search_path):
         text = misaka.smartypants(text)
 
     # now filter through html_entry to rewrite local src/href links
-    text = html_entry.process(text, config, search_path, False)
+    text = html_entry.process(text, config, search_path)
 
     return flask.Markup(text)
 
