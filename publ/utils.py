@@ -298,3 +298,27 @@ class HTMLTransform(html.parser.HTMLParser):
     def error(self, message):
         """ Deprecated, per https://bugs.python.org/issue31844 """
         return message
+
+
+def prefix_normalize(kwargs):
+    """ Given an argument list where one of them is 'prefix', normalize the
+    arguments to convert {prefix}{key} to {key} and remove the prefixed versions
+    """
+
+    prefixed = {}
+    removed = []
+    if 'prefix' in kwargs:
+        attr_prefixes = kwargs.get('prefix')
+        if isinstance(kwargs['prefix'], str):
+            attr_prefixes = [attr_prefixes]
+
+        for prefix in attr_prefixes:
+            for k, val in kwargs.items():
+                if k.startswith(prefix):
+                    prefixed[k[len(prefix):]] = val
+                    removed.append(k)
+
+    normalized = {**kwargs, **prefixed}
+    for k in removed:
+        normalized.pop(k, None)
+    return normalized

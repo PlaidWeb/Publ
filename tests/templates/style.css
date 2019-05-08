@@ -213,3 +213,19 @@ header h1 {
 .p-summary {
     display: none;
 }
+
+div.green {
+    background: green;
+    padding: 1ex;
+}
+div.red {
+    background: red;
+    padding: 1ex;
+}
+
+img.green {
+    border: solid green 5px;
+}
+img.red {
+    border: solid red 5px;
+}

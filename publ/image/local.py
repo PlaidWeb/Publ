@@ -442,8 +442,9 @@ class LocalImage(Image):
 
         return (img_1x, img_2x, size)
 
-    def _get_img_attrs(self, style, kwargs):
+    def _get_img_attrs(self, kwargs, style_parts):
         """ Get the attributes of an an <img> tag for this image, hidpi-aware """
+        # pylint:disable=unused-argument
 
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
@@ -453,9 +454,6 @@ class LocalImage(Image):
             'width': size[0],
             'height': size[1],
             'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
-            'style': ';'.join(style) if style else None,
-            'class': kwargs.get('class', kwargs.get('img_class')),
-            'id': kwargs.get('img_id')
         }
 
     def _css_background(self, **kwargs):
