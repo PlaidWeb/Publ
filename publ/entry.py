@@ -157,7 +157,7 @@ class Entry(caching.Memoizable):
         return flask.url_for('entry',
                              entry_id=self._record.id,
                              category=self._record.category if expand else None,
-                             slug_text=self._record.slug_text if expand else None,
+                             slug_text=self._record.slug_text if expand and self._record.slug_text else None,
                              _external=absolute,
                              **kwargs)
 
