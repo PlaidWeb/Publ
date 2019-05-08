@@ -3,7 +3,6 @@
 
 import logging
 
-import misaka
 import flask
 
 from . import utils, links, image
