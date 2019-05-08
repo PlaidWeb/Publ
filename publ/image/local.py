@@ -449,12 +449,16 @@ class LocalImage(Image):
         # Get the 1x and 2x renditions
         img_1x, img_2x, size = self._get_renditions(kwargs)
 
-        return {
+        attrs = {
             'src': img_1x,
             'width': size[0],
-            'height': size[1],
-            'srcset': "{} 1x, {} 2x".format(img_1x, img_2x) if img_1x != img_2x else None,
+            'height': size[1]
         }
+
+        if img_1x != img_2x:
+            attrs['srcset'] = "{} 1x, {} 2x".format(img_1x, img_2x)
+
+        return attrs
 
     def _css_background(self, **kwargs):
         """ Get the CSS specifiers for this as a hidpi-capable background image """

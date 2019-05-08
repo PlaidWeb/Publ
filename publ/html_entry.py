@@ -10,11 +10,13 @@ from . import utils, links, image
 class HTMLEntry(utils.HTMLTransform):
     """ An HTML manipulator to fixup src and href attributes """
 
-    def __init__(self, config, search_path):
+    def __init__(self, config, search_path, rewrite_images):
         super().__init__()
 
         self._search_path = search_path
         self._config = config
+
+        self._rewrite_images = rewrite_images
 
     def handle_data(self, data):
         self.append(data)
@@ -44,8 +46,9 @@ class HTMLEntry(utils.HTMLTransform):
         # Remap the attributes
         out_attrs = []
         for key, val in attrs:
+            print(key, val)
             if (key.lower() == 'href'
-                    or (key.lower() == 'src' and not tag.lower() == 'img')):
+                    or (key.lower() == 'src' and tag.lower() != 'img')):
                 out_attrs.append((key, links.resolve(
                     val, self._search_path, self._config.get('absolute'))))
             else:
@@ -83,16 +86,18 @@ class HTMLEntry(utils.HTMLTransform):
         try:
             img_attrs = img.get_img_attrs(**config)
         except FileNotFoundError as error:
-            return [('data-publ-error', 'file not found: {}'.format(error.filename))]
+            img_attrs = {}
+            if self._rewrite_images:
+                return [('data-publ-error', 'file not found: {}'.format(error.filename))]
 
         # return the original attr list with the computed overrides in place
         return [(key, val) for key, val in attrs
                 if key.lower() not in img_attrs] + list(img_attrs.items())
 
 
-def process(text, config, search_path):
+def process(text, config, search_path, rewrite_images=True):
     """ Process an HTML entry's HTML """
-    processor = HTMLEntry(config, search_path)
+    processor = HTMLEntry(config, search_path, rewrite_images)
     processor.feed(text)
     text = processor.get_data()
 

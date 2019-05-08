@@ -9,7 +9,7 @@ Some tests for files bundled with an entry.
 
 ![an SVG](images/boxes.svg "these are boxes")
 
-![an SVG](images/boxes with spaces in filename.svg "these are boxes")
+![an SVG](images/boxes with spaces in filename.svg "these are boxes with spaces in the filename")
 
 [link to SVG](images/boxes.svg)
 [link to SVG with spaces in filename](images/boxes with spaces in filename.svg)

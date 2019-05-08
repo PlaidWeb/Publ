@@ -62,8 +62,10 @@ class ExternalImage(Image):
         else:
             attrs['src'] = url
 
-        attrs['width'] = width
-        attrs['height'] = height
+        if width:
+            attrs['width'] = width
+        if height:
+            attrs['height'] = height
 
         return attrs
 
