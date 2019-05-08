@@ -8,4 +8,4 @@ This entry should be viewable even with its empty slug text.
 
 .....
 
-Presumably it will work <a href="/557-">with</a> or <a href="/557">without</a> the -. The default link should be without.
+Presumably it will work <a href="/557-">with</a> or <a href="/557">without</a> the -. The default link should be without, as should a redirection to <a href="/557-kasdjflaskja">the incorrect slug</a>.

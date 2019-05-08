@@ -318,7 +318,7 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(url_for('entry',
                                 entry_id=entry_id,
                                 category=record.category,
-                                slug_text=record.slug_text))
+                                slug_text=record.slug_text if record.slug_text else None))
 
     # if the entry canonically redirects, do that now
     entry_redirect = record.redirect_url
