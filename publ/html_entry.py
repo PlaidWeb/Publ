@@ -3,7 +3,6 @@
 
 import logging
 
-import misaka
 import flask
 
 from . import utils, links, image
@@ -30,6 +29,21 @@ class HTMLEntry(utils.HTMLTransform):
     def handle_endtag(self, tag):
         """ Handle an end tag """
         self.append('</' + tag + '>')
+
+    def handle_entityref(self, name):
+        self.append('&' + name + ';')
+
+    def handle_charref(self, name):
+        self.append('&#' + name + ';')
+
+    def handle_decl(self, decl):
+        LOGGER.warning("handle_decl: '%s'", decl)
+
+    def handle_pi(self, data):
+        LOGGER.warning("handle_pi: '%s'", data)
+
+    def handle_comment(self, data):
+        self.append('<!--' + data + '-->')
 
     def handle_startendtag(self, tag, attrs):
         """ Handle a self-closing tag """
@@ -111,8 +125,5 @@ def process(text, config, search_path):
     processor = HTMLEntry(config, search_path)
     processor.feed(text)
     text = processor.get_data()
-
-    if not config.get('no_smartquotes'):
-        text = misaka.smartypants(text)
 
     return flask.Markup(text)

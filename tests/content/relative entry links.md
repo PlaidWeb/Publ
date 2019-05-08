@@ -7,15 +7,15 @@ Some links to entries on a relative basis
 
 .....
 
-How about the [image test](image test.md)?
+How about the [image test](images/image renditions.md)?
 
 Or maybe the [bullet number test](markdown-titles/bullet number.md)?
 
 Does it work if it's in a [different category](differentcat.md)?
 
-How about a [parent directory](../blog/catpics/cat pictures.md)?
+How about a [parent directory](../content/html-links.html)?
 
-Or something [relative to root](/blog/20180408 links.md)?
+Or something [relative to root](/images/exif orientations.md)?
 
 What about [by entry ID](325)?
 
@@ -23,4 +23,4 @@ And what if [nothing is found](asdlkfjsalfj)?
 
 Of course [external links should still work](http://beesbuzz.biz/), even if they're [protocol-relative](//beesbuzz.biz).
 
-So should [internal absolute links](/blog/).
+So should [internal absolute links](/images/).
