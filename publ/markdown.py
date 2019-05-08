@@ -65,7 +65,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         alt, container_args = image.parse_alt_text(alt)
 
-        container_args = {**self._config, **container_args}
+        container_args = utils.prefix_normalize({**self._config, **container_args})
 
         spec_list, original_count = image.get_spec_list(
             image_specs, container_args)

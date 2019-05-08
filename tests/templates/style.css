@@ -216,9 +216,11 @@ header h1 {
 
 div.green {
     background: green;
+    padding: 1ex;
 }
 div.red {
     background: red;
+    padding: 1ex;
 }
 
 img.green {

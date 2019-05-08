@@ -41,18 +41,7 @@ class Image(ABC):
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
-        prefixed = {}
-        if 'prefix' in kwargs:
-            attr_prefixes = kwargs.get('prefix')
-            if isinstance(kwargs['prefix'], str):
-                attr_prefixes = [attr_prefixes]
-
-            for prefix in attr_prefixes:
-                for k, val in kwargs.items():
-                    if k.startswith(prefix):
-                        prefixed[k[len(prefix):]] = val
-
-        params = {**kwargs, **prefixed}
+        params = utils.prefix_normalize(kwargs)
 
         styles = []
         attrs = self._get_img_attrs(params, styles)
