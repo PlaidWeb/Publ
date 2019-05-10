@@ -29,5 +29,5 @@ def resolve(path, search_path, absolute=False):
     img_path, img_args, _ = image.parse_image_spec(path)
     img = image.get_image(img_path, search_path)
     if not isinstance(img, image.ImageNotFound):
-        path, _ = img.get_rendition(**img_args, absolute=absolute)
+        path, _ = img.get_rendition(**{**img_args, 'absolute': absolute})
     return path + sep + anchor
