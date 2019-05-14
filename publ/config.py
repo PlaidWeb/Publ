@@ -21,6 +21,12 @@ image_cache_interval = 3600
 image_cache_age = 86400 * 7  # one week
 timezone = tz.tzlocal()
 cache = {}
+body_markdown_extensions = (
+    'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
+)
+title_markdown_extensions = (
+    'strikethrough', 'math',
+)
 
 
 def setup(cfg):

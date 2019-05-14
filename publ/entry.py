@@ -196,8 +196,9 @@ class Entry(caching.Memoizable):
         """
         return CallableProxy(self._title)
 
-    def _title(self, markup=True, no_smartquotes=False):
-        return markdown.render_title(self._record.title, markup, no_smartquotes)
+    def _title(self, markup=True, no_smartquotes=False, markdown_extensions=None):
+        return markdown.render_title(self._record.title, markup, no_smartquotes,
+                                     markdown_extensions)
 
     @cached_property
     def search_path(self):
@@ -284,12 +285,12 @@ class Entry(caching.Memoizable):
         if is_markdown:
             return markdown.to_html(
                 text,
-                config=kwargs,
+                kwargs,
                 search_path=self.search_path)
 
         return html_entry.process(
             text,
-            config=kwargs,
+            kwargs,
             search_path=self.search_path)
 
     def _get_card(self, text, **kwargs):

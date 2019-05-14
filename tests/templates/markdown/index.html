@@ -1,0 +1,10 @@
+{% extends '/index.html' %}
+
+{% block entry %}
+{% for mdconfig in (None, ('math', 'fenced-code'), ('tables', 'strikethrough'), ['highlight']) %}
+<hr><p>markdown config: <code>{{mdconfig}}</code></p>
+
+<h2>{{entry.title(markdown_extensions=mdconfig)}}</h2>
+{{entry.body(markdown_extensions=mdconfig)}}
+{% endfor %}
+{% endblock %}

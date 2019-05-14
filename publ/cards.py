@@ -5,7 +5,7 @@ import logging
 
 import misaka
 
-from . import image, markdown
+from . import image, config
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -22,10 +22,10 @@ class CardData():
 class CardParser(misaka.BaseRenderer):
     """ Customized Markdown renderer for parsing out information for a card """
 
-    def __init__(self, out, config, image_search_path):
+    def __init__(self, out, args, image_search_path):
         super().__init__()
 
-        self._config = {**config, 'absolute': True}
+        self._config = {**args, 'absolute': True}
         self._image_search_path = image_search_path
 
         self._out = out
@@ -87,10 +87,13 @@ class CardParser(misaka.BaseRenderer):
         return None
 
 
-def extract_card(text, config, image_search_path):
+def extract_card(text, args, image_search_path):
     """ Extract card data based on the provided texts. """
     card = CardData()
-    parser = CardParser(card, config, image_search_path)
-    misaka.Markdown(parser, extensions=markdown.ENABLED_EXTENSIONS)(text)
+    parser = CardParser(card, args, image_search_path)
+    misaka.Markdown(parser,
+                    extensions=args.get(
+                        'markdown_extensions', config.body_markdown_extensions)
+                    )(text)
 
     return card
