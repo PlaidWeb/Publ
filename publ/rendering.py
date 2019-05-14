@@ -146,7 +146,11 @@ def render_error(category, error_message, error_codes, exception=None):
     exception -- Any exception that led to this error page
     """
 
-    LOGGER.info('category=%s', category)
+    LOGGER.info("Rendering error: category=%s error_message='%s' error_codes=%s exception=%s",
+                category,
+                error_message,
+                error_codes,
+                exception)
 
     if isinstance(error_codes, int):
         error_codes = [error_codes]
@@ -199,7 +203,7 @@ def render_exception(error):
             {
                 'type': 'Service Unavailable',
                 'str': "The site's contents are not fully known; please try again later",
-                'args': {'qs': qsize}
+                'qsize': qsize
             }))
         response.headers['Retry-After'] = qsize
         response.headers['Refresh'] = max(5, qsize / 5)

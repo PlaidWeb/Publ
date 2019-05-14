@@ -16,7 +16,11 @@
         <li><span>endpoint</span> <code>{{request.endpoint}}</code></li>
         <li><span>url_rule</span> <code>{{request.url_rule}}</code></li>
     {% if exception %}
-        <li><span>Exception information</span> {{exception.type}}: {{exception.str}}</li>
+        <li><span>Exception information</span>:<ul>
+            {% for key,val in exception.items() %}
+            <li><code>{{key}}</code>: <code>{{val}}</code></li>
+            {% endfor %}
+        </ul></li>
     {% endif %}
     </ul></div>
 
