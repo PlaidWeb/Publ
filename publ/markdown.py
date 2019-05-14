@@ -218,14 +218,13 @@ class HTMLStripper(utils.HTMLTransform):
 def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
 
-    if markdown_extensions is None:
-        markdown_extensions = config.title_markdown_extensions
-
-    # HACK: If the title starts with something that looks like a list, save it
-    # for later
+    # If the title starts with something that looks like a list, save it for
+    # later
     pfx, text = re.match(r'([0-9. ]*)(.*)', text).group(1, 2)
+
     text = pfx + misaka.Markdown(TitleRenderer(),
-                                 extensions=markdown_extensions)(text)
+                                 extensions=markdown_extensions
+                                 or config.title_markdown_extensions)(text)
 
     if not markup:
         strip = HTMLStripper()
