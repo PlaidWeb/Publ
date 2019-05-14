@@ -163,7 +163,7 @@ def to_html(text, args, search_path):
     # first process as Markdown
     processor = misaka.Markdown(HtmlRenderer(args, search_path),
                                 args.get('markdown_extensions') or
-                                config.body_markdown_extensions)
+                                config.markdown_extensions)
     text = processor(text)
 
     # convert smartquotes, if so configured
@@ -224,7 +224,7 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
 
     text = pfx + misaka.Markdown(TitleRenderer(),
                                  extensions=markdown_extensions
-                                 or config.title_markdown_extensions)(text)
+                                 or config.markdown_extensions)(text)
 
     if not markup:
         strip = HTMLStripper()

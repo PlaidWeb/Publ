@@ -93,7 +93,7 @@ def extract_card(text, args, image_search_path):
     parser = CardParser(card, args, image_search_path)
     misaka.Markdown(parser,
                     extensions=args.get('markdown_extensions')
-                    or config.body_markdown_extensions
+                    or config.markdown_extensions
                     )(text)
 
     return card
