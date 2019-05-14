@@ -33,6 +33,16 @@ qwer & poiu & moo
 \end{bmatrix}
 \\]
 
+Multi-line `$$` math:
+
+$$
+\begin{bmatrix}
+foo & bar & baz \\\\
+qwer & poiu & moo
+\end{bmatrix}
+$$
+
+
 
 Becky has $20, and Clarence has $40. How much money will Becky have if Clarence gives her $10?
 
