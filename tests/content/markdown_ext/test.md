@@ -1,11 +1,11 @@
-Title: Here is an ~~example~~ of *markdown* stuff
+Title: Here is an ~~example~~ of ==markdown== stuff
 Date: 2019-05-13 22:02:44-07:00
 Entry-ID: 162
 UUID: d5311ad8-68b4-5a70-bf63-1eadfdb04ac4
 
 We have ~~strikethrough~~ and ==highlight==
 
-We have fenced code:
+We have fenced code^5:
 
 ```c++
 int main() {
@@ -23,11 +23,11 @@ We have a table:
 | platypus | mrah  |
 | critter  | meep  |
 
-Math? \\[
+Math?[^math] \\[
 \begin{bmatrix}
 foo & bar & baz \\\\
 qwer & poiu & moo
 \end{bmatrix}
 \\]
 
-(note that the `math` extension only affects the correctness of MathJax sections and doesn't itself enable MathJax)
+[^math]: note that the `math` extension only affects the correctness of MathJax sections and doesn't itself enable MathJax
