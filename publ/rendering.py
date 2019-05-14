@@ -22,7 +22,7 @@ from . import view
 from . import caching
 from .caching import cache
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # mapping from template extension to MIME type; probably could be better
 EXTENSION_MAP = {
@@ -146,6 +146,12 @@ def render_error(category, error_message, error_codes, exception=None):
     exception -- Any exception that led to this error page
     """
 
+    LOGGER.info("Rendering error: category=%s error_message='%s' error_codes=%s exception=%s",
+                category,
+                error_message,
+                error_codes,
+                exception)
+
     if isinstance(error_codes, int):
         error_codes = [error_codes]
 
@@ -163,18 +169,42 @@ def render_error(category, error_message, error_codes, exception=None):
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code
 
-    # no template found, so fall back to default Flask handler
-    return flask.abort(error_code)
+    # no template found, so fall back to a default
+    if exception and 'str' in exception:
+        message = exception['str']
+    else:
+        message = "An unknown error occurred"
+    return """<!DOCTYPE html>
+<html>
+<head><title>{code} {error}</title></head>
+<body>
+<h1>{error}</h1>
+<p>{message}</p>
+<hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {url}</address>
+</body></html>""".format(code=error_code,
+                         error=error_message,
+                         message=message,
+                         url=request.url), error_code
 
 
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
-    _, _, category = str.partition(request.path, '/')
+
+    # Effectively strip off the leading '/', and let map_template decide
+    # what the actual category is
+    _, _, category = request.path.partition('/')
 
     qsize = index.queue_length()
     if isinstance(error, http_error.NotFound) and qsize:
         response = flask.make_response(render_error(
-            category, "Site reindex in progress (qs={})".format(qsize), 503))
+            category,
+            "Site reindex in progress",
+            503,
+            {
+                'type': 'Service Unavailable',
+                'str': "The site's contents are not fully known; please try again later",
+                'qsize': qsize
+            }))
         response.headers['Retry-After'] = qsize
         response.headers['Refresh'] = max(5, qsize / 5)
         return response, 503
@@ -239,14 +269,15 @@ def render_category(category='', template=None):
     if not tmpl:
         # this might actually be a malformed category URL
         test_path = '/'.join((category, template)) if category else template
-        logger.debug("Checking for malformed category %s", test_path)
+        LOGGER.debug("Checking for malformed category %s", test_path)
         record = orm.select(
             e for e in model.Entry if e.category == test_path).exists()
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
 
         # nope, we just don't know what this is
-        raise http_error.NotFound("No such view")
+        raise http_error.NotFound(
+            "No such view '{template}'".format(template=template))
 
     view_spec = view.parse_view_spec(request.args)
     view_spec['category'] = category
@@ -286,7 +317,7 @@ def render_entry(entry_id, slug_text='', category=''):
         if path_redirect:
             return path_redirect
 
-        logger.info("Attempted to retrieve nonexistent entry %d", entry_id)
+        LOGGER.info("Attempted to retrieve nonexistent entry %d", entry_id)
         raise http_error.NotFound("No such entry")
 
     # see if the file still exists
