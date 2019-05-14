@@ -5,7 +5,7 @@ UUID: d5311ad8-68b4-5a70-bf63-1eadfdb04ac4
 
 We have ~~strikethrough~~ and ==highlight==
 
-We have fenced code^5:
+We have fenced code:
 
 ```c++
 int main() {
@@ -23,6 +23,8 @@ We have a table:
 | platypus | mrah  |
 | critter  | meep  |
 
+and superscripts^excellence
+
 Math?[^math] \\[
 \begin{bmatrix}
 foo & bar & baz \\\\
@@ -30,4 +32,6 @@ qwer & poiu & moo
 \end{bmatrix}
 \\]
 
-[^math]: note that the `math` extension only affects the correctness of MathJax sections and doesn't itself enable MathJax
+[^math]: note that the `math` extension only affects the correctness of MathJax sections and doesn't itself enable MathJax[^footnote]
+
+[^footnote]: also here's a footnote
