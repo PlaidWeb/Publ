@@ -11,15 +11,8 @@ import pygments
 import pygments.formatters
 import pygments.lexers
 
-from . import image, utils, links, html_entry
+from . import image, utils, links, html_entry, config
 
-TITLE_EXTENSIONS = (
-    'strikethrough', 'math',
-)
-
-ENABLED_EXTENSIONS = (
-    'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
-)
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -33,11 +26,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
     search_path -- Directories to look in for resolving relatively-linked files
     """
 
-    def __init__(self, config, search_path):
+    def __init__(self, args, search_path):
         # pylint: disable=no-member
-        super().__init__(0, config.get('xhtml') and misaka.HTML_USE_XHTML or 0)
+        super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
-        self._config = config
+        self._config = args
         self._search_path = search_path
 
     def image(self, raw_url, title='', alt=''):
@@ -164,20 +157,21 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return img.get_img_tag(title, alt_text, **composite_args, _mark_rewritten=True)
 
 
-def to_html(text, config, search_path):
+def to_html(text, args, search_path):
     """ Convert Markdown text to HTML """
 
     # first process as Markdown
-    processor = misaka.Markdown(HtmlRenderer(config, search_path),
-                                extensions=ENABLED_EXTENSIONS)
+    processor = misaka.Markdown(HtmlRenderer(args, search_path),
+                                args.get('markdown_extensions') or
+                                config.markdown_extensions)
     text = processor(text)
 
     # convert smartquotes, if so configured
-    if not config.get('no_smartquotes'):
+    if not args.get('no_smartquotes'):
         text = misaka.smartypants(text)
 
     # now filter through html_entry to rewrite local src/href links
-    text = html_entry.process(text, config, search_path)
+    text = html_entry.process(text, args, search_path)
 
     return flask.Markup(text)
 
@@ -221,14 +215,16 @@ class HTMLStripper(utils.HTMLTransform):
         self.append(data)
 
 
-def render_title(text, markup=True, no_smartquotes=False):
+def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
 
-    # HACK: If the title starts with something that looks like a list, save it
-    # for later
+    # If the title starts with something that looks like a list, save it for
+    # later
     pfx, text = re.match(r'([0-9. ]*)(.*)', text).group(1, 2)
+
     text = pfx + misaka.Markdown(TitleRenderer(),
-                                 extensions=TITLE_EXTENSIONS)(text)
+                                 extensions=markdown_extensions
+                                 or config.markdown_extensions)(text)
 
     if not markup:
         strip = HTMLStripper()

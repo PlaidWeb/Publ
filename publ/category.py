@@ -180,7 +180,8 @@ class Category(caching.Memoizable):
 
     def _description(self, **kwargs):
         if self._meta:
-            return flask.Markup(markdown.to_html(self._meta.get_payload(), config=kwargs,
+            return flask.Markup(markdown.to_html(self._meta.get_payload(),
+                                                 args=kwargs,
                                                  search_path=self.search_path))
         return None
 
