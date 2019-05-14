@@ -185,7 +185,10 @@ def render_error(category, error_message, error_codes, exception=None):
 
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
-    category = '/'.join(request.path.split('/')[1:-1])
+
+    # Effectively strip off the leading '/', and let map_template decide
+    # what the actual category is
+    _, _, category = request.path.partition('/')
 
     qsize = index.queue_length()
     if isinstance(error, http_error.NotFound) and qsize:
