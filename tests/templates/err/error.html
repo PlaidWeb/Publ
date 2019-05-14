@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{error.code}} {{error.message}}</title>
+</head>
+<body>
+    <h1>{{error.message}}</h1>
+
+    <div id="errorinfo"><ul>
+        <li><span>error</span> {{error.code}} {{error.message}}</li>
+        <li><span>request time</span> {{arrow.now().format()}}</li>
+        <li><span>url</span> <code>{{request.url}}</code></li>
+        <li><span>path</span> <code>{{request.path}}</code></li>
+        <li><span>full_path</span> <code>{{request.full_path}}</code></li>
+        <li><span>endpoint</span> <code>{{request.endpoint}}</code></li>
+        <li><span>url_rule</span> <code>{{request.url_rule}}</code></li>
+    {% if exception %}
+        <li><span>Exception information</span> {{exception.type}}: {{exception.str}}</li>
+    {% endif %}
+    </ul></div>
+
+</body></html>
+
