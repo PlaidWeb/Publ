@@ -23,4 +23,11 @@ We have a table:
 | platypus | mrah  |
 | critter  | meep  |
 
-Math? \\( d\frac{e^x}{dx} \\)
+Math? \\[
+\begin{bmatrix}
+foo & bar & baz \\\\
+qwer & poiu & moo
+\end{bmatrix}
+\\]
+
+(note that the `math` extension only affects the correctness of MathJax sections and doesn't itself enable MathJax)
