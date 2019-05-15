@@ -254,9 +254,7 @@ class View:
     def tags(self):
         """ Returns a list of all the tags applied to this view """
         tag_list = self.spec.get('tag', [])
-        if isinstance(tag_list, (list, set, tuple)):
-            return list(tag_list)
-        return [tag_list]
+        return utils.as_list(tag_list)
 
     @cached_property
     def _pagination(self):

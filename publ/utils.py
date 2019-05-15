@@ -132,9 +132,7 @@ def find_file(path, search_path):
     Returns: the resolved file path
     """
 
-    if isinstance(search_path, str):
-        search_path = [search_path]
-    for relative in search_path:
+    for relative in as_list(search_path):
         candidate = os.path.normpath(os.path.join(relative, path))
         if os.path.isfile(candidate):
             return candidate
@@ -240,10 +238,8 @@ def remap_args(input_args, remap):
     out_args = input_args
     for dest_key, src_keys in remap.items():
         remap_value = None
-        if isinstance(src_keys, str):
-            src_keys = [src_keys]
 
-        for key in src_keys:
+        for key in as_list(src_keys):
             if key in input_args:
                 remap_value = input_args[key]
                 break
@@ -313,11 +309,7 @@ def prefix_normalize(kwargs):
     prefixed = {}
     removed = []
     if 'prefix' in kwargs:
-        attr_prefixes = kwargs.get('prefix')
-        if isinstance(kwargs['prefix'], str):
-            attr_prefixes = [attr_prefixes]
-
-        for prefix in attr_prefixes:
+        for prefix in as_list(kwargs.get('prefix')):
             for k, val in kwargs.items():
                 if k.startswith(prefix):
                     prefixed[k[len(prefix):]] = val
@@ -327,3 +319,19 @@ def prefix_normalize(kwargs):
     for k in removed:
         normalized.pop(k, None)
     return normalized
+
+
+def is_list(item):
+    """ Return if this is a list-type thing """
+    return isinstance(item, (list, tuple, set))
+
+
+def as_list(item):
+    """ Return list-type things directly; convert other things into a list """
+    if item is None:
+        return []
+
+    if is_list(item):
+        return item
+
+    return [item]

@@ -214,9 +214,7 @@ class Category(caching.Memoizable):
         return self.path
 
     def __eq__(self, other):
-        if isinstance(other, str):
-            return other == self.path
-        return other.path == self.path
+        return str(other) == str(self)
 
     def __lt__(self, other):
         return self.path < other.path

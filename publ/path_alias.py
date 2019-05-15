@@ -4,7 +4,7 @@
 from flask import url_for, redirect, current_app
 from pony import orm
 
-from . import model
+from . import model, utils
 
 
 @orm.db_session(immediate=True)
@@ -120,11 +120,7 @@ def get_redirect(paths):
 
     Returns: a flask.redirect() result
     """
-
-    if isinstance(paths, str):
-        paths = [paths]
-
-    for path in paths:
+    for path in utils.as_list(paths):
         url, permanent = get_alias(path)
         if url:
             return redirect(url, 301 if permanent else 302)

@@ -20,6 +20,7 @@ from .category import Category
 from .template import Template
 from . import view
 from . import caching
+from . import utils
 from .caching import cache
 
 LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -53,10 +54,7 @@ def map_template(category, template_list):
     template_list -- A template to look up (as a string), or a list of templates.
     """
 
-    if isinstance(template_list, str):
-        template_list = [template_list]
-
-    for template in template_list:
+    for template in utils.as_list(template_list):
         path = os.path.normpath(category)
         while path is not None:
             for extension in ['', '.html', '.htm', '.xml', '.json']:
@@ -152,8 +150,7 @@ def render_error(category, error_message, error_codes, exception=None):
                 error_codes,
                 exception)
 
-    if isinstance(error_codes, int):
-        error_codes = [error_codes]
+    error_codes = utils.as_list(error_codes)
 
     error_code = error_codes[0]
     template_list = [str(code) for code in error_codes]

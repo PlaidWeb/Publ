@@ -119,7 +119,7 @@ def where_entry_type(query, entry_type):
 
     entry_type -- one or more entries to check against
     """
-    if isinstance(entry_type, (list, set, tuple)):
+    if utils.is_list(entry_type):
         return orm.select(e for e in query if e.entry_type in entry_type)
     return orm.select(e for e in query if e.entry_type == entry_type)
 
@@ -129,14 +129,14 @@ def where_entry_type_not(query, entry_type):
 
     entry_type -- one or more entries to check against
     """
-    if isinstance(entry_type, (list, set, tuple)):
+    if utils.is_list(entry_type):
         return orm.select(e for e in query if e.entry_type not in entry_type)
     return orm.select(e for e in query if e.entry_type != entry_type)
 
 
 def where_entry_tag(query, tag):
     """ Generate a where clause for entries with the given tag """
-    if isinstance(tag, (list, set, tuple)):
+    if utils.is_list(tag):
         tags = [t.lower() for t in tag]
         return orm.select(e for e in query for t in e.tags if t.key in tags)
     return orm.select(e for e in query for t in e.tags if t.key == tag.lower())

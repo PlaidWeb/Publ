@@ -47,12 +47,7 @@ class Image(ABC):
         attrs = self._get_img_attrs(params, styles)
 
         for key in ('img_style', 'style'):
-            img_style = params.get(key)
-            if img_style:
-                if isinstance(img_style, (list, set, tuple)):
-                    styles += img_style
-                else:
-                    styles.append(img_style)
+            styles += utils.as_list(params.get(key))
 
         shape = self._get_shape_style(params)
         if shape:
