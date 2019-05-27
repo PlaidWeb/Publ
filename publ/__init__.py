@@ -10,8 +10,6 @@ import werkzeug.exceptions
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
-__version__ = '0.4.0'
-
 
 class _PublApp(flask.Flask):
     """ A Publ app; extends Flask so that we can add our own custom decorators """

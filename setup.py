@@ -2,9 +2,8 @@
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
+from distutils.util import convert_path
 from os import path
-
-import publ
 
 here = path.abspath(path.dirname(__file__))
 
@@ -12,10 +11,16 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md')) as f:
     long_description = f.read()
 
+main_ns = {}
+ver_path = convert_path('publ/__version__.py')
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
+
+
 setup(
     name='Publ',
 
-    version=publ.__version__,
+    version=main_ns['__version__'],
 
     description='A content-management system for flexible web-based publishing',
 
