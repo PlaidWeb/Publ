@@ -30,12 +30,6 @@ class HTMLEntry(utils.HTMLTransform):
         """ Handle an end tag """
         self.append('</' + tag + '>')
 
-    def handle_entityref(self, name):
-        self.append('&' + name + ';')
-
-    def handle_charref(self, name):
-        self.append('&#' + name + ';')
-
     def handle_decl(self, decl):
         LOGGER.warning("handle_decl: '%s'", decl)
 

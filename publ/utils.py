@@ -296,6 +296,12 @@ class HTMLTransform(html.parser.HTMLParser):
         """ Concatenate the output """
         return ''.join(self._fed)
 
+    def handle_entityref(self, name):
+        self.append('&' + name + ';')
+
+    def handle_charref(self, name):
+        self.append('&#' + name + ';')
+
     def error(self, message):
         """ Deprecated, per https://bugs.python.org/issue31844 """
         return message

@@ -192,7 +192,7 @@ class Entry(caching.Memoizable):
         """ Get the title of the entry. Accepts the following argument:
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
-            all markdown (default: True)
+            all markup (default: True)
         """
         return CallableProxy(self._title)
 
