@@ -2,6 +2,9 @@
 """ Functions for manipulating outgoing HTML links """
 
 import re
+from urllib.parse import urljoin
+
+from flask import request
 
 from . import image
 from . import utils
@@ -30,4 +33,9 @@ def resolve(path, search_path, absolute=False):
     img = image.get_image(img_path, search_path)
     if not isinstance(img, image.ImageNotFound):
         path, _ = img.get_rendition(**{**img_args, 'absolute': absolute})
+
+    # We don't know what this is, so just treat it like a normal URL.
+    if absolute:
+        path = urljoin(request.url, path)
+
     return path + sep + anchor
