@@ -304,7 +304,7 @@ def render_entry(entry_id, slug_text='', category=''):
     category -- The expected category
     """
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements,too-many-branches
 
     # check if it's a valid entry
     record = model.Entry.get(id=entry_id)
@@ -378,8 +378,15 @@ def render_entry(entry_id, slug_text='', category=''):
     if request.if_none_match.contains(etag):
         return 'Not modified', 304
 
-    return rendered, {'Content-Type': mime_type(tmpl),
-                      'ETag': etag}
+    headers = {
+        'Content-Type': mime_type(tmpl),
+        'ETag': etag
+    }
+    if record.status == model.PublishStatus.HIDDEN.value:
+        headers['Cache-control'] = 'private, no-cache, no-store'
+        headers['X-Robots-Tag'] = 'noindex, noarchive'
+
+    return rendered, headers
 
 
 def render_transparent_chit():
