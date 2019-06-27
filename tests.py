@@ -8,7 +8,7 @@ import publ.image
 
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 config = {
     # Leave this off to do an in-memory database
