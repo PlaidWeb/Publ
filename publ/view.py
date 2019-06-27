@@ -6,7 +6,7 @@ import flask
 from werkzeug.utils import cached_property
 from pony import orm
 
-from . import model, utils, queries
+from . import model, utils, queries, caching
 from .entry import Entry
 
 # Prioritization list for pagination
@@ -43,7 +43,7 @@ SPAN_FORMATS = {
 }
 
 
-class View:
+class View(caching.Memoizable):
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """ A view of entries """
 
@@ -101,8 +101,8 @@ class View:
         else:
             self.type = None
 
-    def __repr__(self):
-        return repr(self.spec)
+    def _key(self):
+        return View, repr(self.spec)
 
     def __str__(self):
         return str(self._link())

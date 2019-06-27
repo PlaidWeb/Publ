@@ -20,6 +20,10 @@ config = {
     'template_folder': 'tests/templates',
     'static_folder': 'tests/static',
     'cache': {
+        'CACHE_TYPE': 'simple',
+        'CACHE_DEFAULT_TIMEOUT': 600,
+        'CACHE_THRESHOLD': 20
+    } if os.environ.get('TEST_CACHING') else {
         'CACHE_NO_NULL_WARNING': True
     },
 }
