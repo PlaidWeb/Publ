@@ -1,0 +1,18 @@
+{#
+
+This template is for testing the cacheability of templates which make use of
+custom request.args, for issue https://github.com/PlaidWeb/Publ/issues/215
+
+To test it, set the TEST_CACHING environment variable e.g.
+
+TEST_CACHING=1 ./runTests.sh
+
+#}<!DOCTYPE html>
+<html><head>
+<title>{{ request.args.title or "no title specified"}}</title>
+</head><body>
+<h1>{{request.args.title or "no title specified"}}</h1>
+
+<p>{{request.args.body or "no body specified"}}</p>
+</body>
+</html>

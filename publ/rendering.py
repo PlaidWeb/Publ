@@ -110,23 +110,29 @@ def image_function(template=None, entry=None, category=None):
     return lambda filename: image.get_image(filename, path)
 
 
-@cache.memoize(unless=caching.do_not_cache)
 def render_publ_template(template, **kwargs):
     """ Render out a template, providing the image function based on the args.
 
     Returns tuple of (rendered text, etag)
     """
-    text = render_template(
-        template.filename,
-        template=template,
-        image=image_function(
-            template=template,
-            category=kwargs.get('category'),
-            entry=kwargs.get('entry')),
-        **kwargs
-    )
+    @cache.memoize(unless=caching.do_not_cache)
+    def do_render(template, args, **kwargs):
+        LOGGER.debug("Rendering template %s with args %s and kwargs %s",
+                     template, args, kwargs)
 
-    return text, caching.get_etag(text)
+        text = render_template(
+            template.filename,
+            template=template,
+            image=image_function(
+                template=template,
+                category=kwargs.get('category'),
+                entry=kwargs.get('entry')),
+            **kwargs
+        )
+
+        return text, caching.get_etag(text)
+
+    return do_render(template, request.args, **kwargs)
 
 
 @orm.db_session(retry=5)
