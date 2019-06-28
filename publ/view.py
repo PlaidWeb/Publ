@@ -44,7 +44,7 @@ SPAN_FORMATS = {
 
 
 class View(caching.Memoizable):
-    # pylint: disable=too-many-instance-attributes,too-few-public-methods
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """ A view of entries """
 
     def __init__(self, input_spec=None):
