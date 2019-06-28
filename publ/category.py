@@ -173,8 +173,15 @@ class Category(caching.Memoizable):
     @cached_property
     def description(self):
         """ Get the textual description of the category """
+        def _description(**kwargs):
+            if self._meta:
+                return flask.Markup(markdown.to_html(self._meta.get_payload(),
+                                                     args=kwargs,
+                                                     search_path=self.search_path))
+            return None
+
         if self._meta and self._meta.get_payload():
-            return utils.TrueCallableProxy(self._description)
+            return utils.TrueCallableProxy(_description)
         return utils.CallableProxy(None)
 
     @cached_property
@@ -217,20 +224,12 @@ class Category(caching.Memoizable):
 
         Returns a list of category.TagCount tuples like `(tag='foo', count=5)`
         """
-        return utils.CallableProxy(self._tags)
-
-    def _tags(self, **spec):
-        entries = self._entries(spec)
-        tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
-                          for e in entries for tag in e.tags)
-        return [TagCount(key, count) for (key, count) in tags]
-
-    def _description(self, **kwargs):
-        if self._meta:
-            return flask.Markup(markdown.to_html(self._meta.get_payload(),
-                                                 args=kwargs,
-                                                 search_path=self.search_path))
-        return None
+        def _tags(**spec):
+            entries = self._entries(spec)
+            tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
+                              for e in entries for tag in e.tags)
+            return [TagCount(key, count) for (key, count) in tags]
+        return utils.CallableProxy(_tags)
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the meta file """

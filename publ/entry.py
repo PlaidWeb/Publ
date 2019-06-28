@@ -276,21 +276,48 @@ class Entry(caching.Memoizable):
     @cached_property
     def card(self):
         """ Get the entry's OpenGraph card """
-        body, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            self._get_card,
-            body or more) if is_markdown else CallableProxy(None)
+
+        def _get_card(**kwargs):
+            """ Render out the tags for a Twitter/OpenGraph card for this entry. """
+
+            def og_tag(key, val):
+                """ produce an OpenGraph tag with the given key and value """
+                return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
+
+            tags = og_tag('og:title', self.title(markup=False))
+            tags += og_tag('og:url', self.link(absolute=True))
+
+            body, more, is_markdown = self._entry_content
+
+            card = cards.extract_card(body or more, is_markdown, kwargs, self.search_path)
+            for image in card.images:
+                tags += og_tag('og:image', image)
+            if card.description:
+                tags += og_tag('og:description',
+                               self.get('Summary', card.description))
+
+            return flask.Markup(tags)
+
+        return CallableProxy(_get_card)
 
     @cached_property
     def summary(self):
         """ Get the entry's summary text """
-        if self.get('Summary'):
-            return self.get('Summary')
 
-        body, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            self._get_summary,
-            body or more) if is_markdown else CallableProxy(None)
+        def _get_summary(**kwargs):
+            """ Render out just the summary """
+
+            if self.get('Summary'):
+                return self.get('Summary')
+
+            body, more, is_markdown = self._entry_content
+
+            card = cards.extract_card(body or more, is_markdown, kwargs,
+                self.search_path)
+
+            return flask.Markup((card.description or '').strip())
+
+        return CallableProxy(_get_summary)
 
     @cached_property
     def last_modified(self):
@@ -315,31 +342,6 @@ class Entry(caching.Memoizable):
             text,
             kwargs,
             search_path=self.search_path)
-
-    def _get_card(self, text, **kwargs):
-        """ Render out the tags for a Twitter/OpenGraph card for this entry. """
-
-        def og_tag(key, val):
-            """ produce an OpenGraph tag with the given key and value """
-            return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
-
-        tags = og_tag('og:title', self.title(markup=False))
-        tags += og_tag('og:url', self.link(absolute=True))
-
-        card = cards.extract_card(text, kwargs, self.search_path)
-        for image in card.images:
-            tags += og_tag('og:image', image)
-        if card.description:
-            tags += og_tag('og:description',
-                           self.get('Summary', card.description))
-
-        return flask.Markup(tags)
-
-    def _get_summary(self, text, **kwargs):
-        """ Render out just the summary """
-
-        card = cards.extract_card(text, kwargs, self.search_path)
-        return flask.Markup((card.description or '').strip())
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """

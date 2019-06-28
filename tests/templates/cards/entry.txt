@@ -1,0 +1,15 @@
+==Card data==
+
+{{entry.card}}
+
+==Summary text==
+
+{{entry.summary}}
+
+==Body text==
+
+{{entry.body or '(no body)'}}
+
+==More text==
+
+{{entry.more or '(no more)'}}
