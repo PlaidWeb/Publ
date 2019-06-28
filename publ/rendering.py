@@ -136,7 +136,7 @@ def render_publ_template(template, **kwargs):
     try:
         return do_render(template, request.args, **kwargs)
     except queries.InvalidQueryError as err:
-        raise http_error.NotFound(err)
+        raise http_error.BadRequest(err)
 
 
 @orm.db_session(retry=5)
