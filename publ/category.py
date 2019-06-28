@@ -78,7 +78,14 @@ class Category(caching.Memoizable):
         template -- which template to generate the link against
 
         """
-        return utils.CallableProxy(self._link)
+        def _link(template='', absolute=False, **kwargs):
+            return url_for('category',
+                           category=self.path,
+                           template=template,
+                           _external=absolute,
+                           **kwargs)
+
+        return utils.CallableProxy(_link)
 
     @cached_property
     def subcats(self):
@@ -89,7 +96,33 @@ class Category(caching.Memoizable):
         recurse -- whether to include their subcategories as well (default: False)
 
         """
-        return utils.CallableProxy(self._get_subcats)
+        def _get_subcats(recurse=False):
+            """ Get the subcategories of this category
+
+            recurse -- whether to include their subcategories as well
+            """
+
+            if recurse:
+                # No need to filter
+                return sorted([Category(e) for e in self._subcats_recursive],
+                              key=lambda c: c.sort_breadcrumb)
+
+            # get all the subcategories, with only the first subdir added
+
+            # number of path components to ingest
+            parts = len(self.path.split('/')) + 1 if self.path else 1
+
+            # convert the subcategories into separated pathlists with only 'parts'
+            # parts
+            subcats = [c.split('/')[:parts] for c in self._subcats_recursive]
+
+            # join them back into a path, and make unique
+            subcats = {'/'.join(c) for c in subcats}
+
+            # convert to a bunch of Category objects
+            return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name or c.name)
+
+        return utils.CallableProxy(_get_subcats)
 
     @cached_property
     def first(self):
@@ -97,7 +130,14 @@ class Category(caching.Memoizable):
 
         Takes optional view arguments.
         """
-        return utils.CallableProxy(self._first)
+        def _first(**spec):
+            """ Get the earliest entry in this category, optionally including subcategories """
+            for record in self._entries(spec).order_by(model.Entry.local_date,
+                                                       model.Entry.id)[:1]:
+                return entry.Entry(record)
+            return None
+
+        return utils.CallableProxy(_first)
 
     @cached_property
     def last(self):
@@ -105,7 +145,14 @@ class Category(caching.Memoizable):
 
         Takes optional view arguments.
         """
-        return utils.CallableProxy(self._last)
+        def _last(**spec):
+            """ Get the latest entry in this category, optionally including subcategories """
+            for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
+                                                       orm.desc(model.Entry.id))[:1]:
+                return entry.Entry(record)
+            return None
+
+        return utils.CallableProxy(_last)
 
     @cached_property
     def _meta(self):
@@ -126,8 +173,15 @@ class Category(caching.Memoizable):
     @cached_property
     def description(self):
         """ Get the textual description of the category """
+        def _description(**kwargs):
+            if self._meta:
+                return flask.Markup(markdown.to_html(self._meta.get_payload(),
+                                                     args=kwargs,
+                                                     search_path=self.search_path))
+            return None
+
         if self._meta and self._meta.get_payload():
-            return utils.TrueCallableProxy(self._description)
+            return utils.TrueCallableProxy(_description)
         return utils.CallableProxy(None)
 
     @cached_property
@@ -170,20 +224,12 @@ class Category(caching.Memoizable):
 
         Returns a list of category.TagCount tuples like `(tag='foo', count=5)`
         """
-        return utils.CallableProxy(self._tags)
-
-    def _tags(self, **spec):
-        entries = self._entries(spec)
-        tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
-                          for e in entries for tag in e.tags)
-        return [TagCount(key, count) for (key, count) in tags]
-
-    def _description(self, **kwargs):
-        if self._meta:
-            return flask.Markup(markdown.to_html(self._meta.get_payload(),
-                                                 args=kwargs,
-                                                 search_path=self.search_path))
-        return None
+        def _tags(**spec):
+            entries = self._entries(spec)
+            tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
+                              for e in entries for tag in e.tags)
+            return [TagCount(key, count) for (key, count) in tags]
+        return utils.CallableProxy(_tags)
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the meta file """
@@ -202,13 +248,6 @@ class Category(caching.Memoizable):
         if self._meta:
             return self._meta.get_all(name) or []
         return None
-
-    def _link(self, template='', absolute=False, **kwargs):
-        return url_for('category',
-                       category=self.path,
-                       template=template,
-                       _external=absolute,
-                       **kwargs)
 
     def __str__(self):
         return self.path
@@ -233,49 +272,9 @@ class Category(caching.Memoizable):
             return Category(None)
         return self
 
-    def _get_subcats(self, recurse=False):
-        """ Get the subcategories of this category
-
-        recurse -- whether to include their subcategories as well
-        """
-
-        if recurse:
-            # No need to filter
-            return sorted([Category(e) for e in self._subcats_recursive],
-                          key=lambda c: c.sort_breadcrumb)
-
-        # get all the subcategories, with only the first subdir added
-
-        # number of path components to ingest
-        parts = len(self.path.split('/')) + 1 if self.path else 1
-
-        # convert the subcategories into separated pathlists with only 'parts'
-        # parts
-        subcats = [c.split('/')[:parts] for c in self._subcats_recursive]
-
-        # join them back into a path, and make unique
-        subcats = {'/'.join(c) for c in subcats}
-
-        # convert to a bunch of Category objects
-        return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name or c.name)
-
     def _entries(self, spec):
         """ Return a model query to get our entry records """
         return queries.build_query({**spec, 'category': self})
-
-    def _first(self, **spec):
-        """ Get the earliest entry in this category, optionally including subcategories """
-        for record in self._entries(spec).order_by(model.Entry.local_date,
-                                                   model.Entry.id)[:1]:
-            return entry.Entry(record)
-        return None
-
-    def _last(self, **spec):
-        """ Get the latest entry in this category, optionally including subcategories """
-        for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
-                                                   orm.desc(model.Entry.id))[:1]:
-            return entry.Entry(record)
-        return None
 
 
 @orm.db_session(immediate=True)

@@ -58,7 +58,7 @@ def map_template(category, template_list):
     for template in utils.as_list(template_list):
         path = os.path.normpath(category)
         while path is not None:
-            for extension in ['', '.html', '.htm', '.xml', '.json']:
+            for extension in ['', '.html', '.htm', '.xml', '.json', '.txt']:
                 candidate = os.path.join(path, template + extension)
                 file_path = os.path.join(config.template_folder, candidate)
                 if os.path.isfile(file_path):

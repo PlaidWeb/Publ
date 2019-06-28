@@ -79,7 +79,15 @@ class Entry(caching.Memoizable):
     def link(self):
         """ Get a link to this entry. Accepts the same parameters as permalink;
         may be pre-redirected. """
-        return CallableProxy(self._link)
+        def _link(*args, **kwargs):
+            """ Returns a link, potentially pre-redirected """
+            if self._record.redirect_url:
+                return links.resolve(self._record.redirect_url,
+                                     self.search_path, kwargs.get('absolute'))
+
+            return self.permalink(*args, **kwargs)
+
+        return CallableProxy(_link)
 
     @cached_property
     def permalink(self):
@@ -89,7 +97,17 @@ class Entry(caching.Memoizable):
         expand -- if True, expands the link to include the category and slug text;
             if False, it will only be the entry ID (default: True)
         """
-        return CallableProxy(self._permalink)
+        def _permalink(absolute=False, expand=True, **kwargs):
+            return flask.url_for('entry',
+                                 entry_id=self._record.id,
+                                 category=self._record.category if expand else None,
+                                 slug_text=self._record.slug_text
+                                 if expand and self._record.slug_text
+                                 else None,
+                                 _external=absolute,
+                                 **kwargs)
+
+        return CallableProxy(_permalink)
 
     @cached_property
     def archive(self):
@@ -105,7 +123,31 @@ class Entry(caching.Memoizable):
         category -- Which category to generate the link against (default: the entry's category)
         template -- Which template to generate the link for
         """
-        return CallableProxy(self._archive_link)
+        def _archive_link(paging=None, template='', category=None, absolute=False, tag=None):
+            # pylint:disable=too-many-arguments
+            args = {
+                'template': template,
+                'category': category if category is not None else self.category,
+            }
+            if paging == 'day':
+                args['date'] = self.date.format(utils.DAY_FORMAT)
+            elif paging == 'month':
+                args['date'] = self.date.format(utils.MONTH_FORMAT)
+            elif paging == 'year':
+                args['date'] = self.date.format(utils.YEAR_FORMAT)
+            elif paging == 'week':
+                args['date'] = self.date.span('week')[0].format(utils.WEEK_FORMAT)
+            elif paging == 'offset' or not paging:
+                args['id'] = self._record.id
+            else:
+                raise ValueError("Unknown paging type '{}'".format(paging))
+
+            if tag:
+                args['tag'] = tag
+
+            return flask.url_for('category', **args, _external=absolute)
+
+        return CallableProxy(_archive_link)
 
     @cached_property
     def type(self):
@@ -128,7 +170,19 @@ class Entry(caching.Memoizable):
 
         Accepts view parameters as arguments.
         """
-        return CallableProxy(self._next)
+        def _next(**kwargs):
+            """ Get the next item in any particular category """
+            spec = self._pagination_default_spec(kwargs)
+            spec.update(kwargs)
+
+            query = queries.build_query(spec)
+            query = queries.where_after_entry(query, self._record)
+
+            for record in query.order_by(model.Entry.local_date,
+                                         model.Entry.id)[:1]:
+                return Entry(record)
+            return None
+        return CallableProxy(_next)
 
     @cached_property
     def previous(self):
@@ -136,56 +190,25 @@ class Entry(caching.Memoizable):
 
         Accepts view parameters as arguments.
         """
-        return CallableProxy(self._previous)
+        def _previous(**kwargs):
+            """ Get the previous item in any particular category """
+            spec = self._pagination_default_spec(kwargs)
+            spec.update(kwargs)
+
+            query = queries.build_query(spec)
+            query = queries.where_before_entry(query, self._record)
+
+            for record in query.order_by(orm.desc(model.Entry.local_date),
+                                         orm.desc(model.Entry.id))[:1]:
+                return Entry(record)
+            return None
+        return CallableProxy(_previous)
 
     @cached_property
     def category(self):
         """ Get the category this entry belongs to. """
         from .category import Category  # pylint: disable=cyclic-import
         return Category(self._record.category)
-
-    def _link(self, *args, **kwargs):
-        """ Returns a link, potentially pre-redirected """
-        if self._record.redirect_url:
-            return links.resolve(self._record.redirect_url,
-                                 self.search_path, kwargs.get('absolute'))
-
-        return self._permalink(*args, **kwargs)
-
-    def _permalink(self, absolute=False, expand=True, **kwargs):
-        """ Returns a canonical URL for the item """
-        return flask.url_for('entry',
-                             entry_id=self._record.id,
-                             category=self._record.category if expand else None,
-                             slug_text=self._record.slug_text
-                             if expand and self._record.slug_text
-                             else None,
-                             _external=absolute,
-                             **kwargs)
-
-    def _archive_link(self, paging=None, template='', category=None, absolute=False, tag=None):
-        # pylint:disable=too-many-arguments
-        args = {
-            'template': template,
-            'category': category if category is not None else self.category,
-        }
-        if paging == 'day':
-            args['date'] = self.date.format(utils.DAY_FORMAT)
-        elif paging == 'month':
-            args['date'] = self.date.format(utils.MONTH_FORMAT)
-        elif paging == 'year':
-            args['date'] = self.date.format(utils.YEAR_FORMAT)
-        elif paging == 'week':
-            args['date'] = self.date.span('week')[0].format(utils.WEEK_FORMAT)
-        elif paging == 'offset' or not paging:
-            args['id'] = self._record.id
-        else:
-            raise ValueError("Unknown paging type '{}'".format(paging))
-
-        if tag:
-            args['tag'] = tag
-
-        return flask.url_for('category', **args, _external=absolute)
 
     @cached_property
     def title(self):
@@ -194,11 +217,10 @@ class Entry(caching.Memoizable):
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
             all markup (default: True)
         """
-        return CallableProxy(self._title)
-
-    def _title(self, markup=True, no_smartquotes=False, markdown_extensions=None):
-        return markdown.render_title(self._record.title, markup, no_smartquotes,
-                                     markdown_extensions)
+        def _title(markup=True, no_smartquotes=False, markdown_extensions=None):
+            return markdown.render_title(self._record.title, markup, no_smartquotes,
+                                         markdown_extensions)
+        return CallableProxy(_title)
 
     @cached_property
     def search_path(self):
@@ -253,21 +275,49 @@ class Entry(caching.Memoizable):
     @cached_property
     def card(self):
         """ Get the entry's OpenGraph card """
-        body, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            self._get_card,
-            body or more) if is_markdown else CallableProxy(None)
+
+        def _get_card(**kwargs):
+            """ Render out the tags for a Twitter/OpenGraph card for this entry. """
+
+            def og_tag(key, val):
+                """ produce an OpenGraph tag with the given key and value """
+                return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
+
+            tags = og_tag('og:title', self.title(markup=False))
+            tags += og_tag('og:url', self.link(absolute=True))
+
+            body, more, is_markdown = self._entry_content
+
+            card = cards.extract_card(body or more, is_markdown, kwargs, self.search_path)
+            for image in card.images:
+                tags += og_tag('og:image', image)
+            if card.description:
+                tags += og_tag('og:description',
+                               self.get('Summary', card.description))
+
+            return flask.Markup(tags)
+
+        return CallableProxy(_get_card)
 
     @cached_property
     def summary(self):
         """ Get the entry's summary text """
-        if self.get('Summary'):
-            return self.get('Summary')
 
-        body, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            self._get_summary,
-            body or more) if is_markdown else CallableProxy(None)
+        def _get_summary(**kwargs):
+            """ Render out just the summary """
+
+            if self.get('Summary'):
+                return self.get('Summary')
+
+            body, more, is_markdown = self._entry_content
+
+            card = cards.extract_card(body or more,
+                                      is_markdown, kwargs,
+                                      self.search_path)
+
+            return flask.Markup((card.description or '').strip())
+
+        return CallableProxy(_get_summary)
 
     @cached_property
     def last_modified(self):
@@ -293,31 +343,6 @@ class Entry(caching.Memoizable):
             kwargs,
             search_path=self.search_path)
 
-    def _get_card(self, text, **kwargs):
-        """ Render out the tags for a Twitter/OpenGraph card for this entry. """
-
-        def og_tag(key, val):
-            """ produce an OpenGraph tag with the given key and value """
-            return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
-
-        tags = og_tag('og:title', self.title(markup=False))
-        tags += og_tag('og:url', self.link(absolute=True))
-
-        card = cards.extract_card(text, kwargs, self.search_path)
-        for image in card.images:
-            tags += og_tag('og:image', image)
-        if card.description:
-            tags += og_tag('og:description',
-                           self.get('Summary', card.description))
-
-        return flask.Markup(tags)
-
-    def _get_summary(self, text, **kwargs):
-        """ Render out just the summary """
-
-        card = cards.extract_card(text, kwargs, self.search_path)
-        return flask.Markup((card.description or '').strip())
-
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
 
@@ -332,32 +357,6 @@ class Entry(caching.Memoizable):
             'category': category,
             'recurse': kwargs.get('recurse', category != self._record.category)
         }
-
-    def _previous(self, **kwargs):
-        """ Get the previous item in any particular category """
-        spec = self._pagination_default_spec(kwargs)
-        spec.update(kwargs)
-
-        query = queries.build_query(spec)
-        query = queries.where_before_entry(query, self._record)
-
-        for record in query.order_by(orm.desc(model.Entry.local_date),
-                                     orm.desc(model.Entry.id))[:1]:
-            return Entry(record)
-        return None
-
-    def _next(self, **kwargs):
-        """ Get the next item in any particular category """
-        spec = self._pagination_default_spec(kwargs)
-        spec.update(kwargs)
-
-        query = queries.build_query(spec)
-        query = queries.where_after_entry(query, self._record)
-
-        for record in query.order_by(model.Entry.local_date,
-                                     model.Entry.id)[:1]:
-            return Entry(record)
-        return None
 
     def get(self, name, default=None):
         """ Get a single header on an entry """
@@ -422,7 +421,6 @@ def get_entry_id(entry, fullpath, assign_id):
 
         limit = max(10, orm.get(orm.count(e) for e in model.Entry) * 5)
         attempt = 0
-
         while not entry_id or model.Entry.get(id=entry_id):
             # Stably generate a quasi-random entry ID from the file path
             md5 = hashlib.md5()

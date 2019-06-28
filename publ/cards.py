@@ -5,7 +5,7 @@ import logging
 
 import misaka
 
-from . import image, config
+from . import image, config, utils
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -19,7 +19,7 @@ class CardData():
         self.images = []
 
 
-class CardParser(misaka.BaseRenderer):
+class MarkdownCardParser(misaka.BaseRenderer):
     """ Customized Markdown renderer for parsing out information for a card """
 
     def __init__(self, out, args, image_search_path):
@@ -87,13 +87,43 @@ class CardParser(misaka.BaseRenderer):
         return None
 
 
-def extract_card(text, args, image_search_path):
+class HtmlCardParser(utils.HTMLTransform):
+    """ Parse the first paragraph out of an HTML document """
+
+    def __init__(self, card):
+        super().__init__()
+
+        self._consume = True
+        self._card = card
+
+    def handle_starttag(self, tag, attrs):
+        # pylint:disable=unused-argument
+        if tag == 'p' and self._card.description:
+            # We already got some data, so this is a malformed/old-style document
+            self._consume = False
+
+    def handle_endtag(self, tag):
+        if tag == 'p':
+            self._consume = False
+
+    def handle_data(self, data):
+        if self._consume:
+            if not self._card.description:
+                self._card.description = ''
+            self._card.description += data
+
+
+def extract_card(text, is_markdown, args, image_search_path):
     """ Extract card data based on the provided texts. """
     card = CardData()
-    parser = CardParser(card, args, image_search_path)
-    misaka.Markdown(parser,
-                    extensions=args.get('markdown_extensions')
-                    or config.markdown_extensions
-                    )(text)
+    if is_markdown:
+        parser = MarkdownCardParser(card, args, image_search_path)
+        misaka.Markdown(parser,
+                        extensions=args.get('markdown_extensions')
+                        or config.markdown_extensions
+                        )(text)
+    else:
+        parser = HtmlCardParser(card)
+        parser.feed(text)
 
     return card
