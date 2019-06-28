@@ -4,7 +4,6 @@
 <head>
     <meta charset="utf-8">
     <title>Publ: {{ entry.title(markup=False) }}</title>
-    <link rel="stylesheet" href="{{static('lightbox/css/lightbox.min.css')}}">
     <link rel="stylesheet" href="{{entry.stylesheet or 'style.css'}}">
 
 
@@ -12,10 +11,6 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:creator" content="@fluffy">
-
-    <link rel="pingback" href="https://webmention.io/beesbuzz.biz/xmlrpc" />
-    <link rel="webmention" href="https://webmention.io/beesbuzz.biz/webmention" />
-    <script src="{{static('webmention.js')}}"></script>
 
     <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/latest.js?config=TeX-MML-AM_CHTML' async></script>
 
@@ -70,7 +65,6 @@
     </div>
     </div>
 
-<script src="{{ static('lightbox/js/lightbox-plus-jquery.min.js') }}"></script>
 </body>
 
 </html>
