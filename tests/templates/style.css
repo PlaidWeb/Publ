@@ -1,5 +1,4 @@
 @import url('{{static("pygments.default.css")}}');
-@import url('{{static("webmentions.css")}}');
 
 html {
     padding: 0;
