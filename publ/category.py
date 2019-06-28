@@ -277,7 +277,6 @@ class Category(caching.Memoizable):
         return queries.build_query({**spec, 'category': self})
 
 
-
 @orm.db_session(immediate=True)
 def scan_file(fullpath, relpath):
     """ scan a file and put it into the index """

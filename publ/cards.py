@@ -86,8 +86,10 @@ class MarkdownCardParser(misaka.BaseRenderer):
 
         return None
 
+
 class HtmlCardParser(utils.HTMLTransform):
     """ Parse the first paragraph out of an HTML document """
+
     def __init__(self, card):
         super().__init__()
 

@@ -222,7 +222,6 @@ class Entry(caching.Memoizable):
                                          markdown_extensions)
         return CallableProxy(_title)
 
-
     @cached_property
     def search_path(self):
         """ The relative image search path for this entry """
@@ -312,8 +311,9 @@ class Entry(caching.Memoizable):
 
             body, more, is_markdown = self._entry_content
 
-            card = cards.extract_card(body or more, is_markdown, kwargs,
-                self.search_path)
+            card = cards.extract_card(body or more,
+                                      is_markdown, kwargs,
+                                      self.search_path)
 
             return flask.Markup((card.description or '').strip())
 
@@ -357,8 +357,6 @@ class Entry(caching.Memoizable):
             'category': category,
             'recurse': kwargs.get('recurse', category != self._record.category)
         }
-
-
 
     def get(self, name, default=None):
         """ Get a single header on an entry """
@@ -423,7 +421,6 @@ def get_entry_id(entry, fullpath, assign_id):
 
         limit = max(10, orm.get(orm.count(e) for e in model.Entry) * 5)
         attempt = 0
-
         while not entry_id or model.Entry.get(id=entry_id):
             # Stably generate a quasi-random entry ID from the file path
             md5 = hashlib.md5()
