@@ -9,7 +9,10 @@
     <title>{{category.name}}</title>
     <subtitle>A test feed</subtitle>
     <link href="{{ view.link(template='feed',absolute=True) }}" rel="self" />
-    <link href="{{ category.link(template='feed',absolute=True) }}" rel="current" />
+    {% if not view.is_current %}
+    <link href="{{ view.current.link(template='feed',absolute=True) }}" rel="current" />
+    <fh:archive />
+    {% endif %}
     {% if view.next %}
     <link href="{{ view.next.first.archive('month','feed',absolute=True) }}" rel="prev-archive" />
     {% endif %}
@@ -17,7 +20,6 @@
     <link href="{{ view.previous.last.archive('month','feed',absolute=True) }}" rel="next-archive" />
     {% endif %}
     <link href="{{ category.link(absolute=True) }}" />
-    {% if request.args %}<fh:archive />{% endif %}
     <id>tag:{{request.host}},{{template.last_modified.format('YYYY-MM-DD')}}:{{category.path or "_all"}}</id>
     <updated>{{view(recurse=True).last_modified.isoformat()}}</updated>
 

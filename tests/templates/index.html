@@ -22,6 +22,10 @@
 
     {% block navigation %}
     <ul>
+    {% if not view.is_current %}
+    <li class="now"><a href="{{view.current.link}}">Current entries</a></li>
+    {% endif %}
+
     {% if category.parent %}
     <li class="cat-up"><a href="{{category.parent.link}}">{{category.parent.name or "Main page"}}</a></li>
     {% endif %}

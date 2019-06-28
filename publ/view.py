@@ -44,7 +44,7 @@ SPAN_FORMATS = {
 
 
 class View(caching.Memoizable):
-    # pylint: disable=too-many-instance-attributes,too-few-public-methods
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """ A view of entries """
 
     def __init__(self, input_spec=None):
@@ -105,36 +105,7 @@ class View(caching.Memoizable):
         return View, repr(self.spec)
 
     def __str__(self):
-        return str(self._link())
-
-    def _link(self, template='', absolute=False, category=None, **kwargs):
-        args = {}
-        if 'date' in self.spec:
-            args['date'] = self.spec['date']
-        else:
-            for k in OFFSET_PRIORITY:
-                if k in self.spec:
-                    val = self.spec[k]
-                    if isinstance(val, (str, int)):
-                        args['id'] = val
-                    elif hasattr(val, 'start'):
-                        # the item was an object, so we want the object's id
-                        args['id'] = val.id
-                    else:
-                        raise ValueError(
-                            "key {} is of type {}".format(k, type(val)))
-                    break
-
-        if 'tag' in self.spec:
-            args['tag'] = self.spec['tag']
-
-        return flask.url_for('category',
-                             **args,
-                             template=template,
-                             category=category if category else self.spec.get(
-                                 'category'),
-                             _external=absolute,
-                             **kwargs)
+        return str(self.link())
 
     @cached_property
     def first(self):
@@ -243,18 +214,108 @@ class View(caching.Memoizable):
     @cached_property
     def range(self):
         """ Gets a localizable string describing the view range """
-        return utils.CallableProxy(self._view_name)
+        def _view_name(**formats):
+            if not any(k for k in PAGINATION_SPECS if k in self.spec):
+                # We don't have anything that specifies a pagination constraint, so
+                # we don't have a name
+                return None
+
+            if not self.oldest or not self.newest:
+                # We don't have any entries, so we don't have a name
+                return None
+
+            if 'date' in self.spec:
+                _, span_type, span_format = utils.parse_date(self.spec['date'])
+            elif self.oldest.date.year != self.newest.date.year:
+                span_type = 'year'
+                span_format = utils.YEAR_FORMAT
+            elif self.oldest.date.month != self.newest.date.month:
+                span_type = 'month'
+                span_format = utils.MONTH_FORMAT
+            else:
+                span_type = 'day'
+                span_format = utils.DAY_FORMAT
+
+            date_format = formats.get(
+                span_type, SPAN_FORMATS.get(span_type, span_format))
+
+            oldest = self.oldest.date.format(date_format)
+            if len(self.entries) == 1:
+                return oldest
+
+            newest = self.newest.date.format(date_format)
+
+            if oldest == newest:
+                template = formats.get('single', '{oldest} ({count})')
+            else:
+                template = formats.get(
+                    'span', '{oldest} — {newest} ({count})')
+
+            return template.format(count=len(self.entries),
+                                   oldest=oldest,
+                                   newest=newest)
+        return utils.CallableProxy(_view_name)
 
     @cached_property
     def link(self):
         """ Gets a link back to this view """
-        return utils.CallableProxy(self._link)
+
+        def _link(template='', absolute=False, category=None, **kwargs):
+            args = {}
+            if 'date' in self.spec:
+                args['date'] = self.spec['date']
+            else:
+                for k in OFFSET_PRIORITY:
+                    if k in self.spec:
+                        val = self.spec[k]
+                        if isinstance(val, (str, int)):
+                            args['id'] = val
+                        elif hasattr(val, 'start'):
+                            # the item was an object, so we want the object's
+                            # id
+                            args['id'] = val.id
+                        else:
+                            raise ValueError(
+                                "key {} is of type {}".format(k, type(val)))
+                        break
+
+            if 'tag' in self.spec:
+                args['tag'] = self.spec['tag']
+
+            return flask.url_for('category',
+                                 **args,
+                                 template=template,
+                                 category=category if category else self.spec.get(
+                                     'category'),
+                                 _external=absolute,
+                                 **kwargs)
+
+        return utils.CallableProxy(_link)
 
     @cached_property
     def tags(self):
         """ Returns a list of all the tags applied to this view """
         tag_list = self.spec.get('tag', [])
         return utils.as_list(tag_list)
+
+    @cached_property
+    def current(self):
+        """ Gets a version of this view without any pagination offsets """
+
+        def _get_current(**restrict):
+            spec = {k: v for (k, v) in self.spec.items()
+                    if k not in OFFSET_PRIORITY}
+            return View({**spec, **restrict})
+
+        return utils.CallableProxy(_get_current)
+
+    @cached_property
+    def is_current(self):
+        """ Returns true if this is equivalent to self.current """
+        for k in self.spec.keys():
+            if k in OFFSET_PRIORITY:
+                return False
+        return True
 
     @cached_property
     def _pagination(self):
@@ -361,47 +422,6 @@ class View(caching.Memoizable):
     def tag_toggle(self, *tags):
         """ Return a view with the specified tags toggled """
         return View({**self.spec, 'tag': list(set(self.tags) ^ set(tags))})
-
-    def _view_name(self, **formats):
-        if not any(k for k in PAGINATION_SPECS if k in self.spec):
-            # We don't have anything that specifies a pagination constraint, so
-            # we don't have a name
-            return None
-
-        if not self.oldest or not self.newest:
-            # We don't have any entries, so we don't have a name
-            return None
-
-        if 'date' in self.spec:
-            _, span_type, span_format = utils.parse_date(self.spec['date'])
-        elif self.oldest.date.year != self.newest.date.year:
-            span_type = 'year'
-            span_format = utils.YEAR_FORMAT
-        elif self.oldest.date.month != self.newest.date.month:
-            span_type = 'month'
-            span_format = utils.MONTH_FORMAT
-        else:
-            span_type = 'day'
-            span_format = utils.DAY_FORMAT
-
-        date_format = formats.get(
-            span_type, SPAN_FORMATS.get(span_type, span_format))
-
-        oldest = self.oldest.date.format(date_format)
-        if len(self.entries) == 1:
-            return oldest
-
-        newest = self.newest.date.format(date_format)
-
-        if oldest == newest:
-            template = formats.get('single', '{oldest} ({count})')
-        else:
-            template = formats.get(
-                'span', '{oldest} — {newest} ({count})')
-
-        return template.format(count=len(self.entries),
-                               oldest=oldest,
-                               newest=newest)
 
 
 def get_view(**kwargs):
