@@ -8,6 +8,10 @@ from pony import orm
 from . import model, utils
 
 
+class InvalidQueryError(RuntimeError):
+    """ An exception to raise if a query is invalid """
+
+
 def where_entry_visible(query, date=None):
     """ Generate a where clause for currently-visible entries
 
@@ -67,7 +71,7 @@ def where_before_entry(query, ref):
     ref -- The entry of reference
     """
     if not ref:
-        raise RuntimeError("Attempted to reference non-existent entry")
+        raise InvalidQueryError("Attempted to reference non-existent entry")
     return orm.select(
         e for e in query
         if e.local_date < ref.local_date or
@@ -81,7 +85,7 @@ def where_after_entry(query, ref):
     ref -- the entry of reference
     """
     if not ref:
-        raise RuntimeError("Attempted to reference non-existent entry")
+        raise InvalidQueryError("Attempted to reference non-existent entry")
     return orm.select(
         e for e in query
         if e.local_date > ref.local_date or
@@ -97,7 +101,7 @@ def where_entry_last(query, ref):
     ref -- the entry of reference
     """
     if not ref:
-        raise RuntimeError("Attempted to reference non-existent entry")
+        raise InvalidQueryError("Attempted to reference non-existent entry")
     return orm.select(
         e for e in query
         if e.local_date < ref.local_date or
@@ -113,7 +117,7 @@ def where_entry_first(query, ref):
     ref -- the entry of reference
     """
     if not ref:
-        raise RuntimeError("Attempted to reference non-existent entry")
+        raise InvalidQueryError("Attempted to reference non-existent entry")
     return orm.select(
         e for e in query
         if e.local_date > ref.local_date or
