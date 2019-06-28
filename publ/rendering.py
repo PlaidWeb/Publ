@@ -21,6 +21,7 @@ from .template import Template
 from . import view
 from . import caching
 from . import utils
+from . import queries
 from .caching import cache
 
 LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -132,7 +133,10 @@ def render_publ_template(template, **kwargs):
 
         return text, caching.get_etag(text)
 
-    return do_render(template, request.args, **kwargs)
+    try:
+        return do_render(template, request.args, **kwargs)
+    except queries.InvalidQueryError as err:
+        raise http_error.BadRequest(err)
 
 
 @orm.db_session(retry=5)
