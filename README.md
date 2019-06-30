@@ -27,12 +27,12 @@ file hierarchy.
 
 ## See it in action
 
-The main demonstration site is at http://publ.beesbuzz.biz/ — it is of course a
-work in progress!
+The main demonstration site is at http://beesbuzz.biz/ — it is of course a
+work in progress! The documentation site for Publ itself (which is also a work in progress) lives at http://publ.beesbuzz.biz/
 
 ## Operating requirements
 
-I am designing this to work in any WSGI-capable environment with Python 3. This
+I am designing this to work in any WSGI-capable environment with Python 3.5+. This
 means that it will, for example, be deployable on any shared hosting which
 has Passenger support (such as Dreamhost), as well as on Heroku, Google AppEngine,
 S3, or any other simple containerized deployment target.
