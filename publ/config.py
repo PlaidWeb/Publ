@@ -2,6 +2,7 @@
 """ configuration container for Publ """
 
 import sys
+import uuid
 from dateutil import tz
 
 # pylint: disable=invalid-name
@@ -24,6 +25,7 @@ cache = {}
 markdown_extensions = (
     'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
 )
+secret_key = uuid.uuid4()
 
 
 def setup(cfg):

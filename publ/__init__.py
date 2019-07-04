@@ -2,6 +2,7 @@
 
 import re
 import functools
+import logging
 
 import arrow
 import flask
@@ -10,14 +11,98 @@ import werkzeug.exceptions
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
 
+LOGGER = logging.getLogger(__name__)
 
-class _PublApp(flask.Flask):
+
+class Publ(flask.Flask):
     """ A Publ app; extends Flask so that we can add our own custom decorators """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    _instance = None
+
+    def __init__(self, name, cfg, *args, **kwargs):
+        if Publ._instance and Publ._instance is not self:
+            raise RuntimeError("Only one Publ app can run at a time")
+        Publ._instance = self
+
+        config.setup(cfg)  # https://github.com/PlaidWeb/Publ/issues/113
+
+        super().__init__(name,
+                         template_folder=config.template_folder,
+                         static_folder=config.static_folder,
+                         static_url_path=config.static_url_path, *args, **kwargs)
+
+        self.secret_key = config.secret_key
 
         self._regex_map = []
+
+        for route in [
+                '/',
+                '/<path:category>/',
+                '/<template>',
+                '/<path:category>/<template>',
+        ]:
+            self.add_url_rule(route, 'category', rendering.render_category)
+
+        for route in [
+                '/<int:entry_id>',
+                '/<int:entry_id>-',
+                '/<int:entry_id>-<slug_text>',
+                '/<path:category>/<int:entry_id>',
+                '/<path:category>/<int:entry_id>-',
+                '/<path:category>/<int:entry_id>-<slug_text>',
+        ]:
+            self.add_url_rule(route, 'entry', rendering.render_entry)
+
+        self.add_url_rule('/<path:path>.PUBL_PATHALIAS',
+                          'path_alias', rendering.render_path_alias)
+
+        self.add_url_rule('/_async/<path:filename>',
+                          'async', image.get_async)
+
+        self.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
+
+        self.add_url_rule('/_file/<path:filename>',
+                          'asset', rendering.retrieve_asset)
+
+        self.config['TRAP_HTTP_EXCEPTIONS'] = True
+        self.register_error_handler(
+            werkzeug.exceptions.HTTPException, rendering.render_exception)
+
+        self.jinja_env.globals.update(  # pylint: disable=no-member
+            get_view=view.get_view,
+            arrow=arrow,
+            static=utils.static_url,
+            get_template=rendering.get_template
+        )
+
+        caching.init_app(self)
+
+        self._maint = maintenance.Maintenance()
+
+        if config.index_rescan_interval:
+            self._maint.register(functools.partial(index.scan_index,
+                                                   config.content_folder),
+                                 config.index_rescan_interval)
+
+        if config.image_cache_interval and config.image_cache_age:
+            self._maint.register(functools.partial(image.clean_cache,
+                                                   config.image_cache_age),
+                                 config.image_cache_interval)
+
+        self.before_request(self._maint.run)
+
+        if 'CACHE_THRESHOLD' in config.cache:
+            self.after_request(self.set_cache_expiry)
+
+        if self.debug:
+            # We're in debug mode so we don't want to scan until everything's up
+            # and running
+            self.before_first_request(self.startup)
+        else:
+            # In production, register the exception handler and scan the index
+            # immediately
+            self.register_error_handler(Exception, rendering.render_exception)
+            self.startup()
 
     def path_alias_regex(self, regex):
         """ A decorator that adds a path-alias regular expression; calls
@@ -50,101 +135,22 @@ class _PublApp(flask.Flask):
 
         return None, None
 
+    @staticmethod
+    def startup():
+        """ Startup routine for initiating the content indexer """
+        model.setup()
+        index.scan_index(config.content_folder)
+        index.background_scan(config.content_folder)
+
+    @staticmethod
+    def set_cache_expiry(response):
+        """ Set the cache control headers """
+        if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
+            response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
+        return response
+
 
 def publ(name, cfg):
-    """ Create a Flask app and configure it for use with Publ """
-
-    config.setup(cfg)
-
-    app = _PublApp(name,
-                   template_folder=config.template_folder,
-                   static_folder=config.static_folder,
-                   static_url_path=config.static_url_path)
-
-    for route in [
-            '/',
-            '/<path:category>/',
-            '/<template>',
-            '/<path:category>/<template>',
-    ]:
-        app.add_url_rule(route, 'category', rendering.render_category)
-
-    for route in [
-            '/<int:entry_id>',
-            '/<int:entry_id>-',
-            '/<int:entry_id>-<slug_text>',
-            '/<path:category>/<int:entry_id>',
-            '/<path:category>/<int:entry_id>-',
-            '/<path:category>/<int:entry_id>-<slug_text>',
-    ]:
-        app.add_url_rule(route, 'entry', rendering.render_entry)
-
-    app.add_url_rule('/<path:path>.PUBL_PATHALIAS',
-                     'path_alias', rendering.render_path_alias)
-
-    app.add_url_rule('/_async/<path:filename>',
-                     'async', image.get_async)
-
-    app.add_url_rule('/_', 'chit', rendering.render_transparent_chit)
-
-    app.add_url_rule('/_file/<path:filename>',
-                     'asset', rendering.retrieve_asset)
-
-    app.config['TRAP_HTTP_EXCEPTIONS'] = True
-    app.register_error_handler(
-        werkzeug.exceptions.HTTPException, rendering.render_exception)
-
-    app.jinja_env.globals.update(  # pylint: disable=no-member
-        get_view=view.get_view,
-        arrow=arrow,
-        static=utils.static_url,
-        get_template=rendering.get_template
-    )
-
-    caching.init_app(app)
-
-    maint = maintenance.Maintenance()
-
-    if config.index_rescan_interval:
-        maint.register(functools.partial(index.scan_index,
-                                         config.content_folder),
-                       config.index_rescan_interval)
-
-    if config.image_cache_interval and config.image_cache_age:
-        maint.register(functools.partial(image.clean_cache,
-                                         config.image_cache_age),
-                       config.image_cache_interval)
-
-    app.before_request(maint.run)
-
-    if 'CACHE_THRESHOLD' in config.cache:
-        app.after_request(set_cache_expiry)
-
-    if app.debug:
-        # We're in debug mode so we don't want to scan until everything's up
-        # and running
-        app.before_first_request(startup)
-    else:
-        # In production, register the exception handler and scan the index
-        # immediately
-        app.register_error_handler(Exception, rendering.render_exception)
-        startup()
-
-    return app
-
-
-last_scan = None  # pylint: disable=invalid-name
-
-
-def startup():
-    """ Startup routine for initiating the content indexer """
-    model.setup()
-    index.scan_index(config.content_folder)
-    index.background_scan(config.content_folder)
-
-
-def set_cache_expiry(response):
-    """ Set the cache control headers """
-    if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
-        response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
-    return response
+    """ Legacy function that originally did a lot more """
+    LOGGER.warning("This function is deprecated; use publ.Publ instead")
+    return Publ(name, cfg)

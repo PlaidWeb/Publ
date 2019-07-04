@@ -28,7 +28,7 @@ config = {
     },
 }
 
-app = publ.publ(__name__, config)
+app = publ.Publ(__name__, config)
 
 
 @app.route('/favicon.ico')

@@ -68,7 +68,8 @@ setup(
         'Pillow',
         'pygments',
         'watchdog',
-        'awesome-slugify'
+        'awesome-slugify',
+        'Authl'
     ],
 
     extras_require={
