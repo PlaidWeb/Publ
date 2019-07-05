@@ -1,4 +1,7 @@
-""" Publ entry point """
+""" Publ: A Flask-based site management system.
+
+Like a static publishing system, but dynamic! See http://publ.beesbuzz.biz
+for more information. """
 
 import re
 import functools
@@ -16,11 +19,48 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Publ(flask.Flask):
-    """ A Publ app; extends Flask so that we can add our own custom decorators """
+    """ A Publ application.
+
+    At present, only one Publ application can be instanced at one time.
+    """
 
     _instance = None
 
-    def __init__(self, name, cfg, *args, **kwargs):
+    def __init__(self, name, cfg, **kwargs):
+        """ Constructor for a Publ application. Accepts the following parameters:
+
+        name -- The name of the app
+        cfg -- Application configuration
+
+        Additional keyword arguments are forwarded along to the Flask constructor.
+
+        Configuration keys:
+
+        database_config -- The database confugiration to be provided to PonyORM.
+            See https://docs.ponyorm.org/database.html for more information
+        content_folder -- The folder that stores the site content
+        template_folder -- The folder that contains the Jinja templates
+        static_folder -- The folder that contains static content
+        static_url_path -- The URL mount point for the static content folder
+        image_output_subdir -- The subdirectory of the static content folder to
+            store the image rendition cache
+        index_rescan_interval -- How frequently (in seconds) to rescan the
+            content index
+        image_cache_interval -- How frequently (in seconds) to clean up the
+            image rendition cache
+        image_cache_age -- The maximum age (in seconds) of an image rendition
+        timezone -- The site's local time zone
+        cache -- Page render cache configuration; see
+            https://flask-caching.readthedocs.io/en/latest/#configuring-flask-caching
+        markdown_extensions -- The extensions to enable by default for the
+            Markdown processing library. See https://misaka.61924.nl/#extensions
+            for details
+        secret_key -- Authentication signing secret. This should remain private.
+            The default value is randomly generated at every application restart.
+        auth -- Authentication configuration. See the Authl configuration
+            documentation at [link TBD]
+        """
+
         if Publ._instance and Publ._instance is not self:
             raise RuntimeError("Only one Publ app can run at a time")
         Publ._instance = self
@@ -30,7 +70,7 @@ class Publ(flask.Flask):
         super().__init__(name,
                          template_folder=config.template_folder,
                          static_folder=config.static_folder,
-                         static_url_path=config.static_url_path, *args, **kwargs)
+                         static_url_path=config.static_url_path, **kwargs)
 
         self.secret_key = config.secret_key
 
@@ -97,24 +137,32 @@ class Publ(flask.Flask):
         self.before_request(self._maint.run)
 
         if 'CACHE_THRESHOLD' in config.cache:
-            self.after_request(self.set_cache_expiry)
+            self.after_request(self._set_cache_expiry)
 
         if self.debug:
             # We're in debug mode so we don't want to scan until everything's up
             # and running
-            self.before_first_request(self.startup)
+            self.before_first_request(self._startup)
         else:
             # In production, register the exception handler and scan the index
             # immediately
             self.register_error_handler(Exception, rendering.render_exception)
-            self.startup()
+            self._startup()
 
     def path_alias_regex(self, regex):
-        """ A decorator that adds a path-alias regular expression; calls
-        add_path_regex """
+        r""" A decorator that adds a path-alias regular expression; calls
+        add_path_regex.
+
+        Example usage:
+
+        @app.path_alias_regex(r'/d/([0-9]{8}(_w)?)\.php')
+        def redirect_date(match):
+            return flask.url_for('category', category='comics',
+                                 date=match.group(1)), True
+        """
         def decorator(func):
             """ Adds the function to the regular expression alias list """
-            self.add_path_regex(regex, func)
+            return self.add_path_regex(regex, func)
         return decorator
 
     def add_path_regex(self, regex, func):
@@ -130,25 +178,30 @@ class Publ(flask.Flask):
         to make a determination based on query args.
         """
         self._regex_map.append((regex, func))
+        return func
 
-    def get_path_regex(self, path):
-        """ Evaluate the registered path-alias regular expressions """
+    def _test_path_regex(self, path):
+        """ Evaluate the registered path-alias regular expressions. Returns the
+        result of the first handler that successfully matches the path.
+        """
         for regex, func in self._regex_map:
             match = re.match(regex, path)
             if match:
-                return func(match)
+                dest, permanent = func(match)
+                if dest:
+                    return dest, permanent
 
         return None, None
 
     @staticmethod
-    def startup():
+    def _startup():
         """ Startup routine for initiating the content indexer """
         model.setup()
         index.scan_index(config.content_folder)
         index.background_scan(config.content_folder)
 
     @staticmethod
-    def set_cache_expiry(response):
+    def _set_cache_expiry(response):
         """ Set the cache control headers """
         if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
             response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
