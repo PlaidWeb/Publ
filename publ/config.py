@@ -19,13 +19,14 @@ static_url_path = '/static'
 image_output_subdir = '_img'
 index_rescan_interval = 7200
 image_cache_interval = 3600
-image_cache_age = 86400 * 7  # one week
-timezone = tz.tzlocal()
+image_cache_age = 86400 * 30  # one month
 cache = {}
+timezone = tz.tzlocal()
 markdown_extensions = (
     'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
 )
 secret_key = uuid.uuid4()
+auth = {}
 
 
 def setup(cfg):

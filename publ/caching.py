@@ -7,14 +7,13 @@ from abc import ABC, abstractmethod
 from flask_caching import Cache
 from flask import request
 
-from . import config
 
 cache = Cache()  # pylint: disable=invalid-name
 
 
-def init_app(app):
+def init_app(app, config):
     """ Initialize the cache for the app """
-    cache.init_app(app, config=config.cache)
+    cache.init_app(app, config=config)
 
 
 def do_not_cache():
