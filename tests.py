@@ -26,6 +26,7 @@ config = {
     } if os.environ.get('TEST_CACHING') else {
         'CACHE_NO_NULL_WARNING': True
     },
+    'user_list': 'tests/users.cfg'
 }
 
 app = publ.Publ(__name__, config)

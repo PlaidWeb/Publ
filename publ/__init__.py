@@ -58,7 +58,9 @@ class Publ(flask.Flask):
         secret_key -- Authentication signing secret. This should remain private.
             The default value is randomly generated at every application restart.
         auth -- Authentication configuration. See the Authl configuration
-            documentation at [link TBD]
+            documentation at [link TBD]. Additionally, setting the key
+            AUTH_FORCE_SSL to a truthy value can be used to force the user to
+            switch to an SSL connection when they log in.
         """
 
         if Publ._instance and Publ._instance is not self:
@@ -120,7 +122,8 @@ class Publ(flask.Flask):
             caching.init_app(self, config.cache)
 
         if config.auth:
-            authl.setup_flask(self, config.auth)
+            authl.setup_flask(self, config.auth,
+                              force_ssl=config.auth.get('AUTH_FORCE_SSL'))
 
         self._maint = maintenance.Maintenance()
 
