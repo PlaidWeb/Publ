@@ -68,11 +68,12 @@ setup(
         'Pillow',
         'pygments',
         'watchdog',
-        'awesome-slugify'
+        'awesome-slugify',
+        'Authl'
     ],
 
     extras_require={
-        'dev': ['pylint', 'twine', 'flake8'],
+        'dev': ['pylint', 'twine', 'flake8', 'autopep8'],
     },
 
     project_urls={

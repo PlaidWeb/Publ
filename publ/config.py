@@ -2,6 +2,7 @@
 """ configuration container for Publ """
 
 import sys
+import uuid
 from dateutil import tz
 
 # pylint: disable=invalid-name
@@ -11,19 +12,35 @@ database_config = {
     'filename': ':memory:'
 }
 
+# Site content locations
 content_folder = 'content'
 template_folder = 'templates'
 static_folder = 'static'
 static_url_path = '/static'
+
+# Image rendition cache
 image_output_subdir = '_img'
 index_rescan_interval = 7200
 image_cache_interval = 3600
-image_cache_age = 86400 * 7  # one week
+image_cache_age = 86400 * 30  # one month
+
 timezone = tz.tzlocal()
+
+# Page rendering
 cache = {}
 markdown_extensions = (
-    'tables', 'fenced-code', 'footnotes', 'strikethrough', 'highlight', 'superscript', 'math',
+    'tables',
+    'fenced-code',
+    'footnotes',
+    'strikethrough',
+    'highlight',
+    'superscript',
+    'math',
 )
+
+# Authentication
+secret_key = uuid.uuid4()
+auth = {}
 
 
 def setup(cfg):

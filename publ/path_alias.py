@@ -125,7 +125,8 @@ def get_redirect(paths):
         if url:
             return redirect(url, 301 if permanent else 302)
 
-        url, permanent = current_app.get_path_regex(path)
+        # pylint:disable=protected-access
+        url, permanent = current_app._test_path_regex(path)
         if url:
             return redirect(url, 301 if permanent else 302)
 
