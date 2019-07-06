@@ -4,6 +4,7 @@ import configparser
 import collections
 
 from werkzeug.utils import cached_property
+import flask
 
 from . import caching
 from . import config
@@ -37,7 +38,7 @@ class User(caching.Memoizable):
         return User, self._me
 
     @cached_property
-    def username(self):
+    def name(self):
         """ The federated identity name of the user """
         return self._me
 
@@ -47,7 +48,10 @@ class User(caching.Memoizable):
         """ The group memberships of the user """
         groups = get_groups()
         result = set()
-        pending = collections.deque([self._me])
+        pending = collections.deque()
+
+        if self._me:
+            pending.append(self._me)
 
         while pending:
             check = pending.popleft()
@@ -56,3 +60,11 @@ class User(caching.Memoizable):
                 pending += groups.get(check, [])
 
         return result
+
+
+def get_active():
+    """ Get the active user and add it to the request stash """
+    if flask.session.get('me'):
+        return User(flask.session['me'])
+
+    return None

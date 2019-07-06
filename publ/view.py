@@ -1,13 +1,17 @@
 # view.py
 """ A view of entries """
 
+import logging
+
 import arrow
 import flask
 from werkzeug.utils import cached_property
 from pony import orm
 
-from . import model, utils, queries, caching
+from . import model, utils, queries, caching, user
 from .entry import Entry
+
+LOGGER=logging.getLogger(__name__)
 
 # Prioritization list for pagination
 OFFSET_PRIORITY = ['date', 'start', 'last', 'first']
@@ -119,8 +123,19 @@ class View(caching.Memoizable):
 
     @cached_property
     def entries(self):
-        """ Gets the entries for the view """
-        return [Entry(e) for e in self._entries]
+        """ Gets entries which are authorized for the current viewer """
+        cur_user = user.get_active()
+        LOGGER.debug("Getting authorized entries for view %s user %s", self, cur_user)
+        return [Entry(e) for e in self._entries
+                if e.is_authorized(cur_user)]
+
+    @cached_property
+    def unauthorized(self):
+        """ Gets entries which the user is not allowed to view """
+        cur_user = user.get_active()
+        LOGGER.debug("Getting unauthorized entries for view %s user %s", self, cur_user)
+        return [Entry(e) for e in self._entries
+                if not e.is_authorized(cur_user)]
 
     @cached_property
     def deleted(self):

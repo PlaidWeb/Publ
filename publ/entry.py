@@ -25,6 +25,7 @@ from . import cards
 from . import caching
 from . import html_entry
 from . import links
+from . import user
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -326,6 +327,11 @@ class Entry(caching.Memoizable):
             return arrow.get(self.get('Last-Modified'))
         return self.date
 
+    @property
+    def is_authorized(self):
+        """ Returns if the entry is authorized by the current user """
+        return self.record.is_authorized(user.get_active())
+
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
 
@@ -540,6 +546,15 @@ def scan_file(fullpath, relpath, assign_id):
     if record.visible:
         for alias in entry.get_all('Path-Alias', []):
             path_alias.set_alias(alias, entry=record)
+
+    orm.delete(p for p in model.EntryAuth if p.entry == record)
+    orm.commit()
+    for order, user_group in enumerate(entry.get('Auth', '').split()):
+        allowed = (user_group[0] != '!')
+        if not allowed:
+            user_group = user_group[1:]
+        model.EntryAuth(order=order, entry=record, user_group=user_group, allowed=allowed)
+    orm.commit()
 
     with orm.db_session:
         set_tags = {

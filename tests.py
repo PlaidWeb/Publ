@@ -26,6 +26,9 @@ config = {
     } if os.environ.get('TEST_CACHING') else {
         'CACHE_NO_NULL_WARNING': True
     },
+    'auth': {
+        'TEST_ENABLED': True
+    },
     'user_list': 'tests/users.cfg'
 }
 

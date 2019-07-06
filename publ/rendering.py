@@ -22,6 +22,7 @@ from . import view
 from . import caching
 from . import utils
 from . import queries
+from . import user
 from .caching import cache
 
 LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -134,7 +135,7 @@ def render_publ_template(template, **kwargs):
         return text, caching.get_etag(text)
 
     try:
-        return do_render(template, request.args, **kwargs)
+        return do_render(template, request.args, user=user.get_active(), **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(err)
 

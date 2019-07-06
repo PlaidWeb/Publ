@@ -17,7 +17,6 @@ from . import maintenance, image
 
 LOGGER = logging.getLogger(__name__)
 
-
 class Publ(flask.Flask):
     """ A Publ application.
 
@@ -61,6 +60,9 @@ class Publ(flask.Flask):
             documentation at [link TBD]. Additionally, setting the key
             AUTH_FORCE_SSL to a truthy value can be used to force the user to
             switch to an SSL connection when they log in.
+        user_list -- The file that configures the user and group list
+        admin_user -- The user or group that has full administrative access
+            to all entries regardless of permissions
         """
 
         if Publ._instance and Publ._instance is not self:
@@ -78,11 +80,14 @@ class Publ(flask.Flask):
 
         self._regex_map = []
 
+        self.url_map.converters['category'] = utils.CategoryConverter
+        self.url_map.converters['template'] = utils.TemplateConverter
+
         for route in [
                 '/',
-                '/<path:category>/',
-                '/<template>',
-                '/<path:category>/<template>',
+                '/<category:category>/',
+                '/<template:template>',
+                '/<category:category>/<template:template>',
         ]:
             self.add_url_rule(route, 'category', rendering.render_category)
 
@@ -90,9 +95,9 @@ class Publ(flask.Flask):
                 '/<int:entry_id>',
                 '/<int:entry_id>-',
                 '/<int:entry_id>-<slug_text>',
-                '/<path:category>/<int:entry_id>',
-                '/<path:category>/<int:entry_id>-',
-                '/<path:category>/<int:entry_id>-<slug_text>',
+                '/<category:category>/<int:entry_id>',
+                '/<category:category>/<int:entry_id>-',
+                '/<category:category>/<int:entry_id>-<slug_text>',
         ]:
             self.add_url_rule(route, 'entry', rendering.render_entry)
 
@@ -123,7 +128,20 @@ class Publ(flask.Flask):
 
         if config.auth:
             authl.setup_flask(self, config.auth,
+                              login_path='/_login',
                               force_ssl=config.auth.get('AUTH_FORCE_SSL'))
+
+            @self.route('/_logout')
+            @self.route('/_logout/')
+            @self.route('/_logout/<path:redir>')
+            def logout(redir=''):
+                """ Log out from the thing """
+                LOGGER.info("Logging out")
+                LOGGER.info("Redir: %s", redir)
+                LOGGER.info("Request path: %s", flask.request.path)
+
+                flask.session['me'] = ''
+                return flask.redirect('/' + redir)
 
         self._maint = maintenance.Maintenance()
 
@@ -209,6 +227,8 @@ class Publ(flask.Flask):
         if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
             response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
         return response
+
+
 
 
 def publ(name, cfg):
