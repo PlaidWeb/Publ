@@ -4,6 +4,7 @@
 import os
 import logging
 import base64
+import datetime
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -345,6 +346,21 @@ def render_entry(entry_id, slug_text='', category=''):
     # Show a gone error if the entry has been deleted
     if record.status == model.PublishStatus.GONE.value:
         raise http_error.Gone()
+
+    # If the entry is private and the user isn't logged in, redirect
+    if record.auth:
+        cur_user = user.get_active()
+        authorized = record.is_authorized(cur_user)
+
+        # Log the access
+        model.AuthLog(date=datetime.datetime.now(),
+                      user=cur_user.name if cur_user else None,
+                      user_groups=str(cur_user.groups) if cur_user else None,
+                      entry=record,
+                      authorized=authorized)
+
+        if not record.is_authorized(cur_user):
+            return redirect(url_for('login', redir=request.path[1:]))
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:

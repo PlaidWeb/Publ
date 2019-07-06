@@ -11,7 +11,7 @@ from pony import orm
 from . import model, utils, queries, caching, user
 from .entry import Entry
 
-LOGGER=logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # Prioritization list for pagination
 OFFSET_PRIORITY = ['date', 'start', 'last', 'first']

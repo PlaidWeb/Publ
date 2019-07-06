@@ -69,6 +69,7 @@ class Entry(db.Entity):
     tags = orm.Set("EntryTag")
 
     auth = orm.Set("EntryAuth")
+    auth_log = orm.Set("AuthLog")
 
     entry_template = orm.Optional(str)  # maps to Entry-Template
 
@@ -160,6 +161,15 @@ class EntryAuth(db.Entity):
     allowed = orm.Required(bool)
 
     orm.composite_key(entry, order)
+
+
+class AuthLog(db.Entity):
+    """ Authentication log for private entries """
+    date = orm.Required(datetime.datetime, index=True)
+    entry = orm.Required(Entry, index=True)
+    user = orm.Optional(str, index=True)
+    user_groups = orm.Required(str)
+    authorized = orm.Required(bool)
 
 
 def setup():

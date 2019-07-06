@@ -39,6 +39,14 @@
 
     <div id="content">
         <div class="entries">
+            {% if entry.is_unauthorized %}
+                {% if user %}
+                <p>You are logged in as `{{user.name}}`, and do not currently have access to this entry. If you have another account you can try <a href="{{entry.login}}">logging in as someone else</a>, or you can try contacting
+                the administrator of this site for access.</p>
+                {% else %}
+                <p>This entry is protected. Please <a href="{{entry.login}}">log in</a> to gain access.</p>
+                {% endif %}
+            {% else %}
             <article class="h-entry">
             {% block entry %}
             <div class="posted">Last updated: <time class="dt-posted" datetime="{{entry.date.isoformat()}}">{{entry.last_modified.format('YYYY-MM-DD h:mm A')}} ({{entry.last_modified.humanize()}})</time>
@@ -58,6 +66,7 @@
             </div>
             {% endblock %}
             </article>
+            {% endif %}
 
             <section id="webmentions"></section>
         </div>
