@@ -61,6 +61,10 @@ class User(caching.Memoizable):
 
         return result
 
+    @property
+    def is_admin(self):
+        return config.admin_user and config.admin_user in self.groups
+
 
 def get_active():
     """ Get the active user and add it to the request stash """

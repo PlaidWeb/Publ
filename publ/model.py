@@ -89,7 +89,7 @@ class Entry(db.Entity):
 
         logger.debug("Computing auth for entry %s user %s", self.file_path, user)
 
-        if user and config.admin_user and config.admin_user in user.groups:
+        if user and user.is_admin:
             logger.debug("User is admin")
             return True
 
