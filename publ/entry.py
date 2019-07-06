@@ -223,9 +223,15 @@ class Entry(caching.Memoizable):
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
             all markup (default: True)
+        no_smartquotes -- if True, preserve quotes and other characters as originally
+            presented
+        markdown_extensions -- a list of markdown extensions to use
+        always_show -- always show the title even if the current user is not
+            authorized to see the entry
         """
-        def _title(markup=True, no_smartquotes=False, markdown_extensions=None):
-            if not self.is_authorized:
+        def _title(markup=True, no_smartquotes=False, markdown_extensions=None,
+                   always_show=False):
+            if not always_show and not self.is_authorized:
                 return ''
             return markdown.render_title(self._record.title, markup, no_smartquotes,
                                          markdown_extensions)
@@ -250,6 +256,9 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def _entry_content(self):
+        if not self.is_authorized:
+            return '', '', False
+
         body, _, more = self._message.get_payload().partition('\n.....\n')
         if not more and body.startswith('.....\n'):
             # The entry began with a cut, which failed to parse.
@@ -346,9 +355,6 @@ class Entry(caching.Memoizable):
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
-        if not self.is_authorized:
-            return ''
-
         if is_markdown:
             return markdown.to_html(
                 text,
@@ -364,7 +370,7 @@ class Entry(caching.Memoizable):
         """ Proxy undefined properties to the backing objects """
 
         # Only allow a few vital things for unauthorized access
-        if not self.is_authorized and name.lower() not in ('uuid','id','date','last-modified'):
+        if not self.is_authorized and name.lower() not in ('uuid', 'id', 'date', 'last-modified'):
             return None
 
         if hasattr(self._record, name):
