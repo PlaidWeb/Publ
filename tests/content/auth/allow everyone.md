@@ -1,4 +1,4 @@
-Title: Entry that allows everyone
+Title: Entry that just requires login
 Auth: *
 Date: 2019-07-05 16:30:07-07:00
 Entry-ID: 387

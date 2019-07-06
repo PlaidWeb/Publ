@@ -99,6 +99,8 @@ class Entry(caching.Memoizable):
             if False, it will only be the entry ID (default: True)
         """
         def _permalink(absolute=False, expand=True, **kwargs):
+            if not self.authorized:
+                expand = False
             return flask.url_for('entry',
                                  entry_id=self._record.id,
                                  category=self._record.category if expand else None,
@@ -179,9 +181,11 @@ class Entry(caching.Memoizable):
             query = queries.build_query(spec)
             query = queries.where_after_entry(query, self._record)
 
+            cur_user = user.get_active()
             for record in query.order_by(model.Entry.local_date,
-                                         model.Entry.id)[:1]:
-                return Entry(record)
+                                         model.Entry.id):
+                if record.is_authorized(cur_user):
+                    return Entry(record)
             return None
         return CallableProxy(_next)
 
@@ -199,9 +203,11 @@ class Entry(caching.Memoizable):
             query = queries.build_query(spec)
             query = queries.where_before_entry(query, self._record)
 
+            cur_user = user.get_active()
             for record in query.order_by(orm.desc(model.Entry.local_date),
-                                         orm.desc(model.Entry.id))[:1]:
-                return Entry(record)
+                                         orm.desc(model.Entry.id)):
+                if record.is_authorized(cur_user):
+                    return Entry(record)
             return None
         return CallableProxy(_previous)
 
@@ -219,6 +225,8 @@ class Entry(caching.Memoizable):
             all markup (default: True)
         """
         def _title(markup=True, no_smartquotes=False, markdown_extensions=None):
+            if not self.is_authorized:
+                return ''
             return markdown.render_title(self._record.title, markup, no_smartquotes,
                                          markdown_extensions)
         return CallableProxy(_title)
@@ -330,7 +338,7 @@ class Entry(caching.Memoizable):
     @property
     def is_authorized(self):
         """ Returns if the entry is authorized by the current user """
-        return self.record.is_authorized(user.get_active())
+        return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
@@ -338,6 +346,9 @@ class Entry(caching.Memoizable):
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
+        if not self.is_authorized:
+            return ''
+
         if is_markdown:
             return markdown.to_html(
                 text,
@@ -351,6 +362,10 @@ class Entry(caching.Memoizable):
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
+
+        # Only allow a few vital things for unauthorized access
+        if not self.is_authorized and name.lower() not in ('uuid','id','date','last-modified'):
+            return None
 
         if hasattr(self._record, name):
             return getattr(self._record, name)
