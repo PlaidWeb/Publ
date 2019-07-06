@@ -343,15 +343,19 @@ def as_list(item):
 
     return [item]
 
+
 class CategoryConverter(werkzeug.routing.PathConverter):
     """ A version of PathConverter that doesn't accept paths beginning with _ """
+
     def to_python(self, value):
         if value[0] == '_':
             raise werkzeug.routing.ValidationError
         return super().to_python(value)
 
+
 class TemplateConverter(werkzeug.routing.UnicodeConverter):
     """ A version of UnicodeConverter that doesn't accept strings beginning with _ """
+
     def to_python(self, value):
         if value[0] == '_':
             raise werkzeug.routing.ValidationError

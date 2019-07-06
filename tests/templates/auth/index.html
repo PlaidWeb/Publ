@@ -6,10 +6,11 @@
 <h2>Auth testing</h2>
 
 {% if user %}
-<h3>Current user: {{user.name}} (<a href="{{url_for('logout',redir=request.path[1:])}}">logout</a>)</h3>
+<h3>Current user: <code>{{user.name}}</code> (<a href="{{url_for('logout',redir=request.path[1:])}}">logout</a>)</h3>
+<p>Memberships:</p>
 <ul>
     {% for group in user.groups %}
-    <li>Group: {{group}}</li>
+    <li>{{group}}</li>
     {% endfor %}
 </ul>
 {% endif %}

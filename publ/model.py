@@ -87,7 +87,7 @@ class Entry(db.Entity):
         if not self.auth:
             return True
 
-        logger.debug("Computing auth for entry %d user %s", self.id, user)
+        logger.debug("Computing auth for entry %s user %s", self.file_path, user)
 
         if user and config.admin_user and config.admin_user in user.groups:
             logger.debug("User is admin")
@@ -160,6 +160,7 @@ class EntryAuth(db.Entity):
     allowed = orm.Required(bool)
 
     orm.composite_key(entry, order)
+
 
 def setup():
     """ Set up the database """

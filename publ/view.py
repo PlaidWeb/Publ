@@ -126,6 +126,12 @@ class View(caching.Memoizable):
         """ Gets entries which are authorized for the current viewer """
         cur_user = user.get_active()
         LOGGER.debug("Getting authorized entries for view %s user %s", self, cur_user)
+        # Known limitation to this approach: filtered entries reduce the number of
+        # entries per page, which both leaks information and makes the possibility
+        # of empty pages if there's enough private content. At present this seems
+        # like a minor concern compared to the difficulty of extending pages based
+        # on content filtering, however. In the future it would be helpful to figure
+        # out a databvase-side query that will work for the content filtering.
         return [Entry(e) for e in self._entries
                 if e.is_authorized(cur_user)]
 

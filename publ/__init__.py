@@ -17,6 +17,7 @@ from . import maintenance, image
 
 LOGGER = logging.getLogger(__name__)
 
+
 class Publ(flask.Flask):
     """ A Publ application.
 
@@ -131,9 +132,6 @@ class Publ(flask.Flask):
                               login_path='/_login',
                               force_ssl=config.auth.get('AUTH_FORCE_SSL'))
 
-            @self.route('/_logout')
-            @self.route('/_logout/')
-            @self.route('/_logout/<path:redir>')
             def logout(redir=''):
                 """ Log out from the thing """
                 LOGGER.info("Logging out")
@@ -142,6 +140,13 @@ class Publ(flask.Flask):
 
                 flask.session['me'] = ''
                 return flask.redirect('/' + redir)
+
+            for route in [
+                    '/_logout',
+                    '/_logout/',
+                    '/_logout/<path:redir>'
+            ]:
+                self.add_url_rule(route, 'logout', logout)
 
         self._maint = maintenance.Maintenance()
 
@@ -227,8 +232,6 @@ class Publ(flask.Flask):
         if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
             response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
         return response
-
-
 
 
 def publ(name, cfg):
