@@ -42,7 +42,7 @@ markdown_extensions = (
 secret_key = str(uuid.uuid4())
 auth = {}
 user_list = 'users.cfg'
-admin_user = 'admin'
+admin_group = 'admin'
 
 
 def setup(cfg):

@@ -10,7 +10,7 @@ import logging
 import arrow
 import flask
 import werkzeug.exceptions
-import authl
+import authl.flask
 
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
@@ -128,7 +128,7 @@ class Publ(flask.Flask):
             caching.init_app(self, config.cache)
 
         if config.auth:
-            authl.setup_flask(self, config.auth,
+            authl.flask.setup(self, config.auth,
                               login_path='/_login',
                               force_ssl=config.auth.get('AUTH_FORCE_SSL'))
 

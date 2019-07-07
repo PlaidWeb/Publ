@@ -64,7 +64,7 @@ class User(caching.Memoizable):
     @property
     def is_admin(self):
         """ Returns whether this user has administrator permissions """
-        return config.admin_user and config.admin_user in self.groups
+        return config.admin_group and config.admin_group in self.groups
 
 
 def get_active():

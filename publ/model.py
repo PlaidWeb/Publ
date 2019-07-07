@@ -166,8 +166,8 @@ class EntryAuth(db.Entity):
 class AuthLog(db.Entity):
     """ Authentication log for private entries """
     date = orm.Required(datetime.datetime, index=True)
-    entry = orm.Required(Entry, index=True)
-    user = orm.Optional(str, index=True)
+    entry = orm.Optional(Entry, index=True)
+    user = orm.Required(str, index=True)
     user_groups = orm.Required(str)
     authorized = orm.Required(bool)
 
