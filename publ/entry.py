@@ -113,6 +113,14 @@ class Entry(caching.Memoizable):
         return CallableProxy(_permalink)
 
     @cached_property
+    def login(self):
+        """ Get a link specifically for logging in to the entry. """
+        def _loginlink(absolute=False, **kwargs):
+            pagelink = flask.url_for('entry', entry_id=self._record.id, **kwargs)
+            return flask.url_for('login', redir=pagelink[1:], _external=absolute)
+        return CallableProxy(_loginlink)
+
+    @cached_property
     def archive(self):
         """ Get a link to this entry in the context of a category template.
         Accepts the following arguments:

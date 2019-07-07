@@ -360,7 +360,8 @@ def render_entry(entry_id, slug_text='', category=''):
                       authorized=authorized)
 
         if not record.is_authorized(cur_user):
-            return redirect(url_for('login', redir=request.path[1:]))
+            page_link = url_for('entry', entry_id=entry_id, **request.args)
+            return redirect(url_for('login', redir=page_link[1:]))
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -373,7 +374,8 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(url_for('entry',
                                 entry_id=entry_id,
                                 category=record.category,
-                                slug_text=record.slug_text if record.slug_text else None))
+                                slug_text=record.slug_text if record.slug_text else None,
+                                **request.args))
 
     # if the entry canonically redirects, do that now
     entry_redirect = record.redirect_url
