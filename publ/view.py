@@ -90,13 +90,8 @@ class View(caching.Memoizable):
             elif self._order_by == 'newest':
                 self.spec['last'] = self.spec['start']
 
-        self._query = queries.build_query(
+        self._entries = queries.build_query(
             spec).order_by(*ORDER_BY[self._order_by])
-
-        if 'count' in spec:
-            self._entries = self._query[:spec['count']]
-        else:
-            self._entries = self._query[:]
 
         if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
@@ -122,26 +117,37 @@ class View(caching.Memoizable):
         return self.entries[-1] if self.entries else None
 
     @cached_property
+    def _entries_auth(self):
+        """ Returns a tuple of (authorized,unauthorized) entries, limited by the
+        count spec if appropriate. """
+        entries = []
+        unauthorized = []
+
+        limit = self.spec.get('count')
+        cur_user = user.get_active()
+        for record in self._entries:
+            if limit and len(entries) >= limit:
+                break
+
+            if record.is_authorized(cur_user):
+                entries.append(Entry(record))
+            else:
+                unauthorized.append(Entry(record))
+
+        return entries,unauthorized
+
+
+    @cached_property
     def entries(self):
         """ Gets entries which are authorized for the current viewer """
-        cur_user = user.get_active()
-        LOGGER.debug("Getting authorized entries for view %s user %s", self, cur_user)
-        # Known limitation to this approach: filtered entries reduce the number of
-        # entries per page, which both leaks information and makes the possibility
-        # of empty pages if there's enough private content. At present this seems
-        # like a minor concern compared to the difficulty of extending pages based
-        # on content filtering, however. In the future it would be helpful to figure
-        # out a databvase-side query that will work for the content filtering.
-        return [Entry(e) for e in self._entries
-                if e.is_authorized(cur_user)]
+        items, _ = self._entries_auth
+        return items
 
     @cached_property
     def unauthorized(self):
         """ Gets entries which the user is not allowed to view """
-        cur_user = user.get_active()
-        LOGGER.debug("Getting unauthorized entries for view %s user %s", self, cur_user)
-        return [Entry(e) for e in self._entries
-                if not e.is_authorized(cur_user)]
+        _, items = self._entries_auth
+        return items
 
     @cached_property
     def deleted(self):

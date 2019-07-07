@@ -6,7 +6,7 @@
 <h2>Auth testing</h2>
 
 {% if user %}
-<h3>Current user: <code>{{user.name}}</code> (<a href="{{url_for('logout',redir=request.path[1:])}}">logout</a>)</h3>
+<h3>Current user: <code>{{user.name}}</code> (<a href="{{url_for('logout',redir=request.full_path[1:])}}">logout</a>)</h3>
 <p>Memberships:</p>
 <ul>
     {% for group in user.groups %}
@@ -18,7 +18,7 @@
 <h3>Test users</h3>
 <ul>
     {% for name in ('admin','good_friend1','good_friend2','friend1','friend2','friend3','friend3_other1','friend3_other2','mutual1','mutual2','specific') %}
-    <li><a href="{{url_for('login',me='test:'+name,redir=request.path[1:])}}">{{name}}</a></li>
+    <li><a href="{{url_for('login',me='test:'+name,redir=request.full_path[1:])}}">{{name}}</a></li>
     {% endfor %}
 </ul>
 
