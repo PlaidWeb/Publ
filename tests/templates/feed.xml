@@ -50,24 +50,20 @@
     </entry>
     {% endfor %}
 
+    {# show only the most recent unauthorized entry as a stub #}
+    {% for entry in view.unauthorized[:1] %}
+    <entry>
+        <title>[private entry]</title>
+        <link href="{{ entry.permalink(absolute=True) }}" rel="alternate" type="text/html" />
+        <published>{{entry.date.isoformat()}}</published>
+        <updated>{{entry.last_modified.isoformat()}}</updated>
+        <id>urn:uuid:{{entry.uuid}}</id>
+    </entry>
+    {% endfor %}
+
     {% for entry in view.deleted %}
     <at:deleted-entry ref="urn:uuid:{{entry.uuid}}" when="{{entry.last_modified.isoformat()}}">
         <link>{{entry.permalink(absolute=True)}}</link>
     </at:deleted-entry>
-    {% endfor %}
-
-    {% for entry in view.unauthorized %}
-    <entry>
-        <title>{{entry.title(markup=False,no_smartquotes=True,always_show=True)}} [private]</title>
-        <link href="{{ entry.permalink(absolute=True) }}" rel="alternate" type="text/html" />
-        <link href="{{ entry.login(absolute=True) }}" rel="login" type="text/html" />
-        <published>{{entry.date.isoformat()}}</published>
-        <updated>{{entry.last_modified.isoformat()}}</updated>
-        <id>urn:uuid:{{entry.uuid}}</id>
-        <author><name>{{ entry.author if entry.author else "fluffy" }}</name></author>
-        <content type="html">
-            This is a private entry. Please <a href="{{entry.login(absolute=True)}}">log in</a> to view it.
-        </content>
-    </entry>
     {% endfor %}
 </feed>
