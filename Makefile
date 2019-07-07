@@ -6,7 +6,7 @@ format:
 
 .PHONY: pylint
 pylint:
-	pipenv run pylint -f colorized publ
+	pipenv run pylint publ
 
 .PHONY: flake8
 flake8:

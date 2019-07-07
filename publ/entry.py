@@ -25,6 +25,7 @@ from . import cards
 from . import caching
 from . import html_entry
 from . import links
+from . import user
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -98,6 +99,8 @@ class Entry(caching.Memoizable):
             if False, it will only be the entry ID (default: True)
         """
         def _permalink(absolute=False, expand=True, **kwargs):
+            if not self.authorized:
+                expand = False
             return flask.url_for('entry',
                                  entry_id=self._record.id,
                                  category=self._record.category if expand else None,
@@ -108,6 +111,14 @@ class Entry(caching.Memoizable):
                                  **kwargs)
 
         return CallableProxy(_permalink)
+
+    @cached_property
+    def login(self):
+        """ Get a link specifically for logging in to the entry. """
+        def _loginlink(absolute=False, **kwargs):
+            pagelink = flask.url_for('entry', entry_id=self._record.id, **kwargs)
+            return flask.url_for('login', redir=pagelink[1:], _external=absolute)
+        return CallableProxy(_loginlink)
 
     @cached_property
     def archive(self):
@@ -178,9 +189,11 @@ class Entry(caching.Memoizable):
             query = queries.build_query(spec)
             query = queries.where_after_entry(query, self._record)
 
+            cur_user = user.get_active()
             for record in query.order_by(model.Entry.local_date,
-                                         model.Entry.id)[:1]:
-                return Entry(record)
+                                         model.Entry.id):
+                if record.is_authorized(cur_user):
+                    return Entry(record)
             return None
         return CallableProxy(_next)
 
@@ -198,9 +211,11 @@ class Entry(caching.Memoizable):
             query = queries.build_query(spec)
             query = queries.where_before_entry(query, self._record)
 
+            cur_user = user.get_active()
             for record in query.order_by(orm.desc(model.Entry.local_date),
-                                         orm.desc(model.Entry.id))[:1]:
-                return Entry(record)
+                                         orm.desc(model.Entry.id)):
+                if record.is_authorized(cur_user):
+                    return Entry(record)
             return None
         return CallableProxy(_previous)
 
@@ -216,8 +231,16 @@ class Entry(caching.Memoizable):
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
             all markup (default: True)
+        no_smartquotes -- if True, preserve quotes and other characters as originally
+            presented
+        markdown_extensions -- a list of markdown extensions to use
+        always_show -- always show the title even if the current user is not
+            authorized to see the entry
         """
-        def _title(markup=True, no_smartquotes=False, markdown_extensions=None):
+        def _title(markup=True, no_smartquotes=False, markdown_extensions=None,
+                   always_show=False):
+            if not always_show and not self.is_authorized:
+                return ''
             return markdown.render_title(self._record.title, markup, no_smartquotes,
                                          markdown_extensions)
         return CallableProxy(_title)
@@ -241,6 +264,9 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def _entry_content(self):
+        if not self.is_authorized:
+            return '', '', False
+
         body, _, more = self._message.get_payload().partition('\n.....\n')
         if not more and body.startswith('.....\n'):
             # The entry began with a cut, which failed to parse.
@@ -326,6 +352,11 @@ class Entry(caching.Memoizable):
             return arrow.get(self.get('Last-Modified'))
         return self.date
 
+    @property
+    def is_authorized(self):
+        """ Returns if the entry is authorized by the current user """
+        return self._record.is_authorized(user.get_active())
+
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry
 
@@ -345,6 +376,10 @@ class Entry(caching.Memoizable):
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
+
+        # Only allow a few vital things for unauthorized access
+        if not self.is_authorized and name.lower() not in ('uuid', 'id', 'date', 'last-modified'):
+            return None
 
         if hasattr(self._record, name):
             return getattr(self._record, name)
@@ -540,6 +575,15 @@ def scan_file(fullpath, relpath, assign_id):
     if record.visible:
         for alias in entry.get_all('Path-Alias', []):
             path_alias.set_alias(alias, entry=record)
+
+    orm.delete(p for p in model.EntryAuth if p.entry == record)
+    orm.commit()
+    for order, user_group in enumerate(entry.get('Auth', '').split()):
+        allowed = (user_group[0] != '!')
+        if not allowed:
+            user_group = user_group[1:]
+        model.EntryAuth(order=order, entry=record, user_group=user_group, allowed=allowed)
+    orm.commit()
 
     with orm.db_session:
         set_tags = {

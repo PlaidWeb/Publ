@@ -32,10 +32,10 @@
         },
         "authl": {
             "hashes": [
-                "sha256:6ffe48494a14e59131dc37e8322629bacf754ced7bcd1f49bf933b9f39a464aa",
-                "sha256:70c29c6178221a45aa0d7b78c7bf4ba3a279faf81b73b65844ec9df48aae2b26"
+                "sha256:7bf51842e2f4b6cf06f3336ed1cb5060d9faf847a9509cfaeab3110e1cd34789",
+                "sha256:d7d9693228faedfe39ad572d4bb4e4d7697422cfac4e7c3e806b8dee7a26e753"
             ],
-            "version": "==0.0.2"
+            "version": "==0.1.0"
         },
         "awesome-slugify": {
             "hashes": [

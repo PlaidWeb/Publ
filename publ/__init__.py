@@ -10,7 +10,7 @@ import logging
 import arrow
 import flask
 import werkzeug.exceptions
-import authl
+import authl.flask
 
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
@@ -58,7 +58,12 @@ class Publ(flask.Flask):
         secret_key -- Authentication signing secret. This should remain private.
             The default value is randomly generated at every application restart.
         auth -- Authentication configuration. See the Authl configuration
-            documentation at [link TBD]
+            documentation at [link TBD]. Additionally, setting the key
+            AUTH_FORCE_SSL to a truthy value can be used to force the user to
+            switch to an SSL connection when they log in.
+        user_list -- The file that configures the user and group list
+        admin_user -- The user or group that has full administrative access
+            to all entries regardless of permissions
         """
 
         if Publ._instance and Publ._instance is not self:
@@ -76,11 +81,14 @@ class Publ(flask.Flask):
 
         self._regex_map = []
 
+        self.url_map.converters['category'] = utils.CategoryConverter
+        self.url_map.converters['template'] = utils.TemplateConverter
+
         for route in [
                 '/',
-                '/<path:category>/',
-                '/<template>',
-                '/<path:category>/<template>',
+                '/<category:category>/',
+                '/<template:template>',
+                '/<category:category>/<template:template>',
         ]:
             self.add_url_rule(route, 'category', rendering.render_category)
 
@@ -88,9 +96,9 @@ class Publ(flask.Flask):
                 '/<int:entry_id>',
                 '/<int:entry_id>-',
                 '/<int:entry_id>-<slug_text>',
-                '/<path:category>/<int:entry_id>',
-                '/<path:category>/<int:entry_id>-',
-                '/<path:category>/<int:entry_id>-<slug_text>',
+                '/<category:category>/<int:entry_id>',
+                '/<category:category>/<int:entry_id>-',
+                '/<category:category>/<int:entry_id>-<slug_text>',
         ]:
             self.add_url_rule(route, 'entry', rendering.render_entry)
 
@@ -120,7 +128,25 @@ class Publ(flask.Flask):
             caching.init_app(self, config.cache)
 
         if config.auth:
-            authl.setup_flask(self, config.auth)
+            authl.flask.setup(self, config.auth,
+                              login_path='/_login',
+                              force_ssl=config.auth.get('AUTH_FORCE_SSL'))
+
+            def logout(redir=''):
+                """ Log out from the thing """
+                LOGGER.info("Logging out")
+                LOGGER.info("Redir: %s", redir)
+                LOGGER.info("Request path: %s", flask.request.path)
+
+                flask.session['me'] = ''
+                return flask.redirect('/' + redir)
+
+            for route in [
+                    '/_logout',
+                    '/_logout/',
+                    '/_logout/<path:redir>'
+            ]:
+                self.add_url_rule(route, 'logout', logout)
 
         self._maint = maintenance.Maintenance()
 

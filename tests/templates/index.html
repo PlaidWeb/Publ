@@ -58,6 +58,12 @@
 
     <div class="entries">
 
+        {% if not user and content.unauthorized %}
+        <div class="login">
+            <p>You are missing one or more friends-only entries. Please <a href="{{url_for('login',redir=request.path[1:])}}">log in</a>.</p>
+        </div>
+        {% endif %}
+
         {% for entry in content.entries %}
 
         <article class="h-entry entry">

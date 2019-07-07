@@ -4,6 +4,7 @@
 import os
 import logging
 import base64
+import datetime
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -22,6 +23,7 @@ from . import view
 from . import caching
 from . import utils
 from . import queries
+from . import user
 from .caching import cache
 
 LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -134,7 +136,7 @@ def render_publ_template(template, **kwargs):
         return text, caching.get_etag(text)
 
     try:
-        return do_render(template, request.args, **kwargs)
+        return do_render(template, request.args, user=user.get_active(), **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(err)
 
@@ -345,6 +347,22 @@ def render_entry(entry_id, slug_text='', category=''):
     if record.status == model.PublishStatus.GONE.value:
         raise http_error.Gone()
 
+    # If the entry is private and the user isn't logged in, redirect
+    if record.auth:
+        cur_user = user.get_active()
+        authorized = record.is_authorized(cur_user)
+
+        # Log the access
+        model.AuthLog(date=datetime.datetime.now(),
+                      user=cur_user.name if cur_user else None,
+                      user_groups=str(cur_user.groups) if cur_user else None,
+                      entry=record,
+                      authorized=authorized)
+
+        if not record.is_authorized(cur_user):
+            page_link = url_for('entry', entry_id=entry_id, **request.args)
+            return redirect(url_for('login', redir=page_link[1:]))
+
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
         # This could still be a redirected path...
@@ -356,7 +374,8 @@ def render_entry(entry_id, slug_text='', category=''):
         return redirect(url_for('entry',
                                 entry_id=entry_id,
                                 category=record.category,
-                                slug_text=record.slug_text if record.slug_text else None))
+                                slug_text=record.slug_text if record.slug_text else None,
+                                **request.args))
 
     # if the entry canonically redirects, do that now
     entry_redirect = record.redirect_url

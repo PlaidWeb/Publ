@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 config = {
     # Leave this off to do an in-memory database
+    'secret_key': 'this test suite is insecure as heck',
     'database_config': {
         'provider': 'sqlite',
         'filename': os.path.join(APP_PATH, 'index.db')
@@ -26,6 +27,11 @@ config = {
     } if os.environ.get('TEST_CACHING') else {
         'CACHE_NO_NULL_WARNING': True
     },
+    'auth': {
+        'TEST_ENABLED': True,
+        'INDIELOGIN_CLIENT_ID': 'http://localhost'
+    },
+    'user_list': 'tests/users.cfg'
 }
 
 app = publ.Publ(__name__, config)

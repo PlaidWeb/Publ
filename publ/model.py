@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 class GlobalConfig(db.Entity):
@@ -68,6 +68,9 @@ class Entry(db.Entity):
     aliases = orm.Set("PathAlias")
     tags = orm.Set("EntryTag")
 
+    auth = orm.Set("EntryAuth")
+    auth_log = orm.Set("AuthLog")
+
     entry_template = orm.Optional(str)  # maps to Entry-Template
 
     orm.composite_index(category, entry_type, utc_date)
@@ -79,6 +82,33 @@ class Entry(db.Entity):
         """ Returns true if the entry should be viewable """
         return self.status not in (PublishStatus.DRAFT.value,
                                    PublishStatus.GONE.value)
+
+    def is_authorized(self, user):
+        """ Returns whether the entry is visible to the specified user """
+        if not self.auth:
+            return True
+
+        logger.debug("Computing auth for entry %s user %s", self.file_path, user)
+
+        if user and user.is_admin:
+            logger.debug("User is admin")
+            return True
+
+        result = False
+        for auth in self.auth.order_by(EntryAuth.order):
+            logger.debug("  %d test=%s allowed=%s", auth.order, auth.user_group, auth.allowed)
+            if auth.user_group == '*':
+                # Special group * refers to all logged-in users
+                result = auth.allowed == (user is not None)
+                logger.debug("  result->%s", result)
+
+            else:
+                if user and auth.user_group in user.groups:
+                    result = auth.allowed
+                    logger.debug("  result->%s", result)
+
+        logger.debug("Final result: %s", result)
+        return result
 
 
 class EntryTag(db.Entity):
@@ -121,6 +151,25 @@ class Image(db.Entity):
 
     is_asset = orm.Required(bool, default=False)
     asset_name = orm.Optional(str, index=True)
+
+
+class EntryAuth(db.Entity):
+    """ An authentication record for an entry """
+    order = orm.Required(int)
+    entry = orm.Required(Entry)
+    user_group = orm.Required(str)
+    allowed = orm.Required(bool)
+
+    orm.composite_key(entry, order)
+
+
+class AuthLog(db.Entity):
+    """ Authentication log for private entries """
+    date = orm.Required(datetime.datetime, index=True)
+    entry = orm.Optional(Entry, index=True)
+    user = orm.Required(str, index=True)
+    user_groups = orm.Required(str)
+    authorized = orm.Required(bool)
 
 
 def setup():
