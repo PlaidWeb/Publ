@@ -29,7 +29,8 @@ config = {
     },
     'auth': {
         'TEST_ENABLED': True,
-        'INDIELOGIN_CLIENT_ID': 'http://localhost'
+        'INDIELOGIN_CLIENT_ID': 'http://localhost',
+        'MASTODON_NAME': 'Publ test suite',
     },
     'user_list': 'tests/users.cfg'
 }

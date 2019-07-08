@@ -32,10 +32,10 @@
         },
         "authl": {
             "hashes": [
-                "sha256:7bf51842e2f4b6cf06f3336ed1cb5060d9faf847a9509cfaeab3110e1cd34789",
-                "sha256:d7d9693228faedfe39ad572d4bb4e4d7697422cfac4e7c3e806b8dee7a26e753"
+                "sha256:95f37df69881f7e43a6e7267ab80ce8ecd8fbea1e44b29746a25e159f000e830",
+                "sha256:ce14877e14072278fb051eb452c6adf25e9f182ff71e9ddd15e6995e5c44e702"
             ],
-            "version": "==0.1.0"
+            "version": "==0.1.1"
         },
         "awesome-slugify": {
             "hashes": [
@@ -120,10 +120,10 @@
         },
         "flask": {
             "hashes": [
-                "sha256:a31adc27de06034c657a8dc091cc5fcb0227f2474798409bff0e9674de31a026",
-                "sha256:b5ae63812021cb04174fcff05d560a98387a44d9cccd4652a2bfa131ba4e4c9b"
+                "sha256:13f9f196f330c7c2c5d7a5cf91af894110ca0215ac051b5844701f2bfd934d52",
+                "sha256:45eb5a6fd193d6cf7e0cf5d8a5b31f83d5faae0293695626f539a823e93b13f6"
             ],
-            "version": "==1.1.0"
+            "version": "==1.1.1"
         },
         "flask-caching": {
             "hashes": [
@@ -406,11 +406,11 @@
         },
         "flake8": {
             "hashes": [
-                "sha256:859996073f341f2670741b51ec1e67a01da142831aa1fdc6242dbf88dffbe661",
-                "sha256:a796a115208f5c03b18f332f7c11729812c8c3ded6c46319c59b53efd3819da8"
+                "sha256:19241c1cbc971b9962473e4438a2ca19749a7dd002dd1a946eaba171b4114548",
+                "sha256:8e9dfa3cecb2400b3738a42c54c3043e821682b9c840b0448c0503f781130696"
             ],
             "index": "pypi",
-            "version": "==3.7.7"
+            "version": "==3.7.8"
         },
         "idna": {
             "hashes": [
