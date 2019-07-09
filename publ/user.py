@@ -2,12 +2,14 @@
 
 import configparser
 import collections
+import datetime
 
 from werkzeug.utils import cached_property
 import flask
 
 from . import caching
 from . import config
+from . import model
 
 
 @caching.cache.memoize()
@@ -73,3 +75,16 @@ def get_active():
         return User(flask.session['me'])
 
     return None
+
+
+def log_access(record, cur_user, authorized):
+    """ Log a user's access to the audit log """
+    log_values = {
+        'date': datetime.datetime.now(),
+        'entry': record,
+        'authorized': authorized
+    }
+    if cur_user:
+        log_values['user'] = cur_user.name
+        log_values['user_groups'] = ','.join(cur_user.groups)
+    model.AuthLog(**log_values)

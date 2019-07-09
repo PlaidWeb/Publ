@@ -4,7 +4,6 @@
 import os
 import logging
 import base64
-import datetime
 
 import flask
 from flask import request, redirect, render_template, url_for
@@ -351,13 +350,7 @@ def render_entry(entry_id, slug_text='', category=''):
     if record.auth:
         cur_user = user.get_active()
         authorized = record.is_authorized(cur_user)
-
-        # Log the access
-        model.AuthLog(date=datetime.datetime.now(),
-                      user=cur_user.name if cur_user else None,
-                      user_groups=str(cur_user.groups) if cur_user else None,
-                      entry=record,
-                      authorized=authorized)
+        user.log_access(record, cur_user, authorized)
 
         if not record.is_authorized(cur_user):
             page_link = url_for('entry', entry_id=entry_id, **request.args)
