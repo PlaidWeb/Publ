@@ -130,6 +130,7 @@ class Publ(flask.Flask):
         if config.auth:
             authl.flask.setup(self, config.auth,
                               login_path='/_login',
+                              login_name='login',
                               force_ssl=config.auth.get('AUTH_FORCE_SSL'))
 
             def logout(redir=''):
