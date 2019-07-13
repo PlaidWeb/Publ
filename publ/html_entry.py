@@ -19,6 +19,9 @@ class HTMLEntry(utils.HTMLTransform):
         self._search_path = search_path
         self._config = config
 
+    def handle_decl(self, decl):
+        self.append('<!' + decl + '>')
+
     def handle_data(self, data):
         self.append(data)
 
@@ -29,9 +32,6 @@ class HTMLEntry(utils.HTMLTransform):
     def handle_endtag(self, tag):
         """ Handle an end tag """
         self.append('</' + tag + '>')
-
-    def handle_decl(self, decl):
-        LOGGER.warning("handle_decl: '%s'", decl)
 
     def handle_pi(self, data):
         LOGGER.warning("handle_pi: '%s'", data)
