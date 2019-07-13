@@ -1,19 +1,16 @@
 # index.py
 ''' Content indexer '''
 
-import os
-import logging
 import concurrent.futures
+import logging
+import os
 import threading
 
-import watchdog.observers
 import watchdog.events
+import watchdog.observers
 from pony import orm
 
-from . import entry
-from . import model
-from . import utils
-from . import category
+from . import category, entry, model, utils
 
 LOGGER = logging.getLogger(__name__)
 

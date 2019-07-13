@@ -5,7 +5,7 @@ import logging
 
 import flask
 
-from . import utils, links, image
+from . import image, links, utils
 
 LOGGER = logging.getLogger(__name__)
 

@@ -6,8 +6,7 @@ from urllib.parse import urljoin
 
 from flask import request
 
-from . import image
-from . import utils
+from . import image, utils
 
 
 def resolve(path, search_path, absolute=False):

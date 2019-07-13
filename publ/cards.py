@@ -5,7 +5,7 @@ import logging
 
 import misaka
 
-from . import image, config, utils
+from . import config, image, utils
 
 LOGGER = logging.getLogger(__name__)
 

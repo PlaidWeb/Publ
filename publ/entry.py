@@ -3,29 +3,21 @@
 
 import email
 import functools
+import hashlib
 import logging
 import os
 import re
 import shutil
 import tempfile
 import uuid
-import hashlib
+
 import arrow
 import flask
-from werkzeug.utils import cached_property
 from pony import orm
+from werkzeug.utils import cached_property
 
-from . import config
-from . import model
-from . import queries
-from . import path_alias
-from . import markdown
-from . import utils
-from . import cards
-from . import caching
-from . import html_entry
-from . import links
-from . import user
+from . import (caching, cards, config, html_entry, links, markdown, model,
+               path_alias, queries, user, utils)
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 LOGGER = logging.getLogger(__name__)

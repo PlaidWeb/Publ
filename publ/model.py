@@ -3,8 +3,8 @@
 
 # pylint: disable=too-few-public-methods
 
-import logging
 import datetime
+import logging
 from enum import Enum
 
 from pony import orm

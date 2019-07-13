@@ -4,15 +4,13 @@
 import logging
 import re
 
-import misaka
 import flask
-
+import misaka
 import pygments
 import pygments.formatters
 import pygments.lexers
 
-from . import image, utils, links, html_entry, config
-
+from . import config, html_entry, image, links, utils
 
 LOGGER = logging.getLogger(__name__)
 

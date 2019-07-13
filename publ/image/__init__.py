@@ -1,22 +1,21 @@
 """ Handlers for images and files """
 
-import os
-import hashlib
-import logging
-import re
 import ast
-import time
-import random
-import io
 import errno
+import hashlib
 import html
+import io
+import logging
+import os
+import random
+import re
+import time
 
-from pony import orm
 import flask
 import PIL.Image
+from pony import orm
 
-from .. import config
-from .. import model, utils
+from .. import config, model, utils
 from .external import ExternalImage
 from .image import Image
 from .local import LocalImage, fix_orientation

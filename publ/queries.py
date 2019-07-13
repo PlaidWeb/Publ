@@ -4,7 +4,6 @@
 import arrow
 from pony import orm
 
-
 from . import model, utils
 
 

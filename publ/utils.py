@@ -1,17 +1,17 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
-import re
-import os
 import html
 import html.parser
+import os
+import re
 import urllib.parse
 
 import arrow
 import flask
 import slugify
-from werkzeug.utils import cached_property
 import werkzeug.routing
+from werkzeug.utils import cached_property
 
 from . import config, model
 

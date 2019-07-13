@@ -1,7 +1,7 @@
 """ Functionality for images external to the content directory """
 
-from abc import abstractmethod
 import html
+from abc import abstractmethod
 
 import flask
 

@@ -1,25 +1,19 @@
 # category.py
 """ The Category object passed to entry and category views """
 
-import os
-import logging
+import collections
 import email
 import functools
-import collections
+import logging
+import os
 
 import flask
 from flask import url_for
-from werkzeug.utils import cached_property
 from pony import orm
+from werkzeug.utils import cached_property
 
-from . import model
-from . import utils
 from . import entry  # pylint: disable=cyclic-import
-from . import queries
-from . import path_alias
-from . import markdown
-from . import config
-from . import caching
+from . import caching, config, markdown, model, path_alias, queries, utils
 
 LOGGER = logging.getLogger(__name__)
 

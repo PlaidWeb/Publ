@@ -9,12 +9,11 @@ import tempfile
 import threading
 import time
 
-from werkzeug.utils import cached_property
 import flask
 import PIL.Image
+from werkzeug.utils import cached_property
 
-from .. import config
-from .. import utils
+from .. import config, utils
 from .image import Image
 
 LOGGER = logging.getLogger(__name__)
@@ -201,7 +200,7 @@ class LocalImage(Image):
 
     @staticmethod
     def _crop_to_box(crop):
-        #pylint:disable=invalid-name
+        # pylint:disable=invalid-name
         xx, yy, ww, hh = crop
         return (xx, yy, xx + ww, yy + hh)
 

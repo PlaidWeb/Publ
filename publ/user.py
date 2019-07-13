@@ -1,13 +1,12 @@
 """ Authenticated user functionality """
 
-import configparser
 import collections
+import configparser
 
-from werkzeug.utils import cached_property
 import flask
+from werkzeug.utils import cached_property
 
-from . import caching
-from . import config
+from . import caching, config
 
 
 @caching.cache.memoize()
