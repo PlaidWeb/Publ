@@ -1,3 +1,6 @@
 <p>Sorry, user {{user.name}} can't access entry {{entry.id}}. Better luck next time.</p>
 
-<p>You could try <a href="{{url_for('login',redir=request.full_path[1:])}}">logging in as someone else</a> or <a href="{{url_for('logout',redir=request.full_path[1:])}}">logging out</a> and see if that helps.</p>
+<p>You could try <a href="{{login}}">logging in as someone else</a> or <a href="{{logout}}">logging out</a> and see if that helps.</p>
+
+<p>Or you can <a href="{{logout(redir=category.link)}}">logout and go directly to the category</a>.</p>
+

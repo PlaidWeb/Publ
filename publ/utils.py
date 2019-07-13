@@ -360,3 +360,23 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
         if value[0] == '_':
             raise werkzeug.routing.ValidationError
         return super().to_python(value)
+
+def auth_link(endpoint):
+    """ Generates a function that maps an optional redir parameter to the specified
+    auth endpoint. """
+    def endpoint_link(redir=None, **kwargs):
+        if redir is None:
+            # nothing specified so use the current request path
+            redir = flask.request.full_path
+        else:
+            # resolve CallableProxy if present
+            redir = str(redir)
+
+        # strip off leading slashes
+        redir = re.sub(r'^/*', r'', redir)
+        # if there's a trailing ? strip that off too
+        redir = re.sub(r'\?$', r'', redir)
+
+        return flask.url_for(endpoint, redir=redir, **kwargs)
+
+    return CallableProxy(endpoint_link)
