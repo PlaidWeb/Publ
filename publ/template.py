@@ -31,7 +31,7 @@ BUILTIN_TEMPLATES = {
 {{arrow.now().format()}}</address>
 </body></html>
 """,
-    '_login.html': authl.flask.DEFAULT_LOGIN_TEMPLATE
+    'login.html': authl.flask.DEFAULT_LOGIN_TEMPLATE
 }
 
 

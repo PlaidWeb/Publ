@@ -208,7 +208,7 @@ def render_category(category='', template=None):
     # Forbidden template types
     if template and template.startswith('_'):
         raise http_error.Forbidden("Template is private")
-    if template in ['entry', 'error']:
+    if template in ['entry', 'error', 'login']:
         raise http_error.BadRequest("Invalid view requested")
 
     if category:
@@ -253,7 +253,7 @@ def render_category(category='', template=None):
 
 def render_login_form(login_url, auth):
     """ Renders the login form using the mapped login template """
-    tmpl = map_template('', '_login')
+    tmpl = map_template('', 'login')
     return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
 
 

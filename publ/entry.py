@@ -106,7 +106,8 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def login(self):
-        """ Get a link specifically for logging in to the entry. """
+        """ Get a link specifically for logging in to the entry. Not intended for general use;
+        might be useful for some future authentication flow. """
         def _loginlink(absolute=False, **kwargs):
             pagelink = flask.url_for('entry', entry_id=self._record.id, **kwargs)
             return flask.url_for('login', redir=pagelink[1:], _external=absolute)
