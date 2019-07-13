@@ -6,10 +6,12 @@ import os
 import arrow
 import flask
 
-from .caching import cache
-from . import utils, config
+import authl.flask
 
-EXT_PRIORITY=['', '.html', '.htm', '.xml', '.json', '.txt']
+from . import config, utils
+from .caching import cache
+
+EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
 
 BUILTIN_TEMPLATES = {
     # default error template
@@ -28,8 +30,10 @@ BUILTIN_TEMPLATES = {
 <hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {{request.url_root}}
 {{arrow.now().format()}}</address>
 </body></html>
-"""
+""",
+    '_login.html': authl.flask.DEFAULT_LOGIN_TEMPLATE
 }
+
 
 class Template:
     """ Template information wrapper """
@@ -57,7 +61,7 @@ class Template:
             self.mtime = os.stat(file_path).st_mtime
             self.last_modified = arrow.get(self.mtime)
 
-        self.content=content
+        self.content = content
 
     def render(self, **args):
         """ Render the template with the appropriate Flask function """
@@ -76,6 +80,7 @@ class Template:
 
     def __hash__(self):
         return hash(self._key())
+
 
 @cache.memoize()
 def map_template(category, template_list):

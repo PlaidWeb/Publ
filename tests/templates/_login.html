@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login required</title>
+</head>
+<body>
+
+<p>This is a crappy-looking login page for Publ's tests.
+
+{% if user %}
+The current user is {{user.name}}, who belongs to groups {{user.groups}}.
+{%else%}
+Nobody is currently logged in.
+{% endif %}</p>
+
+<form method="GET" action="{{login_url}}" novalidate>
+    <input type="url" name="me" placeholder="A credential goes here">
+</form>
+
+<p>Accepted auth methods:</p>
+<ul>
+    {% for handler in auth.handlers %}
+    <li>{{handler.service_name}}: {{handler.description|safe}}</li>
+    {% endfor %}
+</ul>
+
+</body>
+</html>

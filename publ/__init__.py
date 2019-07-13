@@ -12,7 +12,7 @@ import flask
 import werkzeug.exceptions
 
 from . import (caching, config, image, index, maintenance, model, rendering,
-               utils, view)
+               user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +130,8 @@ class Publ(flask.Flask):
             authl.flask.setup(self, config.auth,
                               login_path='/_login',
                               login_name='login',
-                              force_ssl=config.auth.get('AUTH_FORCE_SSL'))
+                              force_ssl=config.auth.get('AUTH_FORCE_SSL'),
+                              login_render_func=rendering.render_login_form)
 
             def logout(redir=''):
                 """ Log out from the thing """
@@ -147,6 +148,7 @@ class Publ(flask.Flask):
                     '/_logout/<path:redir>'
             ]:
                 self.add_url_rule(route, 'logout', logout)
+            self.before_request(user.log_user)
 
         self._maint = maintenance.Maintenance()
 

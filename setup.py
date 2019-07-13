@@ -73,9 +73,13 @@ setup(
         'Authl'
     ],
 
-    extras_require={
-        'dev': ['pylint', 'twine', 'flake8', 'autopep8', 'isort'],
-    },
+    extras_require={'dev': [
+        'autopep8',
+        'flake8',
+        'isort',
+        'pylint',
+        'twine',
+    ]},
 
     project_urls={
         'Main Site': 'http://publ.beesbuzz.biz',

@@ -35,7 +35,6 @@ def mime_type(template):
     return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
 
 
-
 def get_template(template, relation):
     """ Given an entry or a category, return the path to a related template """
     if isinstance(relation, Entry):
@@ -89,7 +88,7 @@ def render_publ_template(template, **kwargs):
 
         args = {
             'template': template,
-            'image':       image_function(
+            'image': image_function(
                 template=template,
                 category=kwargs.get('category'),
                 entry=kwargs.get('entry')),
@@ -100,7 +99,10 @@ def render_publ_template(template, **kwargs):
         return text, caching.get_etag(text)
 
     try:
-        return do_render(template, request.args, user=user.get_active(), **kwargs)
+        return do_render(template, request.args,
+                         user=user.get_active(),
+                         _url_root=request.url_root,
+                         **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(err)
 
@@ -134,30 +136,11 @@ def render_error(category, error_message, error_codes, exception=None):
     template_list.append('error')
 
     template = map_template(category, template_list)
-    if template:
-        return render_publ_template(
-            template,
-            _url_root=request.url_root,
-            category=Category(category),
-            error={'code': error_code, 'message': error_message},
-            exception=exception)[0], error_code
-
-    # no template found, so fall back to a default
-    if exception and 'str' in exception:
-        message = exception['str']
-    else:
-        message = "An unknown error occurred"
-    return """<!DOCTYPE html>
-<html>
-<head><title>{code} {error}</title></head>
-<body>
-<h1>{error}</h1>
-<p>{message}</p>
-<hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {url}</address>
-</body></html>""".format(code=error_code,
-                         error=error_message,
-                         message=message,
-                         url=request.url), error_code
+    return render_publ_template(
+        template,
+        category=Category(category),
+        error={'code': error_code, 'message': error_message},
+        exception=exception)[0], error_code
 
 
 def render_exception(error):
@@ -258,7 +241,6 @@ def render_category(category='', template=None):
 
     rendered, etag = render_publ_template(
         tmpl,
-        _url_root=request.url_root,
         category=Category(category),
         view=view_obj)
 
@@ -267,6 +249,12 @@ def render_category(category='', template=None):
 
     return rendered, {'Content-Type': mime_type(tmpl),
                       'ETag': etag}
+
+
+def render_login_form(login_url, auth):
+    """ Renders the login form using the mapped login template """
+    tmpl = map_template('', '_login')
+    return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
 
 
 @orm.db_session(retry=5)
@@ -318,8 +306,8 @@ def render_entry(entry_id, slug_text='', category=''):
         user.log_access(record, cur_user, authorized)
 
         if not record.is_authorized(cur_user):
-            page_link = url_for('entry', entry_id=entry_id, **request.args)
-            return redirect(url_for('login', redir=page_link[1:]))
+            login_url = url_for('entry', entry_id=entry_id, **request.args)
+            return redirect(url_for('login', redir=login_url[1:]))
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -358,7 +346,6 @@ def render_entry(entry_id, slug_text='', category=''):
 
     rendered, etag = render_publ_template(
         tmpl,
-        _url_root=request.url_root,
         entry=entry_obj,
         category=Category(category))
 
@@ -366,7 +353,7 @@ def render_entry(entry_id, slug_text='', category=''):
         return 'Not modified', 304
 
     headers = {
-        'Content-Type': entry.get('Content-Type', mime_type(tmpl)),
+        'Content-Type': entry_obj.get('Content-Type', mime_type(tmpl)),
         'ETag': etag
     }
     if record.status == model.PublishStatus.HIDDEN.value:

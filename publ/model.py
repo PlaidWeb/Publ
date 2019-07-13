@@ -172,6 +172,12 @@ class AuthLog(db.Entity):
     authorized = orm.Required(bool)
 
 
+class KnownUser(db.Entity):
+    """ Users who are known to the system """
+    user = orm.PrimaryKey(str)
+    last_seen = orm.Required(datetime.datetime, index=True)
+
+
 def setup():
     """ Set up the database """
     try:

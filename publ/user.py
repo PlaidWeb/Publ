@@ -5,6 +5,7 @@ import configparser
 import datetime
 
 import flask
+from pony import orm
 from werkzeug.utils import cached_property
 
 from . import caching, config, model
@@ -86,3 +87,19 @@ def log_access(record, cur_user, authorized):
         log_values['user'] = cur_user.name
         log_values['user_groups'] = ','.join(cur_user.groups)
     model.AuthLog(**log_values)
+
+
+@orm.db_session(immediate=True)
+def log_user():
+    """ Update the user table to see who's been by """
+    username = flask.session.get('me')
+    if username:
+        values = {
+            'last_seen': datetime.datetime.now(),
+        }
+
+        record = model.KnownUser.get(user=username)
+        if record:
+            record.set(**values)
+        else:
+            record = model.KnownUser(user=username, **values)
