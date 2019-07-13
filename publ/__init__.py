@@ -7,6 +7,7 @@ import functools
 import logging
 import re
 
+import authl.flask
 import arrow
 import flask
 import werkzeug.exceptions
@@ -125,30 +126,28 @@ class Publ(flask.Flask):
 
         caching.init_app(self, config.cache)
 
-        if config.auth:
-            import authl.flask
-            authl.flask.setup(self, config.auth,
-                              login_path='/_login',
-                              login_name='login',
-                              force_ssl=config.auth.get('AUTH_FORCE_SSL'),
-                              login_render_func=rendering.render_login_form)
+        authl.flask.setup(self, config.auth,
+                          login_path='/_login',
+                          login_name='login',
+                          force_ssl=config.auth.get('AUTH_FORCE_SSL'),
+                          login_render_func=rendering.render_login_form)
 
-            def logout(redir=''):
-                """ Log out from the thing """
-                LOGGER.info("Logging out")
-                LOGGER.info("Redir: %s", redir)
-                LOGGER.info("Request path: %s", flask.request.path)
+        def logout(redir=''):
+            """ Log out from the thing """
+            LOGGER.info("Logging out")
+            LOGGER.info("Redir: %s", redir)
+            LOGGER.info("Request path: %s", flask.request.path)
 
-                flask.session['me'] = ''
-                return flask.redirect('/' + redir)
+            flask.session['me'] = ''
+            return flask.redirect('/' + redir)
 
-            for route in [
-                    '/_logout',
-                    '/_logout/',
-                    '/_logout/<path:redir>'
-            ]:
-                self.add_url_rule(route, 'logout', logout)
-            self.before_request(user.log_user)
+        for route in [
+                '/_logout',
+                '/_logout/',
+                '/_logout/<path:redir>'
+        ]:
+            self.add_url_rule(route, 'logout', logout)
+        self.before_request(user.log_user)
 
         self._maint = maintenance.Maintenance()
 
