@@ -207,7 +207,7 @@ def render_category(category='', template=None):
     # Forbidden template types
     if template and template.startswith('_'):
         raise http_error.Forbidden("Template is private")
-    if template in ['entry', 'error', 'login']:
+    if template in ['entry', 'error', 'login', 'unauthorized']:
         raise http_error.BadRequest("Invalid view requested")
 
     if category:
@@ -305,6 +305,13 @@ def render_entry(entry_id, slug_text='', category=''):
         user.log_access(record, cur_user, authorized)
 
         if not record.is_authorized(cur_user):
+            if cur_user:
+                tmpl = map_template(category, 'unauthorized')
+                if not tmpl:
+                    raise http_error.Forbidden("User {name} does not have access".format(name=cur_user.name))
+                return render_publ_template(tmpl,
+                    Entry(record),
+                    category=Category(category))[0], 403
             login_url = url_for('entry', entry_id=entry_id, **request.args)
             return redirect(url_for('login', redir=login_url[1:]))
 
