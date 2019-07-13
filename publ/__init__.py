@@ -10,7 +10,6 @@ import logging
 import arrow
 import flask
 import werkzeug.exceptions
-import authl.flask
 
 from . import config, rendering, model, index, caching, view, utils
 from . import maintenance, image
@@ -124,10 +123,10 @@ class Publ(flask.Flask):
             get_template=rendering.get_template
         )
 
-        if config.cache:
-            caching.init_app(self, config.cache)
+        caching.init_app(self, config.cache)
 
         if config.auth:
+            import authl.flask
             authl.flask.setup(self, config.auth,
                               login_path='/_login',
                               login_name='login',
