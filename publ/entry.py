@@ -91,7 +91,7 @@ class Entry(caching.Memoizable):
             if False, it will only be the entry ID (default: True)
         """
         def _permalink(absolute=False, expand=True, **kwargs):
-            if not self.authorized:
+            if not self._is_authorized:
                 expand = False
             return flask.url_for('entry',
                                  entry_id=self._record.id,
@@ -112,6 +112,12 @@ class Entry(caching.Memoizable):
             pagelink = flask.url_for('entry', entry_id=self._record.id, **kwargs)
             return flask.url_for('login', redir=pagelink[1:], _external=absolute)
         return CallableProxy(_loginlink)
+
+    @cached_property
+    def private(self):
+        """ Returns True if this post is private, i.e. it is invisible to the logged-out user """
+        return not self._record.is_authorized(None)
+
 
     @cached_property
     def archive(self):
@@ -232,7 +238,7 @@ class Entry(caching.Memoizable):
         """
         def _title(markup=True, no_smartquotes=False, markdown_extensions=None,
                    always_show=False):
-            if not always_show and not self.is_authorized:
+            if not always_show and not self._is_authorized:
                 return ''
             return markdown.render_title(self._record.title, markup, no_smartquotes,
                                          markdown_extensions)
@@ -257,7 +263,7 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def _entry_content(self):
-        if not self.is_authorized:
+        if not self._is_authorized:
             return '', '', False
 
         body, _, more = self._message.get_payload().partition('\n.....\n')
@@ -346,7 +352,7 @@ class Entry(caching.Memoizable):
         return self.date
 
     @property
-    def is_authorized(self):
+    def _is_authorized(self):
         """ Returns if the entry is authorized by the current user """
         return self._record.is_authorized(user.get_active())
 
@@ -371,7 +377,7 @@ class Entry(caching.Memoizable):
         """ Proxy undefined properties to the backing objects """
 
         # Only allow a few vital things for unauthorized access
-        if not self.is_authorized and name.lower() not in ('uuid', 'id', 'date', 'last-modified'):
+        if not self._is_authorized and name.lower() not in ('uuid', 'id', 'date', 'last-modified'):
             return None
 
         if hasattr(self._record, name):
