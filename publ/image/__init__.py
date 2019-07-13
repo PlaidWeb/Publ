@@ -1,27 +1,26 @@
 """ Handlers for images and files """
 
-import os
-import hashlib
-import logging
-import re
 import ast
-import time
-import random
-import io
 import errno
+import hashlib
 import html
+import io
+import logging
+import os
+import random
+import re
+import time
 
-from pony import orm
 import flask
 import PIL.Image
+from pony import orm
 
-from .. import config
-from .. import model, utils
+from .. import config, model, utils
 from .external import ExternalImage
 from .image import Image
 from .local import LocalImage, fix_orientation
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 # Bump this if any defaults or processing changes
 RENDITION_VERSION = 1
@@ -102,7 +101,7 @@ def _get_asset(file_path):
                             str(RENDITION_VERSION)))
     if not record or record.fingerprint != fingerprint:
         # Reindex the file
-        logger.info("Updating image %s -> %s", file_path, fingerprint)
+        LOGGER.info("Updating image %s -> %s", file_path, fingerprint)
 
         # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
         md5 = hashlib.md5()

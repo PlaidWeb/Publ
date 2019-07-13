@@ -5,10 +5,10 @@ import logging
 
 import arrow
 import flask
-from werkzeug.utils import cached_property
 from pony import orm
+from werkzeug.utils import cached_property
 
-from . import model, utils, queries, caching, user
+from . import caching, model, queries, user, utils
 from .entry import Entry
 
 LOGGER = logging.getLogger(__name__)

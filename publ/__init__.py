@@ -3,16 +3,16 @@
 Like a static publishing system, but dynamic! See http://publ.beesbuzz.biz
 for more information. """
 
-import re
 import functools
 import logging
+import re
 
 import arrow
 import flask
 import werkzeug.exceptions
 
-from . import config, rendering, model, index, caching, view, utils
-from . import maintenance, image
+from . import (caching, config, image, index, maintenance, model, rendering,
+               utils, view)
 
 LOGGER = logging.getLogger(__name__)
 

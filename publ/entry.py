@@ -3,32 +3,24 @@
 
 import email
 import functools
+import hashlib
 import logging
 import os
 import re
 import shutil
 import tempfile
 import uuid
-import hashlib
+
 import arrow
 import flask
-from werkzeug.utils import cached_property
 from pony import orm
+from werkzeug.utils import cached_property
 
-from . import config
-from . import model
-from . import queries
-from . import path_alias
-from . import markdown
-from . import utils
-from . import cards
-from . import caching
-from . import html_entry
-from . import links
-from . import user
+from . import (caching, cards, config, html_entry, links, markdown, model,
+               path_alias, queries, user, utils)
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 
 @functools.lru_cache(10)
@@ -464,7 +456,7 @@ def get_entry_id(entry, fullpath, assign_id):
             attempt = attempt + 1
 
     if warn_duplicate is not False:
-        logger.warning("Entry '%s' had ID %d, which belongs to '%s'. Reassigned to %d",
+        LOGGER.warning("Entry '%s' had ID %d, which belongs to '%s'. Reassigned to %d",
                        fullpath, warn_duplicate, other_entry.file_path, entry_id)
 
     return entry_id
@@ -551,10 +543,10 @@ def scan_file(fullpath, relpath, assign_id):
     values['utc_date'] = entry_date.to('utc').datetime
     values['local_date'] = entry_date.naive
 
-    logger.debug("getting entry %s with id %d", fullpath, entry_id)
+    LOGGER.debug("getting entry %s with id %d", fullpath, entry_id)
     record = model.Entry.get(id=entry_id)
     if record:
-        logger.debug("Reusing existing entry %d", record.id)
+        LOGGER.debug("Reusing existing entry %d", record.id)
         record.set(**values)
     else:
         record = model.Entry(id=entry_id, **values)
@@ -602,9 +594,9 @@ def scan_file(fullpath, relpath, assign_id):
         orm.commit()
 
     if record.status == model.PublishStatus.DRAFT.value:
-        logger.info("Not touching draft entry %s", fullpath)
+        LOGGER.info("Not touching draft entry %s", fullpath)
     elif fixup_needed:
-        logger.info("Fixing up entry %s", fullpath)
+        LOGGER.info("Fixing up entry %s", fullpath)
         save_file(fullpath, entry)
 
     return record

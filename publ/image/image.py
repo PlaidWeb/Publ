@@ -1,7 +1,8 @@
 """ Base class for managed images """
 
-from abc import ABC, abstractmethod
 import html
+from abc import ABC, abstractmethod
+
 import flask
 
 from .. import utils

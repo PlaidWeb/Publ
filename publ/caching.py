@@ -4,9 +4,8 @@
 import hashlib
 from abc import ABC, abstractmethod
 
-from flask_caching import Cache
 from flask import request
-
+from flask_caching import Cache
 
 cache = Cache()  # pylint: disable=invalid-name
 

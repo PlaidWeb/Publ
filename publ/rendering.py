@@ -1,31 +1,23 @@
 # rendering.py
 """ Rendering functions """
 
-import os
-import logging
 import base64
+import logging
+import os
 
-import flask
-from flask import request, redirect, render_template, url_for
 import werkzeug.exceptions as http_error
+from flask import (make_response, redirect, render_template, request,
+                   send_file, url_for)
 from pony import orm
 
-from . import config
-from . import path_alias
-from . import model
-from . import image
-from . import index
-from .entry import Entry, expire_record
-from .category import Category
-from .template import Template
-from . import view
-from . import caching
-from . import utils
-from . import queries
-from . import user
+from . import (caching, config, image, index, model, path_alias, queries, user,
+               utils, view)
 from .caching import cache
+from .category import Category
+from .entry import Entry, expire_record
+from .template import Template
 
-LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 # mapping from template extension to MIME type; probably could be better
 EXTENSION_MAP = {
@@ -204,7 +196,7 @@ def render_exception(error):
 
     qsize = index.queue_length()
     if isinstance(error, http_error.NotFound) and qsize:
-        response = flask.make_response(render_error(
+        response = make_response(render_error(
             category,
             "Site reindex in progress",
             503,
@@ -433,4 +425,4 @@ def retrieve_asset(filename):
     if not record.is_asset:
         raise http_error.Forbidden()
 
-    return flask.send_file(record.file_path, conditional=True)
+    return send_file(record.file_path, conditional=True)
