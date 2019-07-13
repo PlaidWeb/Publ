@@ -14,7 +14,7 @@ import pygments.lexers
 from . import image, utils, links, html_entry, config
 
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
@@ -140,7 +140,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         try:
             path, image_args, title = image.parse_image_spec(spec)
         except Exception as err:  # pylint: disable=broad-except
-            logger.exception("Got error on spec %s: %s", spec, err)
+            LOGGER.exception("Got error on spec %s: %s", spec, err)
             return ('<span class="error">Couldn\'t parse image spec: ' +
                     '<code>{}</code> {}</span>'.format(flask.escape(spec),
                                                        flask.escape(str(err))))
@@ -150,7 +150,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         try:
             img = image.get_image(path, self._search_path)
         except Exception as err:  # pylint: disable=broad-except
-            logger.exception("Got error on image %s: %s", path, err)
+            LOGGER.exception("Got error on image %s: %s", path, err)
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
 

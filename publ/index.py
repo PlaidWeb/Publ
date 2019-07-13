@@ -15,7 +15,7 @@ from . import model
 from . import utils
 from . import category
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
@@ -86,7 +86,7 @@ def scan_file(fullpath, relpath, assign_id):
     successfully, False if it failed, and None if there is nothing to scan.
     """
 
-    logger.debug("Scanning file: %s (%s) %s", fullpath, relpath, assign_id)
+    LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, assign_id)
 
     def do_scan():
         """ helper function to do the scan and gather the result """
@@ -94,24 +94,24 @@ def scan_file(fullpath, relpath, assign_id):
 
         try:
             if ext in ENTRY_TYPES:
-                logger.info("Scanning entry: %s", fullpath)
+                LOGGER.info("Scanning entry: %s", fullpath)
                 return entry.scan_file(fullpath, relpath, assign_id)
 
             if ext in CATEGORY_TYPES:
-                logger.info("Scanning meta info: %s", fullpath)
+                LOGGER.info("Scanning meta info: %s", fullpath)
                 return category.scan_file(fullpath, relpath)
 
             return None
         except:  # pylint: disable=bare-except
-            logger.exception("Got error parsing %s", fullpath)
+            LOGGER.exception("Got error parsing %s", fullpath)
             return False
 
     result = do_scan()
     if result is False and not assign_id:
-        logger.info("Scheduling fixup for %s", fullpath)
+        LOGGER.info("Scheduling fixup for %s", fullpath)
         THREAD_POOL.submit(scan_file, fullpath, relpath, True)
     else:
-        logger.debug("%s complete", fullpath)
+        LOGGER.debug("%s complete", fullpath)
         if result:
             set_fingerprint(fullpath)
         SCHEDULED_FILES.remove(fullpath)
@@ -156,31 +156,31 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
     def update_file(self, fullpath):
         """ Update a file """
         if SCHEDULED_FILES.add(fullpath):
-            logger.debug("Scheduling reindex of %s", fullpath)
+            LOGGER.debug("Scheduling reindex of %s", fullpath)
             relpath = os.path.relpath(fullpath, self.content_dir)
             THREAD_POOL.submit(scan_file, fullpath, relpath, False)
 
     def on_created(self, event):
         """ on_created handler """
-        logger.debug("file created: %s", event.src_path)
+        LOGGER.debug("file created: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_modified(self, event):
         """ on_modified handler """
-        logger.debug("file modified: %s", event.src_path)
+        LOGGER.debug("file modified: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
     def on_moved(self, event):
         """ on_moved handler """
-        logger.debug("file moved: %s -> %s", event.src_path, event.dest_path)
+        LOGGER.debug("file moved: %s -> %s", event.src_path, event.dest_path)
         if not event.is_directory:
             self.update_file(event.dest_path)
 
     def on_deleted(self, event):
         """ on_deleted handler """
-        logger.debug("File deleted: %s", event.src_path)
+        LOGGER.debug("File deleted: %s", event.src_path)
         if not event.is_directory:
             self.update_file(event.src_path)
 
@@ -200,10 +200,10 @@ def prune_missing(table):
     try:
         for item in table.select():
             if not os.path.isfile(item.file_path):
-                logger.info("File disappeared: %s", item.file_path)
+                LOGGER.info("File disappeared: %s", item.file_path)
                 item.delete()
     except:  # pylint:disable=bare-except
-        logger.exception("Error pruning %s", table)
+        LOGGER.exception("Error pruning %s", table)
 
 
 def scan_index(content_dir):
@@ -221,7 +221,7 @@ def scan_index(content_dir):
                 if fingerprint != last_fingerprint and SCHEDULED_FILES.add(fullpath):
                     scan_file(fullpath, relpath, False)
         except:  # pylint:disable=bare-except
-            logger.exception("Got error parsing directory %s", root)
+            LOGGER.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
         THREAD_POOL.submit(scan_directory, root, files)

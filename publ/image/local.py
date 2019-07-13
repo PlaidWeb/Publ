@@ -17,7 +17,7 @@ from .. import config
 from .. import utils
 from .image import Image
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 
 def fix_orientation(image):
@@ -65,7 +65,7 @@ class LocalImage(Image):
     def thread_pool():
         """ Get the rendition threadpool """
         if not LocalImage._thread_pool:
-            logger.info("Starting LocalImage threadpool")
+            LOGGER.info("Starting LocalImage threadpool")
             LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
                 thread_name_prefix="Renderer")
         return LocalImage._thread_pool
@@ -201,9 +201,9 @@ class LocalImage(Image):
 
     @staticmethod
     def _crop_to_box(crop):
-        # pylint:disable=invalid-name
-        x, y, w, h = crop
-        return (x, y, x + w, y + h)
+        #pylint:disable=invalid-name
+        xx, yy, ww, hh = crop
+        return (xx, yy, xx + ww, yy + hh)
 
     def _render(self, path, size, box, flatten, kwargs, out_args):
         # pylint:disable=too-many-arguments
@@ -214,7 +214,7 @@ class LocalImage(Image):
                 # file already exists
                 return
 
-            logger.info("Rendering file %s", path)
+            LOGGER.info("Rendering file %s", path)
 
             try:
                 os.makedirs(os.path.dirname(path))
@@ -246,9 +246,9 @@ class LocalImage(Image):
                     image.save(file, **out_args)
                 shutil.move(temp_path, path)
 
-                logger.info("%s: complete", path)
+                LOGGER.info("%s: complete", path)
             except Exception:  # pylint: disable=broad-except
-                logger.exception("Failed to render %s -> %s",
+                LOGGER.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
 
     def get_rendition_size(self, spec, output_scale, crop):
@@ -490,13 +490,13 @@ class LocalImage(Image):
                 if os.path.isfile(path) and os.stat(path).st_mtime < threshold:
                     try:
                         os.unlink(path)
-                        logger.info("Expired stale rendition %s (mtime=%d threshold=%d)",
+                        LOGGER.info("Expired stale rendition %s (mtime=%d threshold=%d)",
                                     path, os.stat(path).st_mtime, threshold)
                     except FileNotFoundError:
                         pass
                 if os.path.isdir(path) and next(os.scandir(path), None) is None:
                     try:
                         os.removedirs(path)
-                        logger.info("Removed empty cache directory %s", path)
+                        LOGGER.info("Removed empty cache directory %s", path)
                     except OSError:
-                        logger.exception("Couldn't remove %s", path)
+                        LOGGER.exception("Couldn't remove %s", path)

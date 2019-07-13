@@ -73,7 +73,7 @@ setup(
     ],
 
     extras_require={
-        'dev': ['pylint', 'twine', 'flake8', 'autopep8'],
+        'dev': ['pylint', 'twine', 'flake8', 'autopep8', 'isort'],
     },
 
     project_urls={

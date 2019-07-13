@@ -8,6 +8,7 @@ pylint = "*"
 twine = "*"
 flake8 = "*"
 autopep8 = "*"
+isort = "*"
 
 [packages]
 publ = {editable = true,path = "."}

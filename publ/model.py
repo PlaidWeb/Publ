@@ -13,7 +13,7 @@ from . import config
 
 db = orm.Database()  # pylint: disable=invalid-name
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
 SCHEMA_VERSION = 9
@@ -88,26 +88,26 @@ class Entry(db.Entity):
         if not self.auth:
             return True
 
-        logger.debug("Computing auth for entry %s user %s", self.file_path, user)
+        LOGGER.debug("Computing auth for entry %s user %s", self.file_path, user)
 
         if user and user.is_admin:
-            logger.debug("User is admin")
+            LOGGER.debug("User is admin")
             return True
 
         result = False
         for auth in self.auth.order_by(EntryAuth.order):
-            logger.debug("  %d test=%s allowed=%s", auth.order, auth.user_group, auth.allowed)
+            LOGGER.debug("  %d test=%s allowed=%s", auth.order, auth.user_group, auth.allowed)
             if auth.user_group == '*':
                 # Special group * refers to all logged-in users
                 result = auth.allowed == (user is not None)
-                logger.debug("  result->%s", result)
+                LOGGER.debug("  result->%s", result)
 
             else:
                 if user and auth.user_group in user.groups:
                     result = auth.allowed
-                    logger.debug("  result->%s", result)
+                    LOGGER.debug("  result->%s", result)
 
-        logger.debug("Final result: %s", result)
+        LOGGER.debug("Final result: %s", result)
         return result
 
 
@@ -188,15 +188,15 @@ def setup():
         with orm.db_session:
             version = GlobalConfig.get(key='schema_version')
             if version and version.int_value != SCHEMA_VERSION:
-                logger.info("Existing database has schema version %d",
+                LOGGER.info("Existing database has schema version %d",
                             version.int_value)
             else:
                 rebuild = False
     except:  # pylint:disable=bare-except
-        logger.exception("Error mapping schema")
+        LOGGER.exception("Error mapping schema")
 
     if rebuild:
-        logger.info("Rebuilding schema")
+        LOGGER.info("Rebuilding schema")
         try:
             db.drop_all_tables(with_all_data=True)
             db.create_tables()
@@ -206,7 +206,7 @@ def setup():
 
     with orm.db_session:
         if not GlobalConfig.get(key='schema_version'):
-            logger.info("setting schema version to %d", SCHEMA_VERSION)
+            LOGGER.info("setting schema version to %d", SCHEMA_VERSION)
             GlobalConfig(key='schema_version',
                          int_value=SCHEMA_VERSION)
             orm.commit()

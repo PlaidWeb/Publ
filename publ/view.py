@@ -134,8 +134,7 @@ class View(caching.Memoizable):
             else:
                 unauthorized.append(Entry(record))
 
-        return entries,unauthorized
-
+        return entries, unauthorized
 
     @cached_property
     def entries(self):

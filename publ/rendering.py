@@ -26,7 +26,7 @@ from . import queries
 from . import user
 from .caching import cache
 
-LOGGER = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 # mapping from template extension to MIME type; probably could be better
 EXTENSION_MAP = {

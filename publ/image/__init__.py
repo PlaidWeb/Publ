@@ -21,7 +21,7 @@ from .external import ExternalImage
 from .image import Image
 from .local import LocalImage, fix_orientation
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+LOGGER = logging.getLogger(__name__)
 
 # Bump this if any defaults or processing changes
 RENDITION_VERSION = 1
@@ -102,7 +102,7 @@ def _get_asset(file_path):
                             str(RENDITION_VERSION)))
     if not record or record.fingerprint != fingerprint:
         # Reindex the file
-        logger.info("Updating image %s -> %s", file_path, fingerprint)
+        LOGGER.info("Updating image %s -> %s", file_path, fingerprint)
 
         # compute the md5sum; from https://stackoverflow.com/a/3431838/318857
         md5 = hashlib.md5()
