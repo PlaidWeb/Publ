@@ -7,8 +7,8 @@ import functools
 import logging
 import re
 
-import authl.flask
 import arrow
+import authl.flask
 import flask
 import werkzeug.exceptions
 

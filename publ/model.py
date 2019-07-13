@@ -29,7 +29,7 @@ class PublishStatus(Enum):
     """ The status of the entry """
     DRAFT = 0  # Entry should not be rendered
     HIDDEN = 1  # Entry should be shown via direct link, but not shown on a view
-    UNLISTED = 1 # Synonym for HIDDEN
+    UNLISTED = 1  # Synonym for HIDDEN
     PUBLISHED = 2  # Entry is visible
     SCHEDULED = 3  # Entry will be visible in the future
     GONE = 4  # Entry is gone, won't be coming back

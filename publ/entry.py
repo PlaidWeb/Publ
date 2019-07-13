@@ -118,7 +118,6 @@ class Entry(caching.Memoizable):
         """ Returns True if this post is private, i.e. it is invisible to the logged-out user """
         return not self._record.is_authorized(None)
 
-
     @cached_property
     def archive(self):
         """ Get a link to this entry in the context of a category template.

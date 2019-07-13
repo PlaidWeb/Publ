@@ -361,6 +361,7 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
             raise werkzeug.routing.ValidationError
         return super().to_python(value)
 
+
 def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the specified
     auth endpoint. """
