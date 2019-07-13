@@ -15,7 +15,7 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
 from .caching import cache
 from .category import Category
 from .entry import Entry, expire_record
-from .template import Template
+from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,33 +34,6 @@ def mime_type(template):
     _, ext = os.path.splitext(template.filename)
     return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
 
-
-@cache.memoize()
-def map_template(category, template_list):
-    """
-    Given a file path and an acceptable list of templates, return the
-    best-matching template's path relative to the configured template
-    directory.
-
-    Arguments:
-
-    category -- The path to map
-    template_list -- A template to look up (as a string), or a list of templates.
-    """
-
-    for template in utils.as_list(template_list):
-        path = os.path.normpath(category)
-        while path is not None:
-            for extension in ['', '.html', '.htm', '.xml', '.json', '.txt']:
-                candidate = os.path.join(path, template + extension)
-                file_path = os.path.join(config.template_folder, candidate)
-                if os.path.isfile(file_path):
-                    return Template(template, candidate, file_path)
-            parent = os.path.dirname(path)
-            if parent != path:
-                path = parent
-            else:
-                path = None
 
 
 def get_template(template, relation):
@@ -114,16 +87,16 @@ def render_publ_template(template, **kwargs):
         LOGGER.debug("Rendering template %s with args %s and kwargs %s",
                      template, args, kwargs)
 
-        text = render_template(
-            template.filename,
-            template=template,
-            image=image_function(
+        args = {
+            'template': template,
+            'image':       image_function(
                 template=template,
                 category=kwargs.get('category'),
                 entry=kwargs.get('entry')),
             **kwargs
-        )
+        }
 
+        text = template.render(**args)
         return text, caching.get_etag(text)
 
     try:
@@ -393,7 +366,7 @@ def render_entry(entry_id, slug_text='', category=''):
         return 'Not modified', 304
 
     headers = {
-        'Content-Type': mime_type(tmpl),
+        'Content-Type': entry.get('Content-Type', mime_type(tmpl)),
         'ETag': etag
     }
     if record.status == model.PublishStatus.HIDDEN.value:
