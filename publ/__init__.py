@@ -120,7 +120,9 @@ class Publ(flask.Flask):
             get_view=view.get_view,
             arrow=arrow,
             static=utils.static_url,
-            get_template=rendering.get_template
+            get_template=rendering.get_template,
+            login=utils.auth_link('login'),
+            logout=utils.auth_link('logout')
         )
 
         caching.init_app(self, config.cache)
