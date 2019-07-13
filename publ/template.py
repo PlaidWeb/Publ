@@ -4,9 +4,8 @@
 import os
 
 import arrow
-import flask
-
 import authl.flask
+import flask
 
 from . import config, utils
 from .caching import cache

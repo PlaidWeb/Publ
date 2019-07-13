@@ -6,8 +6,7 @@ import logging
 import os
 
 import werkzeug.exceptions as http_error
-from flask import (make_response, redirect, render_template, request,
-                   send_file, url_for)
+from flask import make_response, redirect, request, send_file, url_for
 from pony import orm
 
 from . import (caching, config, image, index, model, path_alias, queries, user,
@@ -15,7 +14,7 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
 from .caching import cache
 from .category import Category
 from .entry import Entry, expire_record
-from .template import Template, map_template
+from .template import map_template
 
 LOGGER = logging.getLogger(__name__)
 
