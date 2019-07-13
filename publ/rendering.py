@@ -2,7 +2,6 @@
 """ Rendering functions """
 
 import base64
-import datetime
 import logging
 import os
 
@@ -16,7 +15,7 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
 from .caching import cache
 from .category import Category
 from .entry import Entry, expire_record
-from .template import Template
+from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,34 +33,6 @@ def mime_type(template):
     """ infer the content-type from the extension """
     _, ext = os.path.splitext(template.filename)
     return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
-
-
-@cache.memoize()
-def map_template(category, template_list):
-    """
-    Given a file path and an acceptable list of templates, return the
-    best-matching template's path relative to the configured template
-    directory.
-
-    Arguments:
-
-    category -- The path to map
-    template_list -- A template to look up (as a string), or a list of templates.
-    """
-
-    for template in utils.as_list(template_list):
-        path = os.path.normpath(category)
-        while path is not None:
-            for extension in ['', '.html', '.htm', '.xml', '.json', '.txt']:
-                candidate = os.path.join(path, template + extension)
-                file_path = os.path.join(config.template_folder, candidate)
-                if os.path.isfile(file_path):
-                    return Template(template, candidate, file_path)
-            parent = os.path.dirname(path)
-            if parent != path:
-                path = parent
-            else:
-                path = None
 
 
 def get_template(template, relation):
@@ -115,20 +86,23 @@ def render_publ_template(template, **kwargs):
         LOGGER.debug("Rendering template %s with args %s and kwargs %s",
                      template, args, kwargs)
 
-        text = render_template(
-            template.filename,
-            template=template,
-            image=image_function(
+        args = {
+            'template': template,
+            'image': image_function(
                 template=template,
                 category=kwargs.get('category'),
                 entry=kwargs.get('entry')),
             **kwargs
-        )
+        }
 
+        text = template.render(**args)
         return text, caching.get_etag(text)
 
     try:
-        return do_render(template, request.args, user=user.get_active(), **kwargs)
+        return do_render(template, request.args,
+                         user=user.get_active(),
+                         _url_root=request.url_root,
+                         **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(err)
 
@@ -162,30 +136,11 @@ def render_error(category, error_message, error_codes, exception=None):
     template_list.append('error')
 
     template = map_template(category, template_list)
-    if template:
-        return render_publ_template(
-            template,
-            _url_root=request.url_root,
-            category=Category(category),
-            error={'code': error_code, 'message': error_message},
-            exception=exception)[0], error_code
-
-    # no template found, so fall back to a default
-    if exception and 'str' in exception:
-        message = exception['str']
-    else:
-        message = "An unknown error occurred"
-    return """<!DOCTYPE html>
-<html>
-<head><title>{code} {error}</title></head>
-<body>
-<h1>{error}</h1>
-<p>{message}</p>
-<hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {url}</address>
-</body></html>""".format(code=error_code,
-                         error=error_message,
-                         message=message,
-                         url=request.url), error_code
+    return render_publ_template(
+        template,
+        category=Category(category),
+        error={'code': error_code, 'message': error_message},
+        exception=exception)[0], error_code
 
 
 def render_exception(error):
@@ -286,7 +241,6 @@ def render_category(category='', template=None):
 
     rendered, etag = render_publ_template(
         tmpl,
-        _url_root=request.url_root,
         category=Category(category),
         view=view_obj)
 
@@ -295,6 +249,12 @@ def render_category(category='', template=None):
 
     return rendered, {'Content-Type': mime_type(tmpl),
                       'ETag': etag}
+
+
+def render_login_form(login_url, auth):
+    """ Renders the login form using the mapped login template """
+    tmpl = map_template('', '_login')
+    return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
 
 
 @orm.db_session(retry=5)
@@ -343,17 +303,11 @@ def render_entry(entry_id, slug_text='', category=''):
     if record.auth:
         cur_user = user.get_active()
         authorized = record.is_authorized(cur_user)
-
-        # Log the access
-        model.AuthLog(date=datetime.datetime.now(),
-                      user=cur_user.name if cur_user else None,
-                      user_groups=str(cur_user.groups) if cur_user else None,
-                      entry=record,
-                      authorized=authorized)
+        user.log_access(record, cur_user, authorized)
 
         if not record.is_authorized(cur_user):
-            page_link = url_for('entry', entry_id=entry_id, **request.args)
-            return redirect(url_for('login', redir=page_link[1:]))
+            login_url = url_for('entry', entry_id=entry_id, **request.args)
+            return redirect(url_for('login', redir=login_url[1:]))
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -392,7 +346,6 @@ def render_entry(entry_id, slug_text='', category=''):
 
     rendered, etag = render_publ_template(
         tmpl,
-        _url_root=request.url_root,
         entry=entry_obj,
         category=Category(category))
 
@@ -400,7 +353,7 @@ def render_entry(entry_id, slug_text='', category=''):
         return 'Not modified', 304
 
     headers = {
-        'Content-Type': mime_type(tmpl),
+        'Content-Type': entry_obj.get('Content-Type', mime_type(tmpl)),
         'ETag': etag
     }
     if record.status == model.PublishStatus.HIDDEN.value:
