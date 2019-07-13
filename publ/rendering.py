@@ -310,7 +310,7 @@ def render_entry(entry_id, slug_text='', category=''):
                 if not tmpl:
                     raise http_error.Forbidden("User {name} does not have access".format(name=cur_user.name))
                 return render_publ_template(tmpl,
-                    Entry(record),
+                    entry=Entry(record),
                     category=Category(category))[0], 403
             login_url = url_for('entry', entry_id=entry_id, **request.args)
             return redirect(url_for('login', redir=login_url[1:]))
