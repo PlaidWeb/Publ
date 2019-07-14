@@ -131,6 +131,7 @@ class Publ(flask.Flask):
         authl.flask.setup(self, config.auth,
                           login_path='/_login',
                           login_name='login',
+                          callback_path='/_cb',
                           force_ssl=config.auth.get('AUTH_FORCE_SSL'),
                           login_render_func=rendering.render_login_form)
 
