@@ -84,8 +84,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
                      container_args.get('div_style')):
             text = '{tag}{text}</div>'.format(
                 tag=utils.make_tag('div',
-                                   {'class': container_args.get('div_class'),
-                                    'style': container_args.get('div_style')}),
+                                   {'class': container_args.get('div_class') or False,
+                                    'style': container_args.get('div_style') or False}),
                 text=text)
 
         # if text is ''/falsy then misaka interprets this as a failed parse...
