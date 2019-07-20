@@ -16,7 +16,9 @@ def get_groups():
     """ Get the user->groups mappings """
 
     # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
-    cfg = configparser.ConfigParser(delimiters=('\000'), allow_no_value=True)
+    cfg = configparser.ConfigParser(delimiters=('\000'), allow_no_value=True, interpolation=None)
+    # disable authentication lowercasing; usernames should only be case-densitized by the auth backend
+    cfg.optionxform = lambda option: option
     cfg.read(config.user_list)
 
     groups = collections.defaultdict(set)
