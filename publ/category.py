@@ -61,7 +61,7 @@ class Category(caching.Memoizable):
         self._record = model.Category.get(category=path)
 
     def _key(self):
-        return Category, self.path
+        return self.path
 
     @cached_property
     def link(self):

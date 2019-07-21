@@ -101,7 +101,7 @@ class View(caching.Memoizable):
             self.type = None
 
     def _key(self):
-        return View, repr(self.spec)
+        return repr(self.spec)
 
     def __str__(self):
         return str(self.link())

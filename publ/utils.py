@@ -6,6 +6,7 @@ import html.parser
 import os
 import re
 import urllib.parse
+import logging
 
 import arrow
 import flask
@@ -15,6 +16,7 @@ from werkzeug.utils import cached_property
 
 from . import config, model
 
+LOGGER=logging.getLogger(__name__)
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties """
@@ -32,20 +34,9 @@ class CallableProxy:
         self._default_args = args
         self._default_kwargs = kwargs
 
-    @cached_property
-    def _default(self):
-        """ Get the default function return """
-
-        if self._default_args:
-            return self._func(
-                *self._default_args,
-                **self._default_kwargs)
-
-        return self._func(**self._default_kwargs)
-
     def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
-        kwargs = dict(self._default_kwargs, **kwargs)
+        kwargs = {**self._default_kwargs, **kwargs}
 
         # override args as well
         pos_args = [*args, *self._default_args[len(args):]]
@@ -53,19 +44,19 @@ class CallableProxy:
         return self._func(*pos_args, **kwargs)
 
     def __getattr__(self, name):
-        return getattr(self._default, name)
+        return getattr(self(), name)
 
     def __bool__(self):
-        return bool(self._default)
+        return bool(self())
 
     def __len__(self):
-        return 1 if self._default else 0
+        return 1 if self() else 0
 
     def __str__(self):
-        return str(self._default)
+        return str(self())
 
     def __iter__(self):
-        return self._default.__iter__()
+        return self().__iter__()
 
 
 class TrueCallableProxy(CallableProxy):
@@ -366,12 +357,14 @@ def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the specified
     auth endpoint. """
     def endpoint_link(redir=None, **kwargs):
+        LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
         if redir is None:
             # nothing specified so use the current request path
             redir = flask.request.full_path
         else:
             # resolve CallableProxy if present
             redir = str(redir)
+        LOGGER.debug("  Resulting redir = %s", redir)
 
         # strip off leading slashes
         redir = re.sub(r'^/*', r'', redir)

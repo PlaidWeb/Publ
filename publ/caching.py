@@ -49,14 +49,18 @@ def get_etag(text):
 
 
 class Memoizable(ABC):
-    """ Add this interface to a method to make it stably memoizable with the declared _key """
+    """ Add this interface to a class to make it stably memoizable. """
 
     @abstractmethod
     def _key(self):
-        pass
+        """
+            This should return a value that will be unique across all
+            objects of this class.
+        """
 
     def __repr__(self):
-        return repr(self._key())
+        return "{c}({k})".format(c=self.__class__.__name__,
+                                 k=self._key()).replace(' ', '_')
 
     def __hash__(self):
         return hash(self._key())
