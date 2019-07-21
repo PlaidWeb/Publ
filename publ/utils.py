@@ -36,7 +36,7 @@ class CallableProxy:
 
     def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
-        kwargs = dict(self._default_kwargs, **kwargs)
+        kwargs = {**self._default_kwargs, **kwargs}
 
         # override args as well
         pos_args = [*args, *self._default_args[len(args):]]
