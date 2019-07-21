@@ -46,7 +46,7 @@ class Entry(caching.Memoizable):
         self._record = record   # index record
 
     def _key(self):
-        return Entry, self._record.id, self._record.file_path
+        return self._record.id, self._record.file_path
 
     @cached_property
     def date(self):

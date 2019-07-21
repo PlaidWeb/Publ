@@ -12,23 +12,40 @@ from . import caching, config, model
 
 
 @caching.cache.memoize()
-def get_groups():
-    """ Get the user->groups mappings """
+def get_groups(username):
+    """ Get the group membership for the given username """
 
-    # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
-    cfg = configparser.ConfigParser(delimiters=('\000'), allow_no_value=True, interpolation=None)
-    # disable authentication lowercasing; usernames should only be case-densitized by the auth backend
-    cfg.optionxform = lambda option: option
-    cfg.read(config.user_list)
+    @caching.cache.memoize()
+    def load_groups():
+        # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
+        cfg = configparser.ConfigParser(delimiters=('\000'), allow_no_value=True, interpolation=None)
+        # disable authentication lowercasing; usernames should only be case-densitized
+        # by the auth backend
+        cfg.optionxform = lambda option: option
+        cfg.read(config.user_list)
 
-    groups = collections.defaultdict(set)
+        groups = collections.defaultdict(set)
 
-    # populate the group list for each member
-    for group, members in cfg.items():
-        for member in members.keys():
-            groups[member].add(group)
+        # populate the group list for each member
+        for group, members in cfg.items():
+            for member in members.keys():
+                groups[member].add(group)
 
-    return groups
+        return groups
+
+    groups = load_groups()
+    result = set()
+    pending = collections.deque()
+
+    pending.append(username)
+
+    while pending:
+        check = pending.popleft()
+        if check not in result:
+            result.add(check)
+            pending += groups.get(check, [])
+
+    return result
 
 
 class User(caching.Memoizable):
@@ -38,31 +55,17 @@ class User(caching.Memoizable):
         self._me = me
 
     def _key(self):
-        return User, self._me
+        return self._me
 
     @cached_property
     def name(self):
         """ The federated identity name of the user """
         return self._me
 
-    @property
-    @caching.cache.memoize()
+    @cached_property
     def groups(self):
         """ The group memberships of the user """
-        groups = get_groups()
-        result = set()
-        pending = collections.deque()
-
-        if self._me:
-            pending.append(self._me)
-
-        while pending:
-            check = pending.popleft()
-            if check not in result:
-                result.add(check)
-                pending += groups.get(check, [])
-
-        return result
+        return get_groups(self._me)
 
     @property
     def is_admin(self):
