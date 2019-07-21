@@ -34,17 +34,6 @@ class CallableProxy:
         self._default_args = args
         self._default_kwargs = kwargs
 
-    @cached_property
-    def _default(self):
-        """ Get the default function return """
-
-        if self._default_args:
-            return self._func(
-                *self._default_args,
-                **self._default_kwargs)
-
-        return self._func(**self._default_kwargs)
-
     def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
         kwargs = dict(self._default_kwargs, **kwargs)
@@ -55,19 +44,19 @@ class CallableProxy:
         return self._func(*pos_args, **kwargs)
 
     def __getattr__(self, name):
-        return getattr(self._default, name)
+        return getattr(self(), name)
 
     def __bool__(self):
-        return bool(self._default)
+        return bool(self())
 
     def __len__(self):
-        return 1 if self._default else 0
+        return 1 if self() else 0
 
     def __str__(self):
-        return str(self._default)
+        return str(self())
 
     def __iter__(self):
-        return self._default.__iter__()
+        return self().__iter__()
 
 
 class TrueCallableProxy(CallableProxy):
