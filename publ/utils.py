@@ -6,6 +6,7 @@ import html.parser
 import os
 import re
 import urllib.parse
+import logging
 
 import arrow
 import flask
@@ -15,6 +16,7 @@ from werkzeug.utils import cached_property
 
 from . import config, model
 
+LOGGER=logging.getLogger(__name__)
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties """
@@ -366,12 +368,14 @@ def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the specified
     auth endpoint. """
     def endpoint_link(redir=None, **kwargs):
+        LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
         if redir is None:
             # nothing specified so use the current request path
             redir = flask.request.full_path
         else:
             # resolve CallableProxy if present
             redir = str(redir)
+        LOGGER.debug("  Resulting redir = %s", redir)
 
         # strip off leading slashes
         redir = re.sub(r'^/*', r'', redir)
