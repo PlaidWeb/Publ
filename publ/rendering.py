@@ -271,7 +271,7 @@ def handle_unauthorized(cur_user, category='', **kwargs):
         if not tmpl:
             raise http_error.Forbidden(
                 "User {name} does not have access".format(name=cur_user.name))
-        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], headers, 403
+        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, headers
 
     # User is not already logged in, so present a login page
     response = redirect(utils.auth_link('login')), headers

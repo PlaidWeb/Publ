@@ -60,6 +60,9 @@ class User(caching.Memoizable):
     def _key(self):
         return self._me
 
+    def __lt__(self, other):
+        return self._me < other._me
+
     @cached_property
     def name(self):
         """ The federated identity name of the user """
@@ -87,7 +90,7 @@ def get_active():
 def log_access(record, cur_user, authorized):
     """ Log a user's access to the audit log """
     log_values = {
-        'date': arrow.get(tzinfo=config.timezone).datetime,
+        'date': arrow.utcnow().datetime,
         'entry': record,
         'authorized': authorized
     }
@@ -103,7 +106,7 @@ def log_user():
     username = flask.session.get('me')
     if username:
         values = {
-            'last_seen': arrow.get(tzinfo=config.timezone).datetime,
+            'last_seen': arrow.utcnow().datetime,
         }
 
         record = model.KnownUser.get(user=username)
@@ -114,15 +117,12 @@ def log_user():
 
 
 @orm.db_session()
-def known_users(interval=datetime.timedelta(days=30),
-                order_by=orm.desc(model.KnownUser.last_seen)):
+def known_users(days=30):
     """ Get the users known to the system, as a list of (user,last_seen) """
-    since = (arrow.utcnow() - interval).datetime
+    since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
     query = model.KnownUser.select(lambda x: x.last_seen >= since)
-    if order_by:
-        query = query.order_by(order_by)
 
-    return [(User(record.user), arrow.get(record.last_seen,tzinfo=config.timezone)) for record in query]
+    return [(User(record.user), arrow.get(record.last_seen).to(config.timezone)) for record in query]
 
 
 LogEntry = collections.namedtuple(
@@ -130,15 +130,12 @@ LogEntry = collections.namedtuple(
 
 
 @orm.db_session()
-def auth_log(interval=datetime.timedelta(days=30),
-             order_by=orm.desc(model.AuthLog.date)):
+def auth_log(days=30):
     """ Get the logged accesses to each entry """
     from . import entry  # pylint:disable=cyclic-import
 
-    since = (arrow.utcnow() - interval).datetime
+    since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
     query = model.AuthLog.select(lambda x: x.date >= since)
-    if order_by:
-        query = query.order_by(order_by)
 
     def _to_set(groups):
         try:
@@ -146,7 +143,7 @@ def auth_log(interval=datetime.timedelta(days=30),
         except (ValueError, SyntaxError):
             return set(groups.split(','))
 
-    return [LogEntry(arrow.get(record.date,tzinfo=config.timezone),
+    return [LogEntry(arrow.get(record.date).to(config.timezone),
                      entry.Entry(record.entry),
                      User(record.user),
                      _to_set(record.user_groups),
