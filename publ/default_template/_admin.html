@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Publ admin dashboard</title>
+</head>
+
+<body>
+    <h1>Recent users</h1>
+
+    <table>
+        <tr><th>Username</th>
+            <th>Groups</th>
+            <th>Last seen</th>
+        </tr>
+        {% for user,last_seen in users %}
+        <tr>
+            <td><a href="{{user.name}}">{{user.name}}</a></td>
+            <td>{{','.join(user.groups)}}</td>
+            <td>{{last_seen.format('YYYY-MM-DD hh:mm')}} ({{last_seen.humanize()}})</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h1>Access Log</h1>
+
+    <table>
+    {% if by == 'entry' %}
+        <tr>
+            <th>Date</th>
+            <th><a href="{{url_for('admin',by='user')}}">User</a></th>
+            <th>Groups</th>
+            <th><a href="{{url_for('admin',by='allowed')}}">Authorized</th>
+        </tr>
+        {% for entry,accesses in log|groupby('entry') %}
+        <tr class="entry"><th colspan="4"><a href="{{entry.link}}">{{entry.title}}</a></th></tr>
+            {% for access in accesses %}
+            <tr class="access">
+                <td>{{access.date.format('YYYY-MM-DD hh:mm')}}</td>
+                <td><a href="{{access.user.name}}">{{access.user.name}}</a></td>
+                <td>{{','.join(access.user.groups)}}</td>
+                <td>{{access.authorized}}</td>
+            </tr>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+    </table>
+</body>
+</html>

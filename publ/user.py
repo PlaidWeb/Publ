@@ -2,8 +2,10 @@
 
 import collections
 import configparser
+import ast
 import datetime
 
+import arrow
 import flask
 from pony import orm
 from werkzeug.utils import cached_property
@@ -11,14 +13,15 @@ from werkzeug.utils import cached_property
 from . import caching, config, model
 
 
-@caching.cache.memoize()
+@caching.cache.memoize(timeout=30)
 def get_groups(username):
     """ Get the group membership for the given username """
 
-    @caching.cache.memoize()
+    @caching.cache.memoize(timeout=30)
     def load_groups():
         # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
-        cfg = configparser.ConfigParser(delimiters=('\000'), allow_no_value=True, interpolation=None)
+        cfg = configparser.ConfigParser(delimiters=(
+            '\000'), allow_no_value=True, interpolation=None)
         # disable authentication lowercasing; usernames should only be case-densitized
         # by the auth backend
         cfg.optionxform = lambda option: option
@@ -84,13 +87,13 @@ def get_active():
 def log_access(record, cur_user, authorized):
     """ Log a user's access to the audit log """
     log_values = {
-        'date': datetime.datetime.now(),
+        'date': arrow.get(tzinfo=config.timezone).datetime,
         'entry': record,
         'authorized': authorized
     }
     if cur_user:
         log_values['user'] = cur_user.name
-        log_values['user_groups'] = ','.join(cur_user.groups)
+        log_values['user_groups'] = str(cur_user.groups)
     model.AuthLog(**log_values)
 
 
@@ -100,7 +103,7 @@ def log_user():
     username = flask.session.get('me')
     if username:
         values = {
-            'last_seen': datetime.datetime.now(),
+            'last_seen': arrow.get(tzinfo=config.timezone).datetime,
         }
 
         record = model.KnownUser.get(user=username)
@@ -108,3 +111,44 @@ def log_user():
             record.set(**values)
         else:
             record = model.KnownUser(user=username, **values)
+
+
+@orm.db_session()
+def known_users(interval=datetime.timedelta(days=30),
+                order_by=orm.desc(model.KnownUser.last_seen)):
+    """ Get the users known to the system, as a list of (user,last_seen) """
+    since = (arrow.utcnow() - interval).datetime
+    query = model.KnownUser.select(lambda x: x.last_seen >= since)
+    if order_by:
+        query = query.order_by(order_by)
+
+    return [(User(record.user), arrow.get(record.last_seen,tzinfo=config.timezone)) for record in query]
+
+
+LogEntry = collections.namedtuple(
+    'LogEntry', ['date', 'entry', 'user', 'user_groups', 'authorized'])
+
+
+@orm.db_session()
+def auth_log(interval=datetime.timedelta(days=30),
+             order_by=orm.desc(model.AuthLog.date)):
+    """ Get the logged accesses to each entry """
+    from . import entry  # pylint:disable=cyclic-import
+
+    since = (arrow.utcnow() - interval).datetime
+    query = model.AuthLog.select(lambda x: x.date >= since)
+    if order_by:
+        query = query.order_by(order_by)
+
+    def _to_set(groups):
+        try:
+            return ast.literal_eval(groups)
+        except (ValueError, SyntaxError):
+            return set(groups.split(','))
+
+    return [LogEntry(arrow.get(record.date,tzinfo=config.timezone),
+                     entry.Entry(record.entry),
+                     User(record.user),
+                     _to_set(record.user_groups),
+                     record.authorized)
+            for record in query]

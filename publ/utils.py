@@ -3,10 +3,10 @@
 
 import html
 import html.parser
+import logging
 import os
 import re
 import urllib.parse
-import logging
 
 import arrow
 import flask
@@ -16,7 +16,8 @@ from werkzeug.utils import cached_property
 
 from . import config, model
 
-LOGGER=logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties """
