@@ -43,6 +43,7 @@ class Entry(caching.Memoizable):
         record -- the index record to use as the basis
         """
 
+        LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
 
     def __lt__(self, other):
@@ -255,6 +256,7 @@ class Entry(caching.Memoizable):
     @cached_property
     def _message(self):
         """ get the message payload """
+        LOGGER.debug("Loading entry %d from %s", self._record.id, self._record.file_path)
         filepath = self._record.file_path
         try:
             return load_message(filepath)
@@ -357,7 +359,10 @@ class Entry(caching.Memoizable):
     @property
     def _is_authorized(self):
         """ Returns if the entry is authorized by the current user """
-        return self._record.is_authorized(user.get_active())
+        return self._is_authorized_for(user.get_active())
+
+    def _is_authorized_for(self, user):
+        return self._record.is_authorized(user)
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry

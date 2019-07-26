@@ -85,11 +85,29 @@ ul.groups li {
     font-size: x-small;
 }
 
+.pagination a {
+    text-decoration: none;
+    margin-right: 2em;
+    font-size: x-small;
+}
+
+th a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,127,0.1);
+    padding: 1ex;
+    margin: -1ex;
+}
+
+th a:hover {
+    background: rgba(255,255,255,0.1);
+}
+
     </style>
 </head>
 
 {%- macro list_groups(groups) -%}
-<!-- {{groups}} -->
 {%- if groups -%}
 <ul class="groups">
     {%- for group in groups -%}
@@ -135,7 +153,7 @@ ul.groups li {
 } -%}
 
 {%- macro format(col, rec, grouper=False) -%}
-{%- if col == 'entry' -%}<a href="{{rec.link}}">{{rec.title}}</a>
+{%- if col == 'entry' -%}<a href="{{url_for('entry',entry_id=rec.id,category=rec.category,slug_text=rec.slug_text)}}">{{rec.title}}</a>
 {%- elif col == 'date' -%}{{rec.format('YYYY-MM-DD hh:mm A')}}
 {%- elif col == 'user' -%}{%- if rec.name -%}<a href="{{rec.name}}">{{rec.name}}</a>{%- elif grouper -%}No user{%- endif -%}
 {%- elif col == 'groups' -%}{{list_groups(rec)}}
@@ -161,14 +179,35 @@ ul.groups li {
 </tr>
 {%- endmacro -%}
 
+{%- macro navlink(by=request.args['by'],offset=request.args['offset'],count=request.args['count'],days=request.args['days']) -%}
+{{url_for('admin',by=by or None,offset=offset or None,count=count or None,days=days or None,_anchor='access')}}
+{%- endmacro -%}
+
+{%- set paging -%}
+    <nav class="pagination">
+        {% if offset %}
+        <a href="{{navlink(offset=0)}}" class="first">« start</a>
+        {%- endif -%}
+        {%- if offset > count -%}
+        <a href="{{navlink(offset=(0,offset-count)|max)}}" class="previous">« previous {{count}}</a>
+        {% endif %}
+
+        {% if remain > 0 %}
+        <a href="{{navlink(offset=offset+count)}}" class="next">next {{(count,remain)|min}}/{{remain}} »</a>
+        {% endif %}
+    </nav>
+{%- endset -%}
+
+    {{paging}}
+
     <table>
         <tr>
         {%- for column, groupable in columns -%}
             {%- if by != column -%}
                 <th>{%- if groupable -%}
-                    <a href="{{url_for('admin',by=column)}}">{{headers.get(column,column.title())}}</a>
+                    <a href="{{navlink(by=column)}}">{{headers.get(column,column.title())}}</a>
                     {%- elif column == 'date' -%}
-                    <a href="{{url_for('admin')}}">{{column.title()}}</a>
+                    <a href="{{navlink(by=None)}}">{{column.title()}}</a>
                     {%- else -%}
                     {{column.title()}}
                     {%- endif -%}
@@ -177,7 +216,7 @@ ul.groups li {
         {%- endfor -%}
         </tr>
         {%- if by -%}
-            {%- for group in log|groupby(by) -%}
+            {%- for group in log|groupby(by)|sort -%}
                 <tr class="group {{by}}"><th colspan="4">{{format(by, group.grouper, True)}}</th></tr>
                 {%- for access in group.list|sort(True,'date') -%}
                 {{ show_row(access) }}
@@ -189,6 +228,8 @@ ul.groups li {
             {%- endfor -%}
         {%- endif -%}
     </table>
+
+    {{paging}}
 </section>
 
 </body>

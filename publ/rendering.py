@@ -322,9 +322,10 @@ def render_entry(entry_id, slug_text='', category=''):
     if record.auth:
         cur_user = user.get_active()
         authorized = record.is_authorized(cur_user)
+
         user.log_access(record, cur_user, authorized)
 
-        if not record.is_authorized(cur_user):
+        if not authorized:
             return handle_unauthorized(cur_user,
                                        entry=Entry(record),
                                        category=category)
@@ -391,7 +392,22 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
         return handle_unauthorized(cur_user)
 
     tmpl = map_template('', '_admin')
-    return render_publ_template(tmpl, users=user.known_users(), log=user.auth_log(), by=by)
+
+    days = int(request.args.get('days', 7))
+    count = int(request.args.get('count', 50))
+    offset = int(request.args.get('offset', 0))
+
+    log, remain = user.auth_log(start=offset, count=count, days=days)
+
+    return render_publ_template(tmpl,
+                                users=user.known_users(days=days),
+                                log=log,
+                                count=count,
+                                offset=offset,
+                                days=days,
+                                remain=remain,
+                                by=by
+                                )
 
 
 def render_transparent_chit():

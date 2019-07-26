@@ -4,6 +4,7 @@
 # pylint: disable=too-few-public-methods
 
 import datetime
+import functools
 import logging
 from enum import Enum
 

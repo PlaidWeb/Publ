@@ -4,6 +4,8 @@ import ast
 import collections
 import configparser
 import datetime
+import functools
+import logging
 
 import arrow
 import flask
@@ -11,6 +13,8 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import caching, config, model
+
+LOGGER = logging.getLogger(__name__)
 
 
 @caching.cache.memoize(timeout=30)
@@ -95,15 +99,27 @@ def get_active():
 
 def log_access(record, cur_user, authorized):
     """ Log a user's access to the audit log """
-    log_values = {
-        'date': arrow.utcnow().datetime,
-        'entry': record,
-        'authorized': authorized
-    }
+    LOGGER.info("log_access %s %s %s", record, cur_user, authorized)
     if cur_user:
-        log_values['user'] = cur_user.name
-        log_values['user_groups'] = str(cur_user.groups) if cur_user.groups else ''
-    model.AuthLog(**log_values)
+        model.AuthLog(date=arrow.utcnow().datetime,
+                      entry=record,
+                      authorized=authorized,
+                      user=cur_user.name,
+                      user_groups=str(cur_user.groups) if cur_user.groups else ''
+                      )
+
+
+@functools.lru_cache(64)
+def _get_user(username):
+    return User(username)
+
+
+@functools.lru_cache(64)
+def _get_group_set(groups):
+    try:
+        return ast.literal_eval(groups)
+    except (ValueError, SyntaxError):
+        return set(groups.split(',')) if groups else set()
 
 
 @orm.db_session(immediate=True)
@@ -128,7 +144,7 @@ def known_users(days=30):
     since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
     query = model.KnownUser.select(lambda x: x.last_seen >= since)
 
-    return [(User(record.user), arrow.get(record.last_seen).to(config.timezone))
+    return [(_get_user(record.user), arrow.get(record.last_seen).to(config.timezone))
             for record in query]
 
 
@@ -137,22 +153,15 @@ LogEntry = collections.namedtuple(
 
 
 @orm.db_session()
-def auth_log(days=30):
+def auth_log(days=30, start=0, count=100):
     """ Get the logged accesses to each entry """
-    from . import entry  # pylint:disable=cyclic-import
-
     since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
-    query = model.AuthLog.select(lambda x: x.date >= since)
+    query = model.AuthLog.select(
+        lambda x: x.date >= since).order_by(orm.desc(model.AuthLog.date))[start:]
 
-    def _to_set(groups):
-        try:
-            return ast.literal_eval(groups)
-        except (ValueError, SyntaxError):
-            return set(groups.split(',')) if groups else set()
-
-    return [LogEntry(arrow.get(record.date).to(config.timezone),
-                     entry.Entry(record.entry),
-                     User(record.user),
-                     _to_set(record.user_groups),
-                     record.authorized)
-            for record in query]
+    return [LogEntry(date=arrow.get(record.date).to(config.timezone),
+                     entry=record.entry,
+                     user=_get_user(record.user),
+                     user_groups=_get_group_set(record.user_groups),
+                     authorized=record.authorized)
+            for record in query[:count]], len(query) - count
