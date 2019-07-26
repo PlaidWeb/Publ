@@ -114,6 +114,6 @@ def _get_builtin(filename):
     builtin_file = os.path.join(os.path.dirname(__file__), 'default_template', filename)
     if os.path.isfile(builtin_file):
         with open(builtin_file, 'r') as file:
-            BUILTIN_TEMPLATES[filename] = file.read()
+            return file.read()
 
-    return BUILTIN_TEMPLATES.get(filename)
+    return None
