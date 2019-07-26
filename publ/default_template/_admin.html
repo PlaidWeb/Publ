@@ -3,9 +3,91 @@
 <head>
     <meta charset="utf-8">
     <title>Publ admin dashboard</title>
+
+    <style>
+
+body {
+    background: #ccf;
+    font-family: 'Helvetica', sans-serif;
+}
+
+section {
+    background: white;
+    color: black;
+    margin: 1em;
+    padding: 1em;
+    border-radius: 1ex;
+}
+
+h1 {
+    margin: 0 0 1ex;
+    padding: 0;
+    border-bottom: dotted black 1px;
+}
+
+table {
+    border-collapse: collapse;
+    border: solid black 3px;
+}
+
+th {
+    background: #ffc;
+    border: solid #333 2px;
+    padding: 1ex;
+}
+
+tr.group th {
+    background: #ddd;
+    border: solid #333 1px;
+    padding-top: .5ex;
+    padding-bottom: .5ex;
+}
+
+td {
+    border: solid #555 1px;
+    padding: 0 1ex;
+}
+
+tr.allowed td {
+    background: #cfc;
+}
+
+tr.denied td {
+    background: #fcc;
+}
+
+ul.groups {
+    display: inline;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+ul.groups li {
+    display: inline-block;
+    font-family: 'Lucida Console', 'Monaco', monospace;
+    background: #ff7;
+    color: black;
+    padding: 0.5ex;
+    margin: 0.5ex;
+    border: dotted #005 1px;
+    border-radius: 0.5ex;
+    font-size: x-small;
+}
+
+    </style>
 </head>
 
+{%- macro list_groups(groups) -%}
+<ul class="groups">
+    {%- for group in groups -%}
+    <li>{{group}}</li>
+    {%- endfor -%}
+</ul>
+{%- endmacro -%}
+
 <body>
+<section id="logins">
     <h1>Recent users</h1>
 
     <table>
@@ -13,80 +95,88 @@
             <th>Groups</th>
             <th>Last seen</th>
         </tr>
-        {% for user,last_seen in users %}
+        {%- for user,last_seen in users -%}
         <tr>
             <td><a href="{{user.name}}">{{user.name}}</a></td>
-            <td>{{','.join(user.groups)}}</td>
+            <td>{{list_groups(user.groups)}}</td>
             <td>{{last_seen.format('YYYY-MM-DD hh:mm A')}} ({{last_seen.humanize()}})</td>
         </tr>
-        {% endfor %}
+        {%- endfor -%}
     </table>
+</section>
 
+<section id="access">
     <h1>Access Log</h1>
 
-{% set columns = [
+
+{%- set columns = [
     ('authorized',True),
     ('date',False),
-    ('entry',True),
     ('user',True),
+    ('entry',True),
     ('groups',False),
-] %}
+] -%}
+
+{%- set headers = {
+    'authorized': 'Vis',
+} -%}
 
 {%- macro format(col, rec, grouper=False) -%}
 {%- if col == 'entry' -%}<a href="{{rec.link}}">{{rec.title}}</a>
 {%- elif col == 'date' -%}{{rec.format('YYYY-MM-DD hh:mm A')}}
-{%- elif col == 'user' -%}{% if rec.name %}<a href="{{rec.name}}">{{rec.name}}</a>{% elif grouper %}No user{% endif %}
-{%- elif col == 'groups' -%}{{','.join(rec)}}
-{%- elif col == 'authorized' -%}{% if grouper %}
+{%- elif col == 'user' -%}{%- if rec.name -%}<a href="{{rec.name}}">{{rec.name}}</a>{%- elif grouper -%}No user{%- endif -%}
+{%- elif col == 'groups' -%}{{list_groups(rec)}}
+{%- elif col == 'authorized' -%}{%- if grouper -%}
         {{'Authorized' if rec else 'Forbidden'}}
-    {% else %}
-        {{'Y' if rec else 'N'}}
-    {% endif %}
+    {%- else -%}
+        {{'✅' if rec else '❌'}}
+    {%- endif -%}
 {%- endif -%}
 {%- endmacro -%}
 
 {%- macro column(col, rec) -%}
-{% if col != by %}<td>{{format(col, rec)}}</td>{% endif %}
+{%- if col != by -%}<td class="{{col}}">{{format(col, rec)}}</td>{%- endif -%}
+{%- endmacro -%}
+
+{%- macro show_row(access) -%}
+<tr class="access {{'allowed' if access.authorized else 'denied'}}">
+    {{column('authorized', access.authorized)}}
+    {{column('date', access.date)}}
+    {{column('entry', access.entry)}}
+    {{column('user', access.user)}}
+    {{column('groups', access.user_groups)}}
+</tr>
 {%- endmacro -%}
 
     <table>
         <tr>
-        {% for column, groupable in columns %}
-            {% if by != column %}
+        {%- for column, groupable in columns -%}
+            {%- if by != column -%}
                 <th>{%- if groupable -%}
-                    <a href="{{url_for('admin',by=column)}}">{{column.title()}}</a>
-                    {% elif column == 'date' %}
+                    <a href="{{url_for('admin',by=column)}}">{{headers.get(column,column.title())}}</a>
+                    {%- elif column == 'date' -%}
                     <a href="{{url_for('admin')}}">{{column.title()}}</a>
                     {%- else -%}
                     {{column.title()}}
                     {%- endif -%}
                 </th>
-            {% endif %}
-        {% endfor %}
-        {% if by %}
-            {% for group in log|groupby(by) %}
-                <tr class="group {{by}}"><th colspan="4">{{format(by, group.grouper, True)}}</td></tr>
-                {% for access in group.list|sort(True,'date') %}
-                <tr class="access">
-                    {{column('authorized', access.authorized)}}
-                    {{column('date', access.date)}}
-                    {{column('entry', access.entry)}}
-                    {{column('user', access.user)}}
-                    {{column('groups', access.user_groups)}}
-                </tr>
-                {% endfor %}
-            {% endfor %}
-        {% else %}
-            {% for access in log|sort(True,'date') %}
-            <tr class="access">
-                {{column('authorized', access.authorized)}}
-                {{column('date', access.date)}}
-                {{column('entry', access.entry)}}
-                {{column('user', access.user)}}
-                {{column('groups', access.user_groups if access.user)}}
-            </tr>
-            {% endfor %}
-        {% endif %}
+            {%- endif -%}
+        {%- endfor -%}
+        </tr>
+        {%- if by -%}
+            {%- for group in log|groupby(by) -%}
+                <tr class="group {{by}}"><th colspan="4">{{format(by, group.grouper, True)}}</th></tr>
+                {%- for access in group.list|sort(True,'date') -%}
+                {{ show_row(access) }}
+                {%- endfor -%}
+            {%- endfor -%}
+        {%- else -%}
+            {%- for access in log|sort(True,'date') -%}
+            {{ show_row(access) }}
+            {%- endfor -%}
+        {%- endif -%}
     </table>
+</section>
+
 </body>
 </html>

@@ -104,7 +104,7 @@ class Entry(db.Entity):
                 LOGGER.debug("  result->%s", result)
 
             else:
-                if user and auth.user_group in user.groups:
+                if user and auth.user_group in user.auth_groups:
                     result = auth.allowed
                     LOGGER.debug("  result->%s", result)
 

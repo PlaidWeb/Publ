@@ -14,7 +14,7 @@ from . import caching, config, model
 
 
 @caching.cache.memoize(timeout=30)
-def get_groups(username):
+def get_groups(username, include_self=True):
     """ Get the group membership for the given username """
 
     @caching.cache.memoize(timeout=30)
@@ -45,7 +45,8 @@ def get_groups(username):
     while pending:
         check = pending.popleft()
         if check not in result:
-            result.add(check)
+            if include_self or check != username:
+                result.add(check)
             pending += groups.get(check, [])
 
     return result
@@ -69,9 +70,14 @@ class User(caching.Memoizable):
         return self._me
 
     @cached_property
+    def auth_groups(self):
+        """ The group memberships of the user, for auth purposes """
+        return get_groups(self._me, True)
+
+    @cached_property
     def groups(self):
-        """ The group memberships of the user """
-        return get_groups(self._me)
+        """ The group memberships of the user, for display purposes """
+        return get_groups(self._me, False)
 
     @property
     def is_admin(self):
