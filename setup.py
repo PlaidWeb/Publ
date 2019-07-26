@@ -59,7 +59,7 @@ setup(
     keywords='website cms publishing blog photogallery sharing',
 
     packages=find_packages(),
-    package_data={'publ', ['default_template/*']}
+    package_data={'publ': ['default_template/*']},
 
     install_requires=[
         'Flask',

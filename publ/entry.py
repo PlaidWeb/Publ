@@ -46,6 +46,7 @@ class Entry(caching.Memoizable):
         self._record = record   # index record
 
     def __lt__(self, other):
+        # pylint:disable=protected-access
         return self._record.id < other._record.id
 
     def _key(self):

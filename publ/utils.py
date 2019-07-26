@@ -12,7 +12,6 @@ import arrow
 import flask
 import slugify
 import werkzeug.routing
-from werkzeug.utils import cached_property
 
 from . import config, model
 

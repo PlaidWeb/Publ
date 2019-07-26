@@ -4,7 +4,6 @@
 import base64
 import logging
 import os
-import time
 
 import werkzeug.exceptions as http_error
 from flask import make_response, redirect, request, send_file, url_for
@@ -274,7 +273,7 @@ def handle_unauthorized(cur_user, category='', **kwargs):
         return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, headers
 
     # User is not already logged in, so present a login page
-    response = redirect(utils.auth_link('login')), headers
+    return redirect(utils.auth_link('login')), headers
 
 
 @orm.db_session(retry=5)
@@ -383,8 +382,9 @@ def render_entry(entry_id, slug_text='', category=''):
 
     return rendered, headers
 
+
 @orm.db_session(retry=5)
-def admin_dashboard(by=None):
+def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()
     if not cur_user or not cur_user.is_admin:

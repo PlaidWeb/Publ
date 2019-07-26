@@ -89,11 +89,14 @@ ul.groups li {
 </head>
 
 {%- macro list_groups(groups) -%}
+<!-- {{groups}} -->
+{%- if groups -%}
 <ul class="groups">
     {%- for group in groups -%}
     <li>{{group}}</li>
     {%- endfor -%}
 </ul>
+{%- endif -%}
 {%- endmacro -%}
 
 <body>

@@ -152,8 +152,8 @@ class Publ(flask.Flask):
             self.add_url_rule(route, 'logout', logout)
 
         for route in [
-            '/_admin',
-            '/_admin/<by>'
+                '/_admin',
+                '/_admin/<by>'
         ]:
             self.add_url_rule(route, 'admin', rendering.admin_dashboard)
         self.before_request(user.log_user)

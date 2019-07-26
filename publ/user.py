@@ -1,8 +1,8 @@
 """ Authenticated user functionality """
 
+import ast
 import collections
 import configparser
-import ast
 import datetime
 
 import arrow
@@ -62,7 +62,7 @@ class User(caching.Memoizable):
         return self._me
 
     def __lt__(self, other):
-        return self._me < other._me
+        return self.name < other.name
 
     @cached_property
     def name(self):
@@ -102,7 +102,7 @@ def log_access(record, cur_user, authorized):
     }
     if cur_user:
         log_values['user'] = cur_user.name
-        log_values['user_groups'] = str(cur_user.groups)
+        log_values['user_groups'] = str(cur_user.groups) if cur_user.groups else ''
     model.AuthLog(**log_values)
 
 
@@ -128,7 +128,8 @@ def known_users(days=30):
     since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
     query = model.KnownUser.select(lambda x: x.last_seen >= since)
 
-    return [(User(record.user), arrow.get(record.last_seen).to(config.timezone)) for record in query]
+    return [(User(record.user), arrow.get(record.last_seen).to(config.timezone))
+            for record in query]
 
 
 LogEntry = collections.namedtuple(
@@ -147,7 +148,7 @@ def auth_log(days=30):
         try:
             return ast.literal_eval(groups)
         except (ValueError, SyntaxError):
-            return set(groups.split(','))
+            return set(groups.split(',')) if groups else set()
 
     return [LogEntry(arrow.get(record.date).to(config.timezone),
                      entry.Entry(record.entry),
