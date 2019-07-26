@@ -12,12 +12,6 @@ from .caching import cache
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
 
-# Builtin templates that are brought in by string reference
-BUILTIN_TEMPLATES = {
-    'login.html': authl.flask.DEFAULT_LOGIN_TEMPLATE
-}
-
-
 class Template:
     """ Template information wrapper """
     # pylint: disable=too-few-public-methods
@@ -106,11 +100,6 @@ def map_template(category, template_list):
 def _get_builtin(filename):
     """ Get a builtin template """
 
-    # Is it already loaded?
-    if filename in BUILTIN_TEMPLATES:
-        return BUILTIN_TEMPLATES[filename]
-
-    # Can we load one?
     builtin_file = os.path.join(os.path.dirname(__file__), 'default_template', filename)
     if os.path.isfile(builtin_file):
         with open(builtin_file, 'r') as file:

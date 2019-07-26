@@ -6,4 +6,4 @@ UUID: a104308a-3235-5a23-a81e-a0251d479913
 
 This entry is only visible to admins.
 
-Also all entries are always visible to admins.
+Also all entries are always visible to admins.  So should the [admin panel](/_admin).

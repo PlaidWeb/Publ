@@ -253,6 +253,9 @@ def render_category(category='', template=None):
 def render_login_form(login_url, auth):
     """ Renders the login form using the mapped login template """
     tmpl = map_template('', 'login')
+    if not tmpl:
+        # fall back to the default Authl handler
+        return None
     return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
 
 
