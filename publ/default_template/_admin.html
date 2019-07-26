@@ -48,11 +48,21 @@ td {
     padding: 0 1ex;
 }
 
-tr.allowed td {
+td.admin {
+    background: #307;
+    color: white;
+}
+
+td.admin a {
+    color: white;
+    font-weight: bold;
+}
+
+tr.allowed {
     background: #cfc;
 }
 
-tr.denied td {
+tr.denied {
     background: #fcc;
 }
 
@@ -97,7 +107,7 @@ ul.groups li {
         </tr>
         {%- for user,last_seen in users -%}
         <tr>
-            <td><a href="{{user.name}}">{{user.name}}</a></td>
+            <td class="{{'admin' if user.is_admin else ''}}"><a href="{{user.name}}">{{user.name}}</a></td>
             <td>{{list_groups(user.groups)}}</td>
             <td>{{last_seen.format('YYYY-MM-DD hh:mm A')}} ({{last_seen.humanize()}})</td>
         </tr>
@@ -134,16 +144,16 @@ ul.groups li {
 {%- endif -%}
 {%- endmacro -%}
 
-{%- macro column(col, rec) -%}
-{%- if col != by -%}<td class="{{col}}">{{format(col, rec)}}</td>{%- endif -%}
+{%- macro column(col, rec, add_class='') -%}
+{%- if col != by -%}<td class="{{col}}{{add_class}}">{{format(col, rec)}}</td>{%- endif -%}
 {%- endmacro -%}
 
 {%- macro show_row(access) -%}
 <tr class="access {{'allowed' if access.authorized else 'denied'}}">
     {{column('authorized', access.authorized)}}
     {{column('date', access.date)}}
+    {{column('user', access.user, ' admin' if access.user.is_admin else '')}}
     {{column('entry', access.entry)}}
-    {{column('user', access.user)}}
     {{column('groups', access.user_groups)}}
 </tr>
 {%- endmacro -%}
