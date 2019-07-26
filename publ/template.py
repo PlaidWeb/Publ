@@ -12,24 +12,8 @@ from .caching import cache
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
 
+# Builtin templates that are brought in by string reference
 BUILTIN_TEMPLATES = {
-    # default error template
-    'error.html': """<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{error.code}} {{error.message}}</title>
-</head>
-<body>
-    <h1>{{error.message}}</h1>
-
-    {% if exception and exception.str %}
-    <p>{{exception.str}}</p>
-    {% endif %}
-<hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {{request.url_root}}
-{{arrow.now().format()}}</address>
-</body></html>
-""",
     'login.html': authl.flask.DEFAULT_LOGIN_TEMPLATE
 }
 
@@ -112,7 +96,24 @@ def map_template(category, template_list):
     for template in utils.as_list(template_list):
         for extension in EXT_PRIORITY:
             filename = template + extension
-            if filename in BUILTIN_TEMPLATES:
-                return Template(template, filename, None, BUILTIN_TEMPLATES[filename])
+            template_string = _get_builtin(filename)
+            if template_string:
+                return Template(template, filename, None, template_string)
+
+    return None
+
+
+def _get_builtin(filename):
+    """ Get a builtin template """
+
+    # Is it already loaded?
+    if filename in BUILTIN_TEMPLATES:
+        return BUILTIN_TEMPLATES[filename]
+
+    # Can we load one?
+    builtin_file = os.path.join(os.path.dirname(__file__), 'default_template', filename)
+    if os.path.isfile(builtin_file):
+        with open(builtin_file, 'r') as file:
+            return file.read()
 
     return None

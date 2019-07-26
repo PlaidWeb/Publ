@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{error.code}} {{error.message}}</title>
+</head>
+<body>
+    <h1>{{error.message}}</h1>
+
+    {% if exception and exception.str %}
+    <p>{{exception.str}}</p>
+    {% endif %}
+<hr><address><a href="http://publ.beesbuzz.biz">Publ</a> at {{request.url_root}}
+{{arrow.now().format()}}</address>
+</body></html>

@@ -4,6 +4,7 @@
 import base64
 import logging
 import os
+import time
 
 import werkzeug.exceptions as http_error
 from flask import make_response, redirect, request, send_file, url_for
@@ -256,6 +257,26 @@ def render_login_form(login_url, auth):
     return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
 
 
+def handle_unauthorized(cur_user, category='', **kwargs):
+    """ Handle an unauthorized access to a page """
+
+    headers = {
+        'Cache-control': 'private, no-cache, no-store, max-age=0',
+        'X-Robots-Tag': 'noindex,noarchive'
+    }
+
+    if cur_user:
+        # User is logged in already
+        tmpl = map_template(category, 'unauthorized')
+        if not tmpl:
+            raise http_error.Forbidden(
+                "User {name} does not have access".format(name=cur_user.name))
+        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, headers
+
+    # User is not already logged in, so present a login page
+    response = redirect(utils.auth_link('login')), headers
+
+
 @orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
@@ -305,16 +326,9 @@ def render_entry(entry_id, slug_text='', category=''):
         user.log_access(record, cur_user, authorized)
 
         if not record.is_authorized(cur_user):
-            if cur_user:
-                tmpl = map_template(category, 'unauthorized')
-                if not tmpl:
-                    raise http_error.Forbidden(
-                        "User {name} does not have access".format(name=cur_user.name))
-                return render_publ_template(tmpl,
-                                            entry=Entry(record),
-                                            category=Category(category))[0], 403
-            login_url = url_for('entry', entry_id=entry_id, **request.args)
-            return redirect(url_for('login', redir=login_url[1:]))
+            return handle_unauthorized(cur_user,
+                                       entry=Entry(record),
+                                       category=category)
 
     # check if the canonical URL matches
     if record.category != category or record.slug_text != slug_text:
@@ -364,10 +378,20 @@ def render_entry(entry_id, slug_text='', category=''):
         'ETag': etag
     }
     if record.status == model.PublishStatus.HIDDEN.value:
-        headers['Cache-control'] = 'private, no-cache, no-store'
+        headers['Cache-control'] = 'private, no-cache, no-store, max-age=0'
         headers['X-Robots-Tag'] = 'noindex, noarchive'
 
     return rendered, headers
+
+@orm.db_session(retry=5)
+def admin_dashboard(by=None):
+    """ Render the authentication dashboard """
+    cur_user = user.get_active()
+    if not cur_user or not cur_user.is_admin:
+        return handle_unauthorized(cur_user)
+
+    tmpl = map_template('', '_admin')
+    return render_publ_template(tmpl, users=user.known_users(), log=user.auth_log(), by=by)
 
 
 def render_transparent_chit():
