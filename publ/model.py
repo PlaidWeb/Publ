@@ -16,7 +16,7 @@ db = orm.Database()  # pylint: disable=invalid-name
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 class GlobalConfig(db.Entity):
@@ -167,10 +167,12 @@ class EntryAuth(db.Entity):
 class AuthLog(db.Entity):
     """ Authentication log for private entries """
     date = orm.Required(datetime.datetime, index=True)
-    entry = orm.Optional(Entry, index=True)
-    user = orm.Optional(str, index=True)
+    entry = orm.Required(Entry, index=True)
+    user = orm.Required(str, index=True)
     user_groups = orm.Optional(str)
     authorized = orm.Required(bool, index=True)
+
+    orm.PrimaryKey(entry, user)
 
 
 class KnownUser(db.Entity):

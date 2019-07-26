@@ -97,16 +97,23 @@ def get_active():
     return None
 
 
+@orm.db_session(immediate=True)
 def log_access(record, cur_user, authorized):
     """ Log a user's access to the audit log """
     LOGGER.info("log_access %s %s %s", record, cur_user, authorized)
     if cur_user:
-        model.AuthLog(date=arrow.utcnow().datetime,
-                      entry=record,
-                      authorized=authorized,
-                      user=cur_user.name,
-                      user_groups=str(cur_user.groups) if cur_user.groups else ''
-                      )
+        values = {
+            'date': arrow.utcnow().datetime,
+            'entry': record,
+            'authorized': authorized,
+            'user': cur_user.name,
+            'user_groups': str(cur_user.groups) if cur_user.groups else ''
+        }
+        log_entry = model.AuthLog.get(entry=record, user=cur_user.name)
+        if log_entry:
+            log_entry.set(**values)
+        else:
+            model.AuthLog(**values)
 
 
 @functools.lru_cache(64)
