@@ -58,11 +58,15 @@ class Image(ABC):
             if val is not None:
                 attrs[key] = val
 
-        set_val('class', params.get('img_class', params.get('class')))
-        set_val('id', params.get('img_id', params.get('id')))
-        set_val('style', ';'.join(styles) if styles else None)
+        if 'img_class' in params or 'class' in params:
+            set_val('class', params.get('img_class', params.get('class')))
+        if 'img_id' in params or 'id' in params:
+            set_val('id', params.get('img_id', params.get('id')))
+        if styles:
+            set_val('style', ';'.join(styles))
 
-        set_val('data-publ-rewritten', params.get('_mark_rewritten'))
+        if '_mark_rewritten' in params:
+            set_val('data-publ-rewritten', params['_mark_rewritten'])
 
         return attrs
 
@@ -73,10 +77,14 @@ class Image(ABC):
 
         try:
             attrs = {
-                'alt': alt_text,
-                'title': title,
                 **self.get_img_attrs(**kwargs)
             }
+
+            if alt_text:
+                attrs['alt'] = alt_text
+
+            if title:
+                attrs['title'] = title
 
             return flask.Markup(
                 self._wrap_link_target(

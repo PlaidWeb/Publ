@@ -27,10 +27,11 @@ class ExternalImage(Image):
     def _get_img_attrs(self, kwargs, style_parts):
         url = self._get_url(kwargs.get('absolute'))
 
-        attrs = {
-            'class': kwargs.get('class', kwargs.get('img_class')),
-            'id': kwargs.get('img_id'),
-        }
+        attrs = {}
+        if 'class' in kwargs or 'img_class' in kwargs:
+            attrs['class'] = kwargs.get('class', kwargs.get('img_class'))
+        if 'id' in kwargs:
+            attrs['id'] = kwargs['id']
 
         # try to fudge the sizing
         max_width = kwargs.get('max_width')
