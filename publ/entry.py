@@ -361,8 +361,8 @@ class Entry(caching.Memoizable):
         """ Returns if the entry is authorized by the current user """
         return self._is_authorized_for(user.get_active())
 
-    def _is_authorized_for(self, user):
-        return self._record.is_authorized(user)
+    def _is_authorized_for(self, cur_user):
+        return self._record.is_authorized(cur_user)
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry

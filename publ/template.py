@@ -4,13 +4,13 @@
 import os
 
 import arrow
-import authl.flask
 import flask
 
 from . import config, utils
 from .caching import cache
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
+
 
 class Template:
     """ Template information wrapper """

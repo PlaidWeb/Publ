@@ -84,12 +84,6 @@ class User(caching.Memoizable):
         return get_groups(self._me, False)
 
     @property
-    @caching.cache.memoize()
-    def is_configured(self):
-        """ Whether this user has been configured with any groups """
-        return self.name in get_groups()
-
-    @property
     def is_admin(self):
         """ Returns whether this user has administrator permissions """
         return config.admin_group and config.admin_group in self.groups
