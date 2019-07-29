@@ -59,7 +59,7 @@ class Template:
         return hash(self._key())
 
 
-@cache.memoize()
+@cache.memoize(timeout=30)
 def map_template(category, template_list):
     """
     Given a file path and an acceptable list of templates, return the
