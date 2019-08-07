@@ -232,4 +232,6 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
     if not no_smartquotes:
         text = misaka.smartypants(text)
 
-    return flask.Markup(text)
+    if markup:
+        text = flask.Markup(text)
+    return text
