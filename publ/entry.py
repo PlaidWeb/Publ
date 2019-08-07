@@ -385,7 +385,7 @@ class Entry(caching.Memoizable):
         """ Proxy undefined properties to the backing objects """
 
         # Only allow a few vital things for unauthorized access
-        if not self._is_authorized and name.lower() not in ('uuid', 'id', 'date', 'last-modified'):
+        if name.lower() not in ('uuid', 'id', 'date', 'last-modified') and not self._is_authorized:
             return None
 
         if hasattr(self._record, name):
