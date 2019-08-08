@@ -6,8 +6,10 @@ for more information. """
 import functools
 import logging
 import re
+import warnings
 
 import arrow
+import arrow.factory
 import authl.flask
 import flask
 import werkzeug.exceptions
@@ -16,6 +18,9 @@ from . import (caching, config, image, index, maintenance, model, rendering,
                user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
+
+# remove this when issue #264 is resolved (pending arrow 0.15's relesae)
+warnings.simplefilter('ignore', arrow.factory.ArrowParseWarning)
 
 
 class Publ(flask.Flask):
