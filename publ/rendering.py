@@ -402,15 +402,17 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
 
     log, remain = user.auth_log(start=offset, count=count, days=days)
 
-    return render_publ_template(tmpl,
-                                users=user.known_users(days=days),
-                                log=log,
-                                count=count,
-                                offset=offset,
-                                days=days,
-                                remain=remain,
-                                by=by
-                                )
+    rendered, _ = render_publ_template(
+        tmpl,
+        users=user.known_users(days=days),
+        log=log,
+        count=count,
+        offset=offset,
+        days=days,
+        remain=remain,
+        by=by
+    )
+    return rendered
 
 
 def render_transparent_chit():
