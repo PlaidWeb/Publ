@@ -170,7 +170,7 @@ class AuthLog(db.Entity):
     entry = orm.Optional(Entry, index=True)
     user = orm.Optional(str, index=True)
     user_groups = orm.Optional(str)
-    authorized = orm.Required(bool)
+    authorized = orm.Required(bool, index=True)
 
 
 class KnownUser(db.Entity):
