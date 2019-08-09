@@ -142,19 +142,23 @@ class Publ(flask.Flask):
 
         def logout(redir=''):
             """ Log out from the thing """
-            LOGGER.info("Logging out")
-            LOGGER.info("Redir: %s", redir)
-            LOGGER.info("Request path: %s", flask.request.path)
+            if flask.request.method == 'POST':
+                LOGGER.info("Logging out")
+                LOGGER.info("Redir: %s", redir)
+                LOGGER.info("Request path: %s", flask.request.path)
 
-            flask.session['me'] = ''
-            return flask.redirect('/' + redir)
+                flask.session['me'] = ''
+                return flask.redirect('/' + redir)
+
+            tmpl = rendering.map_template('/', '_logout')
+            return rendering.render_publ_template(tmpl)[0]
 
         for route in [
                 '/_logout',
                 '/_logout/',
                 '/_logout/<path:redir>'
         ]:
-            self.add_url_rule(route, 'logout', logout)
+            self.add_url_rule(route, 'logout', logout, methods=['GET','POST'])
 
         for route in [
                 '/_admin',
