@@ -25,17 +25,17 @@
         },
         "arrow": {
             "hashes": [
-                "sha256:157dee94b557ffe9a2e13e05669bf48820064cb37d416f547f59baa0d25301d4",
-                "sha256:47f37968afeaefd0ba3fe4d0c70dc830985f9ab11beeb381d4fc0e8f8151d3d6"
+                "sha256:0186026cfd94ca4fb773f30cc5398289a3027480d335e0e5c0d2772643763137",
+                "sha256:a12de0124d812d15061ed36c7eb4a421fa1b95026a502a0b2062e9ea00fc4446"
             ],
-            "version": "==0.14.4"
+            "version": "==0.14.5"
         },
         "authl": {
             "hashes": [
-                "sha256:7e28805d11043ae991357e358d9564a9de3167779fa8bb77c3775ada9197a276",
-                "sha256:bdaeb7553babbee8f4e2a18cd2e226b7eb2b17a56f9371cce84d3e6a803cc923"
+                "sha256:a5f597983db502581a319e706f249aac38843f7f3b994ffee588da87f142ad50",
+                "sha256:c676af8d32bda180f22be52fc2c9c1bdbc8b52d2af9670eb6a5e92eee114a0b5"
             ],
-            "version": "==0.1.5"
+            "version": "==0.1.6"
         },
         "awesome-slugify": {
             "hashes": [

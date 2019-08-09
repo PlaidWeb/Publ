@@ -1,6 +1,21 @@
-<p>Sorry, user {{user.name}} can't access entry {{entry.id}}. Better luck next time.</p>
+<!DOCTYPE html>
+<html>
 
-<p>You could try <a href="{{login}}">logging in as someone else</a> or <a href="{{logout}}">logging out</a> and see if that helps.</p>
+<head>
+    <title>403 Unauthorized</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{url_for('login',asset='css')}}">
+</head>
 
-<p>Or you can <a href="{{logout(category.link)}}">logout and go directly to the category</a>.</p>
+<body>
+    <div id="login">
+        <h1>Authorization Pending</h1>
+        <div id="notify">
+        <p>Sorry, <code>{{user.name}}</code>, you don't currently have access to this page. You can try <a href="{{login}}">logging in as someone else</a> or <a href="{{logout(category.link if category else None)}}">logging out entirely</a>.</p>
+    </div>
+        <div id="powered">
+            <p>Powered by <a href="https://github.com/PlaidWeb/Authl">Authl</a></p>
+        </div>
+</body>
 
+</html>
