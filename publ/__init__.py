@@ -150,7 +150,7 @@ class Publ(flask.Flask):
                 flask.session['me'] = ''
                 return flask.redirect('/' + redir)
 
-            tmpl = rendering.map_template('/', '_logout')
+            tmpl = rendering.map_template('/', 'logout')
             return rendering.render_publ_template(tmpl)[0]
 
         for route in [

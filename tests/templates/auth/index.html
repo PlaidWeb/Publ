@@ -9,7 +9,8 @@
 <h3>Current user:</h3>
 <ul>
 <li>Signed in as <code>{{user.name}}</code></li>
-<li><a href="{{logout}}">logout</a></li>
+<li><a href="{{logout}}">logout with confirmation</a></li>
+<li><form method="POST" action="{{logout}}"><input type="submit" value="logout directly"></form></li>
 <li><a href="{{login}}">change user</a></li>
 <li>Group memberships:
 <ul>

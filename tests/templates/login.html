@@ -2,9 +2,11 @@
 <html>
 <head>
     <title>Login required</title>
+    <link rel="stylesheet" href="{{url_for('login',asset='css')}}">
 </head>
 <body>
 
+<div id="login">
 <p>This is a crappy-looking login page for Publ's tests.
 
 {% if user %}
@@ -23,6 +25,7 @@ Nobody is currently logged in.
     <li>{{handler.service_name}}: {{handler.description|safe}}</li>
     {% endfor %}
 </ul>
+</div>
 
 </body>
 </html>

@@ -207,7 +207,7 @@ def render_category(category='', template=None):
     # Forbidden template types
     if template and template.startswith('_'):
         raise http_error.Forbidden("Template is private")
-    if template in ['entry', 'error', 'login', 'unauthorized']:
+    if template in ['entry', 'error', 'login', 'unauthorized', 'logout']:
         raise http_error.BadRequest("Invalid view requested")
 
     if category:
