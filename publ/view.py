@@ -109,53 +109,57 @@ class View(caching.Memoizable):
     @cached_property
     def first(self):
         """ Gets the first entry in the view """
-        return self.entries[0] if self.entries else None
+        entries = self.entries()
+        return entries[0] if entries else None
 
     @cached_property
     def last(self):
         """ Gets the last entry in the view """
-        return self.entries[-1] if self.entries else None
-
-    @cached_property
-    def _entries_auth(self):
-        """ Returns a tuple of (authorized,unauthorized) entries, limited by the
-        count spec if appropriate. """
-        entries = []
-        unauthorized = []
-
-        limit = self.spec.get('count')
-        cur_user = user.get_active()
-        for record in self._entries:
-            if limit and len(entries) >= limit:
-                break
-
-            if record.is_authorized(cur_user):
-                entries.append(Entry(record))
-            else:
-                unauthorized.append(Entry(record))
-
-        return entries, unauthorized
+        entries = self.entries()
+        return entries[-1] if entries else None
 
     @cached_property
     def entries(self):
         """ Gets entries which are authorized for the current viewer """
-        items, _ = self._entries_auth
-        return items
 
+        def _entries(unauthorized):
+            result = []
+            count = self.spec.get('count')
+            cur_user = user.get_active()
+            for record in self._entries:
+                if count is not None and len(result) >= count:
+                    break
 
-    @cached_property
-    def all_entries(self):
-        """ Gets all entries regardless of authorization status """
-        records = self._entries
-        if 'count' in self.spec:
-            records = self._entries.limit(self.spec['count'])
-        return [Entry(record) for record in records]
+                auth = record.is_authorized(cur_user)
+                if auth or unauthorized:
+                    result.append(Entry(record))
+                    if not auth and unauthorized is not True:
+                        unauthorized -= 1
+
+            return result
+
+        return utils.CallableProxy(_entries, unauthorized=0)
 
     @cached_property
     def unauthorized(self):
         """ Gets entries which the user is not allowed to view """
-        _, items = self._entries_auth
-        return items
+
+        def _unauthorized(count):
+            result = []
+            if count is None:
+                count = self.spec.get('count')
+
+            cur_user = user.get_active()
+            for record in self._entries:
+                if count is not None and len(result) >= count:
+                    break
+
+                if not record.is_authorized(cur_user):
+                    result.append(Entry(record))
+
+            return result
+
+        return utils.CallableProxy(_unauthorized, count=None)
 
     @cached_property
     def deleted(self):

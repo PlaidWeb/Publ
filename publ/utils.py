@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class CallableProxy:
-    """ Wrapper class to make args possible on properties """
+    """ Wrapper class to make args possible on properties. """
     # pylint: disable=too-few-public-methods
 
     def __init__(self, func, *args, **kwargs):
@@ -57,6 +57,9 @@ class CallableProxy:
 
     def __iter__(self):
         return self().__iter__()
+
+    def __getitem__(self, key):
+        return self().__getitem__(key)
 
 
 class TrueCallableProxy(CallableProxy):
