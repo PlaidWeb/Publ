@@ -358,7 +358,7 @@ class Entry(caching.Memoizable):
 
     @property
     def authorized(self):
-        """ Returns if the entry is authorized by the current user """
+        """ Returns if the current user is authorized to see this entry """
         return self._is_authorized_for(user.get_active())
 
     def _is_authorized_for(self, cur_user):

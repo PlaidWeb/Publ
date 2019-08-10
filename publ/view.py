@@ -142,6 +142,15 @@ class View(caching.Memoizable):
         items, _ = self._entries_auth
         return items
 
+
+    @cached_property
+    def all_entries(self):
+        """ Gets all entries regardless of authorization status """
+        records = self._entries
+        if 'count' in self.spec:
+            records = self._entries.limit(self.spec['count'])
+        return [Entry(record) for record in records]
+
     @cached_property
     def unauthorized(self):
         """ Gets entries which the user is not allowed to view """
