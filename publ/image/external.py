@@ -1,9 +1,9 @@
 """ Functionality for images external to the content directory """
 
 import html
-from abc import abstractmethod
-import urllib.parse
 import os.path
+import urllib.parse
+from abc import abstractmethod
 
 import flask
 

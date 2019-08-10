@@ -158,7 +158,7 @@ class Publ(flask.Flask):
                 '/_logout/',
                 '/_logout/<path:redir>'
         ]:
-            self.add_url_rule(route, 'logout', logout, methods=['GET','POST'])
+            self.add_url_rule(route, 'logout', logout, methods=['GET', 'POST'])
 
         for route in [
                 '/_admin',
