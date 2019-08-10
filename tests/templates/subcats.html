@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><title>Test for category.subcats</title></head>
+<body>
+
+<h1>Breadcrumb</h1>
+
+<p>
+{% for cat in category.breadcrumb %}
+<a href="{{cat.link(template='subcats')}}">{{cat.name}}</a>
+{% endfor %}
+</p>
+
+<h1>recurse=False</h1>
+
+<ul>
+    {% for subcat in category.subcats recursive %}
+    <li><a href="{{subcat.link(template='subcats')}}">{{ subcat.name }}</a>{% if subcat.description %}:
+        {{ subcat.description }}{% endif %}
+        {% if subcat.subcats %}
+        <ul>{{ loop(subcat.subcats)}}</ul>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+<h1>recurse=True</h1>
+
+<ul>
+    {% for subcat in category.subcats(recurse=True) %}
+    <li>{% for cat in subcat.breadcrumb %}
+        <a href="{{cat.link(template='subcats')}}">{{cat.name}}</a>
+        {% endfor %}
+    </li>
+    {% endfor %}
+</ul>
+
+</body></html>

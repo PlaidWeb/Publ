@@ -99,7 +99,7 @@ class Category(caching.Memoizable):
             if recurse:
                 # No need to filter
                 return sorted([Category(e) for e in self._subcats_recursive],
-                              key=lambda c: c.sort_breadcrumb)
+                              key=lambda cat: tuple(crumb.sort_name for crumb in cat.breadcrumb))
 
             # get all the subcategories, with only the first subdir added
 
@@ -204,11 +204,6 @@ class Category(caching.Memoizable):
         if self._record and self._record.sort_name:
             return self._record.sort_name
         return self.name
-
-    @cached_property
-    def sort_breadcrumb(self):
-        """ Get the sortable breadcrumb of this category """
-        return tuple(c.sort_name for c in self.breadcrumb)
 
     @cached_property
     def tags(self):
