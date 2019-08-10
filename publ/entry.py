@@ -289,18 +289,16 @@ class Entry(caching.Memoizable):
         """ Get the above-the-fold entry body text """
         body, _, is_markdown = self._entry_content
         return TrueCallableProxy(
-            self._get_markup,
-            body,
-            is_markdown) if body else CallableProxy(None)
+            lambda **kwargs: self._get_markup(body, is_markdown, **kwargs)
+            ) if body else CallableProxy(None)
 
     @cached_property
     def more(self):
         """ Get the below-the-fold entry body text """
         _, more, is_markdown = self._entry_content
         return TrueCallableProxy(
-            self._get_markup,
-            more,
-            is_markdown) if more else CallableProxy(None)
+            lambda **kwargs: self._get_markup(more, is_markdown, **kwargs)
+            ) if more else CallableProxy(None)
 
     @cached_property
     def card(self):

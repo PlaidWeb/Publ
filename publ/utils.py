@@ -22,26 +22,17 @@ class CallableProxy:
     """ Wrapper class to make args possible on properties. """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, func, *args, **kwargs):
+    def __init__(self, func):
         """ Construct the property proxy.
 
         func -- The function to wrap
-        args -- Default positional arguments for the function call
-        kwargs -- Default keyword arguments for the function call
         """
 
-        self._func = func if func else (lambda **kwargs: '')
-        self._default_args = args
-        self._default_kwargs = kwargs
+        self._func = func if func else (lambda *args, **kwargs: '')
 
     def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
-        kwargs = {**self._default_kwargs, **kwargs}
-
-        # override args as well
-        pos_args = [*args, *self._default_args[len(args):]]
-
-        return self._func(*pos_args, **kwargs)
+        return self._func(*args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self(), name)

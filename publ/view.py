@@ -122,7 +122,7 @@ class View(caching.Memoizable):
     def entries(self):
         """ Gets entries which are authorized for the current viewer """
 
-        def _entries(unauthorized):
+        def _entries(unauthorized=0):
             result = []
             count = self.spec.get('count')
             cur_user = user.get_active()
@@ -138,13 +138,13 @@ class View(caching.Memoizable):
 
             return result
 
-        return utils.CallableProxy(_entries, unauthorized=0)
+        return utils.CallableProxy(_entries)
 
     @cached_property
     def unauthorized(self):
         """ Gets entries which the user is not allowed to view """
 
-        def _unauthorized(count):
+        def _unauthorized(count=None):
             result = []
             if count is None:
                 count = self.spec.get('count')
@@ -159,7 +159,7 @@ class View(caching.Memoizable):
 
             return result
 
-        return utils.CallableProxy(_unauthorized, count=None)
+        return utils.CallableProxy(_unauthorized)
 
     @cached_property
     def deleted(self):
