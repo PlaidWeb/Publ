@@ -2,6 +2,8 @@
 
 import html
 from abc import abstractmethod
+import urllib.parse
+import os.path
 
 import flask
 
@@ -73,3 +75,7 @@ class ExternalImage(Image):
     def _css_background(self, **kwargs):
         """ Get the CSS background-image for the remote image """
         return 'background-image: url("{}");'.format(self._get_url(kwargs.get('absolute')))
+
+    @property
+    def _filename(self):
+        return os.path.basename(urllib.parse.urlparse(self._get_url).path)

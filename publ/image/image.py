@@ -36,6 +36,11 @@ class Image(ABC):
         should be appended to the style_parts instead.
         """
 
+    @property
+    @abstractmethod
+    def _filename(self):
+        """ Get the filename of the file, for default alt text purposes """
+
     def get_img_attrs(self, **kwargs):
         """ Get an attribute list (src, style, et al) for the image.
 
@@ -70,7 +75,7 @@ class Image(ABC):
 
         return attrs
 
-    def get_img_tag(self, title='', alt_text='', **kwargs):
+    def get_img_tag(self, title=None, alt_text=None, **kwargs):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
@@ -82,6 +87,8 @@ class Image(ABC):
 
             if alt_text:
                 attrs['alt'] = alt_text
+            else:
+                attrs['alt'] = self._filename
 
             if title:
                 attrs['title'] = title

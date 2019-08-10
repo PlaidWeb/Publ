@@ -92,6 +92,10 @@ class ImageNotFound(Image):
     def _css_background(self, **kwargs):
         return '/* not found: {} */'.format(self.path)
 
+    @property
+    def _filename(self):
+        return os.path.basename(self.path)
+
 
 @orm.db_session(immediate=True)
 def _get_asset(file_path):

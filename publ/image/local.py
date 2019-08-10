@@ -79,6 +79,10 @@ class LocalImage(Image):
     def _key(self):
         return LocalImage, self._record
 
+    @property
+    def _filename(self):
+        return os.path.basename(self._record.file_path)
+
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=too-many-locals
         """
