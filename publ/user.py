@@ -4,7 +4,6 @@ import ast
 import collections
 import configparser
 import datetime
-import functools
 import logging
 
 import arrow
@@ -116,12 +115,11 @@ def log_access(record, cur_user, authorized):
             model.AuthLog(**values)
 
 
-@functools.lru_cache(64)
+@caching.cache.memoize(timeout=30)
 def _get_user(username):
     return User(username)
 
 
-@functools.lru_cache(64)
 def _get_group_set(groups):
     try:
         return ast.literal_eval(groups)

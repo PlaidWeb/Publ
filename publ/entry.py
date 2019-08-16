@@ -290,7 +290,7 @@ class Entry(caching.Memoizable):
         body, _, is_markdown = self._entry_content
         return TrueCallableProxy(
             lambda **kwargs: self._get_markup(body, is_markdown, **kwargs)
-            ) if body else CallableProxy(None)
+        ) if body else CallableProxy(None)
 
     @cached_property
     def more(self):
@@ -298,7 +298,7 @@ class Entry(caching.Memoizable):
         _, more, is_markdown = self._entry_content
         return TrueCallableProxy(
             lambda **kwargs: self._get_markup(more, is_markdown, **kwargs)
-            ) if more else CallableProxy(None)
+        ) if more else CallableProxy(None)
 
     @cached_property
     def card(self):
