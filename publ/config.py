@@ -12,6 +12,7 @@ database_config = {
     'provider': 'sqlite',
     'filename': ':memory:'
 }
+index_rescan_interval = 7200
 
 # Site content locations
 content_folder = 'content'
@@ -21,7 +22,6 @@ static_url_path = '/static'
 
 # Image rendition cache
 image_output_subdir = '_img'
-index_rescan_interval = 7200
 image_cache_interval = 3600
 image_cache_age = 86400 * 30  # one month
 
