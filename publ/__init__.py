@@ -180,6 +180,11 @@ class Publ(flask.Flask):
                                                    config.image_cache_age),
                                  config.image_cache_interval)
 
+        if config.auth_log_prune_interval and config.auth_log_prune_age:
+            self._maint.register(functools.partial(user.prune_log,
+                                                   config.auth_log_prune_age),
+                                 config.auth_log_prune_interval)
+
         self.before_request(self._maint.run)
 
         if 'CACHE_THRESHOLD' in config.cache:

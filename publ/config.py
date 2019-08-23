@@ -44,6 +44,8 @@ secret_key = str(uuid.uuid4())
 auth = {}
 user_list = 'users.cfg'
 admin_group = 'admin'
+auth_log_prune_interval = 3600
+auth_log_prune_age = 86400 * 30  # one month
 
 
 def setup(cfg):
