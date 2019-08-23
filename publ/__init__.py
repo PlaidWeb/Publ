@@ -137,6 +137,7 @@ class Publ(flask.Flask):
                           login_path='/_login',
                           login_name='login',
                           callback_path='/_cb',
+                          tester_path='/_ct',
                           force_ssl=config.auth.get('AUTH_FORCE_SSL'),
                           login_render_func=rendering.render_login_form)
 

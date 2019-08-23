@@ -250,13 +250,13 @@ def render_category(category='', template=None):
                       'ETag': etag}
 
 
-def render_login_form(login_url, auth):
+def render_login_form(**kwargs):
     """ Renders the login form using the mapped login template """
     tmpl = map_template('', 'login')
     if not tmpl:
         # fall back to the default Authl handler
         return None
-    return render_publ_template(tmpl, login_url=login_url, auth=auth)[0]
+    return render_publ_template(tmpl, **kwargs)[0]
 
 
 def handle_unauthorized(cur_user, category='', **kwargs):
