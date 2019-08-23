@@ -32,7 +32,7 @@ config = {
         'INDIELOGIN_CLIENT_ID': 'http://localhost',
         'MASTODON_NAME': 'Publ test suite',
     },
-    'user_list': 'tests/users.cfg'
+    'user_list': 'tests/users.cfg',
 }
 
 app = publ.Publ(__name__, config)

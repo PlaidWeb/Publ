@@ -144,10 +144,12 @@ def log_user():
 
 
 @orm.db_session()
-def known_users(days=30):
+def known_users(days=None):
     """ Get the users known to the system, as a list of (user,last_seen) """
-    since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
-    query = model.KnownUser.select(lambda x: x.last_seen >= since)
+    query = model.KnownUser.select()
+    if days:
+        since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
+        query = orm.select(e for e in query if e.last_seen >= since)
 
     return [(_get_user(record.user), arrow.get(record.last_seen).to(config.timezone))
             for record in query]
@@ -158,11 +160,13 @@ LogEntry = collections.namedtuple(
 
 
 @orm.db_session()
-def auth_log(days=30, start=0, count=100):
+def auth_log(days=None, start=0, count=100):
     """ Get the logged accesses to each entry """
-    since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
-    query = model.AuthLog.select(
-        lambda x: x.date >= since).order_by(orm.desc(model.AuthLog.date))[start:]
+    query = model.AuthLog.select()
+    if days:
+        since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
+        query = orm.select(e for e in query if e.date >= since)
+    query = query.order_by(orm.desc(model.AuthLog.date))[start:]
 
     return [LogEntry(date=arrow.get(record.date).to(config.timezone),
                      entry=record.entry,
@@ -170,3 +174,12 @@ def auth_log(days=30, start=0, count=100):
                      user_groups=_get_group_set(record.user_groups),
                      authorized=record.authorized)
             for record in query[:count]], len(query) - count
+
+
+@orm.db_session(optimistic=False)
+def prune_log(seconds):
+    """ Delete log entries which are older than the cutoff """
+    since = (arrow.utcnow() - datetime.timedelta(seconds=seconds)).datetime
+    LOGGER.debug("Purging auth entries older than %s", since)
+    orm.delete(e for e in model.AuthLog if e.date < since)
+    orm.delete(e for e in model.KnownUser if e.last_seen < since)
