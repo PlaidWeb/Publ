@@ -5,6 +5,7 @@ import flask
 
 import publ
 import publ.image
+import authl.flask
 
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,8 +30,19 @@ config = {
     },
     'auth': {
         'TEST_ENABLED': True,
-        'INDIELOGIN_CLIENT_ID': 'http://localhost',
+
+        'INDIEAUTH_CLIENT_ID': authl.flask.client_id,
+        'INDIELOGIN_CLIENT_ID': authl.flask.client_id,
+
         'MASTODON_NAME': 'Publ test suite',
+
+        'TWITTER_CLIENT_KEY': os.environ.get('TWITTER_CLIENT_KEY'),
+        'TWITTER_CLIENT_SECRET': os.environ.get('TWITTER_CLIENT_SECRET'),
+
+        'EMAIL_SENDMAIL': print,
+        'EMAIL_FROM': 'nobody@example.com',
+        'EMAIL_SUBJECT': 'Log in to authl test',
+        'EMAIL_CHECK_MESSAGE': 'Use the link printed to the test console',
     },
     'user_list': 'tests/users.cfg',
 }

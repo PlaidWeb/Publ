@@ -64,12 +64,13 @@ class Publ(flask.Flask):
             The default value is randomly generated at every application restart.
         auth -- Authentication configuration. See the Authl configuration
             documentation at [link TBD]. Additionally, setting the key
-            AUTH_FORCE_SSL to a truthy value can be used to force the user to
+            AUTH_FORCE_HTTPS to a truthy value can be used to force the user to
             switch to an SSL connection when they log in.
         user_list -- The file that configures the user and group list
         admin_user -- The user or group that has full administrative access
             to all entries regardless of permissions
         """
+        # pylint:disable=too-many-branches
 
         if Publ._instance and Publ._instance is not self:
             raise RuntimeError("Only one Publ app can run at a time")
@@ -80,7 +81,18 @@ class Publ(flask.Flask):
         super().__init__(name,
                          template_folder=config.template_folder,
                          static_folder=config.static_folder,
-                         static_url_path=config.static_url_path, **kwargs)
+                         static_url_path=config.static_url_path,
+                         **kwargs)
+
+        if 'AUTH_FORCE_SSL' in config.auth:
+            LOGGER.warning("The configuration key AUTH_FORCE_SSL has been \
+deprecated in favor of AUTH_FORCE_HTTPS. Please change your configuration \
+accordingly.")
+
+        auth_force_https = config.auth.get('AUTH_FORCE_HTTPS',
+                                           config.auth.get('AUTH_FORCE_SSL'))
+        if auth_force_https:
+            self.config['SESSION_COOKIE_SECURE'] = True
 
         self.secret_key = config.secret_key
 
@@ -138,7 +150,7 @@ class Publ(flask.Flask):
                           login_name='login',
                           callback_path='/_cb',
                           tester_path='/_ct',
-                          force_ssl=config.auth.get('AUTH_FORCE_SSL'),
+                          force_ssl=auth_force_https,
                           login_render_func=rendering.render_login_form)
 
         def logout(redir=''):

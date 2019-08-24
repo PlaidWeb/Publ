@@ -7,10 +7,11 @@
 <body>
 
 <div id="login">
-<p>This is a crappy-looking login page for Publ's tests.
+<p>This is a crappy-looking login page for Publ's tests. It is purposefully
+    sparse.
 
 {% if user %}
-The current user is {{user.name}}, who belongs to groups {{user.groups}}.
+The current user is {{user.name}}, who belongs to groups [{{', '.join(user.groups)}}].
 {%else%}
 Nobody is currently logged in.
 {% endif %}</p>
