@@ -350,6 +350,9 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
 def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the specified
     auth endpoint. """
+
+    force_ssl = config.auth.get('AUTH_FORCE_SSL')
+
     def endpoint_link(redir=None, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
         if redir is None:
@@ -364,6 +367,11 @@ def auth_link(endpoint):
         redir = re.sub(r'^/*', r'', redir)
         # if there's a trailing ? strip that off too
         redir = re.sub(r'\?$', r'', redir)
+
+        if force_ssl and flask.request.scheme != 'https':
+            kwargs = {**kwargs,
+                      '_external': True,
+                      '_scheme': 'https'}
 
         return flask.url_for(endpoint, redir=redir, **kwargs)
 

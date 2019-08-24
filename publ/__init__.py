@@ -80,7 +80,11 @@ class Publ(flask.Flask):
         super().__init__(name,
                          template_folder=config.template_folder,
                          static_folder=config.static_folder,
-                         static_url_path=config.static_url_path, **kwargs)
+                         static_url_path=config.static_url_path,
+                         **kwargs)
+
+        if config.auth.get('AUTH_FORCE_SSL'):
+            self.config['SESSION_COOKIE_SECURE'] = True
 
         self.secret_key = config.secret_key
 
