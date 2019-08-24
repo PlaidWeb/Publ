@@ -351,7 +351,7 @@ def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the specified
     auth endpoint. """
 
-    force_ssl = config.auth.get('AUTH_FORCE_SSL')
+    force_ssl = config.auth.get('AUTH_FORCE_HTTPS', config.auth.get('AUTH_FORCE_SSL'))
 
     def endpoint_link(redir=None, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
