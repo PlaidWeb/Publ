@@ -12,7 +12,6 @@ APP_PATH = os.path.dirname(os.path.abspath(__file__))
 logging.basicConfig(level=logging.DEBUG)
 
 config = {
-    # Leave this off to do an in-memory database
     'secret_key': 'this test suite is insecure as heck',
     'database_config': {
         'provider': 'sqlite',
