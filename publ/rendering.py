@@ -250,7 +250,7 @@ def render_category(category='', template=None):
                       'ETag': etag}
 
 
-def render_login_form(**kwargs):
+def render_login_form(redir=None, **kwargs):
     """ Renders the login form using the mapped login template """
 
     # If the user is already logged in, just redirect them to where they're
