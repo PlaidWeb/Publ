@@ -1,11 +1,11 @@
 import logging
 import os
 
+import authl.flask
 import flask
 
 import publ
 import publ.image
-import authl.flask
 
 APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
