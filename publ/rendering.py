@@ -252,6 +252,14 @@ def render_category(category='', template=None):
 
 def render_login_form(**kwargs):
     """ Renders the login form using the mapped login template """
+
+    # If the user is already logged in, just redirect them to where they're
+    # going; if they weren't authorized then they'll just get the unauthorized
+    # view.
+    LOGGER.debug('redir=%s user=%s', redir, user.get_active())
+    if redir is not None and user.get_active():
+        return redirect(redir)
+
     tmpl = map_template('', 'login')
     if not tmpl:
         # fall back to the default Authl handler
