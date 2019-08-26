@@ -250,15 +250,8 @@ def render_category(category='', template=None):
                       'ETag': etag}
 
 
-def render_login_form(redir=None, **kwargs):
+def render_login_form(**kwargs):
     """ Renders the login form using the mapped login template """
-
-    # If the user is already logged in, just redirect them to where they're
-    # going; if they weren't authorized then they'll just get the unauthorized
-    # view.
-    if redir is not None and flask.session.get('me'):
-        return flask.redirect(redir)
-
     tmpl = map_template('', 'login')
     if not tmpl:
         # fall back to the default Authl handler
