@@ -1,0 +1,24 @@
+{% extends '/index.html' %}
+
+{% block entries %}
+{{super()}}
+
+<h2>Deleted entries</h2>
+<ul>
+{% for entry in view.deleted %}
+<li><a href="{{entry.link}}">{{entry.title}}</a> ({{entry.date.humanize()}})</li>
+{% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block navigation %}
+{{super()}}
+
+<ul>
+    <li><a href="{{view.current.link}}">now</a></li>
+    <li><a href="?date=2019">year 2019</a></li>
+    <li><a href="?date=2038">year 2038</a></li>
+    <li><a href="?date=1978">year 1978</a></li>
+</ul>
+{% endblock %}

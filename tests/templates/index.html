@@ -57,6 +57,7 @@
     </div>
 
     <div class="entries">
+    {% block entries scoped %}
 
         {% if not user and content.unauthorized %}
         <div class="login">
@@ -81,7 +82,7 @@
 
         </article>
         {% endfor %}
-
+    {% endblock %}
     </div>
 
     <div class="nav">
