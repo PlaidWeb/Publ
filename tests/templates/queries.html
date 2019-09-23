@@ -43,3 +43,45 @@
 <li>{{item.title}} ({{item.entry_type}})</li>
 {% endfor %}
 </ul>
+
+<h2>category='categories'</h2>
+<ul>
+    {% for item in get_view(category='categories').entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
+<h2>category='categories',recurse=True</h2>
+<ul>
+    {% for item in get_view(category='categories',recurse=True).entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
+<h2>category=['images','pushl']</h2>
+<ul>
+    {% for item in get_view(category=['images','pushl']).entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
+<h2>recurse=True,category='categories',category_not='categories'</h2>
+<ul>
+    {% for item in get_view(recurse=True,category='categories',category_not='categories').entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
+<h2>recurse=True,category='categories',category_not='categories/subcat1'</h2>
+<ul>
+    {% for item in get_view(recurse=True,category='categories',category_not='categories/subcat1').entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
+<h2>recurse=True,category='categories',category_not=['categories/subcat1','categories/subcat2']</h2>
+<ul>
+    {% for item in get_view(recurse=True,category='categories',category_not=['categories/subcat1','categories/subcat2']).entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>

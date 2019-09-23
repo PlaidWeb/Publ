@@ -47,6 +47,16 @@ def where_entry_deleted(query):
 def where_entry_category(query, category, recurse=False):
     """ Generate a where clause for a particular category """
 
+    if utils.is_list(category):
+        clist = [str(c) for c in category]
+        if recurse:
+            raise InvalidQueryError("Cannot currently combine category lists with recursive")
+
+        return orm.select(
+            e for e in query
+            if e.category in clist
+        )
+
     category = str(category)
     if category and recurse:
         # We're recursing and aren't in /, so add the prefix clause
@@ -62,6 +72,18 @@ def where_entry_category(query, category, recurse=False):
 
     # We're recursing and have no category, which means we're doing nothing
     return query
+
+
+def where_entry_category_not(query, category):
+    """ Generate a where clause for not being in a particular category """
+    if utils.is_list(category):
+        clist = [str(c) for c in category]
+        return orm.select(
+            e for e in query
+            if e.category not in clist
+        )
+    return orm.select(
+        e for e in query if e.category != str(category))
 
 
 def where_before_entry(query, ref):
@@ -208,9 +230,11 @@ def build_query(spec):
 
     # restrict by category
     if spec.get('category') is not None:
-        path = str(spec.get('category', ''))
         recurse = spec.get('recurse', False)
-        query = where_entry_category(query, path, recurse)
+        query = where_entry_category(query, spec.get('category', ''), recurse)
+
+    if spec.get('category_not') is not None:
+        query = where_entry_category_not(query, spec.get('category_not'))
 
     if spec.get('entry_type') is not None:
         query = where_entry_type(query, spec['entry_type'])

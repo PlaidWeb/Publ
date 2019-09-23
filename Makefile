@@ -28,6 +28,7 @@ preflight:
 		&& [ "$(shell git rev-parse master)" != "$(shell git rev-parse master@{upstream})" ] \
 		&& echo "Master differs from upstream" 1>&2 \
 		&& exit 1 || exit 0
+
 .PHONY: build
 build: preflight pylint flake8
 	pipenv run python3 setup.py sdist
