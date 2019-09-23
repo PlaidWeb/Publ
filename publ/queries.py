@@ -19,13 +19,11 @@ def where_entry_visible(query, date=None):
     date -- The date to generate it relative to (defaults to right now)
     """
 
-    return orm.select(
-        e for e in query
-        if e.status == model.PublishStatus.PUBLISHED.value or
-        (e.status == model.PublishStatus.SCHEDULED.value and
-         (e.utc_date <= (date or arrow.utcnow().datetime))
-         )
-    )
+    return query.filter(lambda e:
+                        e.status == model.PublishStatus.PUBLISHED.value or (
+                            e.status == model.PublishStatus.SCHEDULED.value and (
+                                e.utc_date <= (date or arrow.utcnow().datetime))
+                        ))
 
 
 def where_entry_visible_future(query):
@@ -52,23 +50,19 @@ def where_entry_category(query, category, recurse=False):
         if recurse:
             raise InvalidQueryError("Cannot currently combine category lists with recursive")
 
-        return orm.select(
-            e for e in query
-            if e.category in clist
-        )
+        return query.filter(lambda e: e.category in clist)
 
     category = str(category)
     if category and recurse:
         # We're recursing and aren't in /, so add the prefix clause
-        return orm.select(
-            e for e in query
-            if e.category == category or e.category.startswith(category + '/')
-        )
+        return query.filter(lambda e:
+                            e.category == category or
+                            e.category.startswith(category + '/'))
 
     if not recurse:
         # We're not recursing, so we need an exact match on a possibly-empty
         # category
-        return orm.select(e for e in query if e.category == category)
+        return query.filter(lambda e: e.category == category)
 
     # We're recursing and have no category, which means we're doing nothing
     return query
@@ -78,12 +72,8 @@ def where_entry_category_not(query, category):
     """ Generate a where clause for not being in a particular category """
     if utils.is_list(category):
         clist = [str(c) for c in category]
-        return orm.select(
-            e for e in query
-            if e.category not in clist
-        )
-    return orm.select(
-        e for e in query if e.category != str(category))
+        return query.filter(lambda e: e.category not in clist)
+    return query.filter(lambda e: e.category != str(category))
 
 
 def where_before_entry(query, ref):
@@ -93,11 +83,8 @@ def where_before_entry(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return orm.select(
-        e for e in query
-        if e.local_date < ref.local_date or
-        (e.local_date == ref.local_date and e.id < ref.id)
-    )
+    return query.filter(lambda e: (e.local_date < ref.local_date or
+                                   (e.local_date == ref.local_date and e.id < ref.id)))
 
 
 def where_after_entry(query, ref):
@@ -107,13 +94,11 @@ def where_after_entry(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return orm.select(
-        e for e in query
-        if e.local_date > ref.local_date or
-        (e.local_date == ref.local_date and
-         e.id > ref.id
-         )
-    )
+    return query.filter(lambda e:
+                        e.local_date > ref.local_date or (
+                            e.local_date == ref.local_date and
+                            e.id > ref.id
+                        ))
 
 
 def where_entry_last(query, ref):
@@ -123,13 +108,11 @@ def where_entry_last(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return orm.select(
-        e for e in query
-        if e.local_date < ref.local_date or
-        (e.local_date == ref.local_date and
-         e.id <= ref.id
-         )
-    )
+    return query.filter(lambda e:
+                        e.local_date < ref.local_date or (
+                            e.local_date == ref.local_date and
+                            e.id <= ref.id
+                        ))
 
 
 def where_entry_first(query, ref):
@@ -139,13 +122,11 @@ def where_entry_first(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return orm.select(
-        e for e in query
-        if e.local_date > ref.local_date or
-        (e.local_date == ref.local_date and
-         e.id >= ref.id
-         )
-    )
+    return query.filter(lambda e:
+                        e.local_date > ref.local_date or (
+                            e.local_date == ref.local_date and
+                            e.id >= ref.id
+                        ))
 
 
 def where_entry_type(query, entry_type):
@@ -154,8 +135,8 @@ def where_entry_type(query, entry_type):
     entry_type -- one or more entries to check against
     """
     if utils.is_list(entry_type):
-        return orm.select(e for e in query if e.entry_type in entry_type)
-    return orm.select(e for e in query if e.entry_type == entry_type)
+        return query.filter(lambda e: e.entry_type in entry_type)
+    return query.filter(lambda e: e.entry_type == entry_type)
 
 
 def where_entry_type_not(query, entry_type):
@@ -164,8 +145,8 @@ def where_entry_type_not(query, entry_type):
     entry_type -- one or more entries to check against
     """
     if utils.is_list(entry_type):
-        return orm.select(e for e in query if e.entry_type not in entry_type)
-    return orm.select(e for e in query if e.entry_type != entry_type)
+        return query.filter(lambda e: e.entry_type not in entry_type)
+    return query.filter(lambda e: e.entry_type != entry_type)
 
 
 def where_entry_tag(query, tag):
@@ -184,11 +165,10 @@ def where_entry_date(query, datespec):
     date, interval, _ = utils.parse_date(datespec)
     start_date, end_date = date.span(interval)
 
-    return orm.select(
-        e for e in query if
-        e.local_date >= start_date.naive and
-        e.local_date <= end_date.naive
-    )
+    return query.filter(lambda e:
+                        e.local_date >= start_date.naive and
+                        e.local_date <= end_date.naive
+                        )
 
 
 def get_entry(entry):
@@ -217,6 +197,7 @@ def build_query(spec):
         before -- get entries from before this one
         after -- get entries from after this one
     """
+    # pylint:disable=too-many-branches
 
     query = model.Entry.select()
 
