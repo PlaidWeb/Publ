@@ -49,7 +49,7 @@ def where_entry_category(query, category, recurse=False):
         clist = {str(c) for c in category}
 
         if recurse:
-            prefixes = tuple(c+'/' for c in clist)
+            prefixes = tuple(c + '/' for c in clist)
             categories = orm.select(e.category for e in model.Entry)
             allowed = {*clist, *[c for c in categories if c.startswith(prefixes)]}
             return query.filter(lambda e: e.category in allowed)
