@@ -46,9 +46,13 @@ def where_entry_category(query, category, recurse=False):
     """ Generate a where clause for a particular category """
 
     if utils.is_list(category):
-        clist = [str(c) for c in category]
+        clist = {str(c) for c in category}
+
         if recurse:
-            raise InvalidQueryError("Cannot currently combine category lists with recursive")
+            prefixes = tuple(c+'/' for c in clist)
+            categories = orm.select(e.category for e in model.Entry)
+            allowed = {*clist, *[c for c in categories if c.startswith(prefixes)]}
+            return query.filter(lambda e: e.category in allowed)
 
         return query.filter(lambda e: e.category in clist)
 

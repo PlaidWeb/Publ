@@ -65,6 +65,13 @@
     {% endfor %}
 </ul>
 
+<h2>category=['images','categories'],recurse=True</h2>
+<ul>
+    {% for item in get_view(category=['images','categories'],recurse=True).entries %}
+    <li>{{item.category~''}}: {{item.title}}</li>
+    {% endfor %}
+</ul>
+
 <h2>recurse=True,category='categories',category_not='categories'</h2>
 <ul>
     {% for item in get_view(recurse=True,category='categories',category_not='categories').entries %}
