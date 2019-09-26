@@ -204,6 +204,9 @@ def make_tag(name, attrs, start_end=False):
             text += ' {}'.format(key)
             if val is not None:
                 escaped = html.escape(str(val), False).replace('"', '&#34;')
+                if isinstance(val, flask.Markup):
+                    # We just double-escaped all entities...
+                    escaped = re.sub(r'&amp;([a-zA-Z0-9.\-_\:]+;)', r'&\1', val)
                 text += '="{}"'.format(escaped)
     if start_end:
         text += ' /'
