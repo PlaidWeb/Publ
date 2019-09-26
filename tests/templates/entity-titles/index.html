@@ -1,0 +1,6 @@
+{% extends '/index.html' %}
+
+{% block entry %}
+{{super()}}
+{{image('button.png').get_img_tag(title=entry.title(markup=False),alt_text=entry.title,width=16,link=entry.link)}}
+{% endblock %}

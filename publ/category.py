@@ -114,7 +114,7 @@ class Category(caching.Memoizable):
             subcats = {'/'.join(c) for c in subcats}
 
             # convert to a bunch of Category objects
-            return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name or c.name)
+            return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
 
         return utils.CallableProxy(_get_subcats)
 
@@ -157,12 +157,25 @@ class Category(caching.Memoizable):
 
     @cached_property
     def name(self):
-        """ Get the display name of the category """
+        """ Get the display name of the category. Accepts the following arguments:
+
+        markup -- If True, convert it from Markdown to HTML; otherwise, strip
+            all markup (default: True)
+        no_smartquotes -- if True, preserve quotes and other characters as originally
+            presented
+        markdown_extensions -- a list of markdown extensions to use
+        """
         if self._meta and self._meta.get('name'):
             # get it from the meta file
-            return self._meta.get('name')
-        # infer it from the basename
-        return self.basename.replace('_', ' ').title()
+            name = self._meta.get('name')
+        else:
+            # infer it from the basename
+            name = self.basename.replace('_', ' ').title()
+
+        def _name(markup=True, no_smartquotes=False, markdown_extensions=None):
+            return markdown.render_title(name, markup, no_smartquotes,
+                                         markdown_extensions)
+        return utils.CallableProxy(_name)
 
     @cached_property
     def description(self):
@@ -203,7 +216,7 @@ class Category(caching.Memoizable):
         """ Get the sorting name of this category """
         if self._record and self._record.sort_name:
             return self._record.sort_name
-        return self.name
+        return self.name(markup=False)
 
     @cached_property
     def tags(self):

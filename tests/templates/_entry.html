@@ -27,11 +27,11 @@
     <div id="nav" class="sidebar">
         <h2>Navigation</h2>
         <ul>
-            <li class="cat-back"><a href="{{category.link}}">Back to {{category.name or "main site"}}</a></li>
+            <li class="cat-back"><a href="{{category.link}}" title="{{category.name(markup=False)}}">Back to {{category.name or "main site"}}</a></li>
             {% if entry.previous %}
-            <li class="entry-prev"><a href="{{entry.previous.link}}">Previous entry: {{entry.previous.title}}</a></li>
+            <li class="entry-prev"><a href="{{entry.previous.link}}" title="{{entry.previous.title(markup=False)}}">Previous entry: {{entry.previous.title}}</a></li>
             {% endif %} {% if entry.next %}
-            <li class="entry-next"><a href="{{entry.next.link}}">Next entry: {{entry.next.title}}</a></li>
+            <li class="entry-next"><a href="{{entry.next.link}}" title="{{entry.next.title(markup=False)}}">Next entry: {{entry.next.title}}</a></li>
             {% endif %}
         </ul>
     </div>
