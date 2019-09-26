@@ -230,7 +230,7 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def title(self):
-        """ Get the title of the entry. Accepts the following argument:
+        """ Get the title of the entry. Accepts the following arguments:
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
             all markup (default: True)
