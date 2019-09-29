@@ -4,8 +4,6 @@ import concurrent.futures
 import functools
 import logging
 import os
-import shutil
-import tempfile
 import threading
 import time
 
@@ -244,10 +242,9 @@ class LocalImage(Image):
                 if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
                     image = image.quantize(kwargs.get('quantize', 256))
 
-                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as file:
-                    temp_path = file.name
+                from atomicwrites import atomic_write
+                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
                     image.save(file, **out_args)
-                shutil.move(temp_path, path)
 
                 LOGGER.info("%s: complete", path)
             except Exception:  # pylint: disable=broad-except

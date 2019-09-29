@@ -62,16 +62,17 @@ setup(
     package_data={'publ': ['default_template/*']},
 
     install_requires=[
-        'Flask',
-        'flask_caching',
         'arrow>=0.13.0',
-        'pony',
+        'atomicwrites',
+        'authl',
+        'awesome-slugify',
+        'flask',
+        'flask_caching',
         'misaka',
-        'Pillow',
+        'pillow',
+        'pony',
         'pygments',
         'watchdog',
-        'awesome-slugify',
-        'Authl'
     ],
 
     extras_require={'dev': [

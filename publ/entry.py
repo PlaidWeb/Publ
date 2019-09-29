@@ -7,8 +7,6 @@ import hashlib
 import logging
 import os
 import re
-import shutil
-import tempfile
 import uuid
 
 import arrow
@@ -477,8 +475,8 @@ def get_entry_id(entry, fullpath, assign_id):
 
 def save_file(fullpath, entry):
     """ Save a message file out, without mangling the headers """
-    with tempfile.NamedTemporaryFile('w', delete=False) as file:
-        tmpfile = file.name
+    from atomicwrites import atomic_write
+    with atomic_write(fullpath, overwrite=True) as file:
         # we can't just use file.write(str(entry)) because otherwise the
         # headers "helpfully" do MIME encoding normalization.
         # str(val) is necessary to get around email.header's encoding
@@ -487,7 +485,6 @@ def save_file(fullpath, entry):
             print('{}: {}'.format(key, str(val)), file=file)
         print('', file=file)
         file.write(entry.get_payload())
-    shutil.move(tmpfile, fullpath)
 
 
 @orm.db_session(immediate=True)
