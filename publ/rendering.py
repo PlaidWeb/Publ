@@ -145,9 +145,11 @@ def render_error(category, error_message, error_codes, exception=None):
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
 
-    # Effectively strip off the leading '/', and let map_template decide
+    LOGGER.debug("render_exception %s %s", type(error), error)
+
+    # Effectively strip off the leading '/', so map_template can decide
     # what the actual category is
-    _, _, category = request.path.partition('/')
+    category = request.path[1:]
 
     qsize = index.queue_length()
     if isinstance(error, http_error.NotFound) and qsize:
@@ -205,10 +207,9 @@ def render_category(category='', template=None):
         return redir
 
     # Forbidden template types
-    if template and template.startswith('_'):
-        raise http_error.Forbidden("Template is private")
     if template in ['entry', 'error', 'login', 'unauthorized', 'logout']:
-        raise http_error.BadRequest("Invalid view requested")
+        LOGGER.info("Attempted to render special template %s", template)
+        raise http_error.Forbidden("Invalid view requested")
 
     if category:
         # See if there's any entries for the view...
@@ -298,7 +299,7 @@ def render_entry(entry_id, slug_text='', category=''):
     category -- The expected category
     """
 
-    # pylint: disable=too-many-return-statements,too-many-branches
+    # pylint: disable=too-many-return-statements,too-many-branches,unused-argument
 
     # check if it's a valid entry
     record = model.Entry.get(id=entry_id)
@@ -342,18 +343,21 @@ def render_entry(entry_id, slug_text='', category=''):
                                        category=category)
 
     # check if the canonical URL matches
-    if record.category != category or record.slug_text != slug_text:
+    canon_url = url_for('entry',
+                        entry_id=entry_id,
+                        category=record.category,
+                        slug_text=record.slug_text if record.slug_text else None,
+                        _external=True,
+                        **request.args)
+    LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
+    if request.url != canon_url:
         # This could still be a redirected path...
         path_redirect = get_redirect()
         if path_redirect:
             return path_redirect
 
         # Redirect to the canonical URL
-        return redirect(url_for('entry',
-                                entry_id=entry_id,
-                                category=record.category,
-                                slug_text=record.slug_text if record.slug_text else None,
-                                **request.args))
+        return redirect(canon_url)
 
     # if the entry canonically redirects, do that now
     entry_redirect = record.redirect_url
@@ -425,6 +429,8 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
 
 def render_transparent_chit():
     """ Render a transparent chit for external, sized images """
+
+    LOGGER.debug("chit")
 
     if request.if_none_match.contains('chit') or request.if_modified_since:
         return 'Not modified', 304
