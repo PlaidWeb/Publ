@@ -161,9 +161,12 @@ class Image(ABC):
         if 'link' in kwargs and kwargs['link'] is not None:
             return '{}{}</a>'.format(
                 utils.make_tag(
-                    'a', {'href': utils.remap_link_target(
-                        kwargs['link'], kwargs.get('absolute')
-                    )}),
+                    'a', {
+                        'href': utils.remap_link_target(
+                            kwargs['link'],
+                            kwargs.get('absolute')),
+                        'class': kwargs.get('link_class', False)
+                    }),
                 text)
 
         if 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
@@ -193,5 +196,6 @@ class Image(ABC):
         return utils.make_tag('a', {
             'href': self.get_fullsize(kwargs),
             'data-lightbox': kwargs['gallery_id'],
-            'title': title
+            'title': title or False,
+            'class': kwargs.get('link_class', False)
         })
