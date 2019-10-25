@@ -78,4 +78,4 @@ class ExternalImage(Image):
 
     @property
     def _filename(self):
-        return os.path.basename(urllib.parse.urlparse(self._get_url).path)
+        return os.path.basename(urllib.parse.urlparse(self._get_url(True)).path)
