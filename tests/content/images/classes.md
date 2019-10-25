@@ -13,10 +13,11 @@ UUID: d20ffc15-534f-5cfb-8af5-c58a93f77e8f
 
 ![{320,img_class="foo",gallery_id="asdf"}](Landscape_1.jpg | Portrait_1.jpg)
 
-`link_class`
+`link_class` using `gallery_id`
 
 ![{320,link_class="foo",gallery_id="asdf"}](Landscape_1.jpg | Portrait_1.jpg)
 
-`class`
+`link_class` using `link`
 
-![{320,class="foo",gallery_id="asdf"}](Landscape_1.jpg | Portrait_1.jpg)
+![{320,link_class="foo",link="https://example.com/"}](Landscape_1.jpg | Portrait_1.jpg)
+
