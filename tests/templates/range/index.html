@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{view.range}}</title>
+</head>
+<body>
+    <h1>{{view.range}}</h1>
+
+    {% if view.previous %}<a href="{{view.previous.link}}">{{view.previous.range}}</a>{% endif %}
+    {% if view.next %}<a href="{{view.next.link}}">{{view.next.range}}</a>{% endif %}
+
+    {% for entry in view.entries %}
+    <h2>{{entry.title}}</h2>
+    <ul><li><a href="{{view(date=entry.date_year)}}">{{entry.date_year}}</a></li>
+        <li><a href="{{view(date=entry.date_month)}}">{{entry.date_month}}</a></li>
+        <li><a href="{{view(date=entry.date_day)}}">{{entry.date_day}}</a></li>
+    </ul>
+    {% endfor %}
+</body>
+</html>
