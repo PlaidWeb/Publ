@@ -16,6 +16,14 @@ The current user is {{user.name}}, who belongs to groups [{{', '.join(user.group
 Nobody is currently logged in.
 {% endif %}</p>
 
+<p>Some other Authl config stuff:</p>
+
+<ul>
+    <li>Login URL: {{login_url}}</li>
+    <li>API tester: {{test_url}}</li>
+    <li>Redirect path: '{{redir}}'</li>
+</ul>
+
 <form method="GET" action="{{login_url}}" novalidate>
     <input type="url" name="me" placeholder="A credential goes here">
 </form>

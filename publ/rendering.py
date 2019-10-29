@@ -27,6 +27,12 @@ EXTENSION_MAP = {
     '.txt': 'text/plain'
 }
 
+# Headers for responses that shouldn't be cached
+NO_CACHE = {
+    'Cache-control': 'private, no-cache, no-store, max-age=0',
+    'X-Robots-Tag': 'noindex,noarchive'
+}
+
 
 def mime_type(template):
     """ infer the content-type from the extension """
@@ -166,6 +172,10 @@ def render_exception(error):
         response.headers['Refresh'] = max(5, qsize / 5)
         return response, 503
 
+    if isinstance(error, http_error.Unauthorized):
+        from flask import current_app as app
+        return app.authl.render_login_form(destination=utils.redir_path()), 401, NO_CACHE
+
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
             'type': type(error).__name__,
@@ -265,27 +275,25 @@ def render_login_form(redir=None, **kwargs):
     if not tmpl:
         # fall back to the default Authl handler
         return None
-    return render_publ_template(tmpl, **kwargs)[0]
+    return render_publ_template(tmpl, redir=redir, **kwargs)[0]
 
 
 def handle_unauthorized(cur_user, category='', **kwargs):
     """ Handle an unauthorized access to a page """
 
-    headers = {
-        'Cache-control': 'private, no-cache, no-store, max-age=0',
-        'X-Robots-Tag': 'noindex,noarchive'
-    }
-
     if cur_user:
         # User is logged in already
         tmpl = map_template(category, 'unauthorized')
         if not tmpl:
+            # Use the default error handler
             raise http_error.Forbidden(
                 "User {name} does not have access".format(name=cur_user.name))
-        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, headers
+
+        # Render the category's unauthorized template
+        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, NO_CACHE
 
     # User is not already logged in, so present a login page
-    return redirect(utils.auth_link('login')), headers
+    raise http_error.Unauthorized()
 
 
 @orm.db_session(retry=5)
@@ -393,8 +401,7 @@ def render_entry(entry_id, slug_text='', category=''):
         'ETag': etag
     }
     if record.status == model.PublishStatus.HIDDEN.value:
-        headers['Cache-control'] = 'private, no-cache, no-store, max-age=0'
-        headers['X-Robots-Tag'] = 'noindex, noarchive'
+        headers = {**headers, **NO_CACHE}
 
     return rendered, headers
 

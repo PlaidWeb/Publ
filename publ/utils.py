@@ -354,26 +354,35 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
         return super().to_python(value)
 
 
+def redir_path(path=None):
+    """ Convert a URI path to a path fragment, suitable for url_for
+
+    :param path: The path to redirect to; uses the current request.full_path if
+        unspecified
+    """
+
+    if path is None:
+        path = flask.request.full_path
+    else:
+        path = str(path)
+
+    # strip off leading slashes
+    path = re.sub(r'^/*', r'', path)
+    # if there's a trailing ? strip that off too
+    path = re.sub(r'\?$', r'', path)
+
+    return path
+
+
 def auth_link(endpoint):
-    """ Generates a function that maps an optional redir parameter to the specified
-    auth endpoint. """
+    """ Generates a function that maps an optional redir parameter to the
+    specified endpoint. """
 
     force_ssl = config.auth.get('AUTH_FORCE_HTTPS', config.auth.get('AUTH_FORCE_SSL'))
 
     def endpoint_link(redir=None, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
-        if redir is None:
-            # nothing specified so use the current request path
-            redir = flask.request.full_path
-        else:
-            # resolve CallableProxy if present
-            redir = str(redir)
-        LOGGER.debug("  Resulting redir = %s", redir)
-
-        # strip off leading slashes
-        redir = re.sub(r'^/*', r'', redir)
-        # if there's a trailing ? strip that off too
-        redir = re.sub(r'\?$', r'', redir)
+        redir = redir_path(redir)
 
         if force_ssl and flask.request.scheme != 'https':
             kwargs = {**kwargs,

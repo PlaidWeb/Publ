@@ -11,7 +11,9 @@
     <div id="login">
         <h1>Authorization Pending</h1>
         <div id="notify">
-        <p>Sorry, <code>{{user.name}}</code>, you don't currently have access to this page. You can try <a href="{{logout}}">logging in as someone else</a> or <a href="{{logout(category.link if category else None)}}">logging out entirely</a>.</p>
+        <p>User {{user.name}}, groups=[{{', '.join(user.groups)}}]</p>
+        <p><a href="{{logout}}">log in as someone else</a>, <a href="{{logout(category.link if category else None)}}">log out entirely</a>.</p>
+
     </div>
         <div id="powered">
             <p>Powered by <a href="https://github.com/PlaidWeb/Authl">Authl</a></p>
