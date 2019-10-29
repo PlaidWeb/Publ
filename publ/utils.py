@@ -403,10 +403,10 @@ def stash(key: str) -> typing.Callable:
 
     def decorator(func: typing.Callable) -> typing.Callable:
         def wrapped_func(*args, **kwargs):
-            if key not in flask.g:
-                val = func(*args, **kwargs)
-                setattr(flask.g, key, val)
-                return val
-            return flask.g.get(key)
+            if key in flask.g:
+                return flask.g.get(key)
+            val = func(*args, **kwargs)
+            setattr(flask.g, key, val)
+            return val
         return wrapped_func
     return decorator

@@ -88,17 +88,17 @@ class User(caching.Memoizable):
         return config.admin_group and config.admin_group in self.groups
 
 
-def _get_user_id():
-    if flask.session.get('me'):
-        return flask.session['me']
-
-    return None
-
-
 @utils.stash('user')
 def get_active():
     """ Get the active user """
+    def _get_user_id():
+        if flask.session.get('me'):
+            return flask.session['me']
+
+        return None
+
     user_id = _get_user_id()
+    LOGGER.debug("Got user id: %s", user_id)
     return User(user_id) if user_id else None
 
 
