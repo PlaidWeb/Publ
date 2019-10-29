@@ -8,10 +8,9 @@ import logging
 import re
 
 import arrow
+import authl.flask
 import flask
 import werkzeug.exceptions
-
-import authl.flask
 
 from . import (caching, config, image, index, maintenance, model, rendering,
                user, utils, view)
