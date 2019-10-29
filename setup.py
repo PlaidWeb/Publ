@@ -62,9 +62,9 @@ setup(
     package_data={'publ': ['default_template/*']},
 
     install_requires=[
-        'arrow>=0.13.0',
+        'arrow',
         'atomicwrites',
-        'authl',
+        'authl>=0.2.3',
         'awesome-slugify',
         'flask',
         'flask_caching',

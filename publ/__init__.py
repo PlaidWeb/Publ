@@ -8,9 +8,10 @@ import logging
 import re
 
 import arrow
-import authl.flask
 import flask
 import werkzeug.exceptions
+
+import authl.flask
 
 from . import (caching, config, image, index, maintenance, model, rendering,
                user, utils, view)
@@ -140,13 +141,13 @@ accordingly.")
 
         caching.init_app(self, config.cache)
 
-        authl.flask.setup(self, config.auth,
-                          login_path='/_login',
-                          login_name='login',
-                          callback_path='/_cb',
-                          tester_path='/_ct',
-                          force_ssl=auth_force_https,
-                          login_render_func=rendering.render_login_form)
+        self.authl = authl.flask.AuthlFlask(self, config.auth,
+                                            login_path='/_login',
+                                            login_name='login',
+                                            callback_path='/_cb',
+                                            tester_path='/_ct',
+                                            force_ssl=auth_force_https,
+                                            login_render_func=rendering.render_login_form)
 
         def logout(redir=''):
             """ Log out from the thing """
