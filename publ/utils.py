@@ -6,6 +6,7 @@ import html.parser
 import logging
 import os
 import re
+import typing
 import urllib.parse
 
 import arrow
@@ -392,3 +393,20 @@ def auth_link(endpoint):
         return flask.url_for(endpoint, redir=redir, **kwargs)
 
     return CallableProxy(endpoint_link)
+
+
+def stash(key: str) -> typing.Callable:
+    """ Decorator to memoize a function onto the global context.
+
+    :param str key: The memoization key
+    """
+
+    def decorator(func: typing.Callable) -> typing.Callable:
+        def wrapped_func(*args, **kwargs):
+            if key not in flask.g:
+                val = func(*args, **kwargs)
+                setattr(flask.g, key, val)
+                return val
+            return flask.g.get(key)
+        return wrapped_func
+    return decorator

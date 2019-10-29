@@ -11,7 +11,7 @@ import flask
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import caching, config, model
+from . import caching, config, model, utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -88,12 +88,18 @@ class User(caching.Memoizable):
         return config.admin_group and config.admin_group in self.groups
 
 
-def get_active():
-    """ Get the active user and add it to the request stash """
+def _get_user_id():
     if flask.session.get('me'):
-        return User(flask.session['me'])
+        return flask.session['me']
 
     return None
+
+
+@utils.stash('user')
+def get_active():
+    """ Get the active user """
+    user_id = _get_user_id()
+    return User(user_id) if user_id else None
 
 
 @orm.db_session(immediate=True)
