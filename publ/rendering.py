@@ -23,8 +23,8 @@ EXTENSION_MAP = {
     '.html': 'text/html; charset=utf-8',
     '.xml': 'application/xml',
     '.json': 'application/json',
-    '.css': 'text/css',
-    '.txt': 'text/plain'
+    '.css': 'text/css; charset=utf-8',
+    '.txt': 'text/plain; charset=utf-8'
 }
 
 # Headers for responses that shouldn't be cached
