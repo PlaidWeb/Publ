@@ -8,7 +8,7 @@ import requests
 import werkzeug.exceptions as http_error
 from authl.handlers import indieauth
 
-from . import config
+from . import config, utils
 from .caching import cache
 
 LOGGER = logging.getLogger(__name__)
@@ -85,3 +85,19 @@ def parse_token(token: str) -> str:
         flask.g.user = None
         flask.g.token_error = error.message
         raise http_error.Unauthorized(error.message)
+
+
+def inject_auth_headers(request):
+    """ If the request triggered a need to authenticate, add the appropriate
+    headers. """
+
+    if flask.g.get('needs_token'):
+        header = 'Bearer, realm="posts", scope="read"'
+        if 'token_error' in flask.g:
+            header += ', error="invalid_token", error_description="{msg}"'.format(
+                msg=flask.g.token_error)
+        request.headers.add('WWW-Authenticate', header)
+        request.headers.add('Link', '<{endpoint}>; rel="token_endpoint"'.format(
+            endpoint=utils.secure_link('token', _external=True)))
+
+    return request
