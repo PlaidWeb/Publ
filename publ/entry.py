@@ -15,7 +15,7 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import (caching, cards, config, html_entry, links, markdown, model,
-               path_alias, queries, user, utils)
+               path_alias, queries, tokens, user, utils)
 from .utils import CallableProxy, TrueCallableProxy, make_slug
 
 LOGGER = logging.getLogger(__name__)
@@ -195,6 +195,9 @@ class Entry(caching.Memoizable):
                                          model.Entry.id):
                 if record.is_authorized(cur_user):
                     return Entry(record)
+
+                LOGGER.debug("User unauthorized for entry %d", record.id)
+                tokens.request(cur_user)
             return None
         return CallableProxy(_next)
 
@@ -217,6 +220,9 @@ class Entry(caching.Memoizable):
                                          orm.desc(model.Entry.id)):
                 if record.is_authorized(cur_user):
                     return Entry(record)
+
+                LOGGER.debug("User unauthorized for entry %d", record.id)
+                tokens.request(cur_user)
             return None
         return CallableProxy(_previous)
 
@@ -355,10 +361,7 @@ class Entry(caching.Memoizable):
     @property
     def authorized(self):
         """ Returns if the current user is authorized to see this entry """
-        return self._is_authorized_for(user.get_active())
-
-    def _is_authorized_for(self, cur_user):
-        return self._record.is_authorized(cur_user)
+        return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, **kwargs):
         """ get the rendered markup for an entry

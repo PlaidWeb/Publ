@@ -8,7 +8,7 @@ import flask
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import caching, model, queries, user, utils
+from . import caching, model, queries, tokens, user, utils
 from .entry import Entry
 
 LOGGER = logging.getLogger(__name__)
@@ -136,6 +136,9 @@ class View(caching.Memoizable):
                     if not auth and unauthorized is not True:
                         unauthorized -= 1
 
+                if not auth:
+                    tokens.request(cur_user)
+
             return result
 
         return utils.CallableProxy(_entries)
@@ -155,6 +158,7 @@ class View(caching.Memoizable):
                     break
 
                 if not record.is_authorized(cur_user):
+                    tokens.request(cur_user)
                     result.append(Entry(record))
 
             return result

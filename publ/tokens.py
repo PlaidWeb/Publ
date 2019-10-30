@@ -50,16 +50,18 @@ def token_endpoint():
         endpoint = get_remote_endpoint(post['me'])
         LOGGER.debug("Endpoint: %s", endpoint)
 
-        request = requests.post(endpoint, data=data, headers={
+        validation = requests.post(endpoint, data=data, headers={
             'accept': 'application/json'
         })
 
-        if request.status_code != 200:
-            LOGGER.error("Endpoint returned %d: %s", request.status_code, request.text)
+        if validation.status_code != 200:
+            LOGGER.error("Endpoint returned %d: %s",
+                         validation.status_code,
+                         validation.text)
             raise http_error.BadRequest(
-                "Authorization endpoint returned error " + str(request.status_code))
+                "Authorization endpoint returned error " + str(validation.status_code))
 
-        response = request.json()
+        response = validation.json()
 
         token = signer().dumps({k: v for k, v in response.items() if k in (
             'me',
@@ -87,7 +89,7 @@ def parse_token(token: str) -> str:
         raise http_error.Unauthorized(error.message)
 
 
-def inject_auth_headers(request):
+def inject_auth_headers(response):
     """ If the request triggered a need to authenticate, add the appropriate
     headers. """
 
@@ -96,8 +98,16 @@ def inject_auth_headers(request):
         if 'token_error' in flask.g:
             header += ', error="invalid_token", error_description="{msg}"'.format(
                 msg=flask.g.token_error)
-        request.headers.add('WWW-Authenticate', header)
-        request.headers.add('Link', '<{endpoint}>; rel="token_endpoint"'.format(
+        response.headers.add('WWW-Authenticate', header)
+        response.headers.add('Link', '<{endpoint}>; rel="token_endpoint"'.format(
             endpoint=utils.secure_link('token', _external=True)))
 
-    return request
+    return response
+
+
+def request(user):
+    """ Called whenever an authenticated access fails; marks authentication
+    as being upgradeable. """
+    if not user:
+        flask.g.needs_token = True
+    return user
