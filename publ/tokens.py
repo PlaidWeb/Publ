@@ -63,10 +63,19 @@ def token_endpoint():
 
         response = validation.json()
 
-        token = signer().dumps({k: v for k, v in response.items() if k in (
-            'me',
-            'scope',
-        )})
+        if 'me' in response:
+            id_url = indieauth.verify_id(post['me'], response['me'])
+            if not id_url:
+                raise http_error.BadRequest("Mismatched 'me' URL")
+        else:
+            id_url = post['me']
+
+        identity = {
+            'me': id_url,
+            'scope': response.get('scope', post.get('scope'))
+        }
+
+        token = signer().dumps({k: v for k, v in identity.items() if v})
 
         return flask.jsonify({
             'access_token': token,

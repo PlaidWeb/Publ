@@ -64,7 +64,7 @@ setup(
     install_requires=[
         'arrow',
         'atomicwrites',
-        'authl>=0.2.4',
+        'authl>=0.3.1',
         'awesome-slugify',
         'flask',
         'flask_caching',

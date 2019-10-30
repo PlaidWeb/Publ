@@ -39,10 +39,10 @@
         },
         "authl": {
             "hashes": [
-                "sha256:6ff578f91dc61fb51554dc488be539520f15d18d28fe4b8e6f6aa231d3fb9fcf",
-                "sha256:bd0548c07b4ce71547e52d90c01bc3da1aef274459fe551ff22bc27060e57c02"
+                "sha256:41be0e6cba06e275674b497f2a6d0d9dd389ddeb1a55396db42ee4ef9ec3388e",
+                "sha256:6b615781e385a77d9e1ce064b055e3c79a5faad4e3476bd1daef172c0c081135"
             ],
-            "version": "==0.2.4"
+            "version": "==0.3.1"
         },
         "awesome-slugify": {
             "hashes": [
@@ -115,12 +115,6 @@
                 "sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7"
             ],
             "version": "==7.0"
-        },
-        "expiringdict": {
-            "hashes": [
-                "sha256:9275c3f3aa6cabe394355b6454100eb1cdfe395c6b592c26603a2a0f9e3a0587"
-            ],
-            "version": "==1.1.4"
         },
         "flask": {
             "hashes": [
