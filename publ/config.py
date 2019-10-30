@@ -42,6 +42,7 @@ markdown_extensions = (
 # Authentication
 secret_key = str(uuid.uuid4())
 auth = {}
+max_token_age = 3600
 user_list = 'users.cfg'
 admin_group = 'admin'
 auth_log_prune_interval = 3600
