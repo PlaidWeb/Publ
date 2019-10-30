@@ -62,8 +62,11 @@ class Publ(flask.Flask):
             AUTH_FORCE_HTTPS to a truthy value can be used to force the user to
             switch to an SSL connection when they log in.
         user_list -- The file that configures the user and group list
-        admin_user -- The user or group that has full administrative access
+        admin_group -- The user or group that has full administrative access
             to all entries regardless of permissions
+        auth_log_prune_interval -- How frequently to prune the authentication log, in seconds
+        auth_log_prune_age -- How long to retain authentication log entries, in seconds
+        max_token_age -- The maximum lifetime of AutoAuth tokens
         """
         # pylint:disable=too-many-branches,too-many-statements
 
