@@ -110,14 +110,14 @@ class User(caching.Memoizable):
 @utils.stash('user')
 def get_active():
     """ Get the active user """
-    if flask.session.get('me'):
-        return User(flask.session['me'], 'session')
-
     if 'Authorization' in flask.request.headers:
         parts = flask.request.headers['Authorization'].split()
         if parts[0].lower() == 'bearer':
             token = tokens.parse_token(parts[1])
             return User(token['me'], 'token', token.get('scope'))
+
+    if flask.session.get('me'):
+        return User(flask.session['me'], 'session')
 
     return None
 
