@@ -6,7 +6,6 @@ import logging
 import os
 
 import flask
-import itsdangerous
 import werkzeug.exceptions as http_error
 from flask import make_response, redirect, request, send_file, url_for
 from pony import orm
@@ -176,12 +175,11 @@ def render_exception(error):
 
     headers = {**NO_CACHE}
 
-    bad_token = isinstance(error, itsdangerous.BadData)
-    if bad_token:
-        flask.g.token_error = error.message
-    if bad_token or isinstance(error, http_error.Unauthorized):
+    if isinstance(error, http_error.Unauthorized):
         from flask import current_app as app
         flask.g.needs_token = True
+        if 'token_error' in flask.g:
+            flask.flash(flask.g.token_error)
         return app.authl.render_login_form(destination=utils.redir_path()), 401, headers
 
     if isinstance(error, http_error.HTTPException):
