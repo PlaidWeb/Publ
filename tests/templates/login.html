@@ -1,40 +1,45 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Login required</title>
     <link rel="stylesheet" href="{{url_for('login',asset='css')}}">
 </head>
+
 <body>
-
-<div id="login">
-<p>This is a crappy-looking login page for Publ's tests. It is purposefully
-    sparse.
-
-{% if user %}
-The current user is {{user.name}}, who belongs to groups [{{', '.join(user.groups)}}].
-{%else%}
-Nobody is currently logged in.
-{% endif %}</p>
-
-<p>Some other Authl config stuff:</p>
-
-<ul>
-    <li>Login URL: {{login_url}}</li>
-    <li>API tester: {{test_url}}</li>
-    <li>Redirect path: '{{redir}}'</li>
-</ul>
-
-<form method="GET" action="{{login_url}}" novalidate>
-    <input type="url" name="me" placeholder="A credential goes here">
-</form>
-
-<p>Accepted auth methods:</p>
-<ul>
-    {% for handler in auth.handlers %}
-    <li>{{handler.service_name}}: {{handler.description|safe}}</li>
-    {% endfor %}
-</ul>
-</div>
-
+    <div id="login">
+        <p>This is a crappy-looking login page for Publ's tests. It is purposefully
+            sparse.
+            {% if user %}
+            The current user is {{user.name}}, who belongs to groups [{{', '.join(user.groups)}}].
+            {%else%}
+            Nobody is currently logged in.
+            {% endif %}</p>
+        <p>Some other Authl config stuff:</p>
+        <ul>
+            <li>Login URL: {{login_url}}</li>
+            <li>API tester: {{test_url}}</li>
+            <li>Redirect path: '{{redir}}'</li>
+        </ul>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+        <form method="GET" action="{{login_url}}" novalidate>
+            <input type="url" name="me" placeholder="A credential goes here">
+        </form>
+        <p>Accepted auth methods:</p>
+        <ul>
+            {% for handler in auth.handlers %}
+            <li>{{handler.service_name}}: {{handler.description|safe}}</li>
+            {% endfor %}
+        </ul>
+    </div>
 </body>
+
 </html>
