@@ -78,4 +78,10 @@ def token_endpoint():
 
 def parse_token(token: str) -> str:
     """ Parse a bearer token to get the stored data """
-    return signer().loads(token, max_age=config.max_token_age)
+    try:
+        return signer().loads(token, max_age=config.max_token_age)
+    except itsdangerous.BadData as error:
+        LOGGER.error("Got token parse error: %s", error)
+        flask.g.user = None
+        flask.g.token_error = error.message
+        raise http_error.Unauthorized(error.message)

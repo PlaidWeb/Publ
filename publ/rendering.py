@@ -5,8 +5,9 @@ import base64
 import logging
 import os
 
+import flask
 import werkzeug.exceptions as http_error
-from flask import make_response, redirect, request, send_file, url_for
+from flask import redirect, request, send_file, url_for
 from pony import orm
 
 from . import (caching, config, image, index, model, path_alias, queries, user,
@@ -113,7 +114,7 @@ def render_publ_template(template, **kwargs):
 
 
 @orm.db_session(retry=5)
-def render_error(category, error_message, error_codes, exception=None):
+def render_error(category, error_message, error_codes, exception=None, headers=None):
     """ Render an error page.
 
     Arguments:
@@ -145,7 +146,7 @@ def render_error(category, error_message, error_codes, exception=None):
         template,
         category=Category(category),
         error={'code': error_code, 'message': error_message},
-        exception=exception)[0], error_code
+        exception=exception)[0], error_code, headers
 
 
 def render_exception(error):
@@ -159,22 +160,26 @@ def render_exception(error):
 
     qsize = index.queue_length()
     if isinstance(error, http_error.NotFound) and qsize:
-        response = make_response(render_error(
-            category,
-            "Site reindex in progress",
-            503,
-            {
+        retry = max(5, qsize / 5)
+        return render_error(
+            category, "Site reindex in progress", 503,
+            exception={
                 'type': 'Service Unavailable',
                 'str': "The site's contents are not fully known; please try again later",
                 'qsize': qsize
-            }))
-        response.headers['Retry-After'] = qsize
-        response.headers['Refresh'] = max(5, qsize / 5)
-        return response, 503
+            },
+            headers={
+                **NO_CACHE,
+                'Retry-After': retry,
+                'Refresh': retry
+            })
 
     if isinstance(error, http_error.Unauthorized):
         from flask import current_app as app
-        return app.authl.render_login_form(destination=utils.redir_path()), 401, NO_CACHE
+        flask.g.needs_token = True
+        if 'token_error' in flask.g:
+            flask.flash(flask.g.token_error)
+        return app.authl.render_login_form(destination=utils.redir_path()), 401
 
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
