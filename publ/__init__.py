@@ -13,7 +13,7 @@ import flask
 import werkzeug.exceptions
 
 from . import (caching, config, image, index, maintenance, model, rendering,
-               user, utils, view)
+               tokens, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class Publ(flask.Flask):
         admin_user -- The user or group that has full administrative access
             to all entries regardless of permissions
         """
-        # pylint:disable=too-many-branches
+        # pylint:disable=too-many-branches,too-many-statements
 
         if Publ._instance and Publ._instance is not self:
             raise RuntimeError("Only one Publ app can run at a time")
@@ -125,6 +125,8 @@ accordingly.")
         self.add_url_rule('/_file/<path:filename>',
                           'asset', rendering.retrieve_asset)
 
+        self.add_url_rule('/_token', 'token', tokens.token_endpoint, methods=['POST'])
+
         self.config['TRAP_HTTP_EXCEPTIONS'] = True
         self.register_error_handler(
             werkzeug.exceptions.HTTPException, rendering.render_exception)
@@ -173,6 +175,7 @@ accordingly.")
                 '/_admin/<by>'
         ]:
             self.add_url_rule(route, 'admin', rendering.admin_dashboard)
+
         self.before_request(user.log_user)
 
         self._maint = maintenance.Maintenance()
