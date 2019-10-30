@@ -5,6 +5,8 @@ import base64
 import logging
 import os
 
+import flask
+import itsdangerous
 import werkzeug.exceptions as http_error
 from flask import make_response, redirect, request, send_file, url_for
 from pony import orm
@@ -113,7 +115,7 @@ def render_publ_template(template, **kwargs):
 
 
 @orm.db_session(retry=5)
-def render_error(category, error_message, error_codes, exception=None):
+def render_error(category, error_message, error_codes, exception=None, headers=None):
     """ Render an error page.
 
     Arguments:
@@ -145,7 +147,7 @@ def render_error(category, error_message, error_codes, exception=None):
         template,
         category=Category(category),
         error={'code': error_code, 'message': error_message},
-        exception=exception)[0], error_code
+        exception=exception)[0], error_code, headers
 
 
 def render_exception(error):
@@ -168,26 +170,32 @@ def render_exception(error):
                 'str': "The site's contents are not fully known; please try again later",
                 'qsize': qsize
             }))
-        response.headers['Retry-After'] = qsize
+        response.headers['Retry-After'] = max(5, qsize / 5)
         response.headers['Refresh'] = max(5, qsize / 5)
         return response, 503
 
-    if isinstance(error, http_error.Unauthorized):
+    headers = {**NO_CACHE}
+
+    bad_token = isinstance(error, itsdangerous.BadData)
+    if bad_token:
+        flask.g.token_error = error.message
+    if bad_token or isinstance(error, http_error.Unauthorized):
         from flask import current_app as app
-        return app.authl.render_login_form(destination=utils.redir_path()), 401, NO_CACHE
+        flask.g.needs_token = True
+        return app.authl.render_login_form(destination=utils.redir_path()), 401, headers
 
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
             'type': type(error).__name__,
             'str': error.description,
             'args': error.args
-        })
+        }, headers=headers)
 
     return render_error(category, "Exception occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
         'args': error.args
-    })
+    }, headers=headers)
 
 
 @orm.db_session(retry=5)

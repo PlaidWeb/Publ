@@ -11,7 +11,7 @@ import flask
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import caching, config, model, utils
+from . import caching, config, model, tokens, utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -58,11 +58,20 @@ def get_groups(username, include_self=True):
 class User(caching.Memoizable):
     """ An authenticated user """
 
-    def __init__(self, me):
-        self._me = me
+    def __init__(self, name, auth_type=None, scope=None):
+        """ Initialize the user object.
+
+        :param str name: The federated identity name
+        :param str auth_type: The authentication mechanism
+        :param str scope: The user's access scope
+        """
+
+        self._name = name
+        self._auth_type = auth_type
+        self._scope = scope
 
     def _key(self):
-        return self._me
+        return self.name, self.auth_type, self.scope
 
     def __lt__(self, other):
         return self.name < other.name
@@ -70,17 +79,27 @@ class User(caching.Memoizable):
     @cached_property
     def name(self):
         """ The federated identity name of the user """
-        return self._me
+        return self._name
+
+    @cached_property
+    def auth_type(self):
+        """ The type of user authentication (session, token, etc.) """
+        return self._auth_type
+
+    @cached_property
+    def scope(self):
+        """ The permission scope of the user """
+        return self._scope
 
     @cached_property
     def auth_groups(self):
         """ The group memberships of the user, for auth purposes """
-        return get_groups(self._me, True)
+        return get_groups(self.name, True)
 
     @cached_property
     def groups(self):
         """ The group memberships of the user, for display purposes """
-        return get_groups(self._me, False)
+        return get_groups(self.name, False)
 
     @property
     def is_admin(self):
@@ -91,15 +110,16 @@ class User(caching.Memoizable):
 @utils.stash('user')
 def get_active():
     """ Get the active user """
-    def _get_user_id():
-        if flask.session.get('me'):
-            return flask.session['me']
+    if flask.session.get('me'):
+        return User(flask.session['me'], 'session')
 
-        return None
+    if 'Authorization' in flask.request.headers:
+        parts = flask.request.headers['Authorization'].split()
+        if parts[0].lower() == 'bearer':
+            token = tokens.parse_token(parts[1])
+            return User(token['me'], 'token', token.get('scope'))
 
-    user_id = _get_user_id()
-    LOGGER.debug("Got user id: %s", user_id)
-    return User(user_id) if user_id else None
+    return None
 
 
 @orm.db_session(immediate=True)
