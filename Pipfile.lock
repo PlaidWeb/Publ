@@ -39,10 +39,10 @@
         },
         "authl": {
             "hashes": [
-                "sha256:4a26a35a30a799336a58e8feaea8595dde1206951e3ef1f33cb41fb96e42f240",
-                "sha256:ca1d15e53f95bb8527cebf96bb72f0fb183b262a0888567f5bd99b7c1201771c"
+                "sha256:6ff578f91dc61fb51554dc488be539520f15d18d28fe4b8e6f6aa231d3fb9fcf",
+                "sha256:bd0548c07b4ce71547e52d90c01bc3da1aef274459fe551ff22bc27060e57c02"
             ],
-            "version": "==0.2.3"
+            "version": "==0.2.4"
         },
         "awesome-slugify": {
             "hashes": [
@@ -301,8 +301,6 @@
         "regex": {
             "hashes": [
                 "sha256:1e9f9bc44ca195baf0040b1938e6801d2f3409661c15fe57f8164c678cfc663f",
-                "sha256:2079f83ac094b436a8078988e38af44286c67eb5a259becfc563e8a81cb34a11",
-                "sha256:43dbcc90e1bd42d905abc8dac75a64768d4b621c9e01adfcd8a57df1af65793e",
                 "sha256:587b62d48ca359d2d4f02d486f1f0aa9a20fbaf23a9d4198c4bed72ab2f6c849",
                 "sha256:835ccdcdc612821edf132c20aef3eaaecfb884c9454fdc480d5887562594ac61",
                 "sha256:93f6c9da57e704e128d90736430c5c59dd733327882b371b0cae8833106c2a21",
