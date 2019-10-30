@@ -176,6 +176,13 @@ def render_exception(error):
 
     if isinstance(error, http_error.Unauthorized):
         from flask import current_app as app
+
+        force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
+        if force_ssl and request.scheme != 'https':
+            return redirect(utils.secure_link(request.endpoint,
+                                              **request.view_args,
+                                              **request.args))
+
         flask.g.needs_token = True
         if 'token_error' in flask.g:
             flask.flash(flask.g.token_error)
