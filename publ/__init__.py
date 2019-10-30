@@ -177,6 +177,7 @@ accordingly.")
             self.add_url_rule(route, 'admin', rendering.admin_dashboard)
 
         self.before_request(user.log_user)
+        self.after_request(tokens.inject_auth_headers)
 
         self._maint = maintenance.Maintenance()
 

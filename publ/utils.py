@@ -375,22 +375,26 @@ def redir_path(path=None):
     return path
 
 
+def secure_link(endpoint, *args, **kwargs):
+    """ flask.url_for except it will force the link to be secure if we are
+    configured with AUTH_FORCE_HTTPS """
+    force_ssl = config.auth.get('AUTH_FORCE_HTTPS', config.auth.get('AUTH_FORCE_SSL'))
+
+    if force_ssl and flask.request.scheme != 'https':
+        kwargs = {**kwargs,
+                  '_external': True,
+                  '_scheme': 'https'}
+    return flask.url_for(endpoint, *args, **kwargs)
+
+
 def auth_link(endpoint):
     """ Generates a function that maps an optional redir parameter to the
     specified endpoint. """
-
-    force_ssl = config.auth.get('AUTH_FORCE_HTTPS', config.auth.get('AUTH_FORCE_SSL'))
-
     def endpoint_link(redir=None, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
         redir = redir_path(redir)
 
-        if force_ssl and flask.request.scheme != 'https':
-            kwargs = {**kwargs,
-                      '_external': True,
-                      '_scheme': 'https'}
-
-        return flask.url_for(endpoint, redir=redir, **kwargs)
+        return secure_link(endpoint, redir=redir, **kwargs)
 
     return CallableProxy(endpoint_link)
 
