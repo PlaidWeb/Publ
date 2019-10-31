@@ -378,7 +378,7 @@ def redir_path(path=None):
 def secure_link(endpoint, *args, **kwargs):
     """ flask.url_for except it will force the link to be secure if we are
     configured with AUTH_FORCE_HTTPS """
-    force_ssl = config.auth.get('AUTH_FORCE_HTTPS', config.auth.get('AUTH_FORCE_SSL'))
+    force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
 
     if force_ssl and flask.request.scheme != 'https':
         kwargs = {**kwargs,
