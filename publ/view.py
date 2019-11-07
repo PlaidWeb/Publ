@@ -282,11 +282,14 @@ class View(caching.Memoizable):
             date_format = formats.get(
                 span_type, SPAN_FORMATS.get(span_type, span_format))
 
+            print('len', len(self.entries))
             oldest = self.oldest.date.format(date_format)
             if len(self.entries) == 1:
                 return oldest
 
             newest = self.newest.date.format(date_format)
+
+            print('oldest', oldest, 'newest', newest)
 
             if oldest == newest:
                 template = formats.get('single', '{oldest} ({count})')

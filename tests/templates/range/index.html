@@ -5,10 +5,15 @@
 <title>{{view.range}}</title>
 </head>
 <body>
-    <h1>{{view.range}}</h1>
+    <h1>{{view.range(monthly='YYYY-MM-DD',yearly='YYYY-MM-DD',daily='YYYY-MM-DD')}}</h1>
 
-    {% if view.previous %}<a href="{{view.previous.link}}">{{view.previous.range}}</a>{% endif %}
-    {% if view.next %}<a href="{{view.next.link}}">{{view.next.range}}</a>{% endif %}
+    <ul>
+        <li>previous: {% if view.previous %}<a href="{{view.previous.link}}">{{view.previous.range}}</a>{% endif %}</li>
+        <li>next: {% if view.next %}<a href="{{view.next.link}}">{{view.next.range}}</a>{% endif %}</li>
+        {% for label, which in [('first', view.first), ('last', view.last), ('newest', view.newest), ('oldest', view.oldest)] %}
+        <li>{{label}}: <a href="{{which.link}}">{{which.title}}</a> {{which.date}}</li>
+        {% endfor %}
+    </ul>
 
     {% for entry in view.entries %}
     <h2>{{entry.title}}</h2>
