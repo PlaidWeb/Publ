@@ -283,7 +283,7 @@ class View(caching.Memoizable):
                 span_type, SPAN_FORMATS.get(span_type, span_format))
 
             oldest = self.oldest.date.format(date_format)
-            if len(self.entries) == 1:
+            if self.oldest == self.newest:
                 return oldest
 
             newest = self.newest.date.format(date_format)

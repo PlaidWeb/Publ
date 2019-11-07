@@ -42,7 +42,7 @@ class CallableProxy:
         return bool(self())
 
     def __len__(self):
-        return 1 if self() else 0
+        return len(self())
 
     def __str__(self):
         return str(self())
