@@ -58,18 +58,20 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         container_args = utils.prefix_normalize({**self._config, **container_args})
 
-        spec_list, original_count = image.get_spec_list(
-            image_specs, container_args)
+        spec_list = image.get_spec_list(image_specs, container_args)
 
-        for spec in spec_list:
-            text += self._render_image(spec,
+        remain = 0
+        for (spec, show) in spec_list:
+            text += self._render_image(spec, show,
                                        container_args,
                                        alt)
+            if not show:
+                remain += 1
 
-        if original_count > len(spec_list) and 'more_text' in container_args:
+        if remain and 'more_text' in container_args:
             more_text = container_args['more_text'].format(
-                count=original_count,
-                remain=original_count - len(spec_list))
+                count=len(spec_list),
+                remain=remain)
             if 'more_link' in container_args:
                 more_text = '{a}{text}</a>'.format(
                     text=more_text,
@@ -132,7 +134,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         text = re.sub(r'<p>\s*</p>', r'', text)
         return text or ' '
 
-    def _render_image(self, spec, container_args, alt_text=None):
+    def _render_image(self, spec, show, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
 
         try:
@@ -152,7 +154,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
             return ('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
 
-        return img.get_img_tag(title, alt_text, **composite_args, _mark_rewritten=True)
+        return img.get_img_tag(title,
+                               alt_text,
+                               **composite_args,
+                               _show_thumbnail=show,
+                               _mark_rewritten=True)
 
 
 def to_html(text, args, search_path):

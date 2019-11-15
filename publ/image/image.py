@@ -75,7 +75,7 @@ class Image(ABC):
 
         return attrs
 
-    def get_img_tag(self, title=None, alt_text=None, **kwargs):
+    def get_img_tag(self, title=None, alt_text=None, _show_thumbnail=True, **kwargs):
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
@@ -93,11 +93,16 @@ class Image(ABC):
             if title:
                 attrs['title'] = title
 
+            if _show_thumbnail:
+                thumb = utils.make_tag(
+                    'img', attrs, start_end=kwargs.get('xhtml'))
+            else:
+                thumb = ''
+
             return flask.Markup(
                 self._wrap_link_target(
                     kwargs,
-                    utils.make_tag(
-                        'img', attrs, start_end=kwargs.get('xhtml')),
+                    thumb,
                     title))
         except FileNotFoundError as error:
             text = '<span class="error">Image not found: <code>{}</code>'.format(
@@ -158,7 +163,10 @@ class Image(ABC):
         return self()
 
     def _wrap_link_target(self, kwargs, text, title):
-        if 'link' in kwargs and kwargs['link'] is not None:
+        if kwargs.get('link') is not None:
+            if not text or kwargs['link'] is False:
+                return text
+
             return '{}{}</a>'.format(
                 utils.make_tag(
                     'a', {
@@ -169,7 +177,7 @@ class Image(ABC):
                     }),
                 text)
 
-        if 'gallery_id' in kwargs and kwargs['gallery_id'] is not None:
+        if kwargs.get('gallery_id'):
             return '{}{}</a>'.format(
                 self._fullsize_link_tag(kwargs, title), text)
 
@@ -191,11 +199,11 @@ class Image(ABC):
         return img_fullsize
 
     def _fullsize_link_tag(self, kwargs, title):
-        """ Render a <a href> that points to the fullsize rendition specified """
+        """ Render an <a href> that points to the fullsize rendition specified """
 
         return utils.make_tag('a', {
             'href': self.get_fullsize(kwargs),
-            'data-lightbox': kwargs['gallery_id'],
+            'data-lightbox': kwargs.get('gallery_id', False),
             'title': title or False,
             'class': kwargs.get('link_class', False)
         })

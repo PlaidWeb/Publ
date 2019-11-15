@@ -5,6 +5,7 @@ import errno
 import hashlib
 import html
 import io
+import itertools
 import logging
 import os
 import random
@@ -236,18 +237,20 @@ def parse_image_spec(spec):
 
 
 def get_spec_list(image_specs, container_args):
-    """ Given a list of specs and a set of container args, return a tuple of
-    the final container argument list and the original list size """
+    """ Given a list of specs and a set of container args, return a list of
+    tuples of (image_spec,bool), where the bool indicates whether the image
+    is visible. """
 
     spec_list = [spec.strip() for spec in image_specs.split('|')]
-    original_count = len(spec_list)
 
     if 'count' in container_args:
-        if 'count_offset' in container_args:
-            spec_list = spec_list[container_args['count_offset']:]
-        spec_list = spec_list[:container_args['count']]
+        count, offset = container_args['count'], container_args.get('count_offset', 0)
+        first, last = offset, offset + count
+        return list(itertools.chain(zip(spec_list[:first], itertools.repeat(False)),
+                                    zip(spec_list[first:last], itertools.repeat(True)),
+                                    zip(spec_list[last:], itertools.repeat(False))))
 
-    return spec_list, original_count
+    return zip(spec_list, itertools.repeat(True))
 
 
 def clean_cache(max_age):
