@@ -163,10 +163,8 @@ class Image(ABC):
         return self()
 
     def _wrap_link_target(self, kwargs, text, title):
-        if kwargs.get('link'):
-            if not text:
-                # don't generate a link around empty text (and don't let this
-                # fall through to the gallery_id branch)
+        if kwargs.get('link') is not None:
+            if not text or kwargs['link'] is False:
                 return text
 
             return '{}{}</a>'.format(
