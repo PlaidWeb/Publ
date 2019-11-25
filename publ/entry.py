@@ -308,7 +308,7 @@ class Entry(caching.Memoizable):
         _, more, is_markdown = self._entry_content
 
         def _more(**kwargs):
-            if kwargs.get('absolute') and 'footnote_links' not in kwargs:
+            if kwargs.get('absolute') and 'footnotes_link' not in kwargs:
                 kwargs = {'footnotes_link': self.link(absolute=True), **kwargs}
             return self._get_markup(more, is_markdown, **kwargs)
 
