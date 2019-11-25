@@ -306,13 +306,13 @@ class Entry(caching.Memoizable):
     def more(self):
         """ Get the below-the-fold entry body text """
         _, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            lambda **kwargs: self._get_markup(
-                more, is_markdown,
-                **{'footnotes_defer': False,
-                   'footnotes_link': False,
-                   **kwargs})
-        ) if more else CallableProxy(None)
+
+        def _more(**kwargs):
+            if kwargs.get('absolute') and 'footnote_links' not in kwargs:
+                kwargs = {'footnotes_link': self.link(absolute=True), **kwargs}
+            return self._get_markup(more, is_markdown, **kwargs)
+
+        return TrueCallableProxy(_more) if more else CallableProxy(None)
 
     @cached_property
     def card(self):
