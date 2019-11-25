@@ -43,6 +43,7 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
+        self._footnotes = []    # deferred footnotes
 
     def __lt__(self, other):
         # pylint:disable=protected-access
@@ -292,17 +293,26 @@ class Entry(caching.Memoizable):
     def body(self):
         """ Get the above-the-fold entry body text """
         body, _, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            lambda **kwargs: self._get_markup(body, is_markdown, **kwargs)
-        ) if body else CallableProxy(None)
+
+        def _body(**kwargs):
+            kwargs = {'footnotes_defer': True, **kwargs}
+            if 'footnotes_link' not in kwargs:
+                kwargs['footnotes_link'] = self.link(absolute=kwargs.get('absolute'))
+            return self._get_markup(body, is_markdown, **kwargs)
+
+        return TrueCallableProxy(_body) if body else CallableProxy(None)
 
     @cached_property
     def more(self):
         """ Get the below-the-fold entry body text """
         _, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            lambda **kwargs: self._get_markup(more, is_markdown, **kwargs)
-        ) if more else CallableProxy(None)
+
+        def _more(**kwargs):
+            if kwargs.get('absolute') and 'footnote_links' not in kwargs:
+                kwargs = {'footnotes_link': self.link(absolute=True), **kwargs}
+            return self._get_markup(more, is_markdown, **kwargs)
+
+        return TrueCallableProxy(_more) if more else CallableProxy(None)
 
     @cached_property
     def card(self):
@@ -372,8 +382,10 @@ class Entry(caching.Memoizable):
         if is_markdown:
             return markdown.to_html(
                 text,
-                kwargs,
-                search_path=self.search_path)
+                footnote_buffer=self._footnotes,
+                args=kwargs,
+                search_path=self.search_path,
+                entry_id=self._record.id)
 
         return html_entry.process(
             text,

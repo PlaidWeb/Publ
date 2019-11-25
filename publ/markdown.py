@@ -3,6 +3,7 @@
 
 import logging
 import re
+import urllib.parse
 
 import flask
 import misaka
@@ -15,6 +16,16 @@ from . import config, html_entry, image, links, utils
 LOGGER = logging.getLogger(__name__)
 
 
+FOOTNOTE_REF_TEMPLATE = '''\
+<sup id="{ref_id}"><a href="{def_url}" rel="footnote">{content}</a></sup>\
+'''
+
+FOOTNOTE_DEF_TEMPLATE = '''\
+<li id="{def_id}">{before}&nbsp;<a href="{ref_url}" rev="footnote">&#8617;</a>\
+{partition}{after}\
+'''
+
+
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
 
@@ -24,12 +35,61 @@ class HtmlRenderer(misaka.HtmlRenderer):
     search_path -- Directories to look in for resolving relatively-linked files
     """
 
-    def __init__(self, args, search_path):
-        # pylint: disable=no-member
+    def __init__(self, args, search_path, entry_id, footnote_buffer):
+        # pylint:disable=no-member
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
         self._config = args
         self._search_path = search_path
+        self._entry_id = entry_id
+
+        self._footnote_link = args.get('footnotes_link') or ''
+        self._footnote_buffer = footnote_buffer
+        self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
+
+    def footnotes(self, buffer):
+        """ Render the footnotes, if they aren't being deferred """
+        if self._footnote_buffer is not None and not self._config.get('footnotes_defer'):
+            return '<div class="footnotes"><hr><ol>{defer}{buffer}</ol></div>'.format(
+                defer=''.join(self._footnote_buffer),
+                buffer=buffer)
+        return ' '
+
+    def _footnote_num(self, num):
+        return num + self._footnote_ofs
+
+    def _footnote_id(self, num, anchor):
+        return '{anchor}_e{eid}_fn{num}'.format(
+            anchor=anchor,
+            eid=self._entry_id,
+            num=self._footnote_num(num))
+
+    def _footnote_url(self, num, anchor):
+        return urllib.parse.urljoin(self._footnote_link,
+                                    '#' + self._footnote_id(num, anchor))
+
+    def footnote_ref(self, num):
+        """ Render a link to this footnote """
+        return FOOTNOTE_REF_TEMPLATE.format(
+            ref_id=self._footnote_id(num, "ref"),
+            def_url=self._footnote_url(num, "def"),
+            content=self._footnote_num(num))
+
+    def footnote_def(self, content, num):
+        """ Render the footnote body, deferring it if so configured """
+
+        # Insert the return anchor before the end of the first content block
+        before, partition, after = content.partition('</p>')
+        text = FOOTNOTE_DEF_TEMPLATE.format(
+            def_id=self._footnote_id(num, "def"),
+            ref_url=self._footnote_url(num, "ref"),
+            before=before,
+            partition=partition,
+            after=after)
+
+        if self._footnote_buffer is not None:
+            self._footnote_buffer.append(text)
+        return ' '
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.
@@ -161,11 +221,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                _mark_rewritten=True)
 
 
-def to_html(text, args, search_path):
+def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
     """ Convert Markdown text to HTML """
 
     # first process as Markdown
-    processor = misaka.Markdown(HtmlRenderer(args, search_path),
+    processor = misaka.Markdown(HtmlRenderer(args,
+                                             search_path,
+                                             footnote_buffer=footnote_buffer,
+                                             entry_id=entry_id),
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
@@ -184,7 +247,7 @@ class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
 
     def __init__(self):
-        super().__init__({}, [])
+        super().__init__({}, [], entry_id=None, footnote_buffer=None)
 
     @staticmethod
     def paragraph(content):
