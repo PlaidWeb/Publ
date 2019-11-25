@@ -295,7 +295,8 @@ class Entry(caching.Memoizable):
         body, _, is_markdown = self._entry_content
 
         def _body(**kwargs):
-            kwargs = {'footnotes_defer': True, **kwargs}
+            if 'footnotes_defer' not in kwargs:
+                kwargs['footnotes_defer'] = True
             if 'footnotes_link' not in kwargs:
                 kwargs['footnotes_link'] = self.link(absolute=kwargs.get('absolute'))
             return self._get_markup(body, is_markdown, **kwargs)
@@ -308,8 +309,8 @@ class Entry(caching.Memoizable):
         _, more, is_markdown = self._entry_content
 
         def _more(**kwargs):
-            if kwargs.get('absolute') and 'footnotes_link' not in kwargs:
-                kwargs = {'footnotes_link': self.link(absolute=True), **kwargs}
+            if 'footnotes_link' not in kwargs:
+                kwargs['footnotes_link'] = self.link(absolute=kwargs.get('absolute'))
             return self._get_markup(more, is_markdown, **kwargs)
 
         return TrueCallableProxy(_more) if more else CallableProxy(None)
