@@ -73,7 +73,9 @@
             <a class="u-url" href="{{entry.link}}">{{entry.title}}</a>
         </h2>
 
+        {% block body scoped %}
         {{entry.body(width=320,height=320,prefix='index_')}}
+        {% endblock %}
 
         {% if entry.more %}
         <div><a href="{{entry.link}}">read body</a></div>

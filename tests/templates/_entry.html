@@ -59,10 +59,12 @@
             {% endif %}
 
             <div class="entry e-content">
-            {{entry.body}}
-            {% if entry.more %}
-                {{entry.more}}
-            {% endif %}
+                {% block body scoped %}
+                    {{entry.body}}
+                    {% if entry.more %}
+                        {{entry.more}}
+                    {% endif %}
+                {% endblock %}
             </div>
             {% endblock %}
             </article>

@@ -1,0 +1,8 @@
+{% extends '/_entry.html' %}
+
+{% block body %}
+{{ entry.body(width=320,height=320,fullsize_width=1280,fullsize_height=1280,
+    gallery_id=entry.id) }}
+{{ entry.more(width=320,height=320,fullsize_width=1280,fullsize_height=1280,
+    gallery_id=entry.id) }}
+{% endblock %}
