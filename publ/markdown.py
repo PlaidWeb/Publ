@@ -50,9 +50,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def footnotes(self, buffer):
         """ Render the footnotes, if they aren't being deferred """
         if self._footnote_buffer is not None and not self._config.get('footnotes_defer'):
-            return '<div class="footnotes"><hr><ol>{defer}{buffer}</ol></div>'.format(
+            formatted = '<div class="footnotes"><hr><ol>{defer}{buffer}</ol></div>'.format(
                 defer=''.join(self._footnote_buffer),
                 buffer=buffer)
+            self._footnote_buffer.clear()
+            return formatted
         return ' '
 
     def _footnote_num(self, num):
