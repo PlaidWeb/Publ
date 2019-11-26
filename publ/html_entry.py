@@ -57,7 +57,10 @@ class HTMLEntry(utils.HTMLTransform):
         out_attrs = []
         for key, val in attrs:
             if (key.lower() == 'href'
+                    or key.startswith('$')
                     or (key.lower() == 'src' and tag.lower() != 'img')):
+                if key.startswith('$'):
+                    key = key[1:]
                 out_attrs.append((key, links.resolve(
                     val, self._search_path, self._config.get('absolute'))))
             else:
@@ -93,6 +96,10 @@ class HTMLEntry(utils.HTMLTransform):
             # remove that attribute and return the tag's original attributes
             LOGGER.debug("Detected already-rewritten image; %s", attrs)
             return [(key, val) for key, val in attrs if key != 'data-publ-rewritten']
+
+        if not path:
+            # this img doesn't have a src attribute, so there's something unconventional going on
+            return attrs
 
         img_path, img_args, _ = image.parse_image_spec(path)
         img = image.get_image(img_path, self._search_path)
