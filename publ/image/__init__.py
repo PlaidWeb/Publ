@@ -2,6 +2,7 @@
 
 import ast
 import errno
+import functools
 import hashlib
 import html
 import io
@@ -147,7 +148,7 @@ def _get_asset(file_path):
 
     return record
 
-
+@functools.lru_cache()
 def get_image(path, search_path):
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the

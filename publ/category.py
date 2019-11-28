@@ -192,9 +192,9 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(None)
 
     @cached_property
-    def search_path(self):
+    def search_path(self) -> str:
         """ Get the image search path for the category """
-        return [os.path.join(config.content_folder, self.path)]
+        return os.path.join(config.content_folder, self.path)
 
     @cached_property
     def breadcrumb(self):

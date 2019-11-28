@@ -7,6 +7,7 @@ import hashlib
 import logging
 import os
 import re
+import typing
 import uuid
 
 import arrow
@@ -255,9 +256,9 @@ class Entry(caching.Memoizable):
         return CallableProxy(_title)
 
     @cached_property
-    def search_path(self):
+    def search_path(self) -> typing.Tuple[str]:
         """ The relative image search path for this entry """
-        return [os.path.dirname(self._record.file_path)] + self.category.search_path
+        return (os.path.dirname(self._record.file_path), self.category.search_path)
 
     @cached_property
     def _message(self):
@@ -335,12 +336,20 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _footnotes(**kwargs):
+            LOGGER.debug("rendering footnotes")
             return self._get_footnotes(body, more, kwargs)
 
+        LOGGER.debug("is_markdown %s  body_footnotes %s  more_footnotes %s",
+            is_markdown,
+            body and self._body_footnotes,
+            more and self._more_footnotes)
         if is_markdown and ((body and self._body_footnotes is not False) or
                             (more and self._more_footnotes is not False)):
             # It's possible there's footnotes!
+            LOGGER.debug("footnotes are a possibility")
             return CallableProxy(_footnotes)
+
+        LOGGER.debug("there is no way there's footnotes")
         return CallableProxy(None)
 
     @cached_property

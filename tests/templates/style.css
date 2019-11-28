@@ -254,3 +254,7 @@ img.red {
 .flonk a {
     color: white;
 }
+
+.rawrbg {
+    /* {{image('/images/rawr.jpg').get_css_background(width=192,uncomment=True)}} */
+}

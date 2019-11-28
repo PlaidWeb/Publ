@@ -147,7 +147,7 @@ def find_entry(rel_path, search_path):
         pass
 
     if rel_path.startswith('/'):
-        search_path = [config.content_folder]
+        search_path = config.content_folder,
         rel_path = '.' + rel_path
 
     for where in search_path:

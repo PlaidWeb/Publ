@@ -66,18 +66,17 @@ def get_redirect():
 def image_function(template=None, entry=None, category=None):
     """ Get a function that gets an image """
 
-    path = []
+    path = ()
 
     if entry is not None:
         path += entry.search_path
     if category is not None:
         # Since the category might be different than the entry's category we add
         # this too
-        path += category.search_path
+        path += category.search_path,
     if template is not None:
-        path.append(os.path.join(
-            config.content_folder,
-            os.path.dirname(template.filename)))
+        path += os.path.join(config.content_folder,
+            os.path.dirname(template.filename)),
 
     return lambda filename: image.get_image(filename, path)
 

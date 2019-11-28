@@ -91,7 +91,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
             self._footnote_buffer.append(text)
 
-        LOGGER.debug("footnote %d with no buffer", num)
         return ' '
 
     def image(self, raw_url, title='', alt=''):
