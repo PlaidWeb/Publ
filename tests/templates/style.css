@@ -235,3 +235,22 @@ img.red {
     background: #ddd;
 }
 
+:target {
+    background: #ddf;
+}
+
+.gronk {
+    color: white;
+    background: red;
+}
+.plonk {
+    color: blue;
+    background: yellow;
+}
+.flonk {
+    color: red;
+    background: blue;
+}
+.flonk a {
+    color: white;
+}

@@ -16,16 +16,6 @@ from . import config, html_entry, image, links, utils
 LOGGER = logging.getLogger(__name__)
 
 
-FOOTNOTE_REF_TEMPLATE = '''\
-<sup id="{ref_id}"><a href="{def_url}" rel="footnote">{content}</a></sup>\
-'''
-
-FOOTNOTE_DEF_TEMPLATE = '''\
-<li id="{def_id}">{before}&nbsp;<a href="{ref_url}" rev="footnote">&#8617;</a>\
-{partition}{after}\
-'''
-
-
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
 
@@ -66,9 +56,15 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
-        return FOOTNOTE_REF_TEMPLATE.format(
-            ref_id=self._footnote_id(num, "ref"),
-            def_url=self._footnote_url(num, "def"),
+        return '{sup}{link}{content}</a></sup>'.format(
+            sup=utils.make_tag('sup', {
+            'id':self._footnote_id(num, "ref"),
+            'class':self._config.get('footnotes_class',False)
+            }),
+            link=utils.make_tag('a', {
+                'href': self._footnote_url(num, "def"),
+                'rel': 'footnote'
+                }),
             content=self._footnote_num(num))
 
     def footnote_def(self, content, num):
@@ -78,12 +74,19 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
             # Insert the return anchor before the end of the first content block
             before, partition, after = content.partition('</p>')
-            text = FOOTNOTE_DEF_TEMPLATE.format(
-                def_id=self._footnote_id(num, "def"),
-                ref_url=self._footnote_url(num, "ref"),
+            text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
+                li=utils.make_tag('li', {
+                    'id': self._footnote_id(num, "def")
+                    }),
                 before=before,
+                link=utils.make_tag('a', {
+                    'href': self._footnote_url(num, "ref"),
+                    'rev': 'footnote'
+                    }),
+                icon=self._config.get('footnotes_return', '&#8617;'),
                 partition=partition,
-                after=after)
+                after=after,
+                )
 
             self._footnote_buffer.append(text)
 
