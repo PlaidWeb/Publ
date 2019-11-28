@@ -43,7 +43,8 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
-        self._footnotes = []    # deferred footnotes
+        self._body_footnotes = None # do we know if there's intro footnotes?
+        self._more_footnotes = None # do we know if there's moretext footnotes?
 
     def __lt__(self, other):
         # pylint:disable=protected-access
@@ -295,25 +296,52 @@ class Entry(caching.Memoizable):
         body, _, is_markdown = self._entry_content
 
         def _body(**kwargs):
-            if 'footnotes_defer' not in kwargs:
-                kwargs['footnotes_defer'] = True
-            if 'footnotes_link' not in kwargs:
-                kwargs['footnotes_link'] = self.link(absolute=kwargs.get('absolute'))
-            return self._get_markup(body, is_markdown, **kwargs)
+            footnotes = []
+            body_text = self._get_markup(body, is_markdown, args=kwargs,
+                footnote_buffer=footnotes)
+
+            # record that we know whether there's footnotes in the intro, for later
+            self._body_footnotes = bool(footnotes)
+            return body_text
 
         return TrueCallableProxy(_body) if body else CallableProxy(None)
 
     @cached_property
     def more(self):
         """ Get the below-the-fold entry body text """
-        _, more, is_markdown = self._entry_content
+        body, more, is_markdown = self._entry_content
 
         def _more(**kwargs):
-            if 'footnotes_link' not in kwargs:
-                kwargs['footnotes_link'] = self.link(absolute=kwargs.get('absolute'))
-            return self._get_markup(more, is_markdown, **kwargs)
+            footnotes = []
+            if is_markdown and self._body_footnotes is not False:
+                # Need to ensure that the intro footnotes are accounted for
+                self._get_markup(body, is_markdown, args=kwargs, footnote_buffer=footnotes)
+
+            LOGGER.debug("Intro had %d footnotes", len(footnotes))
+
+            more_text = self._get_markup(more, is_markdown,
+                footnote_buffer=footnotes,
+                args=kwargs)
+
+            # record that we know whether there's body footnotes, for later
+            self._more_footnotes = bool(footnotes)
+            return more_text
 
         return TrueCallableProxy(_more) if more else CallableProxy(None)
+
+    @cached_property
+    def footnotes(self):
+        """ Get the rendered footnotes for the entry """
+        body, more, is_markdown = self._entry_content
+
+        def _footnotes(**kwargs):
+            return self._get_footnotes(body, more, kwargs)
+
+        if is_markdown and ((body and self._body_footnotes is not False) or
+                            (more and self._more_footnotes is not False)):
+            # It's possible there's footnotes!
+            return CallableProxy(_footnotes)
+        return CallableProxy(None)
 
     @cached_property
     def card(self):
@@ -374,24 +402,38 @@ class Entry(caching.Memoizable):
         """ Returns if the current user is authorized to see this entry """
         return self._record.is_authorized(user.get_active())
 
-    def _get_markup(self, text, is_markdown, **kwargs):
+    def _get_markup(self, text, is_markdown, args, footnote_buffer=None):
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
+            if 'footnotes_link' not in args:
+                args['footnotes_link'] = self.link(absolute=args.get('absolute'))
+
             return markdown.to_html(
                 text,
-                footnote_buffer=self._footnotes,
-                args=kwargs,
+                args=args,
                 search_path=self.search_path,
-                entry_id=self._record.id)
+                entry_id=self._record.id,
+                footnote_buffer=footnote_buffer,
+            )
 
         return html_entry.process(
             text,
-            kwargs,
+            args,
             search_path=self.search_path)
+
+    def _get_footnotes(self, body, more, args):
+        """ get the rendered Markdown footnotes for the entry """
+        footnotes = []
+        self._get_markup(body, True, args=args, footnote_buffer=footnotes)
+        self._get_markup(more, True, args=args, footnote_buffer=footnotes)
+
+        if footnotes:
+            return flask.Markup("<ol>{notes}</ol>".format(notes=''.join(footnotes)))
+        return ''
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """

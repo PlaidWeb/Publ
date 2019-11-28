@@ -65,6 +65,12 @@
                 {{entry.more}}
             </div>
             {% endif %}
+            {% if entry.footnotes %}
+            <div id="footnotes">
+                <h2>Footnotes</h2>
+                {{entry.footnotes}}
+            </div>
+            {% endif %}
             </div>
             {% endblock %}
             </article>

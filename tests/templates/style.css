@@ -228,3 +228,10 @@ img.green {
 img.red {
     border: solid red 5px;
 }
+
+#footnotes {
+    font-size: small;
+    border-top: dashed red 1px;
+    background: #ddd;
+}
+

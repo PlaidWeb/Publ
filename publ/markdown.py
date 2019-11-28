@@ -48,14 +48,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
 
     def footnotes(self, buffer):
-        """ Render the footnotes, if they aren't being deferred """
-        if self._footnote_buffer is not None and not self._config.get('footnotes_defer'):
-            formatted = '<div class="footnotes"><hr><ol>{defer}{buffer}</ol></div>'.format(
-                defer=''.join(self._footnote_buffer),
-                buffer=buffer)
-            self._footnote_buffer.clear()
-            return formatted
-        return ' '
+        """ Actual footnote rendering is handled by the caller """
+        return None
 
     def _footnote_num(self, num):
         return num + self._footnote_ofs
@@ -79,18 +73,21 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_def(self, content, num):
         """ Render the footnote body, deferring it if so configured """
-
-        # Insert the return anchor before the end of the first content block
-        before, partition, after = content.partition('</p>')
-        text = FOOTNOTE_DEF_TEMPLATE.format(
-            def_id=self._footnote_id(num, "def"),
-            ref_url=self._footnote_url(num, "ref"),
-            before=before,
-            partition=partition,
-            after=after)
-
         if self._footnote_buffer is not None:
+            LOGGER.debug("footnote_def %d: %s", num, content)
+
+            # Insert the return anchor before the end of the first content block
+            before, partition, after = content.partition('</p>')
+            text = FOOTNOTE_DEF_TEMPLATE.format(
+                def_id=self._footnote_id(num, "def"),
+                ref_url=self._footnote_url(num, "ref"),
+                before=before,
+                partition=partition,
+                after=after)
+
             self._footnote_buffer.append(text)
+
+        LOGGER.debug("footnote %d with no buffer", num)
         return ' '
 
     def image(self, raw_url, title='', alt=''):
@@ -224,7 +221,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
 
 def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
-    """ Convert Markdown text to HTML """
+    """ Convert Markdown text to HTML.
+
+    footnote_buffer -- a list that will contain <li>s with the footnote items, if
+    there are any footnotes to be found.
+    """
 
     # first process as Markdown
     processor = misaka.Markdown(HtmlRenderer(args,
@@ -243,7 +244,6 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
     text = html_entry.process(text, args, search_path)
 
     return flask.Markup(text)
-
 
 class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
