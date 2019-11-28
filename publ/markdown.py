@@ -37,7 +37,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._footnote_buffer = footnote_buffer
         self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
 
-    def footnotes(self, buffer):
+    @staticmethod
+    def footnotes(_):
         """ Actual footnote rendering is handled by the caller """
         return None
 
@@ -58,13 +59,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Render a link to this footnote """
         return '{sup}{link}{content}</a></sup>'.format(
             sup=utils.make_tag('sup', {
-            'id':self._footnote_id(num, "r"),
-            'class':self._config.get('footnotes_class',False)
+                'id': self._footnote_id(num, "r"),
+                'class': self._config.get('footnotes_class', False)
             }),
             link=utils.make_tag('a', {
                 'href': self._footnote_url(num, "d"),
                 'rel': 'footnote'
-                }),
+            }),
             content=self._footnote_num(num))
 
     def footnote_def(self, content, num):
@@ -77,16 +78,16 @@ class HtmlRenderer(misaka.HtmlRenderer):
             text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
                 li=utils.make_tag('li', {
                     'id': self._footnote_id(num, "d")
-                    }),
+                }),
                 before=before,
                 link=utils.make_tag('a', {
                     'href': self._footnote_url(num, "r"),
                     'rev': 'footnote'
-                    }),
+                }),
                 icon=self._config.get('footnotes_return', '↩'),
                 partition=partition,
                 after=after,
-                )
+            )
 
             self._footnote_buffer.append(text)
 
@@ -247,6 +248,7 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
     text = html_entry.process(text, args, search_path)
 
     return flask.Markup(text)
+
 
 class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """

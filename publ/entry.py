@@ -43,8 +43,8 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
-        self._body_footnotes = None # do we know if there's intro footnotes?
-        self._more_footnotes = None # do we know if there's moretext footnotes?
+        self._body_footnotes = None  # do we know if there's intro footnotes?
+        self._more_footnotes = None  # do we know if there's moretext footnotes?
 
     def __lt__(self, other):
         # pylint:disable=protected-access
@@ -298,7 +298,7 @@ class Entry(caching.Memoizable):
         def _body(**kwargs):
             footnotes = []
             body_text = self._get_markup(body, is_markdown, args=kwargs,
-                footnote_buffer=footnotes)
+                                         footnote_buffer=footnotes)
 
             # record that we know whether there's footnotes in the intro, for later
             self._body_footnotes = bool(footnotes)
@@ -320,8 +320,8 @@ class Entry(caching.Memoizable):
             LOGGER.debug("Intro had %d footnotes", len(footnotes))
 
             more_text = self._get_markup(more, is_markdown,
-                footnote_buffer=footnotes,
-                args=kwargs)
+                                         footnote_buffer=footnotes,
+                                         args=kwargs)
 
             # record that we know whether there's body footnotes, for later
             self._more_footnotes = bool(footnotes)
