@@ -1,15 +1,18 @@
 # links.py
 """ Functions for manipulating outgoing HTML links """
 
+import os
 import re
+import typing
 from urllib.parse import urljoin
 
 from flask import request
 
-from . import image, utils
+from . import entry  # pylint:disable=cyclic-import
+from . import config, image, model, utils
 
 
-def resolve(path, search_path, absolute=False):
+def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = False) -> str:
     """ Remap a link or source target to an appropriate entry or image rendition """
 
     # Resolve external URLs
@@ -23,9 +26,9 @@ def resolve(path, search_path, absolute=False):
     path, sep, anchor = path.partition('#')
 
     # Resolve entries
-    entry = utils.find_entry(path, search_path)
-    if entry:
-        return entry.permalink(absolute=absolute) + sep + anchor
+    found = _find_entry(path, search_path)
+    if found:
+        return found.permalink(absolute=absolute) + sep + anchor
 
     # Resolve images and assets
     img_path, img_args, _ = image.parse_image_spec(path)
@@ -38,3 +41,32 @@ def resolve(path, search_path, absolute=False):
         path = urljoin(request.url, path)
 
     return path + sep + anchor
+
+
+def _find_entry(rel_path: str, search_path: typing.Tuple[str, ...]):
+    """ Find an entry by relative path. Arguments:
+
+    rel_path -- the entry's filename (or entry ID)
+    search_path -- a list of directories to check in
+
+    Returns: the resolved Entry object
+    """
+
+    try:
+        entry_id = int(rel_path)
+        record = model.Entry.get(id=entry_id)
+        if record:
+            return entry.Entry(record)
+    except ValueError:
+        pass
+
+    if rel_path.startswith('/'):
+        search_path = (config.content_folder,)
+        rel_path = '.' + rel_path
+
+    for where in search_path:
+        abspath = os.path.normpath(os.path.join(where, rel_path))
+        record = model.Entry.get(file_path=abspath)
+        if record:
+            return entry.Entry(record)
+    return None

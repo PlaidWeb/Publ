@@ -2,6 +2,7 @@
 """ Wrapper for template information """
 
 import os
+import typing
 
 import arrow
 import flask
@@ -16,12 +17,14 @@ class Template:
     """ Template information wrapper """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, name, filename, file_path, content=None):
+    def __init__(self, name: str, filename: str, file_path: typing.Optional[str],
+                 content: typing.Optional[str] = None):
         """ Useful information for the template object:
 
         name -- The name of the template
         filename -- The filename of the template
         file_path -- The full path to the template
+        content -- static content
         """
         self.name = name
 
@@ -40,7 +43,7 @@ class Template:
 
         self.content = content
 
-    def render(self, **args):
+    def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
         if self.content:
             return flask.render_template_string(self.content, **args)
@@ -60,7 +63,9 @@ class Template:
 
 
 @cache.memoize(timeout=30)
-def map_template(category, template_list):
+def map_template(category: str,
+                 template_list: typing.Union[str, typing.List[str]]
+                 ) -> typing.Optional[Template]:
     """
     Given a file path and an acceptable list of templates, return the
     best-matching template's path relative to the configured template
@@ -73,7 +78,7 @@ def map_template(category, template_list):
     """
 
     for template in utils.as_list(template_list):
-        path = os.path.normpath(category)
+        path: typing.Optional[str] = os.path.normpath(category)
         while path is not None:
             for extension in EXT_PRIORITY:
                 candidate = os.path.join(path, template + extension)
@@ -97,7 +102,7 @@ def map_template(category, template_list):
     return None
 
 
-def _get_builtin(filename):
+def _get_builtin(filename: str) -> typing.Optional[str]:
     """ Get a builtin template """
 
     builtin_file = os.path.join(os.path.dirname(__file__), 'default_template', filename)

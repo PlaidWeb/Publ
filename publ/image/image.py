@@ -1,11 +1,16 @@
 """ Base class for managed images """
 
 import html
+import typing
 from abc import ABC, abstractmethod
 
 import flask
 
 from .. import utils
+
+ImgSpec = typing.Dict[str, typing.Any]
+ImgSize = typing.Tuple[int, int]
+RenditionAttrs = typing.Dict[str, typing.Any]
 
 
 class Image(ABC):
@@ -25,23 +30,25 @@ class Image(ABC):
         return hash((self._key(), repr(self.search_path)))
 
     @abstractmethod
-    def get_rendition(self, output_scale=1, **kwargs):
+    def get_rendition(self, output_scale: int = 1, **kwargs) -> typing.Tuple[str, ImgSize]:
         """ Get a rendition of the image with the specified output scale and specification.
 
         Returns: a tuple of (url, size) for the image. """
 
     @abstractmethod
-    def _get_img_attrs(self, kwargs, style_parts):
+    def _get_img_attrs(self,
+                       spec: ImgSpec,
+                       style_parts: typing.List[str]) -> utils.TagAttrs:
         """ Get the img attributes for the given rendition arguments. Style parts
         should be appended to the style_parts instead.
         """
 
     @property
     @abstractmethod
-    def _filename(self):
+    def _filename(self) -> str:
         """ Get the filename of the file, for default alt text purposes """
 
-    def get_img_attrs(self, **kwargs):
+    def get_img_attrs(self, **kwargs) -> utils.TagAttrs:
         """ Get an attribute list (src, style, et al) for the image.
 
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
@@ -49,7 +56,7 @@ class Image(ABC):
 
         params = utils.prefix_normalize(kwargs)
 
-        styles = []
+        styles: typing.List[str] = []
         attrs = self._get_img_attrs(params, styles)
 
         for key in ('img_style', 'style'):
@@ -75,7 +82,11 @@ class Image(ABC):
 
         return attrs
 
-    def get_img_tag(self, title=None, alt_text=None, _show_thumbnail=True, **kwargs):
+    def get_img_tag(self,
+                    title: str = None,
+                    alt_text: str = None,
+                    _show_thumbnail: bool = True,
+                    **kwargs) -> str:
         """ Build a <img> tag for the image with the specified options.
 
         Returns: an HTML fragment. """
@@ -95,7 +106,7 @@ class Image(ABC):
 
             if _show_thumbnail:
                 thumb = utils.make_tag(
-                    'img', attrs, start_end=kwargs.get('xhtml'))
+                    'img', attrs, start_end=kwargs.get('xhtml', False))
             else:
                 thumb = ''
 
@@ -133,7 +144,7 @@ class Image(ABC):
             url, _ = other_image.get_rendition(1, **size_args)
         return url
 
-    def get_css_background(self, uncomment=False, **kwargs):
+    def get_css_background(self, uncomment: bool = False, **kwargs):
         """ Get the CSS background attributes for an element.
 
         Additional arguments:
@@ -162,7 +173,9 @@ class Image(ABC):
     def __str__(self):
         return self()
 
-    def _wrap_link_target(self, kwargs, text, title):
+    def _wrap_link_target(self, kwargs,
+                          text: str,
+                          title: typing.Optional[str]) -> str:
         if kwargs.get('link') is not None:
             if not text or kwargs['link'] is False:
                 return text
@@ -183,7 +196,7 @@ class Image(ABC):
 
         return text
 
-    def get_fullsize(self, kwargs):
+    def get_fullsize(self, kwargs) -> str:
         """ Get the fullsize rendition URL """
         fullsize_args = {}
 
@@ -198,7 +211,7 @@ class Image(ABC):
         img_fullsize, _ = self.get_rendition(1, **fullsize_args)
         return img_fullsize
 
-    def _fullsize_link_tag(self, kwargs, title):
+    def _fullsize_link_tag(self, kwargs, title: typing.Optional[str]) -> str:
         """ Render an <a href> that points to the fullsize rendition specified """
 
         return utils.make_tag('a', {

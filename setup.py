@@ -79,6 +79,7 @@ setup(
         'autopep8',
         'flake8',
         'isort',
+        'mypy',
         'pylint',
         'twine',
     ]},

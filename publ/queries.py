@@ -87,7 +87,7 @@ def where_before_entry(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date,e.id) < (ref.local_date,ref.id))
+    return query.filter(lambda e: (e.local_date, e.id) < (ref.local_date, ref.id))
 
 
 def where_after_entry(query, ref):
@@ -97,7 +97,7 @@ def where_after_entry(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date,e.id) > (ref.local_date,ref.id))
+    return query.filter(lambda e: (e.local_date, e.id) > (ref.local_date, ref.id))
 
 
 def where_entry_last(query, ref):
@@ -107,7 +107,7 @@ def where_entry_last(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date,e.id) <= (ref.local_date,ref.id))
+    return query.filter(lambda e: (e.local_date, e.id) <= (ref.local_date, ref.id))
 
 
 def where_entry_first(query, ref):
@@ -117,7 +117,7 @@ def where_entry_first(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date,e.id) >= (ref.local_date,ref.id))
+    return query.filter(lambda e: (e.local_date, e.id) >= (ref.local_date, ref.id))
 
 
 def where_entry_type(query, entry_type):

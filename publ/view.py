@@ -2,6 +2,7 @@
 """ A view of entries """
 
 import logging
+import typing
 
 import arrow
 import flask
@@ -10,6 +11,8 @@ from werkzeug.utils import cached_property
 
 from . import caching, model, queries, tokens, user, utils
 from .entry import Entry
+
+ViewSpec = typing.Dict[str, typing.Any]  # pylint:disable=invalid-name
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +54,7 @@ class View(caching.Memoizable):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """ A view of entries """
 
-    def __init__(self, input_spec=None):
+    def __init__(self, input_spec: ViewSpec):
         """ Generate a view.
 
         input_spec -- the parameters to the view. In addition to the values provided
@@ -61,7 +64,7 @@ class View(caching.Memoizable):
         """
 
         # filter out any priority override things
-        spec = {
+        spec: ViewSpec = {
             k: v for k, v in input_spec.items()
             if k not in PAGINATION_SPECS
         }
@@ -98,7 +101,7 @@ class View(caching.Memoizable):
         elif 'count' in self.spec:
             self.type = 'count'
         else:
-            self.type = None
+            self.type = ''
 
     def _key(self):
         return repr(self.spec)
@@ -107,23 +110,23 @@ class View(caching.Memoizable):
         return str(self.link())
 
     @cached_property
-    def first(self):
+    def first(self) -> Entry:
         """ Gets the first entry in the view """
         entries = self.entries()
         return entries[0] if entries else None
 
     @cached_property
-    def last(self):
+    def last(self) -> Entry:
         """ Gets the last entry in the view """
         entries = self.entries()
         return entries[-1] if entries else None
 
     @cached_property
-    def entries(self):
+    def entries(self) -> typing.Callable[..., typing.List[Entry]]:
         """ Gets entries which are authorized for the current viewer """
 
-        def _entries(unauthorized=0):
-            result = []
+        def _entries(unauthorized=0) -> typing.List[Entry]:
+            result: typing.List[Entry] = []
             count = self.spec.get('count')
             cur_user = user.get_active()
             for record in self._entries:
@@ -144,11 +147,11 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_entries)
 
     @cached_property
-    def unauthorized(self):
+    def unauthorized(self) -> typing.Callable[..., typing.List[Entry]]:
         """ Gets entries which the user is not allowed to view """
 
-        def _unauthorized(count=None):
-            result = []
+        def _unauthorized(count=None) -> typing.List[Entry]:
+            result: typing.List[Entry] = []
             if count is None:
                 count = self.spec.get('count')
 
@@ -166,7 +169,7 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_unauthorized)
 
     @cached_property
-    def deleted(self):
+    def deleted(self) -> typing.List[Entry]:
         """ Gets the deleted entries from the view """
         query = queries.build_query({**self.spec,
                                      'future': False,
@@ -174,12 +177,12 @@ class View(caching.Memoizable):
         return [Entry(e) for e in query]
 
     @cached_property
-    def count(self):
+    def count(self) -> int:
         """ Returns the number of entries in the view """
         return len(self.entries)
 
     @cached_property
-    def last_modified(self):
+    def last_modified(self) -> typing.Optional[Entry]:
         """ Gets the most recent modification time for all entries in the view """
         if self.entries:
             latest = max(self.entries, key=lambda x: x.last_modified)
@@ -187,19 +190,19 @@ class View(caching.Memoizable):
         return arrow.get()
 
     @cached_property
-    def older(self):
+    def older(self) -> typing.Optional['View']:
         """ Gets the page of older items """
         older, _ = self._pagination
         return older
 
     @cached_property
-    def newer(self):
+    def newer(self) -> typing.Optional['View']:
         """ Gets the page of newer items """
         _, newer = self._pagination
         return newer
 
     @cached_property
-    def previous(self):
+    def previous(self) -> typing.Optional['View']:
         """ Gets the previous page, respecting sort order """
         if self._order_by == 'oldest':
             return self.older
@@ -208,7 +211,7 @@ class View(caching.Memoizable):
         return None
 
     @cached_property
-    def next(self):
+    def next(self) -> typing.Optional['View']:
         """ Gets the next page, respecting sort order """
         if self._order_by == 'oldest':
             return self.newer
@@ -217,7 +220,7 @@ class View(caching.Memoizable):
         return None
 
     @cached_property
-    def newest(self):
+    def newest(self) -> typing.Optional[Entry]:
         """ Gets the newest entry in the view, regardless of sort order """
         if self._order_by == 'newest':
             return self.first
@@ -226,7 +229,7 @@ class View(caching.Memoizable):
         return max(self.entries, key=lambda x: (x.date, x.id))
 
     @cached_property
-    def oldest(self):
+    def oldest(self) -> typing.Optional[Entry]:
         """ Gets the oldest entry in the view, regardless of sort order """
         if self._order_by == 'newest':
             return self.last
@@ -235,7 +238,7 @@ class View(caching.Memoizable):
         return min(self.entries, key=lambda x: (x.date, -x.id))
 
     @cached_property
-    def paging(self):
+    def paging(self) -> str:
         """ Gets the pagination type; compatible with entry.archive(page_type=...) """
         if 'date' in self.spec:
             _, date_span, _ = utils.parse_date(self.spec['date'])
@@ -243,7 +246,7 @@ class View(caching.Memoizable):
         return 'offset'
 
     @cached_property
-    def pages(self):
+    def pages(self) -> typing.List['View']:
         """ Gets a list of all pages for this view """
         cur = self
         pages = []
@@ -255,17 +258,17 @@ class View(caching.Memoizable):
         return pages
 
     @cached_property
-    def range(self):
+    def range(self) -> typing.Callable[..., str]:
         """ Gets a localizable string describing the view range """
-        def _view_name(**formats):
+        def _view_name(**formats) -> str:
             if not any(k for k in PAGINATION_SPECS if k in self.spec):
                 # We don't have anything that specifies a pagination constraint, so
                 # we don't have a name
-                return None
+                return ''
 
             if not self.oldest or not self.newest:
                 # We don't have any entries, so we don't have a name
-                return None
+                return ''
 
             if 'date' in self.spec:
                 _, span_type, span_format = utils.parse_date(self.spec['date'])
@@ -300,10 +303,10 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_view_name)
 
     @cached_property
-    def link(self):
+    def link(self) -> typing.Callable[..., str]:
         """ Gets a link back to this view """
 
-        def _link(template='', absolute=False, category=None, **kwargs):
+        def _link(template='', absolute=False, category=None, **kwargs) -> str:
             args = {}
             if 'date' in self.spec:
                 args['date'] = self.spec['date']
@@ -336,16 +339,16 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_link)
 
     @cached_property
-    def tags(self):
+    def tags(self) -> utils.ListLike[str]:
         """ Returns a list of all the tags applied to this view """
         tag_list = self.spec.get('tag', [])
         return utils.as_list(tag_list)
 
     @cached_property
-    def current(self):
+    def current(self) -> typing.Callable[..., 'View']:
         """ Gets a version of this view without any pagination offsets """
 
-        def _get_current(**restrict):
+        def _get_current(**restrict) -> 'View':
             spec = {k: v for (k, v) in self.spec.items()
                     if k not in OFFSET_PRIORITY}
             return View({**spec, **restrict})
@@ -353,7 +356,7 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_get_current)
 
     @cached_property
-    def is_current(self):
+    def is_current(self) -> bool:
         """ Returns true if this is equivalent to self.current """
         for k in self.spec.keys():
             if k in OFFSET_PRIORITY:
@@ -361,7 +364,7 @@ class View(caching.Memoizable):
         return True
 
     @cached_property
-    def _pagination(self):
+    def _pagination(self) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
         """ Compute the neighboring pages from this view.
 
         Returns a tuple of older page, newer page.
@@ -394,29 +397,34 @@ class View(caching.Memoizable):
         # we're not paginating
         return None, None
 
-    def _get_date_pagination(self, base, oldest_neighbor, newest_neighbor):
+    def _get_date_pagination(self, base: ViewSpec,
+                             oldest_neighbor: typing.Optional[Entry],
+                             newest_neighbor: typing.Optional[Entry]
+                             ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
         """ Compute the pagination for date-based views """
         _, span, date_format = utils.parse_date(self.spec['date'])
+
+        older_view: typing.Optional['View'] = None
+        newer_view: typing.Optional['View'] = None
 
         if newest_neighbor:
             newer_date = newest_neighbor.date.span(span)[0]
             newer_view = View({**base,
                                'order': self._order_by,
                                'date': newer_date.format(date_format)})
-        else:
-            newer_view = None
 
         if oldest_neighbor:
             older_date = oldest_neighbor.date.span(span)[0]
             older_view = View({**base,
                                'order': self._order_by,
                                'date': older_date.format(date_format)})
-        else:
-            older_view = None
 
         return older_view, newer_view
 
-    def _get_count_pagination(self, base, oldest_neighbor, newest_neighbor):
+    def _get_count_pagination(self, base: ViewSpec,
+                              oldest_neighbor: typing.Optional[Entry],
+                              newest_neighbor: typing.Optional[Entry]
+                              ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
         """ Compute the pagination for count-based views """
 
         count = self.spec['count']
@@ -454,25 +462,25 @@ class View(caching.Memoizable):
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
 
-    def tag_add(self, *tags):
+    def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
         return View({**self.spec, 'tag': list(set(self.tags) | set(tags))})
 
-    def tag_remove(self, *tags):
+    def tag_remove(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags removed """
         return View({**self.spec, 'tag': list(set(self.tags) - set(tags))})
 
-    def tag_toggle(self, *tags):
+    def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
         return View({**self.spec, 'tag': list(set(self.tags) ^ set(tags))})
 
 
-def get_view(**kwargs):
+def get_view(**kwargs) -> View:
     """ Wrapper function for constructing a view from scratch """
     return View(input_spec=kwargs)
 
 
-def parse_view_spec(args):
+def parse_view_spec(args) -> ViewSpec:
     """ Parse a view specification from a request arg list """
 
     view_spec = {}

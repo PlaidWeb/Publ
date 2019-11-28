@@ -14,37 +14,44 @@ import flask
 import slugify
 import werkzeug.routing
 
-from . import config, model
+from . import config
 
 LOGGER = logging.getLogger(__name__)
+
+T = typing.TypeVar('T')  # pylint:disable=invalid-name
+ArgDict = typing.Dict[str, typing.Any]
+ListLike = typing.Union[typing.List[T],
+                        typing.Tuple[T, ...],
+                        typing.Set[T]]
+TagAttrs = typing.Dict[str, typing.Union[str, bool, None]]
 
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties. """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, func):
+    def __init__(self, func: typing.Callable[..., T]):
         """ Construct the property proxy.
 
         func -- The function to wrap
         """
 
-        self._func = func if func else (lambda *args, **kwargs: '')
+        self._func: typing.Callable[..., T] = func
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> T:
         # use the new kwargs to override the defaults
         return self._func(*args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self(), name)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self())
 
     def __iter__(self):
@@ -61,8 +68,13 @@ class TrueCallableProxy(CallableProxy):
     def __bool__(self):
         return True
 
-    def __len__(self):
-        return True
+
+class CallableValue(CallableProxy):
+    """ A version of CallableProxy that returns a fixed value """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, value):
+        super().__init__(lambda *args, **kwargs: value)
 
 
 #: arrow format string for 'day' archives
@@ -78,7 +90,7 @@ YEAR_FORMAT = 'YYYY'
 WEEK_FORMAT = 'YYYYMMDD_w'
 
 
-def parse_date(datestr):
+def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
     """ Parse a date expression into a tuple of:
 
         (start_date, span_type, span_format)
@@ -110,7 +122,7 @@ def parse_date(datestr):
     raise ValueError("Could not parse date: {}".format(datestr))
 
 
-def find_file(path, search_path):
+def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typing.Optional[str]:
     """ Find a file by relative path. Arguments:
 
     path -- the image's filename
@@ -127,43 +139,12 @@ def find_file(path, search_path):
     return None
 
 
-def find_entry(rel_path, search_path):
-    """ Find an entry by relative path. Arguments:
-
-    path -- the entry's filename (or entry ID)
-    search_path -- a list of directories to check in
-
-    Returns: the resolved Entry object
-    """
-
-    from . import entry  # pylint:disable=cyclic-import
-
-    try:
-        entry_id = int(rel_path)
-        record = model.Entry.get(id=entry_id)
-        if record:
-            return entry.Entry(record)
-    except ValueError:
-        pass
-
-    if rel_path.startswith('/'):
-        search_path = config.content_folder,
-        rel_path = '.' + rel_path
-
-    for where in search_path:
-        abspath = os.path.normpath(os.path.join(where, rel_path))
-        record = model.Entry.get(file_path=abspath)
-        if record:
-            return entry.Entry(record)
-    return None
-
-
-def make_slug(title):
+def make_slug(title: str) -> str:
     """ convert a title into a URL-friendly slug """
     return slugify.slugify(title)
 
 
-def static_url(path, absolute=False):
+def static_url(path: str, absolute: bool = False) -> str:
     """ Shorthand for returning a URL for the requested static file.
 
     Arguments:
@@ -178,7 +159,9 @@ def static_url(path, absolute=False):
     return flask.url_for('static', filename=path, _external=absolute)
 
 
-def make_tag(name, attrs, start_end=False):
+def make_tag(name: str,
+             attrs: TagAttrs,
+             start_end: bool = False) -> str:
     """ Build an HTML tag from the given name and attributes.
 
     Arguments:
@@ -219,13 +202,16 @@ def make_tag(name, attrs, start_end=False):
     return flask.Markup(text)
 
 
-def file_fingerprint(fullpath):
+def file_fingerprint(fullpath: str) -> str:
     """ Get a metadata fingerprint for a file """
     stat = os.stat(fullpath)
-    return ','.join([str(value) for value in [stat.st_ino, stat.st_mtime, stat.st_size] if value])
+    return ','.join([str(value)
+                     for value in [stat.st_ino, stat.st_mtime, stat.st_size]
+                     if value])
 
 
-def remap_args(input_args, remap):
+def remap_args(input_args: typing.Dict[str, typing.Any],
+               remap: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
     """ Generate a new argument list by remapping keys. The 'remap'
     dict maps from destination key -> priority list of source keys
     """
@@ -246,7 +232,7 @@ def remap_args(input_args, remap):
     return out_args
 
 
-def remap_link_target(path, absolute=False):
+def remap_link_target(path: str, absolute: bool = False) -> str:
     """ remap a link target to a static URL if it's prefixed with @ """
     if path.startswith('@'):
         # static resource
@@ -259,7 +245,7 @@ def remap_link_target(path, absolute=False):
     return path
 
 
-def get_category(filename):
+def get_category(filename: str) -> str:
     """ Get a default category name from a filename in a cross-platform manner """
     return '/'.join(os.path.dirname(filename).split(os.sep))
 
@@ -282,26 +268,25 @@ class HTMLTransform(html.parser.HTMLParser):
         self.convert_charrefs = False
         self._fed = []
 
-    def append(self, item):
+    def append(self, item: str):
         """ Append some text to the output """
         self._fed.append(item)
 
-    def get_data(self):
+    def get_data(self) -> str:
         """ Concatenate the output """
         return ''.join(self._fed)
 
-    def handle_entityref(self, name):
+    def handle_entityref(self, name: str):
         self.handle_data('&' + name + ';')
 
-    def handle_charref(self, name):
+    def handle_charref(self, name: str):
         self.handle_data('&#' + name + ';')
 
-    def error(self, message):
+    def error(self, message: str):
         """ Deprecated, per https://bugs.python.org/issue31844 """
-        return message
 
 
-def prefix_normalize(kwargs):
+def prefix_normalize(kwargs: ArgDict) -> ArgDict:
     """ Given an argument list where one of them is 'prefix', normalize the
     arguments to convert {prefix}{key} to {key} and remove the prefixed versions
     """
@@ -321,26 +306,26 @@ def prefix_normalize(kwargs):
     return normalized
 
 
-def is_list(item):
+def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
     return isinstance(item, (list, tuple, set))
 
 
-def as_list(item):
-    """ Return list-type things directly; convert other things into a list """
+def as_list(item: typing.Any) -> ListLike:
+    """ Return list-type things directly; convert other things into a tuple """
     if item is None:
-        return []
+        return ()
 
     if is_list(item):
         return item
 
-    return [item]
+    return (item,)
 
 
 class CategoryConverter(werkzeug.routing.PathConverter):
     """ A version of PathConverter that doesn't accept paths beginning with _ """
 
-    def to_python(self, value):
+    def to_python(self, value: str) -> str:
         if value[0] == '_':
             raise werkzeug.routing.ValidationError
         return super().to_python(value)
@@ -349,13 +334,13 @@ class CategoryConverter(werkzeug.routing.PathConverter):
 class TemplateConverter(werkzeug.routing.UnicodeConverter):
     """ A version of UnicodeConverter that doesn't accept strings beginning with _ """
 
-    def to_python(self, value):
+    def to_python(self, value: str) -> str:
         if value[0] == '_':
             raise werkzeug.routing.ValidationError
         return super().to_python(value)
 
 
-def redir_path(path=None):
+def redir_path(path: str = None) -> str:
     """ Convert a URI path to a path fragment, suitable for url_for
 
     :param path: The path to redirect to; uses the current request.full_path if
@@ -375,7 +360,7 @@ def redir_path(path=None):
     return path
 
 
-def secure_link(endpoint, *args, **kwargs):
+def secure_link(endpoint: str, *args, **kwargs) -> str:
     """ flask.url_for except it will force the link to be secure if we are
     configured with AUTH_FORCE_HTTPS """
     force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
@@ -387,7 +372,7 @@ def secure_link(endpoint, *args, **kwargs):
     return flask.url_for(endpoint, *args, **kwargs)
 
 
-def auth_link(endpoint):
+def auth_link(endpoint: str) -> typing.Callable[..., str]:
     """ Generates a function that maps an optional redir parameter to the
     specified endpoint. """
     def endpoint_link(redir=None, **kwargs):
