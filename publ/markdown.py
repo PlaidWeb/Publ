@@ -16,16 +16,6 @@ from . import config, html_entry, image, links, utils
 LOGGER = logging.getLogger(__name__)
 
 
-FOOTNOTE_REF_TEMPLATE = '''\
-<sup id="{ref_id}"><a href="{def_url}" rel="footnote">{content}</a></sup>\
-'''
-
-FOOTNOTE_DEF_TEMPLATE = '''\
-<li id="{def_id}">{before}&nbsp;<a href="{ref_url}" rev="footnote">&#8617;</a>\
-{partition}{after}\
-'''
-
-
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
 
@@ -47,15 +37,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._footnote_buffer = footnote_buffer
         self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
 
-    def footnotes(self, buffer):
-        """ Render the footnotes, if they aren't being deferred """
-        if self._footnote_buffer is not None and not self._config.get('footnotes_defer'):
-            formatted = '<div class="footnotes"><hr><ol>{defer}{buffer}</ol></div>'.format(
-                defer=''.join(self._footnote_buffer),
-                buffer=buffer)
-            self._footnote_buffer.clear()
-            return formatted
-        return ' '
+    @staticmethod
+    def footnotes(_):
+        """ Actual footnote rendering is handled by the caller """
+        return None
 
     def _footnote_num(self, num):
         return num + self._footnote_ofs
@@ -72,25 +57,41 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
-        return FOOTNOTE_REF_TEMPLATE.format(
-            ref_id=self._footnote_id(num, "ref"),
-            def_url=self._footnote_url(num, "def"),
+        return '{sup}{link}{content}</a></sup>'.format(
+            sup=utils.make_tag('sup', {
+                'id': self._footnote_id(num, "r"),
+                'class': self._config.get('footnotes_class', False)
+            }),
+            link=utils.make_tag('a', {
+                'href': self._footnote_url(num, "d"),
+                'rel': 'footnote'
+            }),
             content=self._footnote_num(num))
 
     def footnote_def(self, content, num):
         """ Render the footnote body, deferring it if so configured """
-
-        # Insert the return anchor before the end of the first content block
-        before, partition, after = content.partition('</p>')
-        text = FOOTNOTE_DEF_TEMPLATE.format(
-            def_id=self._footnote_id(num, "def"),
-            ref_url=self._footnote_url(num, "ref"),
-            before=before,
-            partition=partition,
-            after=after)
-
         if self._footnote_buffer is not None:
+            LOGGER.debug("footnote_def %d: %s", num, content)
+
+            # Insert the return anchor before the end of the first content block
+            before, partition, after = content.partition('</p>')
+            text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
+                li=utils.make_tag('li', {
+                    'id': self._footnote_id(num, "d")
+                }),
+                before=before,
+                link=utils.make_tag('a', {
+                    'href': self._footnote_url(num, "r"),
+                    'rev': 'footnote'
+                }),
+                icon=self._config.get('footnotes_return', '↩'),
+                partition=partition,
+                after=after,
+            )
+
             self._footnote_buffer.append(text)
+
+        LOGGER.debug("footnote %d with no buffer", num)
         return ' '
 
     def image(self, raw_url, title='', alt=''):
@@ -224,7 +225,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
 
 def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
-    """ Convert Markdown text to HTML """
+    """ Convert Markdown text to HTML.
+
+    footnote_buffer -- a list that will contain <li>s with the footnote items, if
+    there are any footnotes to be found.
+    """
 
     # first process as Markdown
     processor = misaka.Markdown(HtmlRenderer(args,

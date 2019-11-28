@@ -228,3 +228,29 @@ img.green {
 img.red {
     border: solid red 5px;
 }
+
+#footnotes {
+    font-size: small;
+    border-top: dashed red 1px;
+    background: #ddd;
+}
+
+:target {
+    background: #ddf;
+}
+
+.gronk {
+    color: white;
+    background: red;
+}
+.plonk {
+    color: blue;
+    background: yellow;
+}
+.flonk {
+    color: red;
+    background: blue;
+}
+.flonk a {
+    color: white;
+}

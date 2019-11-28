@@ -9,7 +9,11 @@ Here is another footnote in the body.[^body2]
 
 [^body1]: hi[^nestbody]
 
-[^body2]: hello
+[^body2]: hello. This footnote has an image:
+
+    ![](../images/rawr.jpg)
+
+    It is very silly.
 
 [^nestbody]: This is nested in the body
 

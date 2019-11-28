@@ -59,9 +59,19 @@
             {% endif %}
 
             <div class="entry e-content">
-            {{entry.body}}
+            {{entry.body(footnotes_class='gronk')}}
             {% if entry.more %}
-                {{entry.more}}
+            <div id="more">
+                {{entry.more(footnotes_class='plonk')}}
+            </div>
+            {% endif %}
+            {% if entry.footnotes %}
+            <div id="footnotes">
+                <h2>Footnotes</h2>
+                {{entry.footnotes(width=128,height=128,gallery_id='footnotes',
+                footnotes_return='back',
+                footnotes_class='flonk')}}
+            </div>
             {% endif %}
             </div>
             {% endblock %}
