@@ -58,11 +58,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Render a link to this footnote """
         return '{sup}{link}{content}</a></sup>'.format(
             sup=utils.make_tag('sup', {
-            'id':self._footnote_id(num, "ref"),
+            'id':self._footnote_id(num, "r"),
             'class':self._config.get('footnotes_class',False)
             }),
             link=utils.make_tag('a', {
-                'href': self._footnote_url(num, "def"),
+                'href': self._footnote_url(num, "d"),
                 'rel': 'footnote'
                 }),
             content=self._footnote_num(num))
@@ -76,14 +76,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
             before, partition, after = content.partition('</p>')
             text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
                 li=utils.make_tag('li', {
-                    'id': self._footnote_id(num, "def")
+                    'id': self._footnote_id(num, "d")
                     }),
                 before=before,
                 link=utils.make_tag('a', {
-                    'href': self._footnote_url(num, "ref"),
+                    'href': self._footnote_url(num, "r"),
                     'rev': 'footnote'
                     }),
-                icon=self._config.get('footnotes_return', '&#8617;'),
+                icon=self._config.get('footnotes_return', '↩'),
                 partition=partition,
                 after=after,
                 )
