@@ -490,7 +490,7 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     """ Get or generate an entry ID for an entry """
     other_entry: typing.Optional[model.Entry] = None
 
-    entry_id:typing.Optional[int] = None
+    entry_id: typing.Optional[int] = None
     if 'Entry-ID' in entry:
         entry_id = int(entry['Entry-ID'])
 

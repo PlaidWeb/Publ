@@ -52,7 +52,7 @@ app = publ.Publ(__name__, config)
 @app.route('/favicon.<ext>')
 def favicon(ext):
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
-    img, _ = logo.get_rendition(format=ext,width=128,height=128)
+    img, _ = logo.get_rendition(format=ext, width=128, height=128)
     return flask.redirect(img)
 
 
