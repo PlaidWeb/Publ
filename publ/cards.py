@@ -2,6 +2,7 @@
 """ Rendering functions for Twitter/OpenGraph cards"""
 
 import logging
+import typing
 
 import misaka
 
@@ -113,17 +114,18 @@ class HtmlCardParser(utils.HTMLTransform):
             self._card.description += data
 
 
-def extract_card(text, is_markdown, args, image_search_path):
+def extract_card(text: str,
+                 is_markdown: bool,
+                 args: typing.Dict[str, typing.Any],
+                 image_search_path: typing.Tuple[str]) -> CardData:
     """ Extract card data based on the provided texts. """
     card = CardData()
     if is_markdown:
-        parser = MarkdownCardParser(card, args, image_search_path)
-        misaka.Markdown(parser,
+        misaka.Markdown(MarkdownCardParser(card, args, image_search_path),
                         extensions=args.get('markdown_extensions')
                         or config.markdown_extensions
                         )(text)
     else:
-        parser = HtmlCardParser(card)
-        parser.feed(text)
+        HtmlCardParser(card).feed(text)
 
     return card

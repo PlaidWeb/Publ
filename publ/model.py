@@ -13,13 +13,15 @@ from . import config
 
 db = orm.Database()  # pylint: disable=invalid-name
 
+DbEntity: orm.core.Entity = db.Entity
+
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
 SCHEMA_VERSION = 10
 
 
-class GlobalConfig(db.Entity):
+class GlobalConfig(DbEntity):
     """ Global configuration data """
     key = orm.PrimaryKey(str)
     int_value = orm.Optional(int)
@@ -36,14 +38,14 @@ class PublishStatus(Enum):
     DELETED = 4  # synonym for GONE
 
 
-class FileFingerprint(db.Entity):
+class FileFingerprint(DbEntity):
     """ File modification time """
     file_path = orm.PrimaryKey(str)
     fingerprint = orm.Required(str)
     file_mtime = orm.Required(float, index=True)
 
 
-class Entry(db.Entity):
+class Entry(DbEntity):
     """ Indexed entry """
     file_path = orm.Required(str)
     category = orm.Optional(str)
@@ -79,12 +81,12 @@ class Entry(db.Entity):
     orm.composite_index(category, entry_type, sort_title)
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         """ Returns true if the entry should be viewable """
         return self.status not in (PublishStatus.DRAFT.value,
                                    PublishStatus.GONE.value)
 
-    def is_authorized(self, user):
+    def is_authorized(self, user) -> bool:
         """ Returns whether the entry is visible to the specified user """
         if not self.auth:
             return True
@@ -112,7 +114,7 @@ class Entry(db.Entity):
         return result
 
 
-class EntryTag(db.Entity):
+class EntryTag(DbEntity):
     """ Tags for an entry """
     entry = orm.Required(Entry)
     key = orm.Required(str)  # the search key
@@ -121,7 +123,7 @@ class EntryTag(db.Entity):
     orm.composite_key(key, entry)
 
 
-class Category(db.Entity):
+class Category(DbEntity):
     """ Metadata for a category """
 
     category = orm.Optional(str)
@@ -131,7 +133,7 @@ class Category(db.Entity):
     aliases = orm.Set("PathAlias")
 
 
-class PathAlias(db.Entity):
+class PathAlias(DbEntity):
     """ Path alias mapping """
     path = orm.PrimaryKey(str)
     url = orm.Optional(str)
@@ -140,7 +142,7 @@ class PathAlias(db.Entity):
     template = orm.Optional(str)
 
 
-class Image(db.Entity):
+class Image(DbEntity):
     """ Image metadata """
     file_path = orm.PrimaryKey(str)
     checksum = orm.Required(str)
@@ -154,7 +156,7 @@ class Image(db.Entity):
     asset_name = orm.Optional(str, index=True)
 
 
-class EntryAuth(db.Entity):
+class EntryAuth(DbEntity):
     """ An authentication record for an entry """
     order = orm.Required(int)
     entry = orm.Required(Entry)
@@ -164,7 +166,7 @@ class EntryAuth(db.Entity):
     orm.composite_key(entry, order)
 
 
-class AuthLog(db.Entity):
+class AuthLog(DbEntity):
     """ Authentication log for private entries """
     date = orm.Required(datetime.datetime, index=True)
     entry = orm.Required(Entry, index=True)
@@ -175,7 +177,7 @@ class AuthLog(db.Entity):
     orm.PrimaryKey(entry, user)
 
 
-class KnownUser(db.Entity):
+class KnownUser(DbEntity):
     """ Users who are known to the system """
     user = orm.PrimaryKey(str)
     last_seen = orm.Required(datetime.datetime, index=True)

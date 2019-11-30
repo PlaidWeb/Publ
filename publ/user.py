@@ -5,6 +5,7 @@ import collections
 import configparser
 import datetime
 import logging
+import typing
 
 import arrow
 import flask
@@ -17,20 +18,20 @@ LOGGER = logging.getLogger(__name__)
 
 
 @caching.cache.memoize(timeout=30)
-def get_groups(username, include_self=True):
+def get_groups(username: str, include_self: bool = True) -> typing.Set[str]:
     """ Get the group membership for the given username """
 
     @caching.cache.memoize(timeout=30)
-    def load_groups():
+    def load_groups() -> typing.DefaultDict[str, typing.Set[str]]:
         # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
         cfg = configparser.ConfigParser(delimiters=(
             '\000'), allow_no_value=True, interpolation=None)
         # disable authentication lowercasing; usernames should only be case-densitized
         # by the auth backend
-        cfg.optionxform = lambda option: option
+        cfg.optionxform = lambda option: option  # type:ignore
         cfg.read(config.user_list)
 
-        groups = collections.defaultdict(set)
+        groups: typing.DefaultDict[str, typing.Set[str]] = collections.defaultdict(set)
 
         # populate the group list for each member
         for group, members in cfg.items():
@@ -40,8 +41,8 @@ def get_groups(username, include_self=True):
         return groups
 
     groups = load_groups()
-    result = set()
-    pending = collections.deque()
+    result: typing.Set[str] = set()
+    pending: typing.Deque[str] = collections.deque()
 
     pending.append(username)
 
@@ -58,7 +59,9 @@ def get_groups(username, include_self=True):
 class User(caching.Memoizable):
     """ An authenticated user """
 
-    def __init__(self, name, auth_type=None, scope=None):
+    def __init__(self, name: str,
+                 auth_type: typing.Optional[str] = None,
+                 scope: typing.Optional[str] = None):
         """ Initialize the user object.
 
         :param str name: The federated identity name
@@ -92,23 +95,23 @@ class User(caching.Memoizable):
         return self._scope
 
     @cached_property
-    def auth_groups(self):
+    def auth_groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for auth purposes """
         return get_groups(self.name, True)
 
     @cached_property
-    def groups(self):
+    def groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for display purposes """
         return get_groups(self.name, False)
 
     @property
-    def is_admin(self):
+    def is_admin(self) -> bool:
         """ Returns whether this user has administrator permissions """
-        return config.admin_group and config.admin_group in self.groups
+        return bool(config.admin_group and config.admin_group in self.groups)
 
 
 @utils.stash('user')
-def get_active():
+def get_active() -> typing.Optional[User]:
     """ Get the active user """
     if 'Authorization' in flask.request.headers:
         parts = flask.request.headers['Authorization'].split()

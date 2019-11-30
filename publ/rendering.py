@@ -4,6 +4,7 @@
 import base64
 import logging
 import os
+import typing
 
 import flask
 import werkzeug.exceptions as http_error
@@ -15,7 +16,7 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
 from .caching import cache
 from .category import Category
 from .entry import Entry, expire_record
-from .template import map_template
+from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,13 +36,13 @@ NO_CACHE = {
 }
 
 
-def mime_type(template):
+def mime_type(template: Template) -> str:
     """ infer the content-type from the extension """
     _, ext = os.path.splitext(template.filename)
     return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
 
 
-def get_template(template, relation):
+def get_template(template: str, relation) -> Template:
     """ Given an entry or a category, return the path to a related template """
     if isinstance(relation, Entry):
         path = relation.category.path
@@ -63,31 +64,33 @@ def get_redirect():
     return None
 
 
-def image_function(template=None, entry=None, category=None):
+def image_function(template=None,
+                   entry=None,
+                   category=None) -> typing.Callable[[str], image.Image]:
     """ Get a function that gets an image """
 
-    path = ()
+    path: typing.Tuple[str, ...] = ()
 
     if entry is not None:
         path += entry.search_path
     if category is not None:
         # Since the category might be different than the entry's category we add
         # this too
-        path += category.search_path,
+        path += (category.search_path,)
     if template is not None:
         path += os.path.join(config.content_folder,
-            os.path.dirname(template.filename)),
+                             os.path.dirname(template.filename)),
 
     return lambda filename: image.get_image(filename, path)
 
 
-def render_publ_template(template, **kwargs):
+def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]:
     """ Render out a template, providing the image function based on the args.
 
     Returns tuple of (rendered text, etag)
     """
     @cache.memoize(unless=caching.do_not_cache)
-    def do_render(template, args, **kwargs):
+    def do_render(template: Template, args, **kwargs) -> typing.Tuple[str, str]:
         LOGGER.debug("Rendering template %s with args %s and kwargs %s",
                      template, args, kwargs)
 
@@ -109,11 +112,13 @@ def render_publ_template(template, **kwargs):
                          _url_root=request.url_root,
                          **kwargs)
     except queries.InvalidQueryError as err:
-        raise http_error.BadRequest(err)
+        raise http_error.BadRequest(str(err))
 
 
 @orm.db_session(retry=5)
-def render_error(category, error_message, error_codes, exception=None, headers=None):
+def render_error(category, error_message, error_codes,
+                 exception=None,
+                 headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
     """ Render an error page.
 
     Arguments:
@@ -125,6 +130,8 @@ def render_error(category, error_message, error_codes, exception=None, headers=N
         be the first error code in the list, and the others are alternates
         for looking up the error template to use.
     exception -- Any exception that led to this error page
+
+    Returns a tuple of (rendered_text, status_code, headers)
     """
 
     LOGGER.info("Rendering error: category=%s error_message='%s' error_codes=%s exception=%s",

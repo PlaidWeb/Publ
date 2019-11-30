@@ -26,21 +26,21 @@ class ExternalImage(Image):
         # pylint: disable=unused-argument
         return self._get_url(kwargs.get('absolute')), None
 
-    def _get_img_attrs(self, kwargs, style_parts):
-        url = self._get_url(kwargs.get('absolute'))
+    def _get_img_attrs(self, spec, style_parts):
+        url = self._get_url(spec.get('absolute'))
 
         attrs = {}
-        if 'class' in kwargs or 'img_class' in kwargs:
-            attrs['class'] = kwargs.get('class', kwargs.get('img_class'))
-        if 'id' in kwargs:
-            attrs['id'] = kwargs['id']
+        if 'class' in spec or 'img_class' in spec:
+            attrs['class'] = spec.get('class', spec.get('img_class'))
+        if 'id' in spec:
+            attrs['id'] = spec['id']
 
         # try to fudge the sizing
-        max_width = kwargs.get('max_width')
-        width = kwargs.get('width') or max_width
-        max_height = kwargs.get('max_height')
-        height = kwargs.get('height') or max_height
-        size_mode = kwargs.get('resize', 'fit')
+        max_width = spec.get('max_width')
+        width = spec.get('width') or max_width
+        max_height = spec.get('max_height')
+        height = spec.get('height') or max_height
+        size_mode = spec.get('resize', 'fit')
 
         if width and max_width and max_width < width:
             if height:
@@ -56,12 +56,12 @@ class ExternalImage(Image):
                 'background-image:url(\'{}\')'.format(html.escape(url)),
                 'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
                 'background-position:{:.1f}% {:.1f}%'.format(
-                    kwargs.get('fill_crop_x', 0.5) * 100,
-                    kwargs.get('fill_crop_y', 0.5) * 100),
+                    spec.get('fill_crop_x', 0.5) * 100,
+                    spec.get('fill_crop_y', 0.5) * 100),
                 'background-repeat:no-repeat'
             ]
             attrs['src'] = flask.url_for(
-                'chit', _external=kwargs.get('absolute'))
+                'chit', _external=spec.get('absolute'))
         else:
             attrs['src'] = url
 
@@ -72,10 +72,10 @@ class ExternalImage(Image):
 
         return attrs
 
-    def _css_background(self, **kwargs):
+    def _css_background(self, **kwargs) -> str:
         """ Get the CSS background-image for the remote image """
         return 'background-image: url("{}");'.format(self._get_url(kwargs.get('absolute')))
 
     @property
-    def _filename(self):
+    def _filename(self) -> str:
         return os.path.basename(urllib.parse.urlparse(self._get_url(True)).path)
