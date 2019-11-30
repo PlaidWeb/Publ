@@ -70,7 +70,7 @@ setup(
         'flask_caching',
         'misaka',
         'pillow',
-        'pony',
+        'pony>=0.7.11',
         'pygments',
         'watchdog',
     ],
