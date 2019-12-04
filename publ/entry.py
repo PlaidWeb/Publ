@@ -7,6 +7,7 @@ import hashlib
 import logging
 import os
 import re
+import typing
 import uuid
 
 import arrow
@@ -16,13 +17,13 @@ from werkzeug.utils import cached_property
 
 from . import (caching, cards, config, html_entry, links, markdown, model,
                path_alias, queries, tokens, user, utils)
-from .utils import CallableProxy, TrueCallableProxy, make_slug
+from .utils import CallableProxy, CallableValue, TrueCallableProxy, make_slug
 
 LOGGER = logging.getLogger(__name__)
 
 
 @functools.lru_cache(10)
-def load_message(filepath):
+def load_message(filepath) -> email.message.Message:
     """ Load a message from the filesystem """
     with open(filepath, 'r', encoding='utf-8') as file:
         return email.message_from_file(file)
@@ -43,6 +44,8 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
+        self._body_footnotes = None  # do we know if there's intro footnotes?
+        self._more_footnotes = None  # do we know if there's moretext footnotes?
 
     def __lt__(self, other):
         # pylint:disable=protected-access
@@ -52,48 +55,48 @@ class Entry(caching.Memoizable):
         return self._record.id, self._record.file_path
 
     @cached_property
-    def date(self):
+    def date(self) -> arrow.Arrow:
         """ Get the display date of the entry, as an Arrow object """
         return arrow.get(self._record.display_date)
 
     @cached_property
-    def date_year(self):
+    def date_year(self) -> str:
         """ Get the entry date' year, useful for grouping """
         return self.date.format(utils.YEAR_FORMAT)
 
     @cached_property
-    def date_month(self):
+    def date_month(self) -> str:
         """ Get the entry date's month, useful for grouping """
         return self.date.format(utils.MONTH_FORMAT)
 
     @cached_property
-    def date_day(self):
+    def date_day(self) -> str:
         """ Get the entry date's day, useful for grouping """
         return self.date.format(utils.DAY_FORMAT)
 
     @cached_property
-    def link(self):
+    def link(self) -> typing.Callable[..., str]:
         """ Get a link to this entry. Accepts the same parameters as permalink;
         may be pre-redirected. """
-        def _link(*args, **kwargs):
+        def _link(*args, **kwargs) -> str:
             """ Returns a link, potentially pre-redirected """
             if self._record.redirect_url:
                 return links.resolve(self._record.redirect_url,
-                                     self.search_path, kwargs.get('absolute'))
+                                     self.search_path, kwargs.get('absolute', False))
 
             return self.permalink(*args, **kwargs)
 
         return CallableProxy(_link)
 
     @cached_property
-    def permalink(self):
+    def permalink(self) -> typing.Callable[..., str]:
         """ Get a canonical link to this entry. Accepts the following parameters:
 
         absolute -- if True, return an absolute/portable link (default: False)
         expand -- if True, expands the link to include the category and slug text;
             if False, it will only be the entry ID (default: True)
         """
-        def _permalink(absolute=False, expand=True, **kwargs):
+        def _permalink(absolute=False, expand=True, **kwargs) -> str:
             if not self.authorized:
                 expand = False
             return flask.url_for('entry',
@@ -108,21 +111,21 @@ class Entry(caching.Memoizable):
         return CallableProxy(_permalink)
 
     @cached_property
-    def login(self):
+    def login(self) -> typing.Callable[..., str]:
         """ Get a link specifically for logging in to the entry. Not intended for general use;
         might be useful for some future authentication flow. """
-        def _loginlink(absolute=False, **kwargs):
+        def _loginlink(absolute=False, **kwargs) -> str:
             pagelink = flask.url_for('entry', entry_id=self._record.id, **kwargs)
             return flask.url_for('login', redir=pagelink[1:], _external=absolute)
         return CallableProxy(_loginlink)
 
     @cached_property
-    def private(self):
+    def private(self) -> bool:
         """ Returns True if this post is private, i.e. it is invisible to the logged-out user """
         return not self._record.is_authorized(None)
 
     @cached_property
-    def archive(self):
+    def archive(self) -> typing.Callable[..., str]:
         """ Get a link to this entry in the context of a category template.
         Accepts the following arguments:
 
@@ -135,7 +138,7 @@ class Entry(caching.Memoizable):
         category -- Which category to generate the link against (default: the entry's category)
         template -- Which template to generate the link for
         """
-        def _archive_link(paging=None, template='', category=None, absolute=False, tag=None):
+        def _archive_link(paging=None, template='', category=None, absolute=False, tag=None) -> str:
             # pylint:disable=too-many-arguments
             args = {
                 'template': template,
@@ -162,27 +165,27 @@ class Entry(caching.Memoizable):
         return CallableProxy(_archive_link)
 
     @cached_property
-    def type(self):
+    def type(self) -> str:
         """ An alias for entry_type """
         return self.entry_type
 
     @cached_property
-    def tags(self):
+    def tags(self) -> typing.List[str]:
         """ Get the original (non-normalized) tags for the entry """
         return self.get_all('Tag')
 
     @cached_property
-    def status(self):
-        """ Returns a string version of the entry status """
+    def status(self) -> model.PublishStatus:
+        """ Returns a typed version of the entry status """
         return model.PublishStatus(self.status)
 
     @cached_property
-    def next(self):
+    def next(self) -> typing.Callable[..., typing.Optional["Entry"]]:
         """ Get the next entry in the category, ordered by date.
 
         Accepts view parameters as arguments.
         """
-        def _next(**kwargs):
+        def _next(**kwargs) -> typing.Optional["Entry"]:
             """ Get the next item in any particular category """
             spec = self._pagination_default_spec(kwargs)
             spec.update(kwargs)
@@ -202,12 +205,12 @@ class Entry(caching.Memoizable):
         return CallableProxy(_next)
 
     @cached_property
-    def previous(self):
+    def previous(self) -> typing.Callable[..., typing.Optional["Entry"]]:
         """ Get the previous entry in the category, ordered by date.
 
         Accepts view parameters as arguments.
         """
-        def _previous(**kwargs):
+        def _previous(**kwargs) -> typing.Optional["Entry"]:
             """ Get the previous item in any particular category """
             spec = self._pagination_default_spec(kwargs)
             spec.update(kwargs)
@@ -233,7 +236,7 @@ class Entry(caching.Memoizable):
         return Category(self._record.category)
 
     @cached_property
-    def title(self):
+    def title(self) -> typing.Callable[..., str]:
         """ Get the title of the entry. Accepts the following arguments:
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
@@ -245,7 +248,7 @@ class Entry(caching.Memoizable):
             authorized to see the entry
         """
         def _title(markup=True, no_smartquotes=False, markdown_extensions=None,
-                   always_show=False):
+                   always_show=False) -> str:
             if not always_show and not self.authorized:
                 return ''
             return markdown.render_title(self._record.title, markup, no_smartquotes,
@@ -253,12 +256,12 @@ class Entry(caching.Memoizable):
         return CallableProxy(_title)
 
     @cached_property
-    def search_path(self):
+    def search_path(self) -> typing.Tuple[str, ...]:
         """ The relative image search path for this entry """
-        return [os.path.dirname(self._record.file_path)] + self.category.search_path
+        return (os.path.dirname(self._record.file_path), self.category.search_path)
 
     @cached_property
-    def _message(self):
+    def _message(self) -> email.message.Message:
         """ get the message payload """
         LOGGER.debug("Loading entry %d from %s", self._record.id, self._record.file_path)
         filepath = self._record.file_path
@@ -271,7 +274,7 @@ class Entry(caching.Memoizable):
             return empty
 
     @cached_property
-    def _entry_content(self):
+    def _entry_content(self) -> typing.Tuple[str, str, bool]:
         if not self.authorized:
             return '', '', False
 
@@ -289,29 +292,74 @@ class Entry(caching.Memoizable):
         return body, more, is_markdown
 
     @cached_property
-    def body(self):
+    def body(self) -> typing.Callable[..., str]:
         """ Get the above-the-fold entry body text """
         body, _, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            lambda **kwargs: self._get_markup(body, is_markdown, **kwargs)
-        ) if body else CallableProxy(None)
+
+        def _body(**kwargs) -> str:
+            footnotes: typing.List[str] = []
+            body_text = self._get_markup(body, is_markdown, args=kwargs,
+                                         footnote_buffer=footnotes)
+
+            # record that we know whether there's footnotes in the intro, for later
+            self._body_footnotes = bool(footnotes)
+            return body_text
+
+        return TrueCallableProxy(_body) if body else CallableValue('')
 
     @cached_property
-    def more(self):
+    def more(self) -> typing.Callable[..., str]:
         """ Get the below-the-fold entry body text """
-        _, more, is_markdown = self._entry_content
-        return TrueCallableProxy(
-            lambda **kwargs: self._get_markup(more, is_markdown, **kwargs)
-        ) if more else CallableProxy(None)
+        body, more, is_markdown = self._entry_content
+
+        def _more(**kwargs) -> str:
+            footnotes: typing.List[str] = []
+            if is_markdown and self._body_footnotes is not False:
+                # Need to ensure that the intro footnotes are accounted for
+                self._get_markup(body, is_markdown, args=kwargs, footnote_buffer=footnotes)
+
+            LOGGER.debug("Intro had %d footnotes", len(footnotes))
+
+            more_text = self._get_markup(more, is_markdown,
+                                         footnote_buffer=footnotes,
+                                         args=kwargs)
+
+            # record that we know whether there's body footnotes, for later
+            self._more_footnotes = bool(footnotes)
+            return more_text
+
+        return TrueCallableProxy(_more) if more else CallableValue('')
 
     @cached_property
-    def card(self):
+    def footnotes(self) -> typing.Callable[..., str]:
+        """ Get the rendered footnotes for the entry """
+        body, more, is_markdown = self._entry_content
+
+        def _footnotes(**kwargs) -> str:
+            LOGGER.debug("rendering footnotes")
+            return self._get_footnotes(body, more, kwargs)
+
+        LOGGER.debug("is_markdown %s  body_footnotes %s  more_footnotes %s",
+                     is_markdown,
+                     body and self._body_footnotes,
+                     more and self._more_footnotes)
+        if is_markdown and ((body and self._body_footnotes is not False) or
+                            (more and self._more_footnotes is not False)):
+            # It's possible there's footnotes!
+            LOGGER.debug("footnotes are a possibility")
+            return CallableProxy(_footnotes)
+
+        LOGGER.debug("there is no way there's footnotes")
+        return CallableValue('')
+
+    @cached_property
+    def card(self) -> typing.Callable[..., str]:
         """ Get the entry's OpenGraph card """
 
-        def _get_card(**kwargs):
+        def _get_card(**kwargs) -> str:
             """ Render out the tags for a Twitter/OpenGraph card for this entry. """
 
-            def og_tag(key, val):
+            def og_tag(key, val) -> str:
                 """ produce an OpenGraph tag with the given key and value """
                 return utils.make_tag('meta', {'property': key, 'content': val}, start_end=True)
 
@@ -332,10 +380,10 @@ class Entry(caching.Memoizable):
         return CallableProxy(_get_card)
 
     @cached_property
-    def summary(self):
+    def summary(self) -> typing.Callable[..., str]:
         """ Get the entry's summary text """
 
-        def _get_summary(**kwargs):
+        def _get_summary(**kwargs) -> str:
             """ Render out just the summary """
 
             if self.get('Summary'):
@@ -352,33 +400,50 @@ class Entry(caching.Memoizable):
         return CallableProxy(_get_summary)
 
     @cached_property
-    def last_modified(self):
+    def last_modified(self) -> arrow.Arrow:
         """ Get the date of last file modification """
         if self.get('Last-Modified'):
             return arrow.get(self.get('Last-Modified'))
         return self.date
 
     @property
-    def authorized(self):
+    def authorized(self) -> bool:
         """ Returns if the current user is authorized to see this entry """
         return self._record.is_authorized(user.get_active())
 
-    def _get_markup(self, text, is_markdown, **kwargs):
+    def _get_markup(self, text, is_markdown, args,
+                    footnote_buffer: typing.Optional[typing.List[str]] = None) -> str:
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
         if is_markdown:
+            if 'footnotes_link' not in args:
+                args['footnotes_link'] = self.link(absolute=args.get('absolute'))
+
             return markdown.to_html(
                 text,
-                kwargs,
-                search_path=self.search_path)
+                args=args,
+                search_path=self.search_path,
+                entry_id=self._record.id,
+                footnote_buffer=footnote_buffer,
+            )
 
         return html_entry.process(
             text,
-            kwargs,
+            args,
             search_path=self.search_path)
+
+    def _get_footnotes(self, body, more, args) -> str:
+        """ get the rendered Markdown footnotes for the entry """
+        footnotes: typing.List[str] = []
+        self._get_markup(body, True, args=args, footnote_buffer=footnotes)
+        self._get_markup(more, True, args=args, footnote_buffer=footnotes)
+
+        if footnotes:
+            return flask.Markup("<ol>{notes}</ol>".format(notes=''.join(footnotes)))
+        return ''
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
@@ -399,46 +464,46 @@ class Entry(caching.Memoizable):
             'recurse': kwargs.get('recurse', 'category' in kwargs)
         }
 
-    def get(self, name, default=None):
+    def get(self, name, default=None) -> str:
         """ Get a single header on an entry """
         return self._message.get(name, default)
 
-    def get_all(self, name):
+    def get_all(self, name) -> typing.List[str]:
         """ Get all related headers on an entry, as an iterable list """
         return self._message.get_all(name) or []
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, int):
             return other == self._record.id
         # pylint:disable=protected-access
         return isinstance(other, Entry) and (other is self or other._record == self._record)
 
 
-def guess_title(basename):
+def guess_title(basename) -> str:
     """ Attempt to guess the title from the filename """
 
     base, _ = os.path.splitext(basename)
     return re.sub(r'[ _-]+', r' ', base).title()
 
 
-def get_entry_id(entry, fullpath, assign_id):
+def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     """ Get or generate an entry ID for an entry """
-    warn_duplicate = False
+    other_entry: typing.Optional[model.Entry] = None
 
+    entry_id: typing.Optional[int] = None
     if 'Entry-ID' in entry:
         entry_id = int(entry['Entry-ID'])
-    else:
-        entry_id = None
 
     # See if we've inadvertently duplicated an entry ID
-    if entry_id:
+    if entry_id is not None:
         try:
             other_entry = model.Entry.get(id=entry_id)
             if (other_entry
                     and os.path.isfile(other_entry.file_path)
                     and not os.path.samefile(other_entry.file_path, fullpath)):
-                warn_duplicate = entry_id
                 entry_id = None
+            else:
+                other_entry = None
         except FileNotFoundError:
             # the other file doesn't exist, so just let it go
             pass
@@ -460,7 +525,8 @@ def get_entry_id(entry, fullpath, assign_id):
         # generated while keeping the entry ID reasonably short. In general,
         # count*N averages 1/(N-1) collisions per ID.
 
-        limit = max(10, orm.get(orm.count(e) for e in model.Entry) * 5)
+        limit = max(10, orm.get(orm.count(e)
+                                for e in model.Entry) * 5)  # type:ignore
         attempt = 0
         while not entry_id or model.Entry.get(id=entry_id):
             # Stably generate a quasi-random entry ID from the file path
@@ -469,14 +535,14 @@ def get_entry_id(entry, fullpath, assign_id):
             entry_id = int.from_bytes(md5.digest(), byteorder='big') % limit
             attempt = attempt + 1
 
-    if warn_duplicate is not False:
+    if other_entry:
         LOGGER.warning("Entry '%s' had ID %d, which belongs to '%s'. Reassigned to %d",
-                       fullpath, warn_duplicate, other_entry.file_path, entry_id)
+                       fullpath, other_entry.id, other_entry.file_path, entry_id)
 
     return entry_id
 
 
-def save_file(fullpath, entry):
+def save_file(fullpath: str, entry: email.message.Message):
     """ Save a message file out, without mangling the headers """
     from atomicwrites import atomic_write
     with atomic_write(fullpath, overwrite=True) as file:
@@ -491,7 +557,7 @@ def save_file(fullpath, entry):
 
 
 @orm.db_session(immediate=True)
-def scan_file(fullpath, relpath, assign_id):
+def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
     """ scan a file and put it into the index """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
@@ -581,7 +647,7 @@ def scan_file(fullpath, relpath, assign_id):
         for alias in entry.get_all('Path-Alias', []):
             path_alias.set_alias(alias, entry=record)
 
-    orm.delete(p for p in model.EntryAuth if p.entry == record)
+    orm.delete(p for p in model.EntryAuth if p.entry == record)  # type:ignore
     orm.commit()
     for order, user_group in enumerate(entry.get('Auth', '').split()):
         allowed = (user_group[0] != '!')
@@ -612,7 +678,7 @@ def scan_file(fullpath, relpath, assign_id):
         LOGGER.info("Fixing up entry %s", fullpath)
         save_file(fullpath, entry)
 
-    return record
+    return True
 
 
 @orm.db_session(immediate=True)

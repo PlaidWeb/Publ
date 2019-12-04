@@ -1,6 +1,8 @@
 # path_alias.py
 """ Handling for URL aliases """
 
+import typing
+
 from flask import current_app, redirect, url_for
 from pony import orm
 
@@ -8,7 +10,7 @@ from . import model, utils
 
 
 @orm.db_session(immediate=True)
-def set_alias(alias, **kwargs):
+def set_alias(alias: str, **kwargs) -> model.PathAlias:
     """ Set a path alias.
 
     Arguments:
@@ -39,31 +41,33 @@ def set_alias(alias, **kwargs):
 
 
 @orm.db_session
-def remove_alias(path):
+def remove_alias(path: str):
     """ Remove a path alias.
 
     Arguments:
 
     path -- the path to remove the alias of
     """
-    orm.delete(p for p in model.PathAlias if p.path == path)
+    orm.delete(p for p in model.PathAlias if p.path == path)  # type:ignore
     orm.commit()
 
 
 @orm.db_session
-def remove_aliases(target):
+def remove_aliases(target: typing.Union[model.Entry, model.Category]):
     """ Remove all aliases to a destination """
 
     if isinstance(target, model.Entry):
-        orm.delete(p for p in model.PathAlias if p.entry == target)
+        orm.delete(p for p in model.PathAlias  # type:ignore
+                   if p.entry == target)
     elif isinstance(target, model.Category):
-        orm.delete(p for p in model.PathAlias if p.category == target)
+        orm.delete(p for p in model.PathAlias  # type:ignore
+                   if p.category == target)
     else:
         raise TypeError("Unknown type {}".format(type(target)))
     orm.commit()
 
 
-def get_alias(path):
+def get_alias(path: str) -> typing.Tuple[typing.Optional[str], bool]:
     """ Get a path alias for a single path
 
     Returns a tuple of (url,is_permanent)
@@ -73,7 +77,7 @@ def get_alias(path):
     record = model.PathAlias.get(path=path)
 
     if not record:
-        return None, None
+        return None, False
 
     template = record.template if record.template != 'index' else None
 
@@ -108,10 +112,10 @@ def get_alias(path):
         # we don't do a 301 Permanently moved
         return record.url, False
 
-    return None, None
+    return None, False
 
 
-def get_redirect(paths):
+def get_redirect(paths: typing.Union[str, typing.List[str]]):
     """ Get a redirect from a path or list of paths
 
     Arguments:

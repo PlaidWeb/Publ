@@ -2,7 +2,7 @@
 """ configuration container for Publ """
 
 import sys
-import uuid
+import typing
 
 from dateutil import tz
 
@@ -28,7 +28,7 @@ image_cache_age = 86400 * 30  # one month
 timezone = tz.tzlocal()
 
 # Page rendering
-cache = {}
+cache: typing.Dict[str, str] = {}
 markdown_extensions = (
     'tables',
     'fenced-code',
@@ -40,8 +40,7 @@ markdown_extensions = (
 )
 
 # Authentication
-secret_key = str(uuid.uuid4())
-auth = {}
+auth: typing.Dict[str, str] = {}
 user_list = 'users.cfg'
 admin_group = 'admin'
 auth_log_prune_interval = 3600

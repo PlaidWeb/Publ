@@ -59,12 +59,20 @@
             {% endif %}
 
             <div class="entry e-content">
-                {% block body scoped %}
-                    {{entry.body}}
-                    {% if entry.more %}
-                        {{entry.more}}
-                    {% endif %}
-                {% endblock %}
+            {{entry.body(footnotes_class='gronk')}}
+            {% if entry.more %}
+            <div id="more">
+                {{entry.more(footnotes_class='plonk')}}
+            </div>
+            {% endif %}
+            {% if entry.footnotes %}
+            <div id="footnotes">
+                <h2>Footnotes</h2>
+                {{entry.footnotes(width=128,height=128,gallery_id='footnotes',
+                footnotes_return='back',
+                footnotes_class='flonk')}}
+            </div>
+            {% endif %}
             </div>
             {% endblock %}
             </article>

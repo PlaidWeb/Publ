@@ -1,6 +1,7 @@
 """ IndieAuth token endpoint """
 
 import logging
+import typing
 
 import flask
 import itsdangerous
@@ -16,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 def signer():
     """ Gets the signer/validator for the tokens """
-    return itsdangerous.URLSafeTimedSerializer(config.secret_key)
+    return itsdangerous.URLSafeTimedSerializer(flask.current_app.secret_key)
 
 
 def token_endpoint():
@@ -87,7 +88,7 @@ def token_endpoint():
         raise http_error.BadRequest("Missing value: " + str(key))
 
 
-def parse_token(token: str) -> str:
+def parse_token(token: str) -> typing.Dict[str, str]:
     """ Parse a bearer token to get the stored data """
     try:
         return signer().loads(token, max_age=config.max_token_age)

@@ -81,6 +81,7 @@ class LocalImage(Image):
     def _filename(self):
         return os.path.basename(self._record.file_path)
 
+    @functools.lru_cache()
     def get_rendition(self, output_scale=1, **kwargs):
         # pylint:disable=too-many-locals
         """
@@ -442,12 +443,12 @@ class LocalImage(Image):
 
         return (img_1x, img_2x, size)
 
-    def _get_img_attrs(self, kwargs, style_parts):
+    def _get_img_attrs(self, spec, style_parts):
         """ Get the attributes of an an <img> tag for this image, hidpi-aware """
         # pylint:disable=unused-argument
 
         # Get the 1x and 2x renditions
-        img_1x, img_2x, size = self._get_renditions(kwargs)
+        img_1x, img_2x, size = self._get_renditions(spec)
 
         attrs = {
             'src': img_1x,

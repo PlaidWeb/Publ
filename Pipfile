@@ -9,6 +9,7 @@ twine = "*"
 flake8 = "*"
 autopep8 = "*"
 isort = "*"
+mypy = "*"
 
 [packages]
 publ = {editable = true,path = "."}

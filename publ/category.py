@@ -6,6 +6,7 @@ import email
 import functools
 import logging
 import os
+import typing
 
 import flask
 from flask import url_for
@@ -64,7 +65,7 @@ class Category(caching.Memoizable):
         return self.path
 
     @cached_property
-    def link(self):
+    def link(self) -> typing.Callable[..., str]:
         """ Returns a link to the category.
 
         Takes optional view arguments, as well as the following optional arguments:
@@ -72,7 +73,7 @@ class Category(caching.Memoizable):
         template -- which template to generate the link against
 
         """
-        def _link(template='', absolute=False, **kwargs):
+        def _link(template='', absolute=False, **kwargs) -> str:
             return url_for('category',
                            category=self.path,
                            template=template,
@@ -82,7 +83,7 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(_link)
 
     @cached_property
-    def subcats(self):
+    def subcats(self) -> typing.Callable[..., str]:
         """ Returns a list of subcategories.
 
         Takes the following arguments:
@@ -90,7 +91,7 @@ class Category(caching.Memoizable):
         recurse -- whether to include their subcategories as well (default: False)
 
         """
-        def _get_subcats(recurse=False):
+        def _get_subcats(recurse=False) -> typing.List["Category"]:
             """ Get the subcategories of this category
 
             recurse -- whether to include their subcategories as well
@@ -108,10 +109,10 @@ class Category(caching.Memoizable):
 
             # convert the subcategories into separated pathlists with only 'parts'
             # parts
-            subcats = [c.split('/')[:parts] for c in self._subcats_recursive]
+            subcats_list = [c.split('/')[:parts] for c in self._subcats_recursive]
 
             # join them back into a path, and make unique
-            subcats = {'/'.join(c) for c in subcats}
+            subcats = {'/'.join(c) for c in subcats_list}
 
             # convert to a bunch of Category objects
             return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
@@ -119,12 +120,12 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(_get_subcats)
 
     @cached_property
-    def first(self):
+    def first(self) -> typing.Callable[..., typing.Optional[entry.Entry]]:
         """ Returns the first entry in the category.
 
         Takes optional view arguments.
         """
-        def _first(**spec):
+        def _first(**spec) -> typing.Optional[entry.Entry]:
             """ Get the earliest entry in this category, optionally including subcategories """
             for record in self._entries(spec).order_by(model.Entry.local_date,
                                                        model.Entry.id)[:1]:
@@ -134,12 +135,12 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(_first)
 
     @cached_property
-    def last(self):
+    def last(self) -> typing.Callable[..., typing.Optional[entry.Entry]]:
         """ Returns the last entry in the category.
 
         Takes optional view arguments.
         """
-        def _last(**spec):
+        def _last(**spec) -> typing.Optional[entry.Entry]:
             """ Get the latest entry in this category, optionally including subcategories """
             for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
                                                        orm.desc(model.Entry.id))[:1]:
@@ -149,14 +150,14 @@ class Category(caching.Memoizable):
         return utils.CallableProxy(_last)
 
     @cached_property
-    def _meta(self):
+    def _meta(self) -> typing.Optional[email.message.Message]:
         if self._record and self._record.file_path:
             return load_metafile(self._record.file_path)
 
         return None
 
     @cached_property
-    def name(self):
+    def name(self) -> typing.Callable[..., str]:
         """ Get the display name of the category. Accepts the following arguments:
 
         markup -- If True, convert it from Markdown to HTML; otherwise, strip
@@ -172,32 +173,32 @@ class Category(caching.Memoizable):
             # infer it from the basename
             name = self.basename.replace('_', ' ').title()
 
-        def _name(markup=True, no_smartquotes=False, markdown_extensions=None):
+        def _name(markup=True, no_smartquotes=False, markdown_extensions=None) -> str:
             return markdown.render_title(name, markup, no_smartquotes,
                                          markdown_extensions)
         return utils.CallableProxy(_name)
 
     @cached_property
-    def description(self):
+    def description(self) -> typing.Callable[..., str]:
         """ Get the textual description of the category """
-        def _description(**kwargs):
+        def _description(**kwargs) -> str:
             if self._meta:
                 return flask.Markup(markdown.to_html(self._meta.get_payload(),
                                                      args=kwargs,
                                                      search_path=self.search_path))
-            return None
+            return ''
 
         if self._meta and self._meta.get_payload():
             return utils.TrueCallableProxy(_description)
-        return utils.CallableProxy(None)
+        return utils.CallableValue('')
 
     @cached_property
-    def search_path(self):
+    def search_path(self) -> str:
         """ Get the image search path for the category """
-        return [os.path.join(config.content_folder, self.path)]
+        return os.path.join(config.content_folder, self.path)
 
     @cached_property
-    def breadcrumb(self):
+    def breadcrumb(self) -> typing.List["Category"]:
         """ Get the category hierarchy leading up to this category, including
         root and self.
 
@@ -212,21 +213,21 @@ class Category(caching.Memoizable):
         return list(reversed(ret))
 
     @cached_property
-    def sort_name(self):
+    def sort_name(self) -> str:
         """ Get the sorting name of this category """
         if self._record and self._record.sort_name:
             return self._record.sort_name
         return self.name(markup=False)
 
     @cached_property
-    def tags(self):
+    def tags(self) -> typing.Callable[..., typing.List[TagCount]]:
         """ Get the list of tags associated with this category's entries.
 
         Takes optional view arguments (including recurse)
 
         Returns a list of category.TagCount tuples like `(tag='foo', count=5)`
         """
-        def _tags(**spec):
+        def _tags(**spec) -> typing.List[TagCount]:
             entries = self._entries(spec)
             tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
                               for e in entries for tag in e.tags)
@@ -261,7 +262,7 @@ class Category(caching.Memoizable):
         return self.path < other.path
 
     @cached_property
-    def parent(self):
+    def parent(self) -> typing.Optional["Category"]:
         """ Get the parent category """
         if self.path:
             return Category(os.path.dirname(self.path))
@@ -280,7 +281,7 @@ class Category(caching.Memoizable):
 
 
 @orm.db_session(immediate=True)
-def scan_file(fullpath, relpath):
+def scan_file(fullpath, relpath) -> bool:
     """ scan a file and put it into the index """
 
     load_metafile.cache_clear()

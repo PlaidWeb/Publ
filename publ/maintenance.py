@@ -1,19 +1,21 @@
 """ Periodic maintenance tasks """
 
 import time
+import typing
 
 
 class Maintenance:
     """ Container for periodic maintenance tasks """
 
     def __init__(self):
-        self.tasks = {}
+        self.tasks: typing.Dict[typing.Callable[[], None],
+                                typing.Dict[str, float]] = {}
 
-    def register(self, func, interval):
+    def register(self, func: typing.Callable[[], None], interval: float):
         """ Registers a task to run periodically """
         self.tasks[func] = {'interval': interval}
 
-    def run(self, force=False):
+    def run(self, force: bool = False):
         """ Run all pending tasks; 'force' will run all tasks whether they're
         pending or not. """
         now = time.time()

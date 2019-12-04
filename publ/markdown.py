@@ -3,6 +3,7 @@
 
 import logging
 import re
+import urllib.parse
 
 import flask
 import misaka
@@ -24,12 +25,73 @@ class HtmlRenderer(misaka.HtmlRenderer):
     search_path -- Directories to look in for resolving relatively-linked files
     """
 
-    def __init__(self, args, search_path):
-        # pylint: disable=no-member
+    def __init__(self, args, search_path, entry_id, footnote_buffer):
+        # pylint:disable=no-member
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
         self._config = args
         self._search_path = search_path
+        self._entry_id = entry_id
+
+        self._footnote_link = args.get('footnotes_link') or ''
+        self._footnote_buffer = footnote_buffer
+        self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
+
+    @staticmethod
+    def footnotes(_):
+        """ Actual footnote rendering is handled by the caller """
+        return None
+
+    def _footnote_num(self, num):
+        return num + self._footnote_ofs
+
+    def _footnote_id(self, num, anchor):
+        return '{anchor}_e{eid}_fn{num}'.format(
+            anchor=anchor,
+            eid=self._entry_id,
+            num=self._footnote_num(num))
+
+    def _footnote_url(self, num, anchor):
+        return urllib.parse.urljoin(self._footnote_link,
+                                    '#' + self._footnote_id(num, anchor))
+
+    def footnote_ref(self, num):
+        """ Render a link to this footnote """
+        return '{sup}{link}{content}</a></sup>'.format(
+            sup=utils.make_tag('sup', {
+                'id': self._footnote_id(num, "r"),
+                'class': self._config.get('footnotes_class', False)
+            }),
+            link=utils.make_tag('a', {
+                'href': self._footnote_url(num, "d"),
+                'rel': 'footnote'
+            }),
+            content=self._footnote_num(num))
+
+    def footnote_def(self, content, num):
+        """ Render the footnote body, deferring it if so configured """
+        if self._footnote_buffer is not None:
+            LOGGER.debug("footnote_def %d: %s", num, content)
+
+            # Insert the return anchor before the end of the first content block
+            before, partition, after = content.partition('</p>')
+            text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
+                li=utils.make_tag('li', {
+                    'id': self._footnote_id(num, "d")
+                }),
+                before=before,
+                link=utils.make_tag('a', {
+                    'href': self._footnote_url(num, "r"),
+                    'rev': 'footnote'
+                }),
+                icon=self._config.get('footnotes_return', '↩'),
+                partition=partition,
+                after=after,
+            )
+
+            self._footnote_buffer.append(text)
+
+        return ' '
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.
@@ -161,11 +223,18 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                _mark_rewritten=True)
 
 
-def to_html(text, args, search_path):
-    """ Convert Markdown text to HTML """
+def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
+    """ Convert Markdown text to HTML.
+
+    footnote_buffer -- a list that will contain <li>s with the footnote items, if
+    there are any footnotes to be found.
+    """
 
     # first process as Markdown
-    processor = misaka.Markdown(HtmlRenderer(args, search_path),
+    processor = misaka.Markdown(HtmlRenderer(args,
+                                             search_path,
+                                             footnote_buffer=footnote_buffer,
+                                             entry_id=entry_id),
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
@@ -184,7 +253,7 @@ class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
 
     def __init__(self):
-        super().__init__({}, [])
+        super().__init__({}, [], entry_id=None, footnote_buffer=None)
 
     @staticmethod
     def paragraph(content):

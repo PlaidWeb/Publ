@@ -2,6 +2,7 @@
 
 import ast
 import errno
+import functools
 import hashlib
 import html
 import io
@@ -11,6 +12,7 @@ import os
 import random
 import re
 import time
+import typing
 
 import flask
 import PIL.Image
@@ -18,7 +20,7 @@ from pony import orm
 
 from .. import config, model, utils
 from .external import ExternalImage
-from .image import Image
+from .image import Image, ImgSpec
 from .local import LocalImage, fix_orientation
 
 LOGGER = logging.getLogger(__name__)
@@ -85,7 +87,7 @@ class ImageNotFound(Image):
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
-    def _get_img_attrs(self, kwargs, style_parts):
+    def _get_img_attrs(self, spec, style_parts):
         # pylint:disable=unused-argument
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
@@ -148,7 +150,7 @@ def _get_asset(file_path):
     return record
 
 
-def get_image(path, search_path):
+def get_image(path: str, search_path: typing.Union[str, utils.ListLike[str]]) -> Image:
     """ Get an Image object. If the path is given as absolute, it will be
     relative to the content directory; otherwise it will be relative to the
     search path.
@@ -156,7 +158,11 @@ def get_image(path, search_path):
     path -- the image's filename
     search_path -- a search path for the image (string or list of strings)
     """
+    return _get_image(path, tuple(utils.as_list(search_path)))
 
+
+@functools.lru_cache()
+def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
     if path.startswith('@'):
         return StaticImage(path[1:], search_path)
 
@@ -177,31 +183,37 @@ def get_image(path, search_path):
     return LocalImage(record, search_path)
 
 
-def parse_arglist(args):
+def parse_arglist(args: str) -> ImgSpec:
     """ Parses an arglist into arguments for Image, as a kwargs dict """
     # per https://stackoverflow.com/a/49723227/318857
 
-    args = 'f({})'.format(args)
-    tree = ast.parse(args)
-    funccall = tree.body[0].value
+    tree = ast.parse('f({})'.format(args))
+    expr = typing.cast(ast.Expr, tree.body[0])
+    funccall = typing.cast(ast.Call, expr.value)
 
-    args = [ast.literal_eval(arg) for arg in funccall.args]
-    kwargs = {arg.arg: ast.literal_eval(arg.value)
-              for arg in funccall.keywords}
-
-    if len(args) > 2:
+    pos_args = [ast.literal_eval(arg) for arg in funccall.args]
+    if len(pos_args) > 2:
         raise TypeError(
-            "Expected at most 2 positional args but {} were given".format(len(args)))
+            "Expected at most 2 positional args but {} were given".format(len(pos_args)))
 
-    if len(args) >= 1:
-        kwargs['width'] = int(args[0])
-    if len(args) >= 2:
-        kwargs['height'] = int(args[1])
+    spec = {arg.arg: ast.literal_eval(arg.value)
+            for arg in funccall.keywords if arg.arg}
 
-    return kwargs
+    LOGGER.debug("pos_args=%s spec=%s", pos_args, spec)
+
+    if len(pos_args) >= 1:
+        if 'width' in spec:
+            raise TypeError("Got multiple values for width")
+        spec['width'] = int(pos_args[0])
+    if len(pos_args) >= 2:
+        if 'height' in spec:
+            raise TypeError("Got multiple values for height")
+        spec['height'] = int(pos_args[1])
+
+    return spec
 
 
-def parse_alt_text(alt):
+def parse_alt_text(alt: str) -> typing.Tuple[str, ImgSpec]:
     """ Parses the arguments out from a Publ-Markdown alt text into a tuple of text, args """
     match = re.match(r'([^\{]*)(\{(.*)\})$', alt)
     if match:
@@ -213,8 +225,10 @@ def parse_alt_text(alt):
     return alt, args
 
 
-def parse_image_spec(spec):
+def parse_image_spec(spec: str) -> typing.Tuple[str, ImgSpec, typing.Optional[str]]:
     """ Parses out a Publ-Markdown image spec into a tuple of path, args, title """
+
+    title: typing.Optional[str] = None
 
     # I was having trouble coming up with a single RE that did it right,
     # so let's just break it down into sub-problems. First, parse out the
@@ -222,8 +236,6 @@ def parse_image_spec(spec):
     match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
     if match:
         spec, title = match.group(1, 2)
-    else:
-        title = None
 
     # and now parse out the arglist
     match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
@@ -236,7 +248,7 @@ def parse_image_spec(spec):
     return spec, args, (title and html.unescape(title))
 
 
-def get_spec_list(image_specs, container_args):
+def get_spec_list(image_specs: str, container_args: ImgSpec):
     """ Given a list of specs and a set of container args, return a list of
     tuples of (image_spec,bool), where the bool indicates whether the image
     is visible. """
@@ -253,7 +265,7 @@ def get_spec_list(image_specs, container_args):
     return zip(spec_list, itertools.repeat(True))
 
 
-def clean_cache(max_age):
+def clean_cache(max_age: float):
     """ Clean the rendition cache of renditions which haven't been accessed in a while
 
     Arguments:
@@ -264,7 +276,7 @@ def clean_cache(max_age):
     LocalImage.clean_cache(max_age)
 
 
-def get_async(filename):
+def get_async(filename: str):
     """ Asynchronously fetch an image """
 
     if os.path.isfile(os.path.join(config.static_folder, filename)):
