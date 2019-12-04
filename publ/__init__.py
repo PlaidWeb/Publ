@@ -6,6 +6,7 @@ for more information. """
 import functools
 import logging
 import re
+import uuid
 
 import arrow
 import authl.flask
@@ -83,16 +84,28 @@ class Publ(flask.Flask):
                          **kwargs)
 
         if 'AUTH_FORCE_SSL' in config.auth:
-            LOGGER.warning("The configuration key AUTH_FORCE_SSL has been \
+            LOGGER.warning("""The configuration key AUTH_FORCE_SSL has been \
 deprecated in favor of AUTH_FORCE_HTTPS. Please change your configuration \
-accordingly.")
+accordingly.
+
+This configuration value will stop being supported in Publ 0.6.
+""")
 
         auth_force_https = config.auth.get('AUTH_FORCE_HTTPS',
                                            config.auth.get('AUTH_FORCE_SSL'))
         if auth_force_https:
             self.config['SESSION_COOKIE_SECURE'] = True
 
-        self.secret_key = config.secret_key
+        if 'secret_key' in cfg:
+            LOGGER.warning("""secret_key is no longer configured in the configuration \
+dictionary; please configure it by setting the secret_key property on the Publ object \
+after initialization.
+
+This configuration value will stop being supported in Publ 0.6.
+""")
+            self.secret_key = cfg['secret_key']
+        else:
+            self.secret_key = uuid.uuid4().bytes
 
         self._regex_map = []
 
