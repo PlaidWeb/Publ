@@ -3,7 +3,6 @@
 
 import sys
 import typing
-import uuid
 
 from dateutil import tz
 
@@ -41,7 +40,6 @@ markdown_extensions = (
 )
 
 # Authentication
-secret_key = str(uuid.uuid4())
 auth: typing.Dict[str, str] = {}
 user_list = 'users.cfg'
 admin_group = 'admin'

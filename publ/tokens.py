@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 def signer():
     """ Gets the signer/validator for the tokens """
-    return itsdangerous.URLSafeTimedSerializer(config.secret_key)
+    return itsdangerous.URLSafeTimedSerializer(flask.current_app.secret_key)
 
 
 def token_endpoint():
