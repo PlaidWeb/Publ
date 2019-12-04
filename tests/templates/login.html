@@ -21,17 +21,11 @@
             <li>API tester: {{test_url}}</li>
             <li>Redirect path: '{{redir}}'</li>
         </ul>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <ul class="flashes">
-            {% for message in messages %}
-            <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
+        {% if error %}
+        <div class="error">{{error}}</div>
         {% endif %}
-        {% endwith %}
         <form method="GET" action="{{login_url}}" novalidate>
-            <input type="url" name="me" placeholder="A credential goes here">
+            <input type="url" name="me" placeholder="A credential goes here" value="{{id_url}}">
         </form>
         <p>Accepted auth methods:</p>
         <ul>

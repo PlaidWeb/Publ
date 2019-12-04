@@ -12,7 +12,6 @@ APP_PATH = os.path.dirname(os.path.abspath(__file__))
 logging.basicConfig(level=logging.DEBUG)
 
 config = {
-    'secret_key': 'this test suite is insecure as heck',
     'database_config': {
         'provider': 'sqlite',
         'filename': os.path.join(APP_PATH, 'index.db')
@@ -33,7 +32,7 @@ config = {
         'INDIEAUTH_CLIENT_ID': authl.flask.client_id,
         'INDIELOGIN_CLIENT_ID': authl.flask.client_id,
 
-        'MASTODON_NAME': 'Publ test suite',
+        'FEDIVERSE_NAME': 'Publ test suite',
 
         'TWITTER_CLIENT_KEY': os.environ.get('TWITTER_CLIENT_KEY'),
         'TWITTER_CLIENT_SECRET': os.environ.get('TWITTER_CLIENT_SECRET'),
@@ -47,7 +46,7 @@ config = {
 }
 
 app = publ.Publ(__name__, config)
-
+app.secret_key = "We are insecure"
 
 @app.route('/favicon.<ext>')
 def favicon(ext):
