@@ -556,7 +556,7 @@ def save_file(fullpath: str, entry: email.message.Message):
         file.write(entry.get_payload())
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
     """ scan a file and put it into the index """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -681,7 +681,7 @@ def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
     return True
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def expire_file(filepath):
     """ Expire a record for a missing file """
     load_message.cache_clear()
@@ -690,7 +690,7 @@ def expire_file(filepath):
     orm.commit()
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def expire_record(record):
     """ Expire a record for a missing entry """
     load_message.cache_clear()

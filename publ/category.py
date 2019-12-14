@@ -280,7 +280,7 @@ class Category(caching.Memoizable):
         return queries.build_query({**spec, 'category': self})
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def scan_file(fullpath, relpath) -> bool:
     """ scan a file and put it into the index """
 
@@ -312,4 +312,4 @@ def scan_file(fullpath, relpath) -> bool:
 
     orm.commit()
 
-    return record
+    return True

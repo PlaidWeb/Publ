@@ -5,6 +5,7 @@ import concurrent.futures
 import logging
 import os
 import threading
+import typing
 
 import watchdog.events
 import watchdog.observers
@@ -29,22 +30,22 @@ class ConcurrentSet:
     """ Simple quasi-atomic set """
 
     def __init__(self):
-        self.lock = threading.Lock()
-        self.set = set()
+        self._lock = threading.Lock()
+        self._set = set()
 
-    def add(self, item):
+    def add(self, item) -> bool:
         """ Add an item to the set, and return whether it was newly added """
-        with self.lock:
-            if item in self.set:
+        with self._lock:
+            if item in self._set:
                 return False
-            self.set.add(item)
+            self._set.add(item)
             return True
 
-    def remove(self, item):
-        """ Remove an item from the set, returning if it was present """
-        with self.lock:
-            if item in self.set:
-                self.set.remove(item)
+    def remove(self, item) -> bool:
+        """ Remove an item from the set, returning whether it was present """
+        with self._lock:
+            if item in self._set:
+                self._set.remove(item)
                 return True
             return False
 
@@ -52,7 +53,7 @@ class ConcurrentSet:
 SCHEDULED_FILES = ConcurrentSet()
 
 
-def last_modified():
+def last_modified() -> typing.Tuple[typing.Optional[int], typing.Optional[str]]:
     """ information about the most recently modified file """
     files = model.FileFingerprint.select().order_by(
         orm.desc(model.FileFingerprint.file_mtime))
@@ -61,17 +62,24 @@ def last_modified():
     return None, None
 
 
-def queue_length():
+def queue_length() -> typing.Optional[int]:
     """ Get the approximate length of the indexer work queue """
     return WORK_QUEUE.qsize() if WORK_QUEUE else None
 
 
-def in_progress():
+def in_progress() -> bool:
     """ Return if there's an index in progress """
-    return queue_length() > 0
+    remaining = queue_length()
+    return remaining is not None and remaining > 0
 
 
-def scan_file(fullpath, relpath, assign_id):
+def is_scannable(fullpath) -> bool:
+    """ Determine if a file needs to be scanned """
+    _, ext = os.path.splitext(fullpath)
+    return ext in ENTRY_TYPES or ext in CATEGORY_TYPES
+
+
+def scan_file(fullpath, relpath, assign_id) -> typing.Optional[bool]:
     """ Scan a file for the index
 
     fullpath -- The full path to the file
@@ -85,7 +93,7 @@ def scan_file(fullpath, relpath, assign_id):
 
     LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, assign_id)
 
-    def do_scan():
+    def do_scan() -> typing.Optional[bool]:
         """ helper function to do the scan and gather the result """
         _, ext = os.path.splitext(fullpath)
 
@@ -109,28 +117,28 @@ def scan_file(fullpath, relpath, assign_id):
         THREAD_POOL.submit(scan_file, fullpath, relpath, True)
     else:
         LOGGER.debug("%s complete", fullpath)
-        if result:
-            set_fingerprint(fullpath)
+        set_fingerprint(fullpath)
         SCHEDULED_FILES.remove(fullpath)
+    return result
 
 
 @orm.db_session
-def get_last_fingerprint(fullpath):
-    """ Get the last known modification time for a file """
+def get_last_fingerprint(fullpath) -> typing.Optional[str]:
+    """ Get the last known fingerprint for a file """
     record = model.FileFingerprint.get(file_path=fullpath)
     if record:
         return record.fingerprint
     return None
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def set_fingerprint(fullpath, fingerprint=None):
     """ Set the last known modification time for a file """
     try:
         fingerprint = fingerprint or utils.file_fingerprint(fullpath)
 
         record = model.FileFingerprint.get(file_path=fullpath)
-        if record:
+        if record and record.fingerprint != fingerprint:
             record.set(fingerprint=fingerprint,
                        file_mtime=os.stat(fullpath).st_mtime)
         else:
@@ -191,31 +199,55 @@ def background_scan(content_dir):
     observer.start()
 
 
-@orm.db_session(immediate=True)
 def prune_missing(table):
     """ Prune any files which are missing from the specified table """
-    try:
-        for item in table.select():
-            if not os.path.isfile(item.file_path):
-                LOGGER.info("File disappeared: %s", item.file_path)
+    LOGGER.debug("Pruning missing %s files", table.__name__)
+    removed_paths: typing.List[str] = []
+
+    @orm.db_session(retry=5)
+    def fill():
+        try:
+            for item in table.select():
+                if not os.path.isfile(item.file_path):
+                    LOGGER.info("%s disappeared: %s", table.__name__, item.file_path)
+                    removed_paths.append(item.file_path)
+        except:  # pylint:disable=bare-except
+            LOGGER.exception("Error pruning %s", table.__name__)
+
+    @orm.db_session(retry=5)
+    def kill(path):
+        LOGGER.debug("Pruning %s %s", table.__name__, path)
+        try:
+            item = table.get(file_path=path)
+            if item and not os.path.isfile(item.file_path):
                 item.delete()
-    except:  # pylint:disable=bare-except
-        LOGGER.exception("Error pruning %s", table)
+        except:  # pylint:disable=bare-except
+            LOGGER.exception("Error pruning %s", table.__name__)
+
+    fill()
+    for item in removed_paths:
+        kill(item)
 
 
 def scan_index(content_dir):
     """ Scan all files in a content directory """
+    LOGGER.debug("Reindexing content from %s", content_dir)
 
     def scan_directory(root, files):
         """ Helper function to scan a single directory """
+        LOGGER.debug("scanning directory %s", root)
         try:
             for file in files:
                 fullpath = os.path.join(root, file)
                 relpath = os.path.relpath(fullpath, content_dir)
 
+                if not is_scannable(fullpath):
+                    continue
+
                 fingerprint = utils.file_fingerprint(fullpath)
                 last_fingerprint = get_last_fingerprint(fullpath)
                 if fingerprint != last_fingerprint and SCHEDULED_FILES.add(fullpath):
+                    LOGGER.debug("%s: %s -> %s", fullpath, last_fingerprint, fingerprint)
                     scan_file(fullpath, relpath, False)
         except:  # pylint:disable=bare-except
             LOGGER.exception("Got error parsing directory %s", root)

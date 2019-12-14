@@ -48,6 +48,7 @@ config = {
 app = publ.Publ(__name__, config)
 app.secret_key = "We are insecure"
 
+
 @app.route('/favicon.<ext>')
 def favicon(ext):
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')

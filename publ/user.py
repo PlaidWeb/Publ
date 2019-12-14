@@ -125,7 +125,7 @@ def get_active() -> typing.Optional[User]:
     return None
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def log_access(record, cur_user, authorized):
     """ Log a user's access to the audit log """
     LOGGER.info("log_access %s %s %s", record, cur_user, authorized)
@@ -156,7 +156,7 @@ def _get_group_set(groups):
         return set(groups.split(',')) if groups else set()
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def log_user():
     """ Update the user table to see who's been by """
     username = flask.session.get('me')

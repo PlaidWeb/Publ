@@ -100,7 +100,7 @@ class ImageNotFound(Image):
         return os.path.basename(self.path)
 
 
-@orm.db_session(immediate=True)
+@orm.db_session(retry=5)
 def _get_asset(file_path):
     """ Get the database record for an asset file """
     record = model.Image.get(file_path=file_path)
