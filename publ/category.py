@@ -109,7 +109,7 @@ class Category(caching.Memoizable):
 
             # convert the subcategories into separated pathlists with only 'parts'
             # parts, then rejoin back into a path and make unique
-            subcats = {'/'.join(c.split('/',parts)[:parts]) for c in self._subcats_recursive}
+            subcats = {'/'.join(c.split('/', parts)[:parts]) for c in self._subcats_recursive}
 
             # convert to a bunch of Category objects
             return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
