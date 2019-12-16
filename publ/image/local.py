@@ -81,35 +81,10 @@ class LocalImage(Image):
     def _filename(self):
         return os.path.basename(self._record.file_path)
 
-    def get_rendition(self, output_scale=1, **kwargs):
+    @functools.lru_cache()
+    def _get_rendition(self, output_scale=1, **kwargs):
+        """ implements get_rendition and returns tuple of out_rel_path,size,pending """
         # pylint:disable=too-many-locals
-        """
-        Get the rendition for this image, generating it if necessary.
-        Returns a tuple of `(relative_path, width, height)`, where relative_path
-        is relative to the static file directory (i.e. what one would pass into
-        `get_static()`)
-
-        output_scale -- the upsample factor for the requested rendition
-
-        Keyword arguments:
-
-        scale -- the downsample factor for the base rendition
-        scale_min_width -- the minimum width after downsampling
-        scale_min_height -- the minimum height after downsampling
-        crop -- box to crop the original image into (left, top, right, bottom)
-        width -- the width to target
-        height -- the height to target
-        max_width -- the maximum width
-        max_height -- the maximum height
-        resize -- how to fit the width and height; "fit", "fill", or "stretch"
-        fill_crop_x -- horizontal offset fraction for resize="fill"
-        fill_crop_y -- vertical offset fraction for resize="fill"
-        format -- output format
-        background -- background color when converting transparent to opaque
-        quality -- the JPEG quality to save the image as
-        quantize -- how large a palette to use for GIF or PNG images
-        """
-
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
@@ -162,13 +137,51 @@ class LocalImage(Image):
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
         if os.path.isfile(out_fullpath):
+            LOGGER.debug("rendition %s already exists", out_fullpath)
             os.utime(out_fullpath)
-            return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+            pending = False
+        else:
+            LOGGER.debug("scheduling %s for render", out_fullpath)
+            LocalImage.thread_pool().submit(
+                self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+            pending = True
 
-        LocalImage.thread_pool().submit(
-            self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+        return out_rel_path, size, pending
 
-        return flask.url_for('async', filename=out_rel_path, _external=kwargs.get('absolute')), size
+    def get_rendition(self, output_scale=1, **kwargs):
+        """
+        Get the rendition for this image, generating it if necessary.
+        Returns a tuple of `(relative_path, width, height)`, where relative_path
+        is relative to the static file directory (i.e. what one would pass into
+        `get_static()`)
+
+        output_scale -- the upsample factor for the requested rendition
+
+        Keyword arguments:
+
+        scale -- the downsample factor for the base rendition
+        scale_min_width -- the minimum width after downsampling
+        scale_min_height -- the minimum height after downsampling
+        crop -- box to crop the original image into (left, top, right, bottom)
+        width -- the width to target
+        height -- the height to target
+        max_width -- the maximum width
+        max_height -- the maximum height
+        resize -- how to fit the width and height; "fit", "fill", or "stretch"
+        fill_crop_x -- horizontal offset fraction for resize="fill"
+        fill_crop_y -- vertical offset fraction for resize="fill"
+        format -- output format
+        background -- background color when converting transparent to opaque
+        quality -- the JPEG quality to save the image as
+        quantize -- how large a palette to use for GIF or PNG images
+        """
+        out_rel_path, size, pending = self._get_rendition(output_scale, **kwargs)
+
+        if pending:
+            return flask.url_for('async',
+                                 filename=out_rel_path,
+                                 _external=kwargs.get('absolute')), size
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
     @cached_property
     def _image(self):
