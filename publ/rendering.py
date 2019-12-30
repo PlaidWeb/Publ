@@ -91,8 +91,8 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
     """
     @cache.memoize(unless=caching.do_not_cache)
     def do_render(template: Template, args, **kwargs) -> typing.Tuple[str, str]:
-        LOGGER.debug("Rendering template %s with args %s and kwargs %s",
-                     template, args, kwargs)
+        LOGGER.debug("Rendering template %s with args %s and kwargs %s; caching=%s",
+                     template, args, kwargs, not caching.do_not_cache)
 
         args = {
             'template': template,

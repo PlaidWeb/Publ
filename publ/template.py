@@ -62,7 +62,7 @@ class Template:
         return hash(self._key())
 
 
-@cache.memoize(timeout=30)
+@cache.memoize()
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]]
                  ) -> typing.Optional[Template]:

@@ -10,6 +10,7 @@ flake8 = "*"
 autopep8 = "*"
 isort = "*"
 mypy = "*"
+python-memcached = "*"
 
 [packages]
 publ = {editable = true,path = "."}

@@ -24,12 +24,6 @@ def do_not_cache():
         # We are reindexing the site
         return True
 
-    if request.if_none_match or request.if_modified_since:
-        # we might be returning a 304 NOT MODIFIED based on a client request,
-        # and we don't want to cache that as the result for *all* client
-        # requests to this URI
-        return True
-
     return False
 
 

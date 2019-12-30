@@ -20,7 +20,7 @@ config = {
     'template_folder': 'tests/templates',
     'static_folder': 'tests/static',
     'cache': {
-        'CACHE_TYPE': 'simple',
+        'CACHE_TYPE': os.environ['TEST_CACHING'],
         'CACHE_DEFAULT_TIMEOUT': 600,
         'CACHE_THRESHOLD': 20
     } if os.environ.get('TEST_CACHING') else {
@@ -54,7 +54,3 @@ def favicon(ext):
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
     img, _ = logo.get_rendition(format=ext, width=128, height=128)
     return flask.redirect(img)
-
-
-if __name__ == "__main__":
-    app.run(port=os.environ.get('PORT', 5000))
