@@ -8,8 +8,7 @@ from pony import orm
 
 from . import model, utils
 
-
-@orm.db_session(retry=5)
+@orm.db_session
 def set_alias(alias: str, **kwargs) -> model.PathAlias:
     """ Set a path alias.
 
@@ -19,7 +18,6 @@ def set_alias(alias: str, **kwargs) -> model.PathAlias:
     entry -- The entry to alias it to
     category -- The category to alias it to
     url -- The external URL to alias it to
-
     """
 
     spec = alias.split()
