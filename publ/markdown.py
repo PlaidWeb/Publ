@@ -223,7 +223,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                _mark_rewritten=True)
 
 
-def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
+def to_html(text, args, search_path, entry_id=None, footnote_buffer=None, markup=True):
     """ Convert Markdown text to HTML.
 
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
@@ -238,6 +238,11 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
+
+    if not markup:
+        strip = HTMLStripper()
+        strip.feed(text)
+        text = strip.get_data()
 
     # convert smartquotes, if so configured
     if not args.get('no_smartquotes'):
