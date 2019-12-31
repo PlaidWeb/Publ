@@ -42,7 +42,7 @@ def mime_type(template: Template) -> str:
     return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
 
 
-def get_template(template: str, relation) -> Template:
+def get_template(template: str, relation) -> typing.Optional[str]:
     """ Given an entry or a category, return the path to a related template """
     if isinstance(relation, Entry):
         path = relation.category.path
@@ -148,11 +148,14 @@ def render_error(category, error_message, error_codes,
     template_list.append('error')
 
     template = map_template(category, template_list)
-    return render_publ_template(
-        template,
-        category=Category(category),
-        error={'code': error_code, 'message': error_message},
-        exception=exception)[0], error_code, headers
+    if template:
+        return render_publ_template(
+            template,
+            category=Category(category),
+            error={'code': error_code, 'message': error_message},
+            exception=exception)[0], error_code, headers
+
+    return '%d %s' % (error_code, error_message), error_code, headers
 
 
 def render_exception(error):

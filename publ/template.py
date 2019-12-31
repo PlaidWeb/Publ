@@ -1,14 +1,14 @@
 # template.py
 """ Wrapper for template information """
 
+import hashlib
 import os
 import typing
-import hashlib
+
 import arrow
 import flask
 
 from . import config, utils
-from .caching import cache
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
 
@@ -43,9 +43,8 @@ class Template:
             self._fingerprint = utils.file_fingerprint(file_path)
 
         self.content = content
-        if self.content:
-            self._fingerprint = hashlib.md5(content.encode('utf-8').hexdigest())
-
+        if content:
+            self._fingerprint = hashlib.md5(content.encode('utf-8')).hexdigest()
 
     def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
