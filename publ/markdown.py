@@ -281,7 +281,6 @@ class TitleRenderer(HtmlRenderer):
         return content
 
 
-
 def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
 
@@ -300,4 +299,3 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
         text = misaka.smartypants(text)
 
     return flask.Markup(text)
-

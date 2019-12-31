@@ -131,6 +131,7 @@ def process(text, config, search_path):
 
     return flask.Markup(text)
 
+
 class HTMLStripper(utils.HTMLTransform):
     """ Strip all HTML tags from a document """
 
