@@ -46,13 +46,14 @@ class Entry(caching.Memoizable):
         self._record = record   # index record
         self._body_footnotes = None  # do we know if there's intro footnotes?
         self._more_footnotes = None  # do we know if there's moretext footnotes?
+        self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
 
     def __lt__(self, other):
         # pylint:disable=protected-access
         return self._record.id < other._record.id
 
     def _key(self):
-        return self._record.id, self._record.file_path
+        return self._record.id, self._record.file_path, self._fingerprint.fingerprint
 
     @cached_property
     def date(self) -> arrow.Arrow:
@@ -592,7 +593,7 @@ def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),
-        'entry_template': entry.get('Entry-Template', '')
+        'entry_template': entry.get('Entry-Template', ''),
     }
 
     entry_date = None
