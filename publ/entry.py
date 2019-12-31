@@ -316,7 +316,8 @@ class Entry(caching.Memoizable):
             footnotes: typing.List[str] = []
             if is_markdown and self._body_footnotes is not False:
                 # Need to ensure that the intro footnotes are accounted for
-                self._get_markup(body, is_markdown, args=kwargs, footnote_buffer=footnotes)
+                self._get_markup(body, is_markdown, args=kwargs,
+                                 footnote_buffer=footnotes)
 
             LOGGER.debug("Intro had %d footnotes", len(footnotes))
 

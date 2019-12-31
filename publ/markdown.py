@@ -223,7 +223,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                _mark_rewritten=True)
 
 
-def to_html(text, args, search_path, entry_id=None, footnote_buffer=None, markup=True):
+def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
     """ Convert Markdown text to HTML.
 
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
@@ -238,11 +238,6 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None, markup
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
-
-    if not markup:
-        strip = HTMLStripper()
-        strip.feed(text)
-        text = strip.get_data()
 
     # convert smartquotes, if so configured
     if not args.get('no_smartquotes'):
@@ -286,12 +281,6 @@ class TitleRenderer(HtmlRenderer):
         return content
 
 
-class HTMLStripper(utils.HTMLTransform):
-    """ Strip all HTML tags from a document """
-
-    def handle_data(self, data):
-        self.append(data)
-
 
 def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
@@ -305,11 +294,10 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
                                  or config.markdown_extensions)(text)
 
     if not markup:
-        strip = HTMLStripper()
-        strip.feed(text)
-        text = strip.get_data()
+        text = html_entry.strip_html(text)
 
     if not no_smartquotes:
         text = misaka.smartypants(text)
 
     return flask.Markup(text)
+
