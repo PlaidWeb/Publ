@@ -3,7 +3,7 @@
 
 import os
 import typing
-
+import hashlib
 import arrow
 import flask
 
@@ -40,8 +40,12 @@ class Template:
         if file_path:
             self.mtime = os.stat(file_path).st_mtime
             self.last_modified = arrow.get(self.mtime)
+            self._fingerprint = utils.file_fingerprint(file_path)
 
         self.content = content
+        if self.content:
+            self._fingerprint = hashlib.md5(content.encode('utf-8').hexdigest())
+
 
     def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
@@ -53,7 +57,7 @@ class Template:
         return self.name
 
     def _key(self):
-        return Template, self.file_path
+        return Template, self.file_path, self._fingerprint
 
     def __repr__(self):
         return repr(self._key())
@@ -62,7 +66,6 @@ class Template:
         return hash(self._key())
 
 
-@cache.memoize()
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]]
                  ) -> typing.Optional[Template]:

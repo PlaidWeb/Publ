@@ -47,6 +47,7 @@ class Entry(caching.Memoizable):
         self._body_footnotes = None  # do we know if there's intro footnotes?
         self._more_footnotes = None  # do we know if there's moretext footnotes?
         self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
+        LOGGER.debug('loaded entry %d, fingerprint=%s', record.id, self._fingerprint.fingerprint)
 
     def __lt__(self, other):
         # pylint:disable=protected-access
