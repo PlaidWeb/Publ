@@ -1,0 +1,8 @@
+<ul>
+{% for subcat in category.subcats recursive %}
+    <li><a href="{{subcat.link}}" title="{{subcat.description(markup=False)}}">{{ subcat.basename }}</a>: {{ subcat.name }}
+    {% if subcat.subcats %}
+    <ul>{{ loop(subcat.subcats)}}</ul>
+    {% endif %}</li>
+{% endfor %}
+</ul>

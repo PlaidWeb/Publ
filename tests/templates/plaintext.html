@@ -1,0 +1,11 @@
+{% extends 'index.html' %}
+{% block entries scoped %}
+{% for entry in content.entries %}
+<article>
+<h1><a href="{{entry.link}}">{{entry.title(markup=False)}}</a></h1>
+<p>{{entry.body(markup=False)}}</p>
+<p>{{entry.more(markup=False)}}</p>
+<p>{{entry.footnotes(markup=False)}}</p>
+</article>
+{% endfor %}
+{% endblock %}

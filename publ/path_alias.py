@@ -8,6 +8,7 @@ from pony import orm
 
 from . import model, utils
 
+
 @orm.db_session
 def set_alias(alias: str, **kwargs) -> model.PathAlias:
     """ Set a path alias.

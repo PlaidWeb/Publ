@@ -281,13 +281,6 @@ class TitleRenderer(HtmlRenderer):
         return content
 
 
-class HTMLStripper(utils.HTMLTransform):
-    """ Strip all HTML tags from a document """
-
-    def handle_data(self, data):
-        self.append(data)
-
-
 def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
 
@@ -300,9 +293,7 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
                                  or config.markdown_extensions)(text)
 
     if not markup:
-        strip = HTMLStripper()
-        strip.feed(text)
-        text = strip.get_data()
+        text = html_entry.strip_html(text)
 
     if not no_smartquotes:
         text = misaka.smartypants(text)

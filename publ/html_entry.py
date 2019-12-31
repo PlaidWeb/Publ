@@ -126,4 +126,21 @@ def process(text, config, search_path):
     processor.feed(text)
     text = processor.get_data()
 
+    if not config.get('markup', True):
+        text = strip_html(text)
+
     return flask.Markup(text)
+
+
+class HTMLStripper(utils.HTMLTransform):
+    """ Strip all HTML tags from a document """
+
+    def handle_data(self, data):
+        self.append(data)
+
+
+def strip_html(text):
+    """ Strip all HTML formatting off of a chunk of text """
+    strip = HTMLStripper()
+    strip.feed(text)
+    return strip.get_data()
