@@ -284,7 +284,7 @@ class TitleRenderer(HtmlRenderer):
         return content
 
 
-def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=None):
+def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
     """ Convert a Markdown title to HTML """
 
     # If the title starts with something that looks like a list, save it for
@@ -298,7 +298,7 @@ def render_title(text, markup=True, no_smartquotes=False, markdown_extensions=No
     if not markup:
         text = html_entry.strip_html(text)
 
-    if not no_smartquotes:
+    if smartquotes:
         text = misaka.smartypants(text)
 
     return flask.Markup(text)

@@ -249,11 +249,12 @@ class Entry(caching.Memoizable):
         always_show -- always show the title even if the current user is not
             authorized to see the entry
         """
-        def _title(markup=True, no_smartquotes=False, markdown_extensions=None,
-                   always_show=False) -> str:
+        def _title(markup=True, markdown_extensions=None,
+                   always_show=False, **kwargs) -> str:
             if not always_show and not self.authorized:
                 return ''
-            return markdown.render_title(self._record.title, markup, no_smartquotes,
+            smartquotes = kwargs.get('smartquotes', not kwargs.get('no_smartquotes', False))
+            return markdown.render_title(self._record.title, markup, smartquotes,
                                          markdown_extensions)
         return CallableProxy(_title)
 
