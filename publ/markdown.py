@@ -239,8 +239,11 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
                                 config.markdown_extensions)
     text = processor(text)
 
-    # convert smartquotes, if so configured
-    if not args.get('no_smartquotes'):
+    # convert smartquotes, if so configured.
+    # We prefer setting 'smartquotes' but we fall back to the negation of
+    # 'no_smartquotes' for backwards compatibility with a not-well-considered
+    # API.
+    if args.get('smartquotes', not args.get('no_smartquotes', False)):
         text = misaka.smartypants(text)
 
     # now filter through html_entry to rewrite local src/href links
