@@ -110,6 +110,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return do_render(template, request.args,
                          user=user.get_active(),
                          _url_root=request.url_root,
+                         _index_time=index.last_modified(),
                          **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
