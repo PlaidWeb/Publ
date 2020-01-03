@@ -17,7 +17,9 @@ class CardData():
         self.images = []
 
     def commit(self):
+        """ Apply all finalization to the card data """
         self.description = self.description.strip()
+
 
 class HtmlCardParser(utils.HTMLTransform):
     """ Parse the first paragraph out of an HTML document """
