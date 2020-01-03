@@ -370,18 +370,27 @@ class Entry(caching.Memoizable):
             tags = og_tag('og:title', self.title(markup=False))
             tags += og_tag('og:url', self.link(absolute=True))
 
-            body, more, is_markdown = self._entry_content
-
-            card = cards.extract_card(body or more, is_markdown, kwargs, self.search_path)
-            for image in card.images:
+            card = self._get_card_data(kwargs)
+            for image in card.images[:kwargs.get('count', 1)]:
                 tags += og_tag('og:image', image)
-            if card.description:
-                tags += og_tag('og:description',
-                               self.get('Summary', card.description))
+            description = self.get('Summary', card.description)
+            if description:
+                tags += og_tag('og:description', description)
 
             return flask.Markup(tags)
 
         return CallableProxy(_get_card)
+
+    def _get_card_data(self, kwargs) -> cards.CardData:
+        body, more, is_markdown = self._entry_content
+
+        html_text = self._get_markup(body or more,
+                                     is_markdown,
+                                     args={'count': 1,
+                                           **kwargs,
+                                           "max_scale": 1},
+                                     footnote_buffer=False)
+        return cards.extract_card(html_text)
 
     @cached_property
     def summary(self) -> typing.Callable[..., str]:
@@ -393,12 +402,7 @@ class Entry(caching.Memoizable):
             if self.get('Summary'):
                 return self.get('Summary')
 
-            body, more, is_markdown = self._entry_content
-
-            card = cards.extract_card(body or more,
-                                      is_markdown, kwargs,
-                                      self.search_path)
-
+            card = self._get_card_data(kwargs)
             return flask.Markup((card.description or '').strip())
 
         return CallableProxy(_get_summary)
@@ -416,7 +420,7 @@ class Entry(caching.Memoizable):
         return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, args,
-                    footnote_buffer: typing.Optional[typing.List[str]] = None) -> str:
+                    footnote_buffer: markdown.FootnoteBuffer = None) -> str:
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown

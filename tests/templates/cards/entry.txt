@@ -13,3 +13,7 @@
 ==More text==
 
 {{entry.more or '(no more)'}}
+
+==Footnote text==
+
+{{entry.footnotes or '(no footnotes)'}}
