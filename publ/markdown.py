@@ -3,6 +3,7 @@
 
 import logging
 import re
+import typing
 import urllib.parse
 
 import flask
@@ -15,6 +16,9 @@ from . import config, html_entry, image, links, utils
 
 LOGGER = logging.getLogger(__name__)
 
+# valid types for footnote buffers
+FootnoteBuffer = typing.Union[typing.List[str], None, bool]
+
 
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
@@ -25,7 +29,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
     search_path -- Directories to look in for resolving relatively-linked files
     """
 
-    def __init__(self, args, search_path, entry_id, footnote_buffer):
+    def __init__(self, args: typing.Dict,
+                 search_path: typing.Tuple[str],
+                 entry_id: int,
+                 footnote_buffer: FootnoteBuffer):
         # pylint:disable=no-member
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
@@ -35,7 +42,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         self._footnote_link = args.get('footnotes_link') or ''
         self._footnote_buffer = footnote_buffer
-        self._footnote_ofs = len(footnote_buffer) if footnote_buffer else 0
+        # in Python 3.8 we can change the bool in FootnoteBuffer to
+        # typing.Literal[False] but we're stuck with this cumbersomeness
+        # for now.
+        self._footnote_ofs = len(footnote_buffer) if isinstance(footnote_buffer, list) else 0
 
     @staticmethod
     def footnotes(_):
@@ -57,20 +67,23 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
-        return '{sup}{link}{content}</a></sup>'.format(
-            sup=utils.make_tag('sup', {
-                'id': self._footnote_id(num, "r"),
-                'class': self._config.get('footnotes_class', False)
-            }),
-            link=utils.make_tag('a', {
-                'href': self._footnote_url(num, "d"),
-                'rel': 'footnote'
-            }),
-            content=self._footnote_num(num))
+        if self._footnote_buffer is not False:
+            return '{sup}{link}{content}</a></sup>'.format(
+                sup=utils.make_tag('sup', {
+                    'id': self._footnote_id(num, "r"),
+                    'class': self._config.get('footnotes_class', False)
+                }),
+                link=utils.make_tag('a', {
+                    'href': self._footnote_url(num, "d"),
+                    'rel': 'footnote'
+                }),
+                content=self._footnote_num(num))
+
+        return '\u200b'  # zero-width space, to prevent misaka fallback
 
     def footnote_def(self, content, num):
         """ Render the footnote body, deferring it if so configured """
-        if self._footnote_buffer is not None:
+        if isinstance(self._footnote_buffer, list):
             LOGGER.debug("footnote_def %d: %s", num, content)
 
             # Insert the return anchor before the end of the first content block
@@ -91,7 +104,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
             self._footnote_buffer.append(text)
 
-        return ' '
+        return '\u200b'  # zero-width space, to prevent misaka fallback
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.

@@ -16,6 +16,8 @@ class CardData():
         self.description = None
         self.images = []
 
+    def commit(self):
+        self.description = self.description.strip()
 
 class HtmlCardParser(utils.HTMLTransform):
     """ Parse the first paragraph out of an HTML document """
@@ -50,5 +52,6 @@ def extract_card(html_text: str) -> CardData:
     """ Extract card data based on the provided HTML. """
     card = CardData()
     HtmlCardParser(card).feed(html_text)
+    card.commit()
 
     return card
