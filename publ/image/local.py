@@ -124,8 +124,12 @@ class LocalImage(Image):
 
     def _build_pipeline(self, basename, ext, output_scale, kwargs) -> typing.Tuple[
             ProcessingPipeline, typing.Dict, SizeType]:
-        """ Build the image processing pipeline; returns a tuple of
-            ProcessingPipeline, output_args, size """
+        """
+        Build the image processing pipeline
+
+        Returns a tuple of ProcessingPipeline, output_args, size
+        """
+        # pylint:disable=too-many-locals
 
         pipeline: ProcessingPipeline = []
 
@@ -150,6 +154,19 @@ class LocalImage(Image):
 
         pipeline.append((None, to_rgba))
 
+        label: typing.Optional[str]
+
+        # Set RGBA flattening options
+        if (self._record.transparent and ext not in ('.png', '.gif')) or 'background' in kwargs:
+            bg_color = kwargs.get('background')
+            if isinstance(bg_color, (tuple, list)):
+                label = 'b' + '-'.join([str(a) for a in bg_color])
+            elif bg_color:
+                label = 'b' + str(bg_color)
+            else:
+                label = None
+            pipeline.append((label, lambda image: self.flatten(image, bg_color)))
+
         # determine the sizing box
         crop = utils.parse_tuple_string(kwargs.get('crop'))
         size, box = self.get_rendition_size(kwargs, output_scale, crop)
@@ -161,20 +178,6 @@ class LocalImage(Image):
         elif crop:
             # We don't have a fit box, so just convert the crop box
             box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
-
-        label: typing.Optional[str]
-
-        # Set RGBA flattening options
-        flatten = self._record.transparent and ext not in ('.png', '.gif')
-        if flatten or 'background' in kwargs:
-            bg_color = kwargs.get('background')
-            if isinstance(bg_color, (tuple, list)):
-                label = 'b' + '-'.join([str(a) for a in bg_color])
-            elif bg_color:
-                label = 'b' + str(bg_color)
-            else:
-                label = None
-            pipeline.append((label, lambda image: self.flatten(image, bg_color)))
 
         # Apply the image cropscale
         if box or size[0] < self._record.width or size[1] < self._record.height:
