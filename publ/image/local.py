@@ -21,8 +21,9 @@ LOGGER = logging.getLogger(__name__)
 SizeType = typing.Tuple[int, int]
 BoxType = typing.Tuple[int, int, int, int]
 SizeSpecType = typing.Tuple[SizeType, typing.Optional[BoxType]]
-ProcessingPipeline = typing.List[typing.Tuple[typing.Optional[str],
-                                              typing.Optional[typing.Callable]]]
+PipelineEntry = typing.Tuple[typing.Optional[str],
+                             typing.Optional[typing.Callable]]
+ProcessingPipeline = typing.List[PipelineEntry]
 
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:
@@ -129,7 +130,6 @@ class LocalImage(Image):
 
         Returns a tuple of ProcessingPipeline, output_args, size
         """
-        # pylint:disable=too-many-locals
 
         pipeline: ProcessingPipeline = []
 
@@ -167,28 +167,9 @@ class LocalImage(Image):
                 label = None
             pipeline.append((label, lambda image: self.flatten(image, bg_color)))
 
-        # determine the sizing box
-        crop = utils.parse_tuple_string(kwargs.get('crop'))
-        size, box = self.get_rendition_size(kwargs, output_scale, crop)
-
-        if crop and box:
-            # Both boxes are the same size; just line them up.
-            box = (box[0] + crop[0], box[1] + crop[1],
-                   box[2] + crop[0], box[3] + crop[1])
-        elif crop:
-            # We don't have a fit box, so just convert the crop box
-            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
-
-        # Apply the image cropscale
-        if box or size[0] < self._record.width or size[1] < self._record.height:
-            label = 'x'.join([str(v) for v in size])
-            if box:
-                label += '_' + '-'.join([str(v) for v in box])
-
-            pipeline.append((label,
-                             lambda image: image.resize(size=size,
-                                                        box=box,
-                                                        resample=PIL.Image.LANCZOS)))
+        size, cropscale = self._build_pipeline_cropscale(output_scale, kwargs)
+        if cropscale:
+            pipeline.append(cropscale)
 
         # Set image quantization options
         if ext in ('.gif', '.png'):
@@ -206,6 +187,41 @@ class LocalImage(Image):
             out_args['quality'] = kwargs['quality']
 
         return pipeline, out_args, size
+
+    def _build_pipeline_cropscale(self, output_scale, kwargs) -> typing.Tuple[
+            SizeType,
+            typing.Optional[PipelineEntry]]:
+        crop = utils.parse_tuple_string(kwargs.get('crop'))
+        size, box = self.get_rendition_size(kwargs, output_scale, crop)
+
+        if crop and box:
+            # Both boxes are the same size; just line them up.
+            box = (box[0] + crop[0], box[1] + crop[1],
+                   box[2] + crop[0], box[3] + crop[1])
+        elif crop:
+            # We don't have a fit box, so just convert the crop box
+            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
+
+        # Apply the image cropscale
+        if box or size[0] < self._record.width or size[1] < self._record.height:
+            label = 'x'.join([str(v) for v in size])
+            if box:
+                label += '_' + '-'.join([str(v) for v in box])
+
+            if 'scale_filter' in kwargs:
+                try:
+                    scale_filter = getattr(PIL.Image, kwargs['scale_filter'].upper())
+                    label += 'f{}'.format(scale_filter)
+                except AttributeError as error:
+                    raise ValueError("Invalid scale_filter value '{}'".format(
+                        kwargs['scale_filter'])) from error
+            else:
+                scale_filter = PIL.Image.LANCZOS
+            return size, (label,
+                          lambda image: image.resize(size=size,
+                                                     box=box,
+                                                     resample=scale_filter))
+        return size, None
 
     def _render(self, path, operations: typing.List[typing.Callable], out_args):
         # pylint:disable=too-many-arguments

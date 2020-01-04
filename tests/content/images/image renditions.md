@@ -195,6 +195,30 @@ notsmiley.png{quality=1} "quality 1"
 )
 ```
 
+## Scale algorithms
+
+![{512,512,format='png'}](Landscape_1.jpg "default"
+| Landscape_1.jpg{scale_filter='nearest'} "nearest"
+| Landscape_1.jpg{scale_filter='box'} "box"
+| Landscape_1.jpg{scale_filter='bilinear'} "bilinear"
+| Landscape_1.jpg{scale_filter='hamming'} "hamming"
+| Landscape_1.jpg{scale_filter='bicubic'} "bicubic"
+| Landscape_1.jpg{scale_filter='lanczos'} "lanczos"
+| Landscape_1.jpg{scale_filter='xyzzy'} "xyzzy"
+)
+
+```
+![{512,512,format='png'}](Landscape_1.jpg "default"
+| Landscape_1.jpg{scale_filter='nearest'} "nearest"
+| Landscape_1.jpg{scale_filter='box'} "box"
+| Landscape_1.jpg{scale_filter='bilinear'} "bilinear"
+| Landscape_1.jpg{scale_filter='hamming'} "hamming"
+| Landscape_1.jpg{scale_filter='bicubic'} "bicubic"
+| Landscape_1.jpg{scale_filter='lanczos'} "lanczos"
+| Landscape_1.jpg{scale_filter='xyzzy'} "xyzzy"
+)
+```
+
 ## Broken/parse failures
 
 * `![broken image](missingfile.jpg)`
