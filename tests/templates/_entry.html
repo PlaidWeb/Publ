@@ -25,6 +25,7 @@
 
     {% block sidebar %}
     <div id="nav" class="sidebar">
+        {% block navigation %}
         <h2>Navigation</h2>
         <ul>
             <li class="cat-back"><a href="{{category.link}}" title="{{category.name(markup=False)}}">Back to {{category.name or "main site"}}</a></li>
@@ -34,6 +35,7 @@
             <li class="entry-next"><a href="{{entry.next.link}}" title="{{entry.next.title(markup=False)}}">Next entry: {{entry.next.title}}</a></li>
             {% endif %}
         </ul>
+        {% endblock %}
     </div>
     {% endblock %}
 

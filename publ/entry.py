@@ -460,7 +460,8 @@ class Entry(caching.Memoizable):
         if name.lower() not in ('uuid', 'id', 'date', 'last-modified') and not self.authorized:
             return None
 
-        if hasattr(self._record, name):
+        # Don't pass certain things through the database
+        if name.lower() not in ('auth') and hasattr(self._record, name):
             return getattr(self._record, name)
 
         return self._message.get(name)

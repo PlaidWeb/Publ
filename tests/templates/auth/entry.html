@@ -1,0 +1,37 @@
+{% extends 'entry.html' %}
+
+{% block navigation %}
+{{super()}}
+
+<h2>Auth testing</h2>
+
+{% if user %}
+<h3>Current user:</h3>
+<ul>
+<li>Signed in as <code>{{user.name}}</code></li>
+<li><a href="{{logout}}">logout with confirmation</a></li>
+<li><form method="POST" action="{{logout}}"><input type="submit" value="logout directly"></form></li>
+<li><a href="{{login}}">change user</a></li>
+<li>Group memberships:
+<ul>
+    {% for group in user.groups %}
+    <li>{{group}}</li>
+    {% endfor %}
+</ul>
+</li>
+</ul>
+{% endif %}
+
+<h3>Test users</h3>
+<ul>
+    {% for name in ('admin','good_friend1','good_friend2','friend1','friend2','friend3','friend3_other1','friend3_other2','mutual1','mutual2','specific') %}
+    <li><a href="{{login(me='test:'+name)}}">{{name}}</a></li>
+    {% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block entry %}
+<div class="info">Auth config: <code>{{entry.auth}}</code></div>
+{{super()}}
+{% endblock %}
