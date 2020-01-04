@@ -164,16 +164,6 @@ class LocalImage(Image):
 
         label: typing.Optional[str]
 
-        # Add the image cropscale
-        if box or size[0] < self._record.width or size[1] < self._record.height:
-            label = 'x'.join([str(v) for v in size])
-            if box:
-                label += '_' + '-'.join([str(v) for v in box])
-
-            pipeline.append((label, lambda image: image.resize(size=size,
-                                                               box=box,
-                                                               resample=PIL.Image.LANCZOS)))
-
         # Set RGBA flattening options
         flatten = self._record.transparent and ext not in ('.png', '.gif')
         if flatten or 'background' in kwargs:
@@ -186,12 +176,23 @@ class LocalImage(Image):
                 label = None
             pipeline.append((label, lambda image: self.flatten(image, bg_color)))
 
+        # Apply the image cropscale
+        if box or size[0] < self._record.width or size[1] < self._record.height:
+            label = 'x'.join([str(v) for v in size])
+            if box:
+                label += '_' + '-'.join([str(v) for v in box])
+
+            pipeline.append((label,
+                             lambda image: image.resize(size=size,
+                                                        box=box,
+                                                        resample=PIL.Image.LANCZOS)))
+
         # Set image quantization options
         if ext in ('.gif', '.png'):
             quantize = kwargs.get('quantize')
 
             def to_paletted(image):
-                if ext == '.gif' or stash.get('paletted') or kwargs.get('quantize'):
+                if ext == '.gif' or stash.get('paletted') or quantize:
                     return image.quantize(colors=quantize or 256)
                 return image
             pipeline.append(('q{}'.format(quantize) if quantize else None, to_paletted))
