@@ -52,7 +52,7 @@ class ConcurrentSet:
 
 SCHEDULED_FILES = ConcurrentSet()
 
-
+@orm.db_session
 def last_modified() -> typing.Tuple[typing.Optional[str],
                                     typing.Optional[int],
                                     typing.Optional[str]]:
