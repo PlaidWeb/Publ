@@ -224,7 +224,6 @@ class LocalImage(Image):
         return size, None
 
     def _render(self, path, operations: typing.List[typing.Callable], out_args):
-        # pylint:disable=too-many-arguments
         image = self._image
 
         with self._lock:
