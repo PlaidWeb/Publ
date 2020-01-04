@@ -216,24 +216,23 @@ class HtmlRenderer(misaka.HtmlRenderer):
             path, image_args, title = image.parse_image_spec(spec)
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception("Got error on spec %s: %s", spec, err)
-            return ('<span class="error">Couldn\'t parse image spec: ' +
-                    '<code>{}</code> {}</span>'.format(flask.escape(spec),
-                                                       flask.escape(str(err))))
+            return flask.Markup('<span class="error">Couldn\'t parse image spec: ' +
+                                '<code>{}</code> {}</span>'.format(flask.escape(spec),
+                                                                   flask.escape(str(err))))
 
         composite_args = {**container_args, **image_args}
 
         try:
             img = image.get_image(path, self._search_path)
+            return img.get_img_tag(title,
+                                   alt_text,
+                                   **composite_args,
+                                   _show_thumbnail=show,
+                                   _mark_rewritten=True)
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception("Got error on image %s: %s", path, err)
-            return ('<span class="error">Error loading image {}: {}</span>'.format(
+            return flask.Markup('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
-
-        return img.get_img_tag(title,
-                               alt_text,
-                               **composite_args,
-                               _show_thumbnail=show,
-                               _mark_rewritten=True)
 
 
 def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):

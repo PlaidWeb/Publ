@@ -6,9 +6,11 @@ import logging
 import os
 import threading
 import time
+import typing
 
 import flask
 import PIL.Image
+from atomicwrites import atomic_write
 from werkzeug.utils import cached_property
 
 from .. import config, utils
@@ -16,8 +18,15 @@ from .image import Image
 
 LOGGER = logging.getLogger(__name__)
 
+SizeType = typing.Tuple[int, int]
+BoxType = typing.Tuple[int, int, int, int]
+SizeSpecType = typing.Tuple[SizeType, typing.Optional[BoxType]]
+PipelineEntry = typing.Tuple[typing.Optional[str],
+                             typing.Optional[typing.Callable]]
+ProcessingPipeline = typing.List[PipelineEntry]
 
-def fix_orientation(image):
+
+def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
 
         Apply Image.transpose to ensure 0th row of pixels is at the visual
@@ -84,7 +93,6 @@ class LocalImage(Image):
     @functools.lru_cache()
     def _get_rendition(self, output_scale=1, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
-        # pylint:disable=too-many-locals
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
@@ -92,43 +100,10 @@ class LocalImage(Image):
         if kwargs.get('format'):
             ext = '.' + kwargs['format']
 
-        # The spec for building the output filename
-        out_spec = [basename, self._record.checksum[-10:]]
-
-        out_args = {}
-        if ext in ['.png', '.jpg', '.jpeg']:
-            out_args['optimize'] = True
-
-        crop = self._parse_tuple_string(kwargs.get('crop'))
-
-        size, box = self.get_rendition_size(kwargs, output_scale, crop)
-        box = self._adjust_crop_box(box, crop)
-
-        if size and (size[0] < self._record.width or size[1] < self._record.height):
-            out_spec.append('x'.join([str(v) for v in size]))
-
-        if box:
-            # pylint:disable=not-an-iterable
-            out_spec.append('-'.join([str(v) for v in box]))
-
-        # Set RGBA flattening options
-        flatten = self._record.transparent and ext not in ['.png', '.gif']
-        if flatten and 'background' in kwargs:
-            bg_color = kwargs['background']
-            if isinstance(bg_color, (tuple, list)):
-                out_spec.append('b' + '-'.join([str(a) for a in bg_color]))
-            else:
-                out_spec.append('b' + str(bg_color))
-
-        # Set JPEG quality
-        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
-            out_spec.append('q' + str(kwargs['quality']))
-            out_args['quality'] = kwargs['quality']
-        if ext in ('.jpg', '.jpeg'):
-            out_args['optimize'] = True
+        pipeline, out_args, size = self._build_pipeline(basename, ext, output_scale, kwargs)
 
         # Build the output filename
-        out_basename = '_'.join([str(s) for s in out_spec]) + ext
+        out_basename = '_'.join([str(name) for name, _ in pipeline if name]) + ext
         out_rel_path = os.path.join(
             config.image_output_subdir,
             self._record.checksum[0:2],
@@ -143,10 +118,138 @@ class LocalImage(Image):
         else:
             LOGGER.debug("scheduling %s for render", out_fullpath)
             LocalImage.thread_pool().submit(
-                self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+                self._render, out_fullpath, [op for _, op in pipeline if op], out_args)
             pending = True
 
         return out_rel_path, size, pending
+
+    def _build_pipeline(self, basename, ext, output_scale, kwargs) -> typing.Tuple[
+            ProcessingPipeline, typing.Dict, SizeType]:
+        """
+        Build the image processing pipeline
+
+        Returns a tuple of ProcessingPipeline, output_args, size
+        """
+
+        pipeline: ProcessingPipeline = []
+
+        # set the image basename
+        pipeline.append((basename, None))
+        pipeline.append((self._record.checksum[-10:], None))
+
+        # Fix the EXIF orientation
+        pipeline.append((None, fix_orientation))
+
+        stash = {}
+        out_args = {}
+        if ext in ('.png', '.jpg', '.jpeg'):
+            out_args['optimize'] = True
+
+        # convert to RGBA
+        def to_rgba(image):
+            if image.mode == 'P':
+                stash['paletted'] = True
+                return image.convert('RGBA')
+            return image
+
+        pipeline.append((None, to_rgba))
+
+        label: typing.Optional[str]
+
+        # Set RGBA flattening options
+        if (self._record.transparent and ext not in ('.png', '.gif')) or 'background' in kwargs:
+            bg_color = kwargs.get('background')
+            if isinstance(bg_color, (tuple, list)):
+                label = 'b' + '-'.join([str(a) for a in bg_color])
+            elif bg_color:
+                label = 'b' + str(bg_color)
+            else:
+                label = None
+            pipeline.append((label, lambda image: self.flatten(image, bg_color)))
+
+        size, cropscale = self._build_pipeline_cropscale(output_scale, kwargs)
+        if cropscale:
+            pipeline.append(cropscale)
+
+        # Set image quantization options
+        if ext in ('.gif', '.png'):
+            quantize = kwargs.get('quantize')
+
+            def to_paletted(image):
+                if ext == '.gif' or stash.get('paletted') or quantize:
+                    return image.quantize(colors=quantize or 256)
+                return image
+            pipeline.append(('q{}'.format(quantize) if quantize else None, to_paletted))
+
+        # Set JPEG quality
+        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
+            pipeline.append(('q' + str(kwargs['quality']), None))
+            out_args['quality'] = kwargs['quality']
+
+        return pipeline, out_args, size
+
+    def _build_pipeline_cropscale(self, output_scale, kwargs) -> typing.Tuple[
+            SizeType,
+            typing.Optional[PipelineEntry]]:
+        crop = utils.parse_tuple_string(kwargs.get('crop'))
+        size, box = self.get_rendition_size(kwargs, output_scale, crop)
+
+        if crop and box:
+            # Both boxes are the same size; just line them up.
+            box = (box[0] + crop[0], box[1] + crop[1],
+                   box[2] + crop[0], box[3] + crop[1])
+        elif crop:
+            # We don't have a fit box, so just convert the crop box
+            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
+
+        # Apply the image cropscale
+        if box or size[0] < self._record.width or size[1] < self._record.height:
+            label = 'x'.join([str(v) for v in size])
+            if box:
+                label += '_' + '-'.join([str(v) for v in box])
+
+            if 'scale_filter' in kwargs:
+                try:
+                    scale_filter = getattr(PIL.Image, kwargs['scale_filter'].upper())
+                    label += 'f{}'.format(scale_filter)
+                except AttributeError as error:
+                    raise ValueError("Invalid scale_filter value '{}'".format(
+                        kwargs['scale_filter'])) from error
+            else:
+                scale_filter = PIL.Image.LANCZOS
+            return size, (label,
+                          lambda image: image.resize(size=size,
+                                                     box=box,
+                                                     resample=scale_filter))
+        return size, None
+
+    def _render(self, path, operations: typing.List[typing.Callable], out_args):
+        image = self._image
+
+        with self._lock:
+            if os.path.isfile(path):
+                # file already exists
+                return
+
+            LOGGER.info("Rendering file %s", path)
+
+            try:
+                os.makedirs(os.path.dirname(path))
+            except FileExistsError:
+                pass
+
+            try:
+                for operation in operations:
+                    image = operation(image)
+
+                _, ext = os.path.splitext(path)
+                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
+                    image.save(file, **out_args)
+
+                LOGGER.info("%s: complete", path)
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.exception("Failed to render %s -> %s",
+                                 self._record.file_path, path)
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -190,81 +293,7 @@ class LocalImage(Image):
 
         return image
 
-    @staticmethod
-    def _adjust_crop_box(box, crop):
-        """ Given a fit box and a crop box, adjust one to the other """
-
-        if crop and box:
-            # Both boxes are the same size; just line them up.
-            return (box[0] + crop[0], box[1] + crop[1],
-                    box[2] + crop[0], box[3] + crop[1])
-
-        if crop:
-            # We don't have a fit box, so just convert the crop box
-            return (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
-
-        # We don't have a crop box, so return the fit box (even if it's None)
-        return box
-
-    @staticmethod
-    def _parse_tuple_string(argument):
-        """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
-        if isinstance(argument, str):
-            return tuple(int(p.strip()) for p in argument.split(','))
-        return argument
-
-    @staticmethod
-    def _crop_to_box(crop):
-        # pylint:disable=invalid-name
-        xx, yy, ww, hh = crop
-        return (xx, yy, xx + ww, yy + hh)
-
-    def _render(self, path, size, box, flatten, kwargs, out_args):
-        # pylint:disable=too-many-arguments
-        image = self._image
-
-        with self._lock:
-            if os.path.isfile(path):
-                # file already exists
-                return
-
-            LOGGER.info("Rendering file %s", path)
-
-            try:
-                os.makedirs(os.path.dirname(path))
-            except FileExistsError:
-                pass
-
-            _, ext = os.path.splitext(path)
-
-            image = fix_orientation(image)
-
-            try:
-                paletted = image.mode == 'P'
-                if paletted:
-                    image = image.convert('RGBA')
-
-                if size:
-                    image = image.resize(size=size, box=box,
-                                         resample=PIL.Image.LANCZOS)
-
-                if flatten:
-                    image = self.flatten(image, kwargs.get('background'))
-                    image = image.convert('RGB')
-
-                if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
-                    image = image.quantize(kwargs.get('quantize', 256))
-
-                from atomicwrites import atomic_write
-                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
-                    image.save(file, **out_args)
-
-                LOGGER.info("%s: complete", path)
-            except Exception:  # pylint: disable=broad-except
-                LOGGER.exception("Failed to render %s -> %s",
-                                 self._record.file_path, path)
-
-    def get_rendition_size(self, spec, output_scale, crop):
+    def get_rendition_size(self, spec, output_scale, crop) -> SizeSpecType:
         """
         Wrapper to determine the overall rendition size and cropping box
 
@@ -280,19 +309,21 @@ class LocalImage(Image):
             height = self._record.height
 
         mode = spec.get('resize', 'fit')
-        if mode == 'fit':
-            return self.get_rendition_fit_size(spec, width, height, output_scale)
 
+        # rearranged the order as a workaround for https://github.com/PyCQA/pylint/issues/3328
         if mode == 'fill':
-            return self.get_rendition_fill_size(spec, width, height, output_scale)
+            return self._get_rendition_fill_size(spec, width, height, output_scale)
+
+        if mode == 'fit':
+            return self._get_rendition_fit_size(spec, width, height, output_scale)
 
         if mode == 'stretch':
-            return self.get_rendition_stretch_size(spec, width, height, output_scale)
+            return self._get_rendition_stretch_size(spec, width, height, output_scale)
 
         raise ValueError("Unknown resize mode {}".format(mode))
 
     @staticmethod
-    def get_rendition_fit_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_fit_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scaled size based on the provided spec """
 
         width = input_w
@@ -343,7 +374,7 @@ class LocalImage(Image):
         return (width, height), None
 
     @staticmethod
-    def get_rendition_fill_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_fill_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scale-crop size given the provided spec """
 
         width = input_w
@@ -394,7 +425,7 @@ class LocalImage(Image):
         return (round(width), round(height)), (box_x, box_y, box_x + box_w, box_y + box_h)
 
     @staticmethod
-    def get_rendition_stretch_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_stretch_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scale-crop size given the provided spec """
 
         width = input_w
@@ -442,7 +473,7 @@ class LocalImage(Image):
         if bgcolor:
             background = PIL.Image.new('RGB', image.size, bgcolor)
             background.paste(image, mask=image.split()[3])
-            return background
+            image = background
 
         return image.convert('RGB')
 

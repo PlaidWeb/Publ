@@ -112,7 +112,12 @@ class HTMLEntry(utils.HTMLTransform):
             img_attrs = img.get_img_attrs(**config)
         except FileNotFoundError as error:
             img_attrs = {
-                'data-publ-error': 'file not found: {}'.format(error.filename)
+                'data-publ-error': 'File Not Found: {}'.format(error.filename)
+            }
+        except Exception as error:  # pylint:disable=broad-except
+            LOGGER.exception("Got exception: %s", error)
+            img_attrs = {
+                'data-publ-error': 'Error: {}'.format(str(error))
             }
 
         # return the original attr list with the computed overrides in place
