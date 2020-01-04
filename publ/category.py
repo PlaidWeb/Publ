@@ -29,6 +29,10 @@ def load_metafile(filepath):
             return email.message_from_file(file)
     except FileNotFoundError:
         LOGGER.warning("Category file %s not found", filepath)
+
+        # SQLite doesn't support cascading deletes, so clean up
+        orm.delete(pa for pa in model.PathAlias if pa.category.file_path == filepath)
+
         orm.delete(c for c in model.Category if c.file_path == filepath)
         orm.commit()
 

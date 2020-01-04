@@ -693,7 +693,10 @@ def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
 def expire_file(filepath):
     """ Expire a record for a missing file """
     load_message.cache_clear()
+
+    # SQLite doesn't support cascading deletes so clean up manually
     orm.delete(pa for pa in model.PathAlias if pa.entry.file_path == filepath)
+
     orm.delete(item for item in model.Entry if item.file_path == filepath)
     orm.commit()
 
@@ -704,8 +707,10 @@ def expire_record(record):
     load_message.cache_clear()
 
     # This entry no longer exists so delete it, and anything that references it
+
     # SQLite doesn't support cascading deletes so let's just clean up
     # manually
     orm.delete(pa for pa in model.PathAlias if pa.entry == record)
+
     record.delete()
     orm.commit()
