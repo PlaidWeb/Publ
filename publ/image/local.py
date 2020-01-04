@@ -278,12 +278,6 @@ class LocalImage(Image):
 
         return image
 
-    @staticmethod
-    def _crop_to_box(crop):
-        # pylint:disable=invalid-name
-        xx, yy, ww, hh = crop
-        return (xx, yy, xx + ww, yy + hh)
-
     def get_rendition_size(self, spec, output_scale, crop) -> SizeSpecType:
         """
         Wrapper to determine the overall rendition size and cropping box
