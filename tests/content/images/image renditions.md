@@ -150,7 +150,7 @@ converted to jpeg, red background using a tuple:
 
 converted to jpeg, white background using hex code:
 
-![](notsmiley.png{format="jpg",background='#fff'}) `![](notsmiley.png{format="jpg",background='#fff'})`
+![](notsmiley.png{format="jpg",background='#ccc'}) `![](notsmiley.png{format="jpg",background='#ccc'})`
 
 
 converted to jpeg, cyan background, multiple qualities on the spectrum:
@@ -168,6 +168,30 @@ notsmiley.png{quality=1} "quality 1"
 | notsmiley.png{quality=50} "quality 50"
 | notsmiley.png{quality=99} "quality 99"
 | notsmiley.png "quality default"
+)
+```
+
+## Quantization
+
+![{256,256}](Landscape_4.jpg "default"
+| Landscape_4.jpg{format='png'} "png24"
+| Landscape_4.jpg{format='png',quantize=0} "png8 0"
+| Landscape_4.jpg{format='png',quantize=128} "png8 128"
+| Landscape_4.jpg{format='png',quantize=32} "png8 32"
+| Landscape_4.jpg{format='png',quantize=4} "png8 4"
+| Landscape_4.jpg{format='png',quantize=2} "png8 2"
+| Landscape_4.jpg{format='png',quantize=256} "png8 256"
+| Landscape_4.jpg{format='gif'} "gif8"
+)
+
+```markdown
+![{256,256}](Landscape_4.jpg{format='png'} "png24"
+| Landscape_4.jpg{format='png',quantize=0} "png8 0"
+| Landscape_4.jpg{format='png',quantize=128} "png8 128"
+| Landscape_4.jpg{format='png',quantize=32} "png8 32"
+| Landscape_4.jpg{format='png',quantize=4} "png8 4"
+| Landscape_4.jpg{format='png',quantize=2} "png8 2"
+| Landscape_4.jpg{format='gif'} "gif8"
 )
 ```
 

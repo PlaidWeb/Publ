@@ -10,6 +10,7 @@ import typing
 
 import flask
 import PIL.Image
+from atomicwrites import atomic_write
 from werkzeug.utils import cached_property
 
 from .. import config, utils
@@ -20,6 +21,8 @@ LOGGER = logging.getLogger(__name__)
 SizeType = typing.Tuple[int, int]
 BoxType = typing.Tuple[int, int, int, int]
 SizeSpecType = typing.Tuple[SizeType, typing.Optional[BoxType]]
+ProcessingPipeline = typing.List[typing.Tuple[typing.Optional[str],
+                                              typing.Optional[typing.Callable]]]
 
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:
@@ -89,7 +92,6 @@ class LocalImage(Image):
     @functools.lru_cache()
     def _get_rendition(self, output_scale=1, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
-        # pylint:disable=too-many-locals,too-many-branches
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
@@ -97,50 +99,10 @@ class LocalImage(Image):
         if kwargs.get('format'):
             ext = '.' + kwargs['format']
 
-        # The spec for building the output filename
-        out_spec = [basename, self._record.checksum[-10:]]
-
-        out_args = {}
-        if ext in ['.png', '.jpg', '.jpeg']:
-            out_args['optimize'] = True
-
-        crop = utils.parse_tuple_string(kwargs.get('crop'))
-
-        size, box = self.get_rendition_size(kwargs, output_scale, crop)
-
-        if crop and box:
-            # Both boxes are the same size; just line them up.
-            box = (box[0] + crop[0], box[1] + crop[1],
-                   box[2] + crop[0], box[3] + crop[1])
-        elif crop:
-            # We don't have a fit box, so just convert the crop box
-            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
-
-        if size and (size[0] < self._record.width or size[1] < self._record.height):
-            out_spec.append('x'.join([str(v) for v in size]))
-
-        if box:
-            # pylint:disable=not-an-iterable
-            out_spec.append('-'.join([str(v) for v in box]))
-
-        # Set RGBA flattening options
-        flatten = self._record.transparent and ext not in ['.png', '.gif']
-        if flatten and 'background' in kwargs:
-            bg_color = kwargs['background']
-            if isinstance(bg_color, (tuple, list)):
-                out_spec.append('b' + '-'.join([str(a) for a in bg_color]))
-            else:
-                out_spec.append('b' + str(bg_color))
-
-        # Set JPEG quality
-        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
-            out_spec.append('q' + str(kwargs['quality']))
-            out_args['quality'] = kwargs['quality']
-        if ext in ('.jpg', '.jpeg'):
-            out_args['optimize'] = True
+        pipeline, out_args, size = self._build_pipeline(basename, ext, output_scale, kwargs)
 
         # Build the output filename
-        out_basename = '_'.join([str(s) for s in out_spec]) + ext
+        out_basename = '_'.join([str(name) for name, _ in pipeline if name]) + ext
         out_rel_path = os.path.join(
             config.image_output_subdir,
             self._record.checksum[0:2],
@@ -155,10 +117,120 @@ class LocalImage(Image):
         else:
             LOGGER.debug("scheduling %s for render", out_fullpath)
             LocalImage.thread_pool().submit(
-                self._render, out_fullpath, size, box, flatten, kwargs, out_args)
+                self._render, out_fullpath, [op for _, op in pipeline if op], out_args)
             pending = True
 
         return out_rel_path, size, pending
+
+    def _build_pipeline(self, basename, ext, output_scale, kwargs) -> typing.Tuple[
+            ProcessingPipeline, typing.Dict, SizeType]:
+        """ Build the image processing pipeline; returns a tuple of
+            ProcessingPipeline, output_args, size """
+
+        pipeline: ProcessingPipeline = []
+
+        # set the image basename
+        pipeline.append((basename, None))
+        pipeline.append((self._record.checksum[-10:], None))
+
+        # Fix the EXIF orientation
+        pipeline.append((None, fix_orientation))
+
+        stash = {}
+        out_args = {}
+        if ext in ('.png', '.jpg', '.jpeg'):
+            out_args['optimize'] = True
+
+        # convert to RGBA
+        def to_rgba(image):
+            if image.mode == 'P':
+                stash['paletted'] = True
+                return image.convert('RGBA')
+            return image
+
+        pipeline.append((None, to_rgba))
+
+        # determine the sizing box
+        crop = utils.parse_tuple_string(kwargs.get('crop'))
+        size, box = self.get_rendition_size(kwargs, output_scale, crop)
+
+        if crop and box:
+            # Both boxes are the same size; just line them up.
+            box = (box[0] + crop[0], box[1] + crop[1],
+                   box[2] + crop[0], box[3] + crop[1])
+        elif crop:
+            # We don't have a fit box, so just convert the crop box
+            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
+
+        label: typing.Optional[str]
+
+        # Add the image cropscale
+        if box or size[0] < self._record.width or size[1] < self._record.height:
+            label = 'x'.join([str(v) for v in size])
+            if box:
+                label += '_' + '-'.join([str(v) for v in box])
+
+            pipeline.append((label, lambda image: image.resize(size=size,
+                                                               box=box,
+                                                               resample=PIL.Image.LANCZOS)))
+
+        # Set RGBA flattening options
+        flatten = self._record.transparent and ext not in ('.png', '.gif')
+        if flatten or 'background' in kwargs:
+            bg_color = kwargs.get('background')
+            if isinstance(bg_color, (tuple, list)):
+                label = 'b' + '-'.join([str(a) for a in bg_color])
+            elif bg_color:
+                label = 'b' + str(bg_color)
+            else:
+                label = None
+            pipeline.append((label, lambda image: self.flatten(image, bg_color)))
+
+        # Set image quantization options
+        if ext in ('.gif', '.png'):
+            quantize = kwargs.get('quantize')
+
+            def to_paletted(image):
+                if ext == '.gif' or stash.get('paletted') or kwargs.get('quantize'):
+                    return image.quantize(colors=quantize or 256)
+                return image
+            pipeline.append(('q{}'.format(quantize) if quantize else None, to_paletted))
+
+        # Set JPEG quality
+        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
+            pipeline.append(('q' + str(kwargs['quality']), None))
+            out_args['quality'] = kwargs['quality']
+
+        return pipeline, out_args, size
+
+    def _render(self, path, operations: typing.List[typing.Callable], out_args):
+        # pylint:disable=too-many-arguments
+        image = self._image
+
+        with self._lock:
+            if os.path.isfile(path):
+                # file already exists
+                return
+
+            LOGGER.info("Rendering file %s", path)
+
+            try:
+                os.makedirs(os.path.dirname(path))
+            except FileExistsError:
+                pass
+
+            try:
+                for operation in operations:
+                    image = operation(image)
+
+                _, ext = os.path.splitext(path)
+                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
+                    image.save(file, **out_args)
+
+                LOGGER.info("%s: complete", path)
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.exception("Failed to render %s -> %s",
+                                 self._record.file_path, path)
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -207,51 +279,6 @@ class LocalImage(Image):
         # pylint:disable=invalid-name
         xx, yy, ww, hh = crop
         return (xx, yy, xx + ww, yy + hh)
-
-    def _render(self, path, size, box, flatten, kwargs, out_args):
-        # pylint:disable=too-many-arguments
-        image = self._image
-
-        with self._lock:
-            if os.path.isfile(path):
-                # file already exists
-                return
-
-            LOGGER.info("Rendering file %s", path)
-
-            try:
-                os.makedirs(os.path.dirname(path))
-            except FileExistsError:
-                pass
-
-            _, ext = os.path.splitext(path)
-
-            image = fix_orientation(image)
-
-            try:
-                paletted = image.mode == 'P'
-                if paletted:
-                    image = image.convert('RGBA')
-
-                if size:
-                    image = image.resize(size=size, box=box,
-                                         resample=PIL.Image.LANCZOS)
-
-                if flatten:
-                    image = self.flatten(image, kwargs.get('background'))
-                    image = image.convert('RGB')
-
-                if ext == '.gif' or (ext == '.png' and (paletted or kwargs.get('quantize'))):
-                    image = image.quantize(kwargs.get('quantize', 256))
-
-                from atomicwrites import atomic_write
-                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
-                    image.save(file, **out_args)
-
-                LOGGER.info("%s: complete", path)
-            except Exception:  # pylint: disable=broad-except
-                LOGGER.exception("Failed to render %s -> %s",
-                                 self._record.file_path, path)
 
     def get_rendition_size(self, spec, output_scale, crop) -> SizeSpecType:
         """
@@ -433,7 +460,7 @@ class LocalImage(Image):
         if bgcolor:
             background = PIL.Image.new('RGB', image.size, bgcolor)
             background.paste(image, mask=image.split()[3])
-            return background
+            image = background
 
         return image.convert('RGB')
 
