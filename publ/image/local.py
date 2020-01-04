@@ -6,6 +6,7 @@ import logging
 import os
 import threading
 import time
+import typing
 
 import flask
 import PIL.Image
@@ -16,8 +17,12 @@ from .image import Image
 
 LOGGER = logging.getLogger(__name__)
 
+SizeType = typing.Tuple[int, int]
+BoxType = typing.Tuple[int, int, int, int]
+SizeSpecType = typing.Tuple[SizeType, typing.Optional[BoxType]]
 
-def fix_orientation(image):
+
+def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
 
         Apply Image.transpose to ensure 0th row of pixels is at the visual
@@ -84,7 +89,7 @@ class LocalImage(Image):
     @functools.lru_cache()
     def _get_rendition(self, output_scale=1, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
-        # pylint:disable=too-many-locals
+        # pylint:disable=too-many-locals,too-many-branches
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
         basename = utils.make_slug(basename)
@@ -99,10 +104,17 @@ class LocalImage(Image):
         if ext in ['.png', '.jpg', '.jpeg']:
             out_args['optimize'] = True
 
-        crop = self._parse_tuple_string(kwargs.get('crop'))
+        crop = utils.parse_tuple_string(kwargs.get('crop'))
 
         size, box = self.get_rendition_size(kwargs, output_scale, crop)
-        box = self._adjust_crop_box(box, crop)
+
+        if crop and box:
+            # Both boxes are the same size; just line them up.
+            box = (box[0] + crop[0], box[1] + crop[1],
+                   box[2] + crop[0], box[3] + crop[1])
+        elif crop:
+            # We don't have a fit box, so just convert the crop box
+            box = (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
 
         if size and (size[0] < self._record.width or size[1] < self._record.height):
             out_spec.append('x'.join([str(v) for v in size]))
@@ -191,29 +203,6 @@ class LocalImage(Image):
         return image
 
     @staticmethod
-    def _adjust_crop_box(box, crop):
-        """ Given a fit box and a crop box, adjust one to the other """
-
-        if crop and box:
-            # Both boxes are the same size; just line them up.
-            return (box[0] + crop[0], box[1] + crop[1],
-                    box[2] + crop[0], box[3] + crop[1])
-
-        if crop:
-            # We don't have a fit box, so just convert the crop box
-            return (crop[0], crop[1], crop[0] + crop[2], crop[1] + crop[3])
-
-        # We don't have a crop box, so return the fit box (even if it's None)
-        return box
-
-    @staticmethod
-    def _parse_tuple_string(argument):
-        """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
-        if isinstance(argument, str):
-            return tuple(int(p.strip()) for p in argument.split(','))
-        return argument
-
-    @staticmethod
     def _crop_to_box(crop):
         # pylint:disable=invalid-name
         xx, yy, ww, hh = crop
@@ -264,7 +253,7 @@ class LocalImage(Image):
                 LOGGER.exception("Failed to render %s -> %s",
                                  self._record.file_path, path)
 
-    def get_rendition_size(self, spec, output_scale, crop):
+    def get_rendition_size(self, spec, output_scale, crop) -> SizeSpecType:
         """
         Wrapper to determine the overall rendition size and cropping box
 
@@ -280,19 +269,21 @@ class LocalImage(Image):
             height = self._record.height
 
         mode = spec.get('resize', 'fit')
-        if mode == 'fit':
-            return self.get_rendition_fit_size(spec, width, height, output_scale)
 
+        # rearranged the order as a workaround for https://github.com/PyCQA/pylint/issues/3328
         if mode == 'fill':
-            return self.get_rendition_fill_size(spec, width, height, output_scale)
+            return self._get_rendition_fill_size(spec, width, height, output_scale)
+
+        if mode == 'fit':
+            return self._get_rendition_fit_size(spec, width, height, output_scale)
 
         if mode == 'stretch':
-            return self.get_rendition_stretch_size(spec, width, height, output_scale)
+            return self._get_rendition_stretch_size(spec, width, height, output_scale)
 
         raise ValueError("Unknown resize mode {}".format(mode))
 
     @staticmethod
-    def get_rendition_fit_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_fit_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scaled size based on the provided spec """
 
         width = input_w
@@ -343,7 +334,7 @@ class LocalImage(Image):
         return (width, height), None
 
     @staticmethod
-    def get_rendition_fill_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_fill_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scale-crop size given the provided spec """
 
         width = input_w
@@ -394,7 +385,7 @@ class LocalImage(Image):
         return (round(width), round(height)), (box_x, box_y, box_x + box_w, box_y + box_h)
 
     @staticmethod
-    def get_rendition_stretch_size(spec, input_w, input_h, output_scale):
+    def _get_rendition_stretch_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
         """ Determine the scale-crop size given the provided spec """
 
         width = input_w

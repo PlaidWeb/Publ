@@ -399,3 +399,10 @@ def stash(key: str) -> typing.Callable:
             return val
         return wrapped_func
     return decorator
+
+
+def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
+    """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
+    if isinstance(argument, str):
+        return tuple(type_func(p.strip()) for p in argument.split(','))
+    return argument
