@@ -2,6 +2,7 @@ Title: Test of shaped images and image styles
 Date: 2018-09-20 00:31:43-07:00
 Entry-ID: 422
 UUID: 6bd3fa69-efd9-5b96-b39f-e40958588481
+Last-Modified: 2020-01-04 10:02:03+00:00
 
 Tests of shaped image floats
 
