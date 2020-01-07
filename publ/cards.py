@@ -18,7 +18,8 @@ class CardData():
 
     def commit(self):
         """ Apply all finalization to the card data """
-        self.description = self.description.strip()
+        if self.description:
+            self.description = self.description.strip()
 
 
 class HtmlCardParser(utils.HTMLTransform):
