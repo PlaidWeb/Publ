@@ -437,7 +437,7 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
 
     tmpl = map_template('', '_admin')
 
-    days = int(request.args.get('days'))
+    days = int(request.args.get('days', 0))
     count = int(request.args.get('count', 50))
     offset = int(request.args.get('offset', 0))
 
