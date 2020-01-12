@@ -45,6 +45,9 @@ as it sets out general guidelines for interactions.
     write, as users won't have to think about whether something is a property
     or a function — why should they even have to know what those things are?
 
+    In short, all functions with sensible defaults should be usable as a property,
+    and all functions should have sensible defaults.
+
     Templates themselves should also always be maintainable by people with only
     a basic understanding of HTML. Fortunately, most of this is handled by Jinja.
 
