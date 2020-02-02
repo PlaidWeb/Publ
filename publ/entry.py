@@ -388,8 +388,7 @@ class Entry(caching.Memoizable):
                                      is_markdown,
                                      args={'count': 1,
                                            **kwargs,
-                                           "max_scale": 1},
-                                     footnote_buffer=False)
+                                           "max_scale": 1})
         return cards.extract_card(html_text)
 
     @cached_property
@@ -420,7 +419,7 @@ class Entry(caching.Memoizable):
         return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, args,
-                    footnote_buffer: markdown.FootnoteBuffer = None) -> str:
+                    footnote_buffer: typing.Optional[list] = None) -> str:
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown

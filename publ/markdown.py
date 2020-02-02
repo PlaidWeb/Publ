@@ -16,9 +16,6 @@ from . import config, html_entry, image, links, utils
 
 LOGGER = logging.getLogger(__name__)
 
-# valid types for footnote buffers
-FootnoteBuffer = typing.Union[typing.List[str], None, bool]
-
 
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
@@ -32,7 +29,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def __init__(self, args: typing.Dict,
                  search_path: typing.Tuple[str],
                  entry_id: int,
-                 footnote_buffer: FootnoteBuffer):
+                 footnote_buffer: typing.Optional[list]):
         # pylint:disable=no-member
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
@@ -67,7 +64,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
-        if self._footnote_buffer is not False:
+        if isinstance(self._footnote_buffer, list):
             return '{sup}{link}{content}</a></sup>'.format(
                 sup=utils.make_tag('sup', {
                     'id': self._footnote_id(num, "r"),
@@ -235,17 +232,19 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 flask.escape(spec), flask.escape(str(err))))
 
 
-def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
+def to_html(text, args, search_path, entry_id=None, footnote_buffer: typing.Optional[list] = None):
     """ Convert Markdown text to HTML.
 
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
     there are any footnotes to be found.
     """
 
+    footnotes: typing.Optional[list] = [] if footnote_buffer is not None else None
+
     # first process as Markdown
     processor = misaka.Markdown(HtmlRenderer(args,
                                              search_path,
-                                             footnote_buffer=footnote_buffer,
+                                             footnote_buffer=footnotes,
                                              entry_id=entry_id),
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
@@ -257,9 +256,15 @@ def to_html(text, args, search_path, entry_id=None, footnote_buffer=None):
     # API.
     if args.get('smartquotes', not args.get('no_smartquotes', False)):
         text = misaka.smartypants(text)
+        if footnotes:
+            footnotes = [misaka.smartypants(item) for item in footnotes]
 
     # now filter through html_entry to rewrite local src/href links
     text = html_entry.process(text, args, search_path)
+
+    if footnotes and footnote_buffer is not None:
+        footnotes = [html_entry.process(item, args, search_path) for item in footnotes]
+        footnote_buffer += footnotes
 
     return flask.Markup(text)
 
