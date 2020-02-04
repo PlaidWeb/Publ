@@ -121,8 +121,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         atag = utils.make_tag('a', {
             'href': urllib.parse.urljoin(self._config.get('toc_link', ''),
                                          '#' + hid),
-            'class': self._config.get('toc_link_class', False),
-            **self._config.get('toc_link_config', {})
+            'class': self._config.get('heading_toclink_class', False),
+            **self._config.get('heading_toclink_config', {})
         })
 
         if self._toc_buffer is not None:
@@ -133,10 +133,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
                      atag=atag,
                      content=html_entry.strip_html(content, allowed=TOC_ALLOWED_TAGS))))
 
-        if 'toc_link_class' in self._config or 'toc_link_template' in self._config:
-            content = self._config.get('toc_link_template', '{atag}{content}</a>').format(
-                atag=atag,
-                content=content)
+        if 'heading_toclink_class' in self._config or 'heading_template' in self._config:
+            content = self._config.get('heading_template', '{toc_link}</a>{text}').format(
+                toc_link=atag,
+                text=content)
 
         return '{htag_open}{content}</{htag}>'.format(
             htag_open=utils.make_tag(htag, {'id': hid}),

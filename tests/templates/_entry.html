@@ -56,13 +56,13 @@
             <div class="source_file">Source file: <tt>{{entry.file_path}}</tt></div>
             {% block entrycontent scoped %}
             {% if entry.summary %}
-                <div class="p-summary">{{entry.summary}}</div>
+                <div class="p-summary">{{entry.summary(toc_link_class='toc_link')}}</div>
             {% else %}
                 <!-- summary is empty -->
             {% endif %}
 
             <div class="entry e-content">
-            {{entry.body(footnotes_class='gronk')}}
+            {{entry.body(footnotes_class='gronk',toc_link_class='toc_link')}}
             {% if entry.more %}
             <div id="more">
                 {{entry.more(footnotes_class='plonk')}}
