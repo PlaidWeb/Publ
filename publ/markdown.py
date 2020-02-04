@@ -71,7 +71,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def footnote_ref(self, num):
         """ Render a link to this footnote """
         if self._config.get('_suppress_footnotes'):
-            return '\u200b' # zero-width space to prevent Misaka fallback
+            return '\u200b'  # zero-width space to prevent Misaka fallback
 
         return '{sup}{link}{content}</a></sup>'.format(
             sup=utils.make_tag('sup', {

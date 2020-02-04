@@ -42,43 +42,46 @@ class CallableProxy:
         self._func: typing.Callable[..., T] = func
 
     @functools.lru_cache()
-    def _make_call(self, request_url, *args, **kwargs):
+    def _cached_default(self, *cache_params):
         """ caching wrapper to memoize call against everything that might affect it """
-        LOGGER.log(LOG_TRIVIAL, '%s %s _make_call %s %s %s', self.__class__.__name__, self._func,
-                   request_url, args, kwargs)
-        return self._func(*args, **kwargs)
+        LOGGER.log(LOG_TRIVIAL, '%s %s _cached_default %s', self.__class__.__name__, self._func,
+                   cache_params)
+        return self._func()
+
+    def _default(self):
+        return self._cached_default(flask.request.url)
 
     def __call__(self, *args, **kwargs) -> T:
         # use the new kwargs to override the defaults
         LOGGER.log(LOG_TRIVIAL, '%s %s __call__ %s %s', self.__class__.__name__, self._func,
                    args, kwargs)
-        return self._make_call(flask.request.url, *args, **kwargs)
+        return self._func(*args, **kwargs)
 
     def __getattr__(self, name):
         LOGGER.log(LOG_TRIVIAL, '%s %s __getattr__ %s', self.__class__.__name__, self._func,
                    name)
-        return getattr(self(), name)
+        return getattr(self._default(), name)
 
     def __bool__(self) -> bool:
         LOGGER.log(LOG_TRIVIAL, '%s %s __bool__', self.__class__.__name__, self._func)
-        return bool(self())
+        return bool(self._default())
 
     def __len__(self) -> int:
         LOGGER.log(LOG_TRIVIAL, '%s %s __len__', self.__class__.__name__, self._func)
-        return len(self())
+        return len(self._default())
 
     def __str__(self) -> str:
         LOGGER.log(LOG_TRIVIAL, '%s %s __str__', self.__class__.__name__, self._func)
-        return str(self())
+        return str(self._default())
 
     def __iter__(self):
         LOGGER.log(LOG_TRIVIAL, '%s %s __iter__', self.__class__.__name__, self._func)
-        return self().__iter__()
+        return self._default().__iter__()
 
     def __getitem__(self, key):
         LOGGER.log(LOG_TRIVIAL, '%s %s __getitem__ %s', self.__class__.__name__, self._func,
                    key)
-        return self().__getitem__(key)
+        return self._default().__getitem__(key)
 
 
 class TrueCallableProxy(CallableProxy):
