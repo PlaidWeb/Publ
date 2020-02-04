@@ -44,11 +44,15 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
-        self._body_footnotes: typing.Optional[int] = None  # do we know if there's intro footnotes?
-        # do we know if there's moretext footnotes?
+
+        # How many footnotes and TOC entries are in the body?
+        self._body_footnotes: typing.Optional[int] = None
         self._more_footnotes: typing.Optional[int] = None
-        self._body_toc: typing.Optional[int] = None  # do we know if there's intro headings?
-        self._more_toc: typing.Optional[int] = None  # do we know if there's moretext headings?
+
+        # How many footnotes and TOC entries are in the more-text?
+        self._body_toc: typing.Optional[int] = None
+        self._more_toc: typing.Optional[int] = None
+
         self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
         LOGGER.debug('loaded entry %d, fingerprint=%s', record.id, self._fingerprint.fingerprint)
 
