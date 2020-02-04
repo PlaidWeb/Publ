@@ -90,7 +90,6 @@ class LocalImage(Image):
     def _filename(self):
         return os.path.basename(self._record.file_path)
 
-    @functools.lru_cache()
     def _get_rendition(self, output_scale=1, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
         basename, ext = os.path.splitext(

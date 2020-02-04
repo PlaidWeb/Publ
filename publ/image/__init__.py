@@ -2,7 +2,6 @@
 
 import ast
 import errno
-import functools
 import hashlib
 import html
 import io
@@ -161,7 +160,6 @@ def get_image(path: str, search_path: typing.Union[str, utils.ListLike[str]]) ->
     return _get_image(path, tuple(utils.as_list(search_path)))
 
 
-@functools.lru_cache()
 def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
     if path.startswith('@'):
         return StaticImage(path[1:], search_path)
