@@ -49,7 +49,8 @@ class CallableProxy:
         return self._func()
 
     def _default(self):
-        return self._cached_default(flask.request.url)
+        from . import user  # pylint:disable=cyclic-import
+        return self._cached_default(flask.request.url, user.get_active())
 
     def __call__(self, *args, **kwargs) -> T:
         # use the new kwargs to override the defaults
