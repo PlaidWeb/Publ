@@ -358,8 +358,16 @@ class Entry(caching.Memoizable):
             return self._get_footnotes(body, more, kwargs)
 
         if is_markdown:
-            LOGGER.debug("We might have footnotes")
-            return CallableProxy(_footnotes)
+            body_count = self._counters.get(('body', True))
+            more_count = self._counters.get(('more', True))
+
+            if ((body_count and body_count.footnote)
+                    or (more_count and more_count.footnote)):
+                LOGGER.debug("We definitely have footnotes")
+                return TrueCallableProxy(_footnotes)
+            if body_count is None or more_count is None:
+                LOGGER.debug("We might have footnotes")
+                return CallableProxy(_footnotes)
 
         LOGGER.debug("There are definitely no footnotes")
         return CallableValue('')
@@ -374,8 +382,17 @@ class Entry(caching.Memoizable):
             return self._get_toc(body, more, max_depth, kwargs)
 
         if is_markdown:
-            LOGGER.debug("We might have a TOC")
-            return CallableProxy(_toc)
+            body_count = self._counters.get(('body', True))
+            more_count = self._counters.get(('more', True))
+
+            if ((body_count and body_count.toc)
+                    or (more_count and more_count.toc)):
+                LOGGER.debug("We definitely have a ToC")
+                return TrueCallableProxy(_toc)
+
+            if body_count is None or more_count is None:
+                LOGGER.debug("We might have a ToC")
+                return CallableProxy(_toc)
 
         LOGGER.debug("There is definitely no TOC")
         return CallableValue('')
@@ -410,11 +427,20 @@ class Entry(caching.Memoizable):
     def _get_card_data(self, kwargs) -> cards.CardData:
         body, more, is_markdown = self._entry_content
 
-        html_text = self._get_markup(body or more,
-                                     is_markdown,
-                                     args={'count': 1,
-                                           **kwargs,
-                                           "max_scale": 1})
+        if body or more:
+            footnote: typing.List[str] = []
+            toc: markdown.TocBuffer = []
+            html_text = self._get_markup(body or more,
+                                         is_markdown,
+                                         args={'count': 1,
+                                               **kwargs,
+                                               "max_scale": 1},
+                                         footnote_buffer=footnote,
+                                         toc_buffer=toc)
+
+            self._set_counter('body' if body else 'more',
+                              kwargs, markdown.ItemCounter(toc=len(toc), footnote=len(footnote)))
+
         return cards.extract_card(html_text)
 
     @cached_property

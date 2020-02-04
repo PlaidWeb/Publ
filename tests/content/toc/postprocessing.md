@@ -55,7 +55,7 @@ Should be allowed.
 
 Should be allowed.
 
-### Superscripts^2
+### Superscripts^&infin;
 
 I'll allow it.
 
