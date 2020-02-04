@@ -21,7 +21,7 @@ TocEntry = typing.Tuple[int, str]
 TocBuffer = typing.List[TocEntry]
 
 # Allow these tags in TOC entries
-TOC_ALLOWED_TAGS = ('sup', 'sub', 'em', 'strong', 'b', 'i')
+TOC_ALLOWED_TAGS = ('sup', 'sub', 'em', 'strong', 'b', 'i', 'code')
 
 
 class HtmlRenderer(misaka.HtmlRenderer):

@@ -407,6 +407,7 @@ class Entry(caching.Memoizable):
 
         def _toc(max_depth=None, **kwargs) -> str:
             LOGGER.debug("rendering table of contents; args=%s", kwargs)
+
             return self._get_toc(body, more, max_depth, kwargs)
 
         if is_markdown:
@@ -497,6 +498,9 @@ class Entry(caching.Memoizable):
         if is_markdown:
             if 'footnotes_link' not in args:
                 args['footnotes_link'] = self.link(absolute=args.get('absolute'))
+
+            if 'toc_link' not in args:
+                args['toc_link'] = self.link(absolute=args.get('absolute'))
 
             return markdown.to_html(
                 text,
