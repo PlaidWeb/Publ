@@ -11,6 +11,7 @@ import misaka
 import pygments
 import pygments.formatters
 import pygments.lexers
+import slugify
 
 from . import config, html_entry, image, links, utils
 
@@ -28,21 +29,25 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def __init__(self, args: typing.Dict,
                  search_path: typing.Tuple[str],
-                 entry_id: int,
-                 footnote_buffer: typing.Optional[list]):
-        # pylint:disable=no-member
+                 entry_id: typing.Optional[int],
+                 footnote_buffer: typing.List[str],
+                 toc_buffer: typing.List[str]):
+        # pylint:disable=no-member,too-many-arguments
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
         self._config = args
         self._search_path = search_path
         self._entry_id = entry_id
 
-        self._footnote_link = args.get('footnotes_link') or ''
+        self._footnote_ofs = len(footnote_buffer)
         self._footnote_buffer = footnote_buffer
-        # in Python 3.8 we can change the bool in FootnoteBuffer to
-        # typing.Literal[False] but we're stuck with this cumbersomeness
-        # for now.
-        self._footnote_ofs = len(footnote_buffer) if isinstance(footnote_buffer, list) else 0
+
+        self._toc_buffer = toc_buffer
+        self._toc_level = 0
+
+    def finish(self):
+        """ Call this at the end of processing to commit stuff at the end """
+        self._toc_buffer.append('</li></ul>' * self._toc_level)
 
     @staticmethod
     def footnotes(_):
@@ -59,49 +64,81 @@ class HtmlRenderer(misaka.HtmlRenderer):
             num=self._footnote_num(num))
 
     def _footnote_url(self, num, anchor):
-        return urllib.parse.urljoin(self._footnote_link,
+        return urllib.parse.urljoin(self._config.get('footnotes_link', ''),
                                     '#' + self._footnote_id(num, anchor))
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
-        if isinstance(self._footnote_buffer, list):
-            return '{sup}{link}{content}</a></sup>'.format(
-                sup=utils.make_tag('sup', {
-                    'id': self._footnote_id(num, "r"),
-                    'class': self._config.get('footnotes_class', False)
-                }),
-                link=utils.make_tag('a', {
-                    'href': self._footnote_url(num, "d"),
-                    'rel': 'footnote'
-                }),
-                content=self._footnote_num(num))
-
-        return '\u200b'  # zero-width space, to prevent misaka fallback
+        return '{sup}{link}{content}</a></sup>'.format(
+            sup=utils.make_tag('sup', {
+                'id': self._footnote_id(num, "r"),
+                'class': self._config.get('footnotes_class', False)
+            }),
+            link=utils.make_tag('a', {
+                'href': self._footnote_url(num, "d"),
+                'rel': 'footnote'
+            }),
+            content=self._footnote_num(num))
 
     def footnote_def(self, content, num):
         """ Render the footnote body, deferring it if so configured """
-        if isinstance(self._footnote_buffer, list):
-            LOGGER.debug("footnote_def %d: %s", num, content)
+        LOGGER.debug("footnote_def %d: %s", num, content)
 
-            # Insert the return anchor before the end of the first content block
-            before, partition, after = content.partition('</p>')
-            text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
-                li=utils.make_tag('li', {
-                    'id': self._footnote_id(num, "d")
-                }),
-                before=before,
-                link=utils.make_tag('a', {
-                    'href': self._footnote_url(num, "r"),
-                    'rev': 'footnote'
-                }),
-                icon=self._config.get('footnotes_return', '↩'),
-                partition=partition,
-                after=after,
-            )
+        # Insert the return anchor before the end of the first content block
+        before, partition, after = content.partition('</p>')
+        text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
+            li=utils.make_tag('li', {
+                'id': self._footnote_id(num, "d")
+            }),
+            before=before,
+            link=utils.make_tag('a', {
+                'href': self._footnote_url(num, "r"),
+                'rev': 'footnote'
+            }),
+            icon=self._config.get('footnotes_return', '↩'),
+            partition=partition,
+            after=after,
+        )
 
-            self._footnote_buffer.append(text)
+        self._footnote_buffer.append(text)
 
-        return '\u200b'  # zero-width space, to prevent misaka fallback
+    def _header_id(self, content, level, num):
+        """ Return a reasonable anchor ID for a heading """
+        return '{eid}_h{level}_{num}_{slug}'.format(
+            eid=self._entry_id,
+            level=level,
+            num=num,
+            slug=slugify.slugify(content, max_length=8))
+
+    def header(self, content, level):
+        """ Make a header with anchor """
+        if level < self._toc_level:
+            # close sublists
+            start = '</li></ul>' * (self._toc_level - level)
+        elif level > self._toc_level:
+            # open new sublists
+            start = '<ul><li>' * (level - self._toc_level)
+        else:
+            # we're at the same level as the last one
+            start = '</li><li>'
+
+        htag = 'h{level}'.format(level=level)
+        hid = self._header_id(content, level, len(self._toc_buffer))
+
+        self._toc_buffer.append(start + content)
+
+        print("config %s" % self._config)
+        if 'toc_link_class' in self._config or 'toc_link_template' in self._config:
+            content = self._config.get('toc_link_template', '{atag}{content}</a>').format(
+                atag=utils.make_tag('a', {'href': '#' + hid,
+                                          'class': self._config.get('toc_link_class', False)
+                                          }),
+                content=content)
+
+        return '{htag_open}{content}</{htag}>'.format(
+            htag_open=utils.make_tag(htag, {'id': hid}),
+            content=content,
+            htag=htag)
 
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.
@@ -232,39 +269,54 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 flask.escape(spec), flask.escape(str(err))))
 
 
-def to_html(text, args, search_path, entry_id=None, footnote_buffer: typing.Optional[list] = None):
+def to_html(text, args, search_path,
+            entry_id: typing.Optional[int] = None,
+            toc_buffer: typing.Optional[typing.List[str]] = None,
+            footnote_buffer: typing.Optional[typing.List[str]] = None):
+    # pylint:disable=too-many-arguments
     """ Convert Markdown text to HTML.
 
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
     there are any footnotes to be found.
+
+    toc_buffer -- a list that will contain <ul> and <li> elements for the table
+    of contents, if there are any headings in the entry
     """
 
-    footnotes: typing.Optional[list] = [] if footnote_buffer is not None else None
+    footnotes: typing.List[str] = []
+    tocs: typing.List[str] = []
 
     # first process as Markdown
-    processor = misaka.Markdown(HtmlRenderer(args,
-                                             search_path,
-                                             footnote_buffer=footnotes,
-                                             entry_id=entry_id),
+    renderer = HtmlRenderer(args,
+                            search_path,
+                            toc_buffer=tocs,
+                            footnote_buffer=footnotes,
+                            entry_id=entry_id)
+    processor = misaka.Markdown(renderer,
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
+    renderer.finish()
 
     # convert smartquotes, if so configured.
     # We prefer setting 'smartquotes' but we fall back to the negation of
     # 'no_smartquotes' for backwards compatibility with a not-well-considered
     # API.
-    if args.get('smartquotes', not args.get('no_smartquotes', False)):
+    smartquotes = args.get('smartquotes', not args.get('no_smartquotes', False))
+    if smartquotes:
         text = misaka.smartypants(text)
-        if footnotes:
-            footnotes = [misaka.smartypants(item) for item in footnotes]
 
     # now filter through html_entry to rewrite local src/href links
     text = html_entry.process(text, args, search_path)
 
-    if footnotes and footnote_buffer is not None:
-        footnotes = [html_entry.process(item, args, search_path) for item in footnotes]
-        footnote_buffer += footnotes
+    # transfer the various internal buffers to their caller's buffers
+    for src, dest in ((footnotes, footnote_buffer),
+                      (tocs, toc_buffer)):
+        if src and dest is not None:
+            if smartquotes:
+                src = [misaka.smartypants(item) for item in src]
+            src = [html_entry.process(item, args, search_path) for item in src]
+            dest += src
 
     return flask.Markup(text)
 
@@ -273,7 +325,7 @@ class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
 
     def __init__(self):
-        super().__init__({}, [], entry_id=None, footnote_buffer=None)
+        super().__init__({}, [], entry_id=0, toc_buffer=[], footnote_buffer=[])
 
     @staticmethod
     def paragraph(content):
