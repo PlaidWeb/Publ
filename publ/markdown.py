@@ -119,7 +119,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
                               len(self._toc_buffer) + 1)
 
         atag = utils.make_tag('a', {
-            'href': '#' + hid,
+            'href': urllib.parse.urljoin(self._config.get('toc_link', ''),
+                                         '#' + hid),
             'class': self._config.get('toc_link_class', False),
             **self._config.get('toc_link_config', {})
         })
