@@ -133,10 +133,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
                      atag=atag,
                      content=html_entry.strip_html(content, allowed=TOC_ALLOWED_TAGS))))
 
-        if 'heading_link_class' in self._config or 'heading_template' in self._config:
-            content = self._config.get('heading_template', '{link}</a>{text}').format(
-                link=atag,
-                text=content)
+        content = self._config.get('heading_template', '{link}</a>{text}').format(
+            link=atag,
+            text=content)
 
         return '{htag_open}{content}</{htag}>'.format(
             htag_open=utils.make_tag(htag, {'id': hid}),
