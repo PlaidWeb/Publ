@@ -307,6 +307,8 @@ class Entry(caching.Memoizable):
         body, _, is_markdown = self._entry_content
 
         def _body(**kwargs) -> str:
+            LOGGER.debug("Rendering body; args=%s", kwargs)
+
             footnotes: typing.Optional[typing.List[str]] = [
             ] if self._body_footnote is None else None
             tocs: typing.Optional[markdown.TocBuffer] = [] if self._body_toc is None else None
@@ -333,11 +335,14 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _more(**kwargs) -> str:
+            LOGGER.debug("Rendering more; kwargs=%s", kwargs)
+
+            footnotes: typing.Optional[typing.List[str]] = []
+            tocs: typing.Optional[markdown.TocBuffer] = []
+
             if is_markdown and (self._body_footnotes is None or self._body_toc is None):
                 # Need to ensure that the intro footnotes/TOC are accounted for
                 LOGGER.debug("scanning intro footnotes/tocs")
-                footnotes: typing.Optional[typing.List[str]] = []
-                tocs: typing.Optional[markdown.TocBuffer] = []
                 self._get_markup(body, is_markdown, args=kwargs,
                                  footnote_buffer=footnotes,
                                  toc_buffer=tocs)
@@ -346,19 +351,11 @@ class Entry(caching.Memoizable):
 
             LOGGER.debug("intro footnotes=%s tocs=%s", self._body_footnotes, self._body_toc)
 
-            if self._more_footnotes is None:
-                # pre-fill the buffer with empty entries so the counts are correct
-                footnotes = [''] * self._body_footnotes if self._body_footnotes else []
-            else:
-                # no need to scan
-                footnotes = None
+            # pre-fill the buffer with empty entries so the counts are correct
+            footnotes = [''] * self._body_footnotes if self._body_footnotes else []
 
-            if self._more_toc is None:
-                # pre-fill the buffer with empty entries so the counts are correct
-                tocs = [(0, '')] * self._body_toc if self._body_toc else []
-            else:
-                # no need to scan
-                tocs = None
+            # pre-fill the buffer with empty entries so the counts are correct
+            tocs = [(0, '')] * self._body_toc if self._body_toc else []
 
             more_text = self._get_markup(more, is_markdown,
                                          footnote_buffer=footnotes,
@@ -384,7 +381,7 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _footnotes(**kwargs) -> str:
-            LOGGER.debug("rendering footnotes")
+            LOGGER.debug("rendering footnotes; args=%s", kwargs)
             return self._get_footnotes(body, more, kwargs)
 
         LOGGER.debug("is_markdown %s  body_footnotes %s  more_footnotes %s",
@@ -409,7 +406,7 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _toc(max_depth=None, **kwargs) -> str:
-            LOGGER.debug("rendering table of contents")
+            LOGGER.debug("rendering table of contents; args=%s", kwargs)
             return self._get_toc(body, more, max_depth, kwargs)
 
         if is_markdown:
@@ -429,6 +426,8 @@ class Entry(caching.Memoizable):
 
         def _get_card(**kwargs) -> str:
             """ Render out the tags for a Twitter/OpenGraph card for this entry. """
+
+            LOGGER.debug("rendering card; args=%s", kwargs)
 
             def og_tag(key, val) -> str:
                 """ produce an OpenGraph tag with the given key and value """
