@@ -1,7 +1,7 @@
 Title: Smartypants footnotes
 Date: 2020-02-01 19:56:50-08:00
-Entry-ID: 601
 UUID: b52aa0f7-4fc9-545c-bf48-1bd4b9715c8f
+Entry-ID: 1691
 
 Footnote in the intro.[^intro]
 
