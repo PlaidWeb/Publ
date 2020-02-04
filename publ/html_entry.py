@@ -141,28 +141,41 @@ def process(text, config, search_path):
 class HTMLStripper(utils.HTMLTransform):
     """ Strip all HTML tags from a document, except those which are allowed """
 
-    def __init__(self, allowed: typing.Tuple[str] = None):
+    def __init__(self,
+                 allowed_tags: typing.Tuple[str] = None,
+                 allowed_attrs: typing.Tuple[str] = None):
         super().__init__()
-        self._allowed = allowed
+        self._allowed_tags = allowed_tags
+        self._allowed_attrs = allowed_attrs
+
+    def _filter(self, tag, attrs, **kwargs) -> str:
+        if self._allowed_tags and tag in self._allowed_tags:
+            return utils.make_tag(tag,
+                                  {key: val
+                                   for key, val in attrs
+                                   if self._allowed_attrs
+                                   and key in self._allowed_attrs},
+                                  **kwargs)
+        return ''
 
     def handle_starttag(self, tag, attrs):
-        if self._allowed and tag in self._allowed:
-            self.append(utils.make_tag(tag, attrs))
+        self.append(self._filter(tag, attrs))
 
     def handle_endtag(self, tag):
-        if self._allowed and tag in self._allowed:
+        if self._allowed_tags and tag in self._allowed_tags:
             self.append('</{tag}>'.format(tag=tag))
 
     def handle_startendtag(self, tag, attrs):
-        if self._allowed and tag in self._allowed:
-            self.append(utils.make_tag(tag, attrs, start_end=True))
+        self.append(self._filter(tag, attrs, start_end=True))
 
     def handle_data(self, data):
         self.append(data)
 
 
-def strip_html(text, allowed: typing.Tuple[str] = None):
+def strip_html(text,
+               allowed_tags: typing.Tuple[str] = None,
+               allowed_attrs: typing.Tuple[str] = None) -> str:
     """ Strip all HTML formatting off of a chunk of text """
-    strip = HTMLStripper(allowed)
+    strip = HTMLStripper(allowed_tags, allowed_attrs)
     strip.feed(text)
     return strip.get_data()

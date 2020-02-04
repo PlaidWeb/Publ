@@ -59,3 +59,10 @@ I'll allow it.
 
 Makes no sense in the ToC, but it's hard to filter that out.
 
+### Code, e.g. `code`
+
+This is also supported and sensible.
+
+### Math? $$d\frac{e^x}{dx} = e^x$$
+
+I mean, this isn't actually HTML so that's up to MathJax...

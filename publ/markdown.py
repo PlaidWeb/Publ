@@ -131,7 +131,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 (level,
                  '{atag}{content}</a>'.format(
                      atag=atag,
-                     content=html_entry.strip_html(content, allowed=TOC_ALLOWED_TAGS))))
+                     content=html_entry.strip_html(content, allowed_tags=TOC_ALLOWED_TAGS))))
 
         content = self._config.get('heading_template', '{link}</a>{text}').format(
             link=atag,
