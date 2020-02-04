@@ -2,6 +2,7 @@
 """ HTML entry processing functionality """
 
 import logging
+import typing
 
 import flask
 
@@ -138,14 +139,30 @@ def process(text, config, search_path):
 
 
 class HTMLStripper(utils.HTMLTransform):
-    """ Strip all HTML tags from a document """
+    """ Strip all HTML tags from a document, except those which are allowed """
+
+    def __init__(self, allowed: typing.Tuple[str] = None):
+        super().__init__()
+        self._allowed = allowed
+
+    def handle_starttag(self, tag, attrs):
+        if self._allowed and tag in self._allowed:
+            self.append(utils.make_tag(tag, attrs))
+
+    def handle_endtag(self, tag):
+        if self._allowed and tag in self._allowed:
+            self.append('</{tag}>'.format(tag=tag))
+
+    def handle_startendtag(self, tag, attrs):
+        if self._allowed and tag in self._allowed:
+            self.append(utils.make_tag(tag, attrs, start_end=True))
 
     def handle_data(self, data):
         self.append(data)
 
 
-def strip_html(text):
+def strip_html(text, allowed: typing.Tuple[str] = None):
     """ Strip all HTML formatting off of a chunk of text """
-    strip = HTMLStripper()
+    strip = HTMLStripper(allowed)
     strip.feed(text)
     return strip.get_data()

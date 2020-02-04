@@ -44,10 +44,11 @@ class Entry(caching.Memoizable):
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
-        self._body_footnotes = None  # do we know if there's intro footnotes?
-        self._more_footnotes = None  # do we know if there's moretext footnotes?
-        self._body_toc = None  # do we know if there's intro headings?
-        self._more_toc = None  # do we know if there's moretext headings?
+        self._body_footnotes: typing.Optional[int] = None  # do we know if there's intro footnotes?
+        # do we know if there's moretext footnotes?
+        self._more_footnotes: typing.Optional[int] = None
+        self._body_toc: typing.Optional[int] = None  # do we know if there's intro headings?
+        self._more_toc: typing.Optional[int] = None  # do we know if there's moretext headings?
         self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
         LOGGER.debug('loaded entry %d, fingerprint=%s', record.id, self._fingerprint.fingerprint)
 
@@ -302,17 +303,23 @@ class Entry(caching.Memoizable):
         body, _, is_markdown = self._entry_content
 
         def _body(**kwargs) -> str:
-            footnotes: typing.List[str] = []
-            tocs: markdown.TocBuffer = []
+            footnotes: typing.Optional[typing.List[str]] = [
+            ] if self._body_footnote is None else None
+            tocs: typing.Optional[markdown.TocBuffer] = [] if self._body_toc is None else None
             body_text = self._get_markup(body, is_markdown, args=kwargs,
                                          footnote_buffer=footnotes,
                                          toc_buffer=tocs)
 
             # record that we know whether there's footnotes/TOCs in the intro, for later
-            LOGGER.debug("stashing %d footnotes and %d tocs", len(footnotes), len(tocs))
-            self._body_footnotes = footnotes
-            self._body_toc = tocs
+            if footnotes is not None:
+                self._body_footnotes = len(footnotes)
+            if tocs is not None:
+                self._body_toc = len(tocs)
             return body_text
+
+        if not body or not is_markdown:
+            self._body_footnotes = 0
+            self._body_toc = 0
 
         return TrueCallableProxy(_body) if body else CallableValue('')
 
@@ -322,24 +329,32 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _more(**kwargs) -> str:
-            footnotes: typing.List[str] = []
-            tocs: markdown.TocBuffer = []
-
-            LOGGER.debug("markdown=%s body_footnotes=%s body_toc=%s",
-                         is_markdown, self._body_footnotes, self._body_toc)
             if is_markdown and (self._body_footnotes is None or self._body_toc is None):
                 # Need to ensure that the intro footnotes/TOC are accounted for
                 LOGGER.debug("scanning intro footnotes/tocs")
+                footnotes: typing.Optional[typing.List[str]] = []
+                tocs: typing.Optional[markdown.TocBuffer] = []
                 self._get_markup(body, is_markdown, args=kwargs,
                                  footnote_buffer=footnotes,
                                  toc_buffer=tocs)
-                self._body_footnotes = footnotes
-                self._body_toc = tocs
+                self._body_footnotes = len(footnotes or [])
+                self._body_toc = len(tocs or [])
 
-            footnotes = self._body_footnotes.copy()
-            tocs = self._body_toc.copy()
+            LOGGER.debug("intro footnotes=%s tocs=%s", self._body_footnotes, self._body_toc)
 
-            LOGGER.debug("Intro had %d footnotes and %d tocs", len(footnotes), len(tocs))
+            if self._more_footnotes is None:
+                # pre-fill the buffer with empty entries so the counts are correct
+                footnotes = [''] * self._body_footnotes if self._body_footnotes else []
+            else:
+                # no need to scan
+                footnotes = None
+
+            if self._more_toc is None:
+                # pre-fill the buffer with empty entries so the counts are correct
+                tocs = [(0, '')] * self._body_toc if self._body_toc else []
+            else:
+                # no need to scan
+                tocs = None
 
             more_text = self._get_markup(more, is_markdown,
                                          footnote_buffer=footnotes,
@@ -347,9 +362,15 @@ class Entry(caching.Memoizable):
                                          args=kwargs)
 
             # record that we know whether there's body footnotes/TOCs, for later
-            self._more_footnotes = footnotes
-            self._more_toc = tocs
+            if footnotes is not None:
+                self._more_footnotes = len(footnotes)
+            if tocs is not None:
+                self._more_toc = len(tocs)
             return more_text
+
+        if not more or not is_markdown:
+            self._more_footnotes = 0
+            self._more_toc = 0
 
         return TrueCallableProxy(_more) if more else CallableValue('')
 
@@ -367,15 +388,15 @@ class Entry(caching.Memoizable):
                      body and self._body_footnotes,
                      more and self._more_footnotes)
 
-        def has(val):
-            return val or val is None
-        if is_markdown and ((body and has(self._body_footnotes)) or
-                            (more and has(self._more_footnotes))):
-            # It's possible there's footnotes!
-            LOGGER.debug("footnotes are a possibility")
-            return CallableProxy(_footnotes)
+        if is_markdown:
+            if self._body_footnotes or self._more_footnotes:
+                LOGGER.debug("We definitely have footnotes")
+                return TrueCallableProxy(_footnotes)
+            if self._body_footnotes is None or self._more_footnotes is None:
+                LOGGER.debug("We might have footnotes")
+                return CallableProxy(_footnotes)
 
-        LOGGER.debug("there is no way there's footnotes")
+        LOGGER.debug("There are definitely no footnotes")
         return CallableValue('')
 
     @cached_property
@@ -387,13 +408,15 @@ class Entry(caching.Memoizable):
             LOGGER.debug("rendering table of contents")
             return self._get_toc(body, more, max_depth, kwargs)
 
-        if is_markdown and ((body and self._body_toc is not False) or
-                            (more and self._more_toc is not False)):
-            # It's possible there's footnotes!
-            LOGGER.debug("table of contents are a possibility")
-            return CallableProxy(_toc)
+        if is_markdown:
+            if self._body_toc or self._more_toc:
+                LOGGER.debug("We definitely have a TOC")
+                return TrueCallableProxy(_toc)
+            if self._body_toc is None or self._more_toc is None:
+                LOGGER.debug("We might have a TOC")
+                return CallableProxy(_toc)
 
-        LOGGER.debug("there is no way there's a TOC")
+        LOGGER.debug("There is definitely no TOC")
         return CallableValue('')
 
     @cached_property
@@ -460,7 +483,8 @@ class Entry(caching.Memoizable):
 
     def _get_markup(self, text, is_markdown, args,
                     footnote_buffer: typing.Optional[list] = None,
-                    toc_buffer: typing.Optional[markdown.TocBuffer] = None) -> str:
+                    toc_buffer: typing.Optional[markdown.TocBuffer] = None,
+                    postprocess: bool = True) -> str:
         """ get the rendered markup for an entry
 
             is_markdown -- whether the entry is formatted as Markdown
@@ -477,7 +501,8 @@ class Entry(caching.Memoizable):
                 search_path=self.search_path,
                 entry_id=self._record.id,
                 footnote_buffer=footnote_buffer,
-                toc_buffer=toc_buffer
+                toc_buffer=toc_buffer,
+                postprocess=postprocess
             )
 
         return html_entry.process(
@@ -488,8 +513,10 @@ class Entry(caching.Memoizable):
     def _get_footnotes(self, body, more, args) -> str:
         """ get the rendered Markdown footnotes for the entry """
         footnotes: typing.List[str] = []
-        self._get_markup(body, True, args=args, footnote_buffer=footnotes)
-        self._get_markup(more, True, args=args, footnote_buffer=footnotes)
+        if self._body_footnotes or self._body_footnotes is None:
+            self._get_markup(body, True, args=args, footnote_buffer=footnotes, postprocess=False)
+        if self._more_footnotes or self._more_footnotes is None:
+            self._get_markup(more, True, args=args, footnote_buffer=footnotes)
 
         if footnotes:
             return flask.Markup("<ol>{notes}</ol>".format(notes=''.join(footnotes)))
@@ -498,10 +525,14 @@ class Entry(caching.Memoizable):
     def _get_toc(self, body, more, max_depth, args) -> str:
         """ get the rendered ToC for the entry """
         tocs: markdown.TocBuffer = []
-        self._get_markup(body, True, args=args, toc_buffer=tocs)
-        self._get_markup(more, True, args=args, toc_buffer=tocs)
-        LOGGER.debug("TOC buffer contents: %s", tocs)
-        return flask.Markup(markdown.toc_to_html(tocs, max_depth))
+        if self._body_toc or self._body_toc is None:
+            self._get_markup(body, True, args=args, toc_buffer=tocs, postprocess=False)
+        if self._more_toc or self._more_toc is None:
+            self._get_markup(more, True, args=args, toc_buffer=tocs)
+
+        if tocs:
+            return flask.Markup(markdown.toc_to_html(tocs, max_depth))
+        return ''
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """

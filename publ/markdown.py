@@ -20,6 +20,9 @@ LOGGER = logging.getLogger(__name__)
 TocEntry = typing.Tuple[int, str]
 TocBuffer = typing.List[TocEntry]
 
+# Allow these tags in TOC entries
+TOC_ALLOWED_TAGS = ('sup', 'sub', 'em', 'strong', 'b', 'i')
+
 
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
@@ -112,19 +115,22 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Make a header with anchor """
 
         htag = 'h{level}'.format(level=level)
-        hid = self._header_id(content, level, len(self._toc_buffer) + 1)
+        hid = self._header_id(html_entry.strip_html(content), level,
+                              len(self._toc_buffer) + 1)
 
-        atag = utils.make_tag('a', {'href': '#' + hid,
-                                    'class': self._config.get('toc_link_class', False),
-                                    **self._config.get('toc_link_config', {})
-                                    })
+        atag = utils.make_tag('a', {
+            'href': '#' + hid,
+            'class': self._config.get('toc_link_class', False),
+            **self._config.get('toc_link_config', {})
+        })
 
         if self._toc_buffer is not None:
             LOGGER.debug("append toc: %d %s", level, content)
-            self._toc_buffer.append((level,
-                                     '{atag}{content}</a>'.format(
-                                         atag=atag,
-                                         content=html_entry.strip_html(content))))
+            self._toc_buffer.append(
+                (level,
+                 '{atag}{content}</a>'.format(
+                     atag=atag,
+                     content=html_entry.strip_html(content, allowed=TOC_ALLOWED_TAGS))))
 
         if 'toc_link_class' in self._config or 'toc_link_template' in self._config:
             content = self._config.get('toc_link_template', '{atag}{content}</a>').format(
@@ -268,7 +274,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 def to_html(text, args, search_path,
             entry_id: typing.Optional[int] = None,
             toc_buffer: typing.Optional[TocBuffer] = None,
-            footnote_buffer: typing.Optional[typing.List[str]] = None):
+            footnote_buffer: typing.Optional[typing.List[str]] = None,
+            postprocess: bool = True):
     # pylint:disable=too-many-arguments
     """ Convert Markdown text to HTML.
 
@@ -277,6 +284,7 @@ def to_html(text, args, search_path,
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
     there are any footnotes to be found.
 
+    postprocess -- whether to postprocess the buffers for smartypants/HTML/etc.
     """
 
     footnotes: typing.List[str] = footnote_buffer if footnote_buffer is not None else []
@@ -293,20 +301,23 @@ def to_html(text, args, search_path,
                                 config.markdown_extensions)
     text = processor(text)
 
-    # convert smartquotes, if so configured.
-    # We prefer setting 'smartquotes' but we fall back to the negation of
-    # 'no_smartquotes' for backwards compatibility with a not-well-considered
-    # API.
-    smartquotes = args.get('smartquotes', not args.get('no_smartquotes', False))
-    if smartquotes:
-        text = misaka.smartypants(text)
-        footnotes[:] = [misaka.smartypants(text) for text in footnotes]
-        tocs[:] = [(level, misaka.smartypants(text)) for level, text in tocs]
+    if postprocess:
+        # convert smartquotes, if so configured.
+        # We prefer setting 'smartquotes' but we fall back to the negation of
+        # 'no_smartquotes' for backwards compatibility with a not-well-considered
+        # API.
+        if 'no_smartquotes' in args:
+            LOGGER.warning("no_smartquotes is deprecated and will be removed in a future version")
+        smartquotes = args.get('smartquotes', not args.get('no_smartquotes', False))
+        if smartquotes:
+            text = misaka.smartypants(text)
+            footnotes[:] = (misaka.smartypants(text) for text in footnotes)
+            tocs[:] = ((level, misaka.smartypants(text)) for level, text in tocs)
 
-    # now filter through html_entry to rewrite local src/href links
-    text = html_entry.process(text, args, search_path)
-    footnotes[:] = [html_entry.process(text, args, search_path)
-                    for text in footnotes]
+        # now filter through html_entry to rewrite local src/href links
+        text = html_entry.process(text, args, search_path)
+        footnotes[:] = (html_entry.process(text, args, search_path)
+                        for text in footnotes)
 
     return flask.Markup(text)
 
