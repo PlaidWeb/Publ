@@ -24,8 +24,8 @@
     {% endblock %}
 
     {% block sidebar %}
-    <div id="nav" class="sidebar">
-        {% block navigation %}
+    <nav id="nav" class="sidebar">
+        {% block navigation scoped %}
         <h2>Navigation</h2>
         <ul>
             <li class="cat-back"><a href="{{category.link}}" title="{{category.name(markup=False)}}">Back to {{category.name or "main site"}}</a></li>
@@ -36,7 +36,7 @@
             {% endif %}
         </ul>
         {% endblock %}
-    </div>
+    </nav>
     {% endblock %}
 
     <div id="content">
@@ -54,14 +54,15 @@
             <div class="posted">Last updated: <time class="dt-posted" datetime="{{entry.date.isoformat()}}">{{entry.last_modified.format('YYYY-MM-DD h:mm A')}} ({{entry.last_modified.humanize()}})</time>
             </div>
             <div class="source_file">Source file: <tt>{{entry.file_path}}</tt></div>
+            {% block entrycontent scoped %}
             {% if entry.summary %}
-                <div class="p-summary">{{entry.summary}}</div>
+                <div class="p-summary">{{entry.summary(toc_link_class='toc_link')}}</div>
             {% else %}
                 <!-- summary is empty -->
             {% endif %}
 
             <div class="entry e-content">
-            {{entry.body(footnotes_class='gronk')}}
+            {{entry.body(footnotes_class='gronk',toc_link_class='toc_link')}}
             {% if entry.more %}
             <div id="more">
                 {{entry.more(footnotes_class='plonk')}}
@@ -76,6 +77,7 @@
             </div>
             {% endif %}
             </div>
+            {% endblock %}
             {% endblock %}
             </article>
             {% endif %}
