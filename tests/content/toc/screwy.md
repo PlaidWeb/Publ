@@ -5,7 +5,7 @@ Entry-ID: 612
 
 This entry has a table of contents.
 
-# Why a table of contents?
+## Why a table of contents?
 
 Because it's neat.
 

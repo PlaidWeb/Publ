@@ -279,8 +279,8 @@ def to_html(text, args, search_path,
 
     """
 
-    footnotes:typing.List[str] = footnote_buffer if footnote_buffer is not None else []
-    tocs:TocBuffer = toc_buffer if toc_buffer is not None else []
+    footnotes: typing.List[str] = footnote_buffer if footnote_buffer is not None else []
+    tocs: TocBuffer = toc_buffer if toc_buffer is not None else []
 
     # first process as Markdown
     renderer = HtmlRenderer(args,
@@ -306,7 +306,7 @@ def to_html(text, args, search_path,
     # now filter through html_entry to rewrite local src/href links
     text = html_entry.process(text, args, search_path)
     footnotes[:] = [html_entry.process(text, args, search_path)
-                          for text in footnotes]
+                    for text in footnotes]
 
     return flask.Markup(text)
 

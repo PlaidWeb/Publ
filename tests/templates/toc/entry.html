@@ -5,7 +5,7 @@
 {% if entry.toc %}
 <nav id="toc">
     <h2>Table of Contents</h2>
-    {{entry.toc(max_depth=2)}}
+    {{entry.toc(max_depth=request.args.get('depth',2)|int)}}
 </nav>
 {% endif %}
 {% endblock %}

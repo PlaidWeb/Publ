@@ -309,8 +309,9 @@ class Entry(caching.Memoizable):
                                          toc_buffer=tocs)
 
             # record that we know whether there's footnotes/TOCs in the intro, for later
-            self._body_footnotes = bool(footnotes)
-            self._body_toc = bool(tocs)
+            LOGGER.debug("stashing %d footnotes and %d tocs", len(footnotes), len(tocs))
+            self._body_footnotes = footnotes
+            self._body_toc = tocs
             return body_text
 
         return TrueCallableProxy(_body) if body else CallableValue('')
@@ -323,11 +324,20 @@ class Entry(caching.Memoizable):
         def _more(**kwargs) -> str:
             footnotes: typing.List[str] = []
             tocs: markdown.TocBuffer = []
-            if is_markdown and (self._body_footnotes is not False or self._body_toc is not False):
+
+            LOGGER.debug("markdown=%s body_footnotes=%s body_toc=%s",
+                         is_markdown, self._body_footnotes, self._body_toc)
+            if is_markdown and (self._body_footnotes is None or self._body_toc is None):
                 # Need to ensure that the intro footnotes/TOC are accounted for
+                LOGGER.debug("scanning intro footnotes/tocs")
                 self._get_markup(body, is_markdown, args=kwargs,
                                  footnote_buffer=footnotes,
                                  toc_buffer=tocs)
+                self._body_footnotes = footnotes
+                self._body_toc = tocs
+
+            footnotes = self._body_footnotes.copy()
+            tocs = self._body_toc.copy()
 
             LOGGER.debug("Intro had %d footnotes and %d tocs", len(footnotes), len(tocs))
 
@@ -337,8 +347,8 @@ class Entry(caching.Memoizable):
                                          args=kwargs)
 
             # record that we know whether there's body footnotes/TOCs, for later
-            self._more_footnotes = bool(footnotes)
-            self._body_toc = bool(tocs)
+            self._more_footnotes = footnotes
+            self._more_toc = tocs
             return more_text
 
         return TrueCallableProxy(_more) if more else CallableValue('')
@@ -356,8 +366,11 @@ class Entry(caching.Memoizable):
                      is_markdown,
                      body and self._body_footnotes,
                      more and self._more_footnotes)
-        if is_markdown and ((body and self._body_footnotes is not False) or
-                            (more and self._more_footnotes is not False)):
+
+        def has(val):
+            return val or val is None
+        if is_markdown and ((body and has(self._body_footnotes)) or
+                            (more and has(self._more_footnotes))):
             # It's possible there's footnotes!
             LOGGER.debug("footnotes are a possibility")
             return CallableProxy(_footnotes)
