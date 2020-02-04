@@ -1,6 +1,7 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
+import functools
 import html
 import html.parser
 import logging
@@ -17,6 +18,8 @@ import werkzeug.routing
 from . import config
 
 LOGGER = logging.getLogger(__name__)
+
+LOG_TRIVIAL = logging.DEBUG - 1
 
 T = typing.TypeVar('T')  # pylint:disable=invalid-name
 ArgDict = typing.Dict[str, typing.Any]
@@ -38,26 +41,43 @@ class CallableProxy:
 
         self._func: typing.Callable[..., T] = func
 
-    def __call__(self, *args, **kwargs) -> T:
-        # use the new kwargs to override the defaults
+    @functools.lru_cache()
+    def _make_call(self, request_url, *args, **kwargs):
+        """ caching wrapper to memoize call against everything that might affect it """
+        LOGGER.log(LOG_TRIVIAL, '%s %s _make_call %s %s %s', self.__class__.__name__, self._func,
+                   request_url, args, kwargs)
         return self._func(*args, **kwargs)
 
+    def __call__(self, *args, **kwargs) -> T:
+        # use the new kwargs to override the defaults
+        LOGGER.log(LOG_TRIVIAL, '%s %s __call__ %s %s', self.__class__.__name__, self._func,
+                   args, kwargs)
+        return self._make_call(flask.request.url, *args, **kwargs)
+
     def __getattr__(self, name):
+        LOGGER.log(LOG_TRIVIAL, '%s %s __getattr__ %s', self.__class__.__name__, self._func,
+                   name)
         return getattr(self(), name)
 
     def __bool__(self) -> bool:
+        LOGGER.log(LOG_TRIVIAL, '%s %s __bool__', self.__class__.__name__, self._func)
         return bool(self())
 
     def __len__(self) -> int:
+        LOGGER.log(LOG_TRIVIAL, '%s %s __len__', self.__class__.__name__, self._func)
         return len(self())
 
     def __str__(self) -> str:
+        LOGGER.log(LOG_TRIVIAL, '%s %s __str__', self.__class__.__name__, self._func)
         return str(self())
 
     def __iter__(self):
+        LOGGER.log(LOG_TRIVIAL, '%s %s __iter__', self.__class__.__name__, self._func)
         return self().__iter__()
 
     def __getitem__(self, key):
+        LOGGER.log(LOG_TRIVIAL, '%s %s __getitem__ %s', self.__class__.__name__, self._func,
+                   key)
         return self().__getitem__(key)
 
 

@@ -406,7 +406,7 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _toc(max_depth=None, **kwargs) -> str:
-            LOGGER.debug("rendering table of contents; args=%s", kwargs)
+            LOGGER.debug("rendering table of contents; max_depth=%s kwargs=%s", max_depth, kwargs)
 
             return self._get_toc(body, more, max_depth, kwargs)
 
