@@ -62,10 +62,10 @@
             {% endif %}
 
             <div class="entry e-content">
-            {{entry.body(footnotes_class='gronk',toc_link_class='toc_link')}}
+            {{entry.body(footnotes_class='gronk',heading_link_class='permalink')}}
             {% if entry.more %}
             <div id="more">
-                {{entry.more(footnotes_class='plonk')}}
+                {{entry.more(footnotes_class='plonk',heading_link_class='permalink')}}
             </div>
             {% endif %}
             {% if entry.footnotes %}

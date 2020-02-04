@@ -258,3 +258,26 @@ img.red {
 .rawrbg {
     /* {{image('/images/rawr.jpg').get_css_background(width=192,uncomment=True)}} */
 }
+
+#nav ol {
+    list-style-type: none;
+    padding: 0 1ex;
+}
+
+#nav ol ol {
+    padding: 0;
+}
+
+
+.permalink:after {
+    position: absolute;
+    margin-left: -1.2ex;
+    margin-top: .45em;
+    font-size: 65%;
+    content: '#';
+    color: rgba(0,0,0,0.5);
+}
+
+*:hover >.permalink:after {
+    color: rgba(0,0,0,0.75);
+}
