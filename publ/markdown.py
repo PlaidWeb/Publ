@@ -70,6 +70,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def footnote_ref(self, num):
         """ Render a link to this footnote """
+        if self._config.get('_suppress_footnotes'):
+            return '\u200b' # zero-width space to prevent Misaka fallback
+
         return '{sup}{link}{content}</a></sup>'.format(
             sup=utils.make_tag('sup', {
                 'id': self._footnote_id(num, "r"),
@@ -271,6 +274,29 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 flask.escape(spec), flask.escape(str(err))))
 
 
+class ItemCounter(misaka.BaseRenderer):
+    """ Just counts the number of things in an entry without any further processing """
+
+    def __init__(self, toc: int = 0, footnote: int = 0):
+        super().__init__()
+        self.toc = toc
+        self.footnote = footnote
+
+    def __str__(self):
+        return 'ItemCounter(footnote={footnote},toc={toc})'.format(footnote=self.footnote,
+                                                                   toc=self.toc)
+
+    def header(self, content, level):
+        """ count this header """
+        # pylint:disable=unused-argument
+        self.toc += 1
+
+    def footnote_def(self, content, num):
+        """ count this footnote """
+        # pylint:disable=unused-argument
+        self.footnote += 1
+
+
 def to_html(text, args, search_path,
             entry_id: typing.Optional[int] = None,
             toc_buffer: typing.Optional[TocBuffer] = None,
@@ -297,8 +323,7 @@ def to_html(text, args, search_path,
                             footnote_buffer=footnotes,
                             entry_id=entry_id)
     processor = misaka.Markdown(renderer,
-                                args.get('markdown_extensions') or
-                                config.markdown_extensions)
+                                args.get('markdown_extensions', config.markdown_extensions))
     text = processor(text)
 
     if postprocess:
@@ -320,6 +345,15 @@ def to_html(text, args, search_path,
                         for text in footnotes)
 
     return flask.Markup(text)
+
+
+def get_counters(text, args):
+    """ Count the number of stateful items in Markdown text. """
+    counter = ItemCounter()
+    processor = misaka.Markdown(counter,
+                                args.get('markdown_extensions', config.markdown_extensions))
+    processor(text)
+    return counter
 
 
 class TitleRenderer(HtmlRenderer):
