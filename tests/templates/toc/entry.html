@@ -1,0 +1,11 @@
+{% extends '/_entry.html' %}
+
+{% block navigation scoped %}
+{{super()}}
+{% if entry.toc %}
+<nav id="toc">
+    <h2>Table of Contents</h2>
+    {{entry.toc(max_depth=2)}}
+</nav>
+{% endif %}
+{% endblock %}

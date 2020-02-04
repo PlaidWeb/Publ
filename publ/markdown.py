@@ -17,6 +17,9 @@ from . import config, html_entry, image, links, utils
 
 LOGGER = logging.getLogger(__name__)
 
+TocEntry = typing.Tuple[int, str]
+TocBuffer = typing.List[TocEntry]
+
 
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
@@ -30,8 +33,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def __init__(self, args: typing.Dict,
                  search_path: typing.Tuple[str],
                  entry_id: typing.Optional[int],
-                 footnote_buffer: typing.List[str],
-                 toc_buffer: typing.List[str]):
+                 footnote_buffer: typing.Optional[typing.List[str]],
+                 toc_buffer: typing.Optional[TocBuffer]):
         # pylint:disable=no-member,too-many-arguments
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
@@ -39,15 +42,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._search_path = search_path
         self._entry_id = entry_id
 
-        self._footnote_ofs = len(footnote_buffer)
+        self._footnote_ofs = len(footnote_buffer) if footnote_buffer is not None else 0
         self._footnote_buffer = footnote_buffer
 
         self._toc_buffer = toc_buffer
-        self._toc_level = 0
-
-    def finish(self):
-        """ Call this at the end of processing to commit stuff at the end """
-        self._toc_buffer.append('</li></ul>' * self._toc_level)
 
     @staticmethod
     def footnotes(_):
@@ -108,31 +106,29 @@ class HtmlRenderer(misaka.HtmlRenderer):
             eid=self._entry_id,
             level=level,
             num=num,
-            slug=slugify.slugify(content, max_length=8))
+            slug=slugify.slugify(content, max_length=32))
 
     def header(self, content, level):
         """ Make a header with anchor """
-        if level < self._toc_level:
-            # close sublists
-            start = '</li></ul>' * (self._toc_level - level)
-        elif level > self._toc_level:
-            # open new sublists
-            start = '<ul><li>' * (level - self._toc_level)
-        else:
-            # we're at the same level as the last one
-            start = '</li><li>'
 
         htag = 'h{level}'.format(level=level)
-        hid = self._header_id(content, level, len(self._toc_buffer))
+        hid = self._header_id(content, level, len(self._toc_buffer) + 1)
 
-        self._toc_buffer.append(start + content)
+        atag = utils.make_tag('a', {'href': '#' + hid,
+                                    'class': self._config.get('toc_link_class', False),
+                                    **self._config.get('toc_link_config', {})
+                                    })
 
-        print("config %s" % self._config)
+        if self._toc_buffer is not None:
+            LOGGER.debug("append toc: %d %s", level, content)
+            self._toc_buffer.append((level,
+                                     '{atag}{content}</a>'.format(
+                                         atag=atag,
+                                         content=html_entry.strip_html(content))))
+
         if 'toc_link_class' in self._config or 'toc_link_template' in self._config:
             content = self._config.get('toc_link_template', '{atag}{content}</a>').format(
-                atag=utils.make_tag('a', {'href': '#' + hid,
-                                          'class': self._config.get('toc_link_class', False)
-                                          }),
+                atag=atag,
                 content=content)
 
         return '{htag_open}{content}</{htag}>'.format(
@@ -271,20 +267,20 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
 def to_html(text, args, search_path,
             entry_id: typing.Optional[int] = None,
-            toc_buffer: typing.Optional[typing.List[str]] = None,
+            toc_buffer: typing.Optional[TocBuffer] = None,
             footnote_buffer: typing.Optional[typing.List[str]] = None):
     # pylint:disable=too-many-arguments
     """ Convert Markdown text to HTML.
 
+    toc_buffer -- a list of (level,text) for all headings in the entry
+
     footnote_buffer -- a list that will contain <li>s with the footnote items, if
     there are any footnotes to be found.
 
-    toc_buffer -- a list that will contain <ul> and <li> elements for the table
-    of contents, if there are any headings in the entry
     """
 
-    footnotes: typing.List[str] = []
-    tocs: typing.List[str] = []
+    footnotes:typing.List[str] = footnote_buffer if footnote_buffer is not None else []
+    tocs:TocBuffer = toc_buffer if toc_buffer is not None else []
 
     # first process as Markdown
     renderer = HtmlRenderer(args,
@@ -296,7 +292,6 @@ def to_html(text, args, search_path,
                                 args.get('markdown_extensions') or
                                 config.markdown_extensions)
     text = processor(text)
-    renderer.finish()
 
     # convert smartquotes, if so configured.
     # We prefer setting 'smartquotes' but we fall back to the negation of
@@ -305,18 +300,13 @@ def to_html(text, args, search_path,
     smartquotes = args.get('smartquotes', not args.get('no_smartquotes', False))
     if smartquotes:
         text = misaka.smartypants(text)
+        footnotes[:] = [misaka.smartypants(text) for text in footnotes]
+        tocs[:] = [(level, misaka.smartypants(text)) for level, text in tocs]
 
     # now filter through html_entry to rewrite local src/href links
     text = html_entry.process(text, args, search_path)
-
-    # transfer the various internal buffers to their caller's buffers
-    for src, dest in ((footnotes, footnote_buffer),
-                      (tocs, toc_buffer)):
-        if src and dest is not None:
-            if smartquotes:
-                src = [misaka.smartypants(item) for item in src]
-            src = [html_entry.process(item, args, search_path) for item in src]
-            dest += src
+    footnotes[:] = [html_entry.process(text, args, search_path)
+                          for text in footnotes]
 
     return flask.Markup(text)
 
@@ -371,3 +361,31 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
         text = misaka.smartypants(text)
 
     return flask.Markup(text)
+
+
+def toc_to_html(toc: TocBuffer, max_level: int = None) -> str:
+    """ Convert a TocBuffer to an appropriate <ol> """
+
+    if not toc:
+        return ''
+
+    cur_level = 0
+    out = ''
+
+    # preprocess: find the lowest heading level
+    min_level = min([level for level, _ in toc])
+    toc = [(level - min_level + 1, text) for level, text in toc]
+
+    for level, text in toc:
+        if max_level is None or level <= max_level:
+            if level > cur_level:
+                # open sublists
+                out += '<ol><li>' * (level - cur_level)
+            else:
+                # close sublists and the prior entry from this level
+                out += '</li></ol>' * (cur_level - level) + '</li><li>'
+            out += text
+            cur_level = level
+
+    out += '</li></ol>' * cur_level
+    return out
