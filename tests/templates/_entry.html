@@ -62,10 +62,14 @@
             {% endif %}
 
             <div class="entry e-content">
+            {% block entrybody scoped %}
             {{entry.body(footnotes_class='gronk',heading_link_class='permalink')}}
+            {% endblock %}
             {% if entry.more %}
             <div id="more">
+                {% block entrymore scoped %}
                 {{entry.more(footnotes_class='plonk',heading_link_class='permalink')}}
+                {% endblock %}
             </div>
             {% endif %}
             {% if entry.footnotes %}

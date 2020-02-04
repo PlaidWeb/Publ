@@ -1,6 +1,7 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
+import functools
 import html
 import html.parser
 import logging
@@ -17,6 +18,8 @@ import werkzeug.routing
 from . import config
 
 LOGGER = logging.getLogger(__name__)
+
+LOG_TRIVIAL = logging.DEBUG - 1
 
 T = typing.TypeVar('T')  # pylint:disable=invalid-name
 ArgDict = typing.Dict[str, typing.Any]
@@ -38,27 +41,48 @@ class CallableProxy:
 
         self._func: typing.Callable[..., T] = func
 
+    @functools.lru_cache()
+    def _cached_default(self, *cache_params):
+        """ caching wrapper to memoize call against everything that might affect it """
+        LOGGER.log(LOG_TRIVIAL, '%s %s _cached_default %s', self.__class__.__name__, self._func,
+                   cache_params)
+        return self._func()
+
+    def _default(self):
+        from . import user  # pylint:disable=cyclic-import
+        return self._cached_default(flask.request.url, user.get_active())
+
     def __call__(self, *args, **kwargs) -> T:
         # use the new kwargs to override the defaults
+        LOGGER.log(LOG_TRIVIAL, '%s %s __call__ %s %s', self.__class__.__name__, self._func,
+                   args, kwargs)
         return self._func(*args, **kwargs)
 
     def __getattr__(self, name):
-        return getattr(self(), name)
+        LOGGER.log(LOG_TRIVIAL, '%s %s __getattr__ %s', self.__class__.__name__, self._func,
+                   name)
+        return getattr(self._default(), name)
 
     def __bool__(self) -> bool:
-        return bool(self())
+        LOGGER.log(LOG_TRIVIAL, '%s %s __bool__', self.__class__.__name__, self._func)
+        return bool(self._default())
 
     def __len__(self) -> int:
-        return len(self())
+        LOGGER.log(LOG_TRIVIAL, '%s %s __len__', self.__class__.__name__, self._func)
+        return len(self._default())
 
     def __str__(self) -> str:
-        return str(self())
+        LOGGER.log(LOG_TRIVIAL, '%s %s __str__', self.__class__.__name__, self._func)
+        return str(self._default())
 
     def __iter__(self):
-        return self().__iter__()
+        LOGGER.log(LOG_TRIVIAL, '%s %s __iter__', self.__class__.__name__, self._func)
+        return self._default().__iter__()
 
     def __getitem__(self, key):
-        return self().__getitem__(key)
+        LOGGER.log(LOG_TRIVIAL, '%s %s __getitem__ %s', self.__class__.__name__, self._func,
+                   key)
+        return self._default().__getitem__(key)
 
 
 class TrueCallableProxy(CallableProxy):

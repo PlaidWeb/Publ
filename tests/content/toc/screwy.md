@@ -30,3 +30,5 @@ Good question!
 ## This is a screwy TOC
 
 # Yep
+
+Also look at it with [a greater depth](?depth=20). Or [just the top level](?depth=1).
