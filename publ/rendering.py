@@ -90,9 +90,9 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
     Returns tuple of (rendered text, etag)
     """
     @cache.memoize(unless=caching.do_not_cache)
-    def do_render(template: Template, args, **kwargs) -> typing.Tuple[str, str]:
+    def do_render(template: Template, **kwargs) -> typing.Tuple[str, str]:
         LOGGER.debug("Rendering template %s with args %s and kwargs %s; caching=%s",
-                     template, args, kwargs, not caching.do_not_cache)
+                     template, request.args, kwargs, not caching.do_not_cache)
 
         args = {
             'template': template,
@@ -107,9 +107,9 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return text, caching.get_etag(text)
 
     try:
-        return do_render(template, request.args,
+        return do_render(template,
                          user=user.get_active(),
-                         _url_root=request.url_root,
+                         _url=request.url,
                          _index_time=index.last_modified(),
                          **kwargs)
     except queries.InvalidQueryError as err:
