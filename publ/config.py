@@ -3,6 +3,7 @@
 
 import sys
 import typing
+import os
 
 from dateutil import tz
 
@@ -24,6 +25,7 @@ static_url_path = '/static'
 image_output_subdir = '_img'
 image_cache_interval = 3600
 image_cache_age = 86400 * 30  # one month
+image_render_threads = os.cpu_count()
 
 timezone = tz.tzlocal()
 

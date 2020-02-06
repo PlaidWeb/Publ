@@ -73,7 +73,8 @@ class LocalImage(Image):
         if not LocalImage._thread_pool:
             LOGGER.info("Starting LocalImage threadpool")
             LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
-                thread_name_prefix="Renderer")
+                thread_name_prefix="Renderer",
+                max_workers=config.image_render_threads)
         return LocalImage._thread_pool
 
     def __init__(self, record, search_path):
