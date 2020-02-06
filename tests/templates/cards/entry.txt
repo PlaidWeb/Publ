@@ -4,7 +4,7 @@
 
 ==Summary text==
 
-{{entry.summary}}
+{{entry.summary or '(no summary)'}}
 
 ==Body text==
 

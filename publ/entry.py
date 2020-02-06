@@ -434,12 +434,15 @@ class Entry(caching.Memoizable):
                                          is_markdown,
                                          args={'count': 1,
                                                **kwargs,
-                                               "max_scale": 1},
+                                               "max_scale": 1,
+                                               "_suppress_footnotes": True},
                                          footnote_buffer=footnote,
                                          toc_buffer=toc)
 
             self._set_counter('body' if body else 'more',
                               kwargs, markdown.ItemCounter(toc=len(toc), footnote=len(footnote)))
+        else:
+            html_text = ''
 
         return cards.extract_card(html_text)
 
