@@ -1,9 +1,9 @@
 # config.py
 """ configuration container for Publ """
 
+import os
 import sys
 import typing
-import os
 
 from dateutil import tz
 

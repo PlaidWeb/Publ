@@ -453,8 +453,9 @@ class Entry(caching.Memoizable):
         def _get_summary(**kwargs) -> str:
             """ Render out just the summary """
 
-            if self.get('Summary'):
-                return self.get('Summary')
+            summary = self.get('Summary')
+            if summary:
+                return summary
 
             card = self._get_card_data(kwargs)
             return flask.Markup((card.description or '').strip())
@@ -583,7 +584,7 @@ class Entry(caching.Memoizable):
             'recurse': kwargs.get('recurse', 'category' in kwargs)
         }
 
-    def get(self, name, default=None) -> str:
+    def get(self, name, default=None) -> typing.Optional[str]:
         """ Get a single header on an entry """
         return self._message.get(name, default)
 
@@ -610,8 +611,10 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     other_entry: typing.Optional[model.Entry] = None
 
     entry_id: typing.Optional[int] = None
-    if 'Entry-ID' in entry:
+    try:
         entry_id = int(entry['Entry-ID'])
+    except (ValueError, KeyError, TypeError) as err:
+        LOGGER.debug("Invalid entry-id: %s", err)
 
     # See if we've inadvertently duplicated an entry ID
     if entry_id is not None:
@@ -634,7 +637,7 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
 
     if not entry_id:
         # See if we already have an entry with this file path
-        by_filepath = model.Entry.get(file_path=fullpath)
+        by_filepath = model.Entry.select(lambda e: e.file_path == fullpath).first()
         if by_filepath:
             entry_id = by_filepath.id
 
@@ -676,8 +679,15 @@ def save_file(fullpath: str, entry: email.message.Message):
 
 
 @orm.db_session(retry=5)
-def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
-    """ scan a file and put it into the index """
+def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> bool:
+    """ scan a file and put it into the index
+
+    :param fullpath str: The full file path
+    :param relpath typing.Optional[str]: The file path relative to the content
+        root; if None, this will be inferred
+    :param assign_id bool: Whether to assign an ID and fix up the file
+
+    """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
     # Since a file has changed, the lrucache is invalid.
@@ -698,6 +708,9 @@ def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
 
     fixup_needed = False
 
+    if not relpath:
+        relpath = os.path.relpath(fullpath, config.content_folder)
+
     basename = os.path.basename(relpath)
     title = entry['title'] or guess_title(basename)
 
@@ -710,7 +723,6 @@ def scan_file(fullpath: str, relpath: str, assign_id: bool) -> bool:
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),
-        'entry_template': entry.get('Entry-Template', ''),
     }
 
     entry_date = None
