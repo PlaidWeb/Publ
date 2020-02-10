@@ -318,6 +318,44 @@ def handle_unauthorized(cur_user, category='', **kwargs):
     raise http_error.Unauthorized()
 
 
+def _check_authorization(record, category):
+    """ Check the auth of an entry against the current user """
+    if record.auth:
+        cur_user = user.get_active()
+        authorized = record.is_authorized(cur_user)
+
+        user.log_access(record, cur_user, authorized)
+
+        if not authorized:
+            return handle_unauthorized(cur_user,
+                                       entry=Entry(record),
+                                       category=category)
+    return None
+
+
+def _check_canon_entry_url(record):
+    """ Check to see if an entry is being requested at its canonical URL """
+    canon_url = url_for('entry',
+                        entry_id=record.id,
+                        category=record.category,
+                        slug_text=record.slug_text if record.slug_text else None,
+                        _external=True,
+                        **request.args)
+
+    LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
+
+    if request.url != canon_url:
+        # This could still be a redirected path...
+        path_redirect = get_redirect()
+        if path_redirect:
+            return path_redirect
+
+        # Redirect to the canonical URL
+        return redirect(canon_url)
+
+    return None
+
+
 @orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
@@ -361,54 +399,44 @@ def render_entry(entry_id, slug_text='', category=''):
         raise http_error.Gone()
 
     # If the entry is private and the user isn't logged in, redirect
-    if record.auth:
-        cur_user = user.get_active()
-        authorized = record.is_authorized(cur_user)
-
-        user.log_access(record, cur_user, authorized)
-
-        if not authorized:
-            return handle_unauthorized(cur_user,
-                                       entry=Entry(record),
-                                       category=category)
+    result = _check_authorization(record, category)
+    if result:
+        return result
 
     # check if the canonical URL matches
-    canon_url = url_for('entry',
-                        entry_id=entry_id,
-                        category=record.category,
-                        slug_text=record.slug_text if record.slug_text else None,
-                        _external=True,
-                        **request.args)
-    LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
-    if request.url != canon_url:
-        # This could still be a redirected path...
-        path_redirect = get_redirect()
-        if path_redirect:
-            return path_redirect
-
-        # Redirect to the canonical URL
-        return redirect(canon_url)
+    result = _check_canon_entry_url(record)
+    if result:
+        return result
 
     # if the entry canonically redirects, do that now
-    entry_redirect = record.redirect_url
-    if entry_redirect:
-        return redirect(entry_redirect)
-
-    entry_template = (record.entry_template
-                      or Category(category).get('Entry-Template')
-                      or 'entry')
-
-    tmpl = map_template(category, entry_template)
-    if not tmpl:
-        raise http_error.BadRequest("Missing entry template")
+    if record.redirect_url:
+        return redirect(record.redirect_url)
 
     # Get the viewable entry
     entry_obj = Entry(record)
 
     # does the entry-id header mismatch? If so the old one is invalid
-    if int(entry_obj.get('Entry-ID')) != record.id:
-        expire_record(record)
-        return redirect(url_for('entry', entry_id=int(entry_obj.get('Entry-Id'))))
+    try:
+        current_id = int(entry_obj.get('Entry-ID'))
+    except (KeyError, TypeError, ValueError) as err:
+        LOGGER.debug("Error checking entry ID: %s", err)
+        current_id = None
+    if current_id != record.id:
+        LOGGER.debug("entry %s says it has id %d, index says %d",
+                     entry_obj.file_path, current_id, record.id)
+
+        from .entry import scan_file
+        scan_file(entry_obj.file_path, None, True)
+
+        return redirect(url_for('entry', entry_id=entry_id))
+
+    entry_template = (entry_obj.get('Entry-Template')
+                      or Category(category).get('Entry-Template')
+                      or 'entry')
+
+    tmpl = map_template(category, entry_template)
+    if not tmpl:
+        raise http_error.BadRequest("Missing entry template" + entry_template)
 
     rendered, etag = render_publ_template(
         tmpl,
