@@ -435,7 +435,8 @@ class Entry(caching.Memoizable):
                                          args={'count': 1,
                                                **kwargs,
                                                "max_scale": 1,
-                                               "_suppress_footnotes": True},
+                                               "_suppress_footnotes": True,
+                                               "absolute": True},
                                          footnote_buffer=footnote,
                                          toc_buffer=toc)
 
