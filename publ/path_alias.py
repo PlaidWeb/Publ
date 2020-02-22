@@ -123,15 +123,11 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
     if not record or (record.entry and not record.entry.visible):
         url, permanent = current_app.test_path_regex(path)
         if url:
-            return Response(redirect(url, 301 if permanent else 302))
+            return Response(redirect(url, PERMANENT if permanent else TEMPORARY))
 
         return None
 
     alias_type = model.AliasType(record.alias_type)
-
-    if record.url:
-        # This is an outbound URL that might be changed by the user
-        return Response(redirect(record.url, TEMPORARY))
 
     if record.category:
         category = record.category.category
@@ -155,7 +151,7 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
             endpoint = 'entry'
             args['entry_id'] = record.entry.id
 
-        return Response(redirect(url_for(endpoint, **args)))
+        return Response(redirect(url_for(endpoint, **args), PERMANENT))
 
     if record.entry:
         return RenderEntry(record.entry, category, record.template)

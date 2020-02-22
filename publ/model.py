@@ -142,7 +142,6 @@ class Category(DbEntity):
 class PathAlias(DbEntity):
     """ Path alias mapping """
     path = orm.PrimaryKey(str)
-    url = orm.Optional(str)
     entry = orm.Optional(Entry)
     category = orm.Optional(Category)
     template = orm.Optional(str)
