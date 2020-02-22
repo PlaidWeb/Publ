@@ -104,12 +104,12 @@ class Entry(caching.Memoizable):
             if not self.authorized:
                 expand = False
 
-            if 'Path-Canonical' in self._message:
+            if self._record.canonical_path:
                 # This is a hack that assumes that the standard '/<template>'
                 # rule is in effect. This will have to change if we implement
                 # https://github.com/PlaidWeb/Publ/issues/286
                 return flask.url_for('category',
-                                     template=self._message['Path-Canonical'],
+                                     template=self._record.canonical_path,
                                      _external=absolute)
 
             return flask.url_for('entry',
