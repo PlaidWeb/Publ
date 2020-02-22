@@ -258,7 +258,7 @@ This configuration value will stop being supported in Publ 0.6.
         self._regex_map.append((regex, func))
         return func
 
-    def _test_path_regex(self, path):
+    def test_path_regex(self, path):
         """ Evaluate the registered path-alias regular expressions. Returns the
         result of the first handler that successfully matches the path.
         """

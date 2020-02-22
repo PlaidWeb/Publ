@@ -10,13 +10,15 @@
 
 {% set view = view(count=30,recurse=True) %}
 
-<h1>Publ: {{category.name or "Yet another site generator"}}</h1>
+<h1>Publ: {{category.name or "Yet another site generator"}} (archive view)</h1>
 
 <div id="nav" class="sidebar">
 
     <h2>Navigation</h2>
 
     <ul>
+        <li><a href=".">back to index</a></li>
+
     {% if category.parent %}
     <li class="cat-up"><a href="{{category.parent.link}}">Up one level</a></li>
     {% endif %}
@@ -42,7 +44,7 @@
     <li><a href="{{entry.archive('day',template.name,category)}}">by day</a></li>
     <li><a href="{{entry.archive('month',template.name,category)}}">by month</a></li>
     <li><a href="{{entry.archive('year',template.name,category)}}">by year</a></li>
-    <li><a href="{{entry.archive('id',template.name,category)}}">by id</a></li>
+    <li><a href="{{entry.archive('offset',template.name,category)}}">by offset</a></li>
 </ul></li>
 {% endfor %}
 </ul>
@@ -53,6 +55,13 @@
 {% if view.next %}
 <p><a href="{{view.next.link(absolute=True)}}">next page</a></p>
 {%endif %}
+
+{% if category.description %}
+<div id="description">
+    {{ category.description }}
+</div>
+{% endif %}
+
 
 </div>
 </body></html>

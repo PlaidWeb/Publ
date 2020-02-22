@@ -6,11 +6,15 @@ import typing
 from flask import current_app, redirect, url_for
 from pony import orm
 
-from . import model, utils
+from . import model
+
+# redirection types
+PERMANENT = 301
+TEMPORARY = 302
 
 
 @orm.db_session
-def set_alias(alias: str, **kwargs) -> model.PathAlias:
+def set_alias(alias: str, alias_type: model.AliasType, **kwargs) -> model.PathAlias:
     """ Set a path alias.
 
     Arguments:
@@ -24,7 +28,11 @@ def set_alias(alias: str, **kwargs) -> model.PathAlias:
     spec = alias.split()
     path = spec[0]
 
-    values = {**kwargs, 'path': path}
+    values = {
+        **kwargs,
+        'path': path,
+        'alias_type': alias_type.value
+    }
 
     if len(spec) > 1:
         values['template'] = spec[1]
@@ -66,71 +74,87 @@ def remove_aliases(target: typing.Union[model.Entry, model.Category]):
     orm.commit()
 
 
-def get_alias(path: str) -> typing.Tuple[typing.Optional[str], bool]:
-    """ Get a path alias for a single path
+class Disposition:
+    """ Alias disposition base class """
+    # pylint:disable=too-few-public-methods
 
-    Returns a tuple of (url,is_permanent)
-    """
-    # pylint:disable=too-many-return-statements
+    def __init__(self):
+        pass
+
+
+class Response(Disposition):
+    """ Disposition that provides a response directly """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, response):
+        super().__init__()
+        self.response = response
+
+
+class RenderEntry(Disposition):
+    """ Disposition that requests an entry render """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, entry: model.Entry, category: str, template: typing.Optional[str]):
+        super().__init__()
+        self.entry = entry
+        self.category = category
+        self.template = template
+
+
+class RenderCategory(Disposition):
+    """ Disposition that requests a category render """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, category: str, template: typing.Optional[str]):
+        super().__init__()
+        self.category = category
+        self.template = template
+
+
+def get_alias(path: str) -> typing.Optional[Disposition]:
+    """ Get a path's alias mapping """
 
     record = model.PathAlias.get(path=path)
 
-    if not record:
-        return None, False
+    if not record or (record.entry and not record.entry.visible):
+        url, permanent = current_app.test_path_regex(path)
+        if url:
+            return Response(redirect(url, 301 if permanent else 302))
 
-    template = record.template if record.template != 'index' else None
+        return None
 
-    if record.entry and record.entry.visible:
-        if record.template:
-            # a template was requested, so we go to the category page
-            category = (record.category.category
-                        if record.category else record.entry.category)
-            return url_for('category',
-                           start=record.entry.id,
-                           template=template,
-                           category=category), True
-
-        from . import entry  # pylint:disable=cyclic-import
-        outbound = entry.Entry(record.entry).get('Redirect-To')
-        if outbound:
-            # The entry has a Redirect-To (soft redirect) header
-            return outbound, False
-
-        return url_for('entry',
-                       entry_id=record.entry.id,
-                       category=record.entry.category,
-                       slug_text=record.entry.slug_text), True
-
-    if record.category:
-        return url_for('category',
-                       category=record.category.category,
-                       template=template), True
+    alias_type = model.AliasType(record.alias_type)
 
     if record.url:
-        # This is an outbound URL that might be changed by the user, so
-        # we don't do a 301 Permanently moved
-        return record.url, False
+        # This is an outbound URL that might be changed by the user
+        return Response(redirect(record.url, TEMPORARY))
 
-    return None, False
+    if record.category:
+        category = record.category.category
+    elif record.entry:
+        category = record.entry.category
+    else:
+        category = ''
 
+    template_name = record.template if record.template != 'index' else None
 
-def get_redirect(paths: typing.Union[str, typing.List[str]]):
-    """ Get a redirect from a path or list of paths
+    if alias_type == model.AliasType.REDIRECT:
+        args = {'category': category} if category else {}
 
-    Arguments:
+        if record.template or not record.entry:
+            endpoint = 'category'
+            if template_name:
+                args['template'] = template_name
+            if record.entry:
+                args['id'] = record.entry.id
+        else:
+            endpoint = 'entry'
+            args['entry_id'] = record.entry.id
 
-    paths -- either a single path string, or a list of paths to check
+        return Response(redirect(url_for(endpoint, **args)))
 
-    Returns: a flask.redirect() result
-    """
-    for path in utils.as_list(paths):
-        url, permanent = get_alias(path)
-        if url:
-            return redirect(url, 301 if permanent else 302)
+    if record.entry:
+        return RenderEntry(record.entry, category, record.template)
 
-        # pylint:disable=protected-access
-        url, permanent = current_app._test_path_regex(path)
-        if url:
-            return redirect(url, 301 if permanent else 302)
-
-    return None
+    return RenderCategory(category, record.template)

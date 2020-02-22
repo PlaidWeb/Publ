@@ -309,7 +309,9 @@ def scan_file(fullpath, relpath) -> bool:
     # update other relationships to the index
     path_alias.remove_aliases(record)
     for alias in meta.get_all('Path-Alias', []):
-        path_alias.set_alias(alias, category=record)
+        path_alias.set_alias(alias, model.AliasType.REDIRECT, category=record)
+    for alias in meta.get_all('Path-Mount', []):
+        path_alias.set_alias(alias, model.AliasType.MOUNT, category=record)
 
     orm.commit()
 

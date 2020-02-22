@@ -777,7 +777,9 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
     path_alias.remove_aliases(record)
     if record.visible:
         for alias in entry.get_all('Path-Alias', []):
-            path_alias.set_alias(alias, entry=record)
+            path_alias.set_alias(alias, model.AliasType.REDIRECT, entry=record)
+        for alias in entry.get_all('Path-Mount', []):
+            path_alias.set_alias(alias, model.AliasType.MOUNT, entry=record)
 
     orm.delete(p for p in model.EntryAuth if p.entry == record)  # type:ignore
     orm.commit()
