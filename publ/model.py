@@ -80,6 +80,8 @@ class Entry(DbEntity):
     auth = orm.Set("EntryAuth")
     auth_log = orm.Set("AuthLog")
 
+    canonical_path = orm.Optional(str)
+
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
     orm.composite_index(category, entry_type, sort_title)

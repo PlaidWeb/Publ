@@ -733,6 +733,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),
+        'canonical_path': entry.get('Path-Canonical', '')
     }
 
     entry_date = None

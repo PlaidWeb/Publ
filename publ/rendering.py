@@ -353,12 +353,18 @@ def _check_authorization(record, category):
 
 def _check_canon_entry_url(record):
     """ Check to see if an entry is being requested at its canonical URL """
-    canon_url = url_for('entry',
-                        entry_id=record.id,
-                        category=record.category,
-                        slug_text=record.slug_text if record.slug_text else None,
-                        _external=True,
-                        **request.args)
+    if record.canonical_path:
+        canon_url = url_for('category',
+                            template=record.canonical_path,
+                            _external=True,
+                            **request.args)
+    else:
+        canon_url = url_for('entry',
+                            entry_id=record.id,
+                            category=record.category,
+                            slug_text=record.slug_text if record.slug_text else None,
+                            _external=True,
+                            **request.args)
 
     LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
 

@@ -7,3 +7,5 @@ UUID: ba777d3b-fbf0-5b87-bf70-653b6fd7a149
 This entry should only be viewable at [/alias/canonical](/alias/canonical).
 
 Links by entry ID should still point to [/alias/canonical](1209).
+
+Links [to the entry ID](/1209) (including [with a category](/aliases/1209)) should redirect to the canonical path.
