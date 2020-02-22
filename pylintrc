@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable=import-outside-toplevel
+disable=import-outside-toplevel, bad-continuation
 
 [SIMILARITIES]
 ignore-imports=yes

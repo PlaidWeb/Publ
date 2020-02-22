@@ -256,8 +256,10 @@ def render_category_path(category: str, template: typing.Optional[str]):
 
     if category:
         # See if there's any entries for the view...
-        if not orm.select(e for e in model.Entry if (e.category == category or  # type:ignore
-                          e.category.startswith(category + '/')) and e.visible):
+        if not orm.select(e for e in model.Entry  # type:ignore
+                          if (e.category == category
+                              or e.category.startswith(category + '/'))
+                          and e.visible):
             raise http_error.NotFound("No such category")
 
     if not template:
@@ -406,7 +408,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
 
 def render_entry_record(record: model.Entry, category: str, template: typing.Optional[str],
-    _mounted=False):
+                        _mounted=False):
     """ Render an entry object """
 
     # Show an access denied error if the entry has been set to draft mode

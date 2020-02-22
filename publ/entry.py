@@ -109,8 +109,8 @@ class Entry(caching.Memoizable):
                 # rule is in effect. This will have to change if we implement
                 # https://github.com/PlaidWeb/Publ/issues/286
                 return flask.url_for('category',
-                    template=self._message['Path-Canonical'],
-                    _external=absolute)
+                                     template=self._message['Path-Canonical'],
+                                     _external=absolute)
 
             return flask.url_for('entry',
                                  entry_id=self._record.id,
