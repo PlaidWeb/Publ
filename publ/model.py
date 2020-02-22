@@ -18,7 +18,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 
 class GlobalConfig(DbEntity):
@@ -29,13 +29,19 @@ class GlobalConfig(DbEntity):
 
 class PublishStatus(Enum):
     """ The status of the entry """
-    DRAFT = 0  # Entry should not be rendered
-    HIDDEN = 1  # Entry should be shown via direct link, but not shown on a view
-    UNLISTED = 1  # Synonym for HIDDEN
-    PUBLISHED = 2  # Entry is visible
-    SCHEDULED = 3  # Entry will be visible in the future
-    GONE = 4  # Entry is gone, won't be coming back
-    DELETED = 4  # synonym for GONE
+    DRAFT = 0       # Entry should not be rendered
+    HIDDEN = 1      # Entry should be shown via direct link, but not shown on a view
+    UNLISTED = 1    # Synonym for HIDDEN
+    PUBLISHED = 2   # Entry is visible
+    SCHEDULED = 3   # Entry will be visible in the future
+    GONE = 4        # Entry is gone, won't be coming back
+    DELETED = 4     # synonym for GONE
+
+
+class AliasType(Enum):
+    """ The type of PathAlias mapping """
+    REDIRECT = 0    # Redirect to the canon URL
+    MOUNT = 1       # Display the URL at the alias
 
 
 class FileFingerprint(DbEntity):
@@ -74,7 +80,7 @@ class Entry(DbEntity):
     auth = orm.Set("EntryAuth")
     auth_log = orm.Set("AuthLog")
 
-    entry_template = orm.Optional(str)  # maps to Entry-Template
+    canonical_path = orm.Optional(str)
 
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
@@ -136,10 +142,10 @@ class Category(DbEntity):
 class PathAlias(DbEntity):
     """ Path alias mapping """
     path = orm.PrimaryKey(str)
-    url = orm.Optional(str)
     entry = orm.Optional(Entry)
     category = orm.Optional(Category)
     template = orm.Optional(str)
+    alias_type = orm.Required(int)  # reflects AliasType
 
 
 class Image(DbEntity):

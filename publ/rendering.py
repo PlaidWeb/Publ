@@ -55,11 +55,16 @@ def get_template(template: str, relation) -> typing.Optional[str]:
     return tmpl.filename if tmpl else None
 
 
-def get_redirect():
+def handle_path_alias(path: str = None):
     """ Check to see if the current request is a redirection """
-    alias = path_alias.get_redirect(request.path)
-    if alias:
-        return alias
+    alias = path_alias.get_alias(path or request.path)
+
+    if isinstance(alias, path_alias.Response):
+        return alias.response
+    if isinstance(alias, path_alias.RenderEntry):
+        return render_entry_record(alias.entry, alias.category, alias.template, _mounted=True)
+    if isinstance(alias, path_alias.RenderCategory):
+        return render_category_path(alias.category, alias.template)
 
     return None
 
@@ -216,10 +221,10 @@ def render_exception(error):
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for forced .php redirects) """
 
-    redir = path_alias.get_redirect('/' + path)
-    if not redir:
-        raise http_error.NotFound("Path redirection not found")
-    return redir
+    result = handle_path_alias(path)
+    if result:
+        return result
+    raise http_error.NotFound("Path redirection not found")
 
 
 @orm.db_session(retry=5)
@@ -234,19 +239,27 @@ def render_category(category='', template=None):
     # pylint:disable=too-many-return-statements
 
     # See if this is an aliased path
-    redir = get_redirect()
-    if redir:
-        return redir
+    result = handle_path_alias()
+    if result:
+        return result
 
     # Forbidden template types
     if template in ['entry', 'error', 'login', 'unauthorized', 'logout']:
         LOGGER.info("Attempted to render special template %s", template)
         raise http_error.Forbidden("Invalid view requested")
 
+    return render_category_path(category, template)
+
+
+def render_category_path(category: str, template: typing.Optional[str]):
+    """ Renders the actual category by path """
+
     if category:
         # See if there's any entries for the view...
-        if not orm.select(e for e in model.Entry if e.category == category or
-                          e.category.startswith(category + '/')):
+        if not orm.select(e for e in model.Entry  # type:ignore
+                          if (e.category == category
+                              or e.category.startswith(category + '/'))
+                          and e.visible):
             raise http_error.NotFound("No such category")
 
     if not template:
@@ -259,9 +272,14 @@ def render_category(category='', template=None):
         test_path = '/'.join((category, template)) if category else template
         LOGGER.debug("Checking for malformed category %s", test_path)
         record = orm.select(
-            e for e in model.Entry if e.category == test_path).exists()
+            e for e in model.Entry if e.category == test_path).exists()  # type:ignore
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
+
+        # could be a path alias
+        result = handle_path_alias()
+        if result:
+            return result
 
         # nope, we just don't know what this is
         raise http_error.NotFound(
@@ -335,20 +353,26 @@ def _check_authorization(record, category):
 
 def _check_canon_entry_url(record):
     """ Check to see if an entry is being requested at its canonical URL """
-    canon_url = url_for('entry',
-                        entry_id=record.id,
-                        category=record.category,
-                        slug_text=record.slug_text if record.slug_text else None,
-                        _external=True,
-                        **request.args)
+    if record.canonical_path:
+        canon_url = url_for('category',
+                            template=record.canonical_path,
+                            _external=True,
+                            **request.args)
+    else:
+        canon_url = url_for('entry',
+                            entry_id=record.id,
+                            category=record.category,
+                            slug_text=record.slug_text if record.slug_text else None,
+                            _external=True,
+                            **request.args)
 
     LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
 
     if request.url != canon_url:
         # This could still be a redirected path...
-        path_redirect = get_redirect()
-        if path_redirect:
-            return path_redirect
+        result = handle_path_alias()
+        if result:
+            return result
 
         # Redirect to the canonical URL
         return redirect(canon_url)
@@ -371,25 +395,27 @@ def render_entry(entry_id, slug_text='', category=''):
 
     # check if it's a valid entry
     record = model.Entry.get(id=entry_id)
-    if not record:
-        # It's not a valid entry, so see if it's a redirection
-        path_redirect = get_redirect()
-        if path_redirect:
-            return path_redirect
-
-        LOGGER.info("Attempted to retrieve nonexistent entry %d", entry_id)
-        raise http_error.NotFound("No such entry")
 
     # see if the file still exists
     if not os.path.isfile(record.file_path):
         expire_record(record)
+        record = None
 
-        # See if there's a redirection
-        path_redirect = get_redirect()
-        if path_redirect:
-            return path_redirect
+    if not record:
+        # It's not a valid entry, so see if it's a redirection
+        result = handle_path_alias()
+        if result:
+            return result
 
+        LOGGER.info("Attempted to retrieve nonexistent entry %d", entry_id)
         raise http_error.NotFound("No such entry")
+
+    return render_entry_record(record, category, None)
+
+
+def render_entry_record(record: model.Entry, category: str, template: typing.Optional[str],
+                        _mounted=False):
+    """ Render an entry object """
 
     # Show an access denied error if the entry has been set to draft mode
     if record.status == model.PublishStatus.DRAFT.value:
@@ -404,9 +430,10 @@ def render_entry(entry_id, slug_text='', category=''):
         return result
 
     # check if the canonical URL matches
-    result = _check_canon_entry_url(record)
-    if result:
-        return result
+    if not _mounted:
+        result = _check_canon_entry_url(record)
+        if result:
+            return result
 
     # if the entry canonically redirects, do that now
     if record.redirect_url:
@@ -417,7 +444,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     # does the entry-id header mismatch? If so the old one is invalid
     try:
-        current_id = int(entry_obj.get('Entry-ID'))
+        current_id: typing.Optional[int] = int(entry_obj.get('Entry-ID'))  # type:ignore
     except (KeyError, TypeError, ValueError) as err:
         LOGGER.debug("Error checking entry ID: %s", err)
         current_id = None
@@ -428,9 +455,10 @@ def render_entry(entry_id, slug_text='', category=''):
         from .entry import scan_file
         scan_file(entry_obj.file_path, None, True)
 
-        return redirect(url_for('entry', entry_id=entry_id))
+        return redirect(url_for('entry', entry_id=record.id))
 
-    entry_template = (entry_obj.get('Entry-Template')
+    entry_template = (template
+                      or entry_obj.get('Entry-Template')
                       or Category(category).get('Entry-Template')
                       or 'entry')
 
