@@ -5,6 +5,7 @@ Path-Alias: /alias/p3 archive
 Path-Mount: /alias/p1m
 Path-Mount: /alias/p2m index
 Path-Mount: /alias/p3m archive
+Path-Mount: /alias/style.css style.css
 
 [/alias/p1](/alias/p1) and [/alias/p2](/alias/p2) should redirect to this category.
 

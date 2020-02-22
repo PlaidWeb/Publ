@@ -80,8 +80,6 @@ class Entry(DbEntity):
     auth = orm.Set("EntryAuth")
     auth_log = orm.Set("AuthLog")
 
-    entry_template = orm.Optional(str)  # maps to Entry-Template
-
     orm.composite_index(category, entry_type, utc_date)
     orm.composite_index(category, entry_type, local_date)
     orm.composite_index(category, entry_type, sort_title)

@@ -28,6 +28,9 @@ def set_alias(alias: str, alias_type: model.AliasType, **kwargs) -> model.PathAl
     spec = alias.split()
     path = spec[0]
 
+    if not path or path[0] != '/':
+        path = '/' + path
+
     values = {
         **kwargs,
         'path': path,
