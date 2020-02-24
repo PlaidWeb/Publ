@@ -9,10 +9,10 @@
 <h2>Tag browser</h2>
 
     <ul>
-        {% for name,count in category.tags(recurse=True)|sort(attribute='count',reverse=True) %}
+        {% for name,count in category.tags(recurse=True,tag=view.tags,tag_filter='ALL')|sort(attribute='count',reverse=True) %}
         <li><a href="{{view(tag=name)}}">{{name}}</a> {{count}}
-            [<a href="{{view.tag_add(name)}}">+</a>]
-            [<a href="{{view.tag_remove(name)}}">-</a>]
+            {% if name not in view.tags %}[<a href="{{view.tag_add(name)}}">+</a>]{% endif %}
+            {% if name in view.tags %}[<a href="{{view.tag_remove(name)}}">-</a>]{% endif %}
             [<a href="{{view.tag_toggle(name)}}">x</a>]
 
         </li>
@@ -21,7 +21,7 @@
 
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
-{% for filter in ('ANY', 'ALL', 'NOT') %}
+{% for filter in ('ALL', 'ANY', 'NOT') %}
 
 <h3><code>tags_filter='{{filter}}'</code></h3>
 
