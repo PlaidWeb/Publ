@@ -21,8 +21,12 @@
 
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
+{% for filter in ('ANY', 'ALL', 'NOT') %}
+
+<h3><code>tags_filter='{{filter}}'</code></h3>
+
 <ul>
-{% for entry in view(recurse=True).entries %}
+{% for entry in view(recurse=True,tag_filter=filter).entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
     {% for tag in entry.get_all('Tag') %}
     <li><a href="{{view.tag_toggle(tag).link}}">{{ tag }}</a></li>
@@ -32,6 +36,9 @@
 {% if view.previous %}<li><a href="{{view.previous.link}}">previous</a></li>{% endif %}
 {% if view.next %}<a href="{{view.next.link}}">next</a>{% endif %}
 </ul>
+
+{% endfor %}
+
 
 {% for restrict in ['foo',['hello','bar']] %}
 {% set other = view(tag=restrict,recurse=True) %}
