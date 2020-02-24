@@ -276,11 +276,6 @@ def render_category_path(category: str, template: typing.Optional[str]):
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
 
-        # could be a path alias
-        result = handle_path_alias()
-        if result:
-            return result
-
         # nope, we just don't know what this is
         raise http_error.NotFound(
             "No such view '{template}'".format(template=template))
