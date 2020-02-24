@@ -23,7 +23,7 @@
 
 {% for filter in ('ALL', 'ANY', 'NOT') %}
 
-<h3><code>tags_filter='{{filter}}'</code></h3>
+<h3><code>tag_filter='{{filter}}'</code></h3>
 
 <ul>
 {% for entry in view(recurse=True,tag_filter=filter).entries %}

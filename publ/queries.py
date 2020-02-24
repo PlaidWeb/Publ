@@ -12,6 +12,7 @@ from . import model, utils
 class InvalidQueryError(RuntimeError):
     """ An exception to raise if a query is invalid """
 
+
 class FilterCombiner(Enum):
     """ Which operation to use when combining multiple operations in a filter """
     ANY = 0     # any of the criteria are present
@@ -153,7 +154,7 @@ def where_entry_type_not(query, entry_type):
     return query.filter(lambda e: e.entry_type != entry_type)
 
 
-def where_entry_tag(query, tags, operation : FilterCombiner):
+def where_entry_tag(query, tags, operation: FilterCombiner):
     """ Generate a where clause for entries with the given tags """
     tags = [t.lower() for t in utils.as_list(tags)]
 
@@ -170,7 +171,8 @@ def where_entry_tag(query, tags, operation : FilterCombiner):
             query = query.filter(lambda e: not orm.exists(t for t in e.tags if t.key == tag))
         return query
 
-    raise InvalidQueryError("Unsupported FilterCombiner " + operation)
+    raise InvalidQueryError("Unsupported FilterCombiner " + str(operation))
+
 
 def where_entry_date(query, datespec):
     """ Where clause for entries which match a textual date spec
@@ -240,7 +242,7 @@ def build_query(spec):
 
     if spec.get('tag') is not None:
         query = where_entry_tag(query, spec['tag'],
-            FilterCombiner[spec.get('tag_filter', 'ANY').upper()])
+                                FilterCombiner[spec.get('tag_filter', 'ANY').upper()])
 
     if spec.get('date') is not None:
         query = where_entry_date(query, spec['date'])
