@@ -1,6 +1,8 @@
 # queries.py
 """ Collection of commonly-used queries """
 
+from enum import Enum
+
 import arrow
 from pony import orm
 
@@ -9,6 +11,18 @@ from . import model, utils
 
 class InvalidQueryError(RuntimeError):
     """ An exception to raise if a query is invalid """
+
+
+class FilterCombiner(Enum):
+    """ Which operation to use when combining multiple operations in a filter """
+    ANY = 0     # any of the criteria are present
+    OR = 0      # synonym for ANY
+
+    ALL = 1     # all of the criteria are present
+    AND = 1     # synonym for ALL
+
+    NONE = 2    # none of the criteria are present
+    NOT = 2     # synonym for NONE
 
 
 def where_entry_visible(query, date=None):
@@ -140,12 +154,24 @@ def where_entry_type_not(query, entry_type):
     return query.filter(lambda e: e.entry_type != entry_type)
 
 
-def where_entry_tag(query, tag):
-    """ Generate a where clause for entries with the given tag """
-    if utils.is_list(tag):
-        tags = [t.lower() for t in tag]
-        return orm.select(e for e in query for t in e.tags if t.key in tags)
-    return orm.select(e for e in query for t in e.tags if t.key == tag.lower())
+def where_entry_tag(query, tags, operation: FilterCombiner):
+    """ Generate a where clause for entries with the given tags """
+    tags = [t.lower() for t in utils.as_list(tags)]
+
+    if operation == FilterCombiner.ANY:
+        return query.filter(lambda e: orm.exists(t for t in e.tags if t.key in tags))
+
+    if operation == FilterCombiner.ALL:
+        for tag in tags:
+            query = query.filter(lambda e: orm.exists(t for t in e.tags if t.key == tag))
+        return query
+
+    if operation == FilterCombiner.NONE:
+        for tag in tags:
+            query = query.filter(lambda e: not orm.exists(t for t in e.tags if t.key == tag))
+        return query
+
+    raise InvalidQueryError("Unsupported FilterCombiner " + str(operation))
 
 
 def where_entry_date(query, datespec):
@@ -215,7 +241,8 @@ def build_query(spec):
         query = where_entry_type_not(query, spec['entry_type_not'])
 
     if spec.get('tag') is not None:
-        query = where_entry_tag(query, spec['tag'])
+        query = where_entry_tag(query, spec['tag'],
+                                FilterCombiner[spec.get('tag_filter', 'ANY').upper()])
 
     if spec.get('date') is not None:
         query = where_entry_date(query, spec['date'])

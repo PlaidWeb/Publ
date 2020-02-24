@@ -9,10 +9,10 @@
 <h2>Tag browser</h2>
 
     <ul>
-        {% for name,count in category.tags(recurse=True)|sort(attribute='count',reverse=True) %}
+        {% for name,count in category.tags(recurse=True,tag=view.tags,tag_filter='ALL')|sort(attribute='count',reverse=True) %}
         <li><a href="{{view(tag=name)}}">{{name}}</a> {{count}}
-            [<a href="{{view.tag_add(name)}}">+</a>]
-            [<a href="{{view.tag_remove(name)}}">-</a>]
+            {% if name not in view.tags %}[<a href="{{view.tag_add(name)}}">+</a>]{% endif %}
+            {% if name in view.tags %}[<a href="{{view.tag_remove(name)}}">-</a>]{% endif %}
             [<a href="{{view.tag_toggle(name)}}">x</a>]
 
         </li>
@@ -21,8 +21,12 @@
 
 <h2>Current tags: <code>{{view.tags}}</code></h2>
 
+{% for filter in ('ALL', 'ANY', 'NOT') %}
+
+<h3><code>tag_filter='{{filter}}'</code></h3>
+
 <ul>
-{% for entry in view(recurse=True).entries %}
+{% for entry in view(recurse=True,tag_filter=filter).entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
     {% for tag in entry.get_all('Tag') %}
     <li><a href="{{view.tag_toggle(tag).link}}">{{ tag }}</a></li>
@@ -32,6 +36,9 @@
 {% if view.previous %}<li><a href="{{view.previous.link}}">previous</a></li>{% endif %}
 {% if view.next %}<a href="{{view.next.link}}">next</a>{% endif %}
 </ul>
+
+{% endfor %}
+
 
 {% for restrict in ['foo',['hello','bar']] %}
 {% set other = view(tag=restrict,recurse=True) %}
