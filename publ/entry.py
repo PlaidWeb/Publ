@@ -804,7 +804,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
 
     with orm.db_session:
         set_tags = {
-            t.lower(): t
+            t.casefold(): t
             for t in entry.get_all('Tag', [])
             + entry.get_all('Hidden-Tag', [])
         }

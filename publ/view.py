@@ -464,15 +464,24 @@ class View(caching.Memoizable):
 
     def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
-        return View({**self.spec, 'tag': list(set(self.tags) | set(tags))})
+        return View({**self.spec,
+            'tag': list({v.casefold(): v for v in set(self.tags) | set(tags)}.values())})
 
     def tag_remove(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags removed """
-        return View({**self.spec, 'tag': list(set(self.tags) - set(tags))})
+        remove = {t.casefold() for t in tags}
+        return View({**self.spec,
+            'tag': list({v for v in set(self.tags) if v not in remove_lower}.values())})
 
     def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
-        return View({**self.spec, 'tag': list(set(self.tags) ^ set(tags))})
+        mine = {t.casefold() for t in self.tags}
+        other = {t.casefold() for t in tags}
+        either = {t.casefold(): t for t in set(self.tags) | set(tags)}.values()
+        return View({**self.spec,
+            'tag': [t for t in either
+            if (t.casefold() in mine) != (t.casefold() in other)]
+            })
 
 
 def get_view(**kwargs) -> View:
