@@ -18,7 +18,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 class GlobalConfig(DbEntity):
@@ -122,11 +122,10 @@ class Entry(DbEntity):
 
 class EntryTag(DbEntity):
     """ Tags for an entry """
-    entry = orm.Required(Entry)
-    key = orm.Required(str)  # the search key
+    key = orm.PrimaryKey(str)
+    name = orm.Required(str)
 
-    orm.composite_key(entry, key)
-    orm.composite_key(key, entry)
+    entries = orm.Set(Entry)
 
 
 class Category(DbEntity):

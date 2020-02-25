@@ -1,5 +1,5 @@
 Title: Subcategory entry
-Tag: foo
+Tag: Foo
 Tag: moo
 Tag: hello
 Tag: meow

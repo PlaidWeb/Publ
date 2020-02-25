@@ -804,18 +804,35 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
 
     with orm.db_session:
         set_tags = {
-            t.lower()
+            t.lower(): t
             for t in entry.get_all('Tag', [])
             + entry.get_all('Hidden-Tag', [])
         }
+        LOGGER.debug("set_tags %s", set_tags)
+        remove_tags = []
 
         for tag in record.tags:
-            if tag.key in set_tags:
-                set_tags.remove(tag.key)
-            else:
+            LOGGER.debug("  has tag %s,%s", tag.key, tag.name)
+            if tag.key not in set_tags:
+                remove_tags.append(tag)
+        LOGGER.debug("set_tags %s remove_tags %s", set_tags, remove_tags)
+
+        for tag in remove_tags:
+            record.tags.remove(tag)
+            if len(tag.entries) == 0:
+                LOGGER.debug("tag %s/%s entry count went to 0", tag.key, tag.name)
                 tag.delete()
-        for tag in set_tags:
-            model.EntryTag(entry=record, key=tag)
+
+        for (key,name) in set_tags.items():
+            tag_record = model.EntryTag.get(key=key)
+            if not tag_record:
+                LOGGER.debug("creating tag %s/%s", key, name)
+                tag_record = model.EntryTag(key=key,name=name)
+            elif name != tag_record.name:
+                LOGGER.debug("updating tag name %s/%s -> %s", key, tag_record.name, name)
+                tag_record.name = name
+            record.tags.add(tag_record)
+
         orm.commit()
 
     if record.status == model.PublishStatus.DRAFT.value:
