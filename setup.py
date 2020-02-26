@@ -77,10 +77,12 @@ setup(
 
     extras_require={'dev': [
         'autopep8',
+        'coverage',
         'flake8',
         'isort',
         'mypy',
         'pylint',
+        'pytest',
         'twine',
     ]},
 

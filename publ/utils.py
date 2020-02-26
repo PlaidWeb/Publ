@@ -456,11 +456,38 @@ class TagSet:
     def __or__(self, other):
         return TagSet([k for k in self] + [k for k in other])
 
+    @staticmethod
+    def _fold(items):
+        return {k.casefold() for k in items}
+
     def __and__(self, other):
-        return TagSet((k for k in self if k in other))
+        folded = self._fold(other)
+        return TagSet((k for k in self if k.casefold() in folded))
 
     def __xor__(self, other):
-        return TagSet((k for k in self | other if (k in self) != (k in other)))
+        folded = self._fold(self) ^ self._fold(other)
+        return TagSet((k for k in self | other if k.casefold() in folded))
 
     def __sub__(self, other):
-        return TagSet((k for k in self if k not in other))
+        folded = self._fold(other)
+        return TagSet((k for k in self if k.casefold() not in folded))
+
+    def __len__(self):
+        return len(self._values)
+
+    def __bool__(self, other):
+        return bool(self._values)
+
+    def __eq__(self, other):
+        folded = self._fold(other)
+        return self._keys == folded
+
+    def __ne__(self, other):
+        folded = self._fold(other)
+        return self._keys != folded
+
+    def __le__(self, other):
+        return self._fold(self) <= self._fold(other)
+
+    def __lt__(self, other):
+        return self._fold(self) < self._fold(other)

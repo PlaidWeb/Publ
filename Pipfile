@@ -11,6 +11,8 @@ autopep8 = "*"
 isort = "*"
 mypy = "*"
 python-memcached = "*"
+pytest = "*"
+coverage = "*"
 
 [packages]
 publ = {editable = true,path = "."}
