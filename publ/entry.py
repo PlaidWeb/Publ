@@ -47,7 +47,7 @@ class Entry(caching.Memoizable):
 
         self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
         LOGGER.debug('loaded entry %d, fingerprint=%s', record.id,
-            self._fingerprint.fingerprint if self._fingerprint else None)
+                     self._fingerprint.fingerprint if self._fingerprint else None)
 
         # maps (section,footnotes_enabled) -> toc/footnote counter
         self._counters: typing.Dict[typing.Tuple[str, bool], markdown.ItemCounter] = {}

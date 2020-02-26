@@ -1,4 +1,4 @@
-all: setup format mypy test pylint flake8
+all: setup format mypy cov pylint flake8
 
 .PHONY: setup
 	pipenv run which coverage || pipenv install --dev
