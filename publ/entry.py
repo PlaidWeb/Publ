@@ -12,12 +12,13 @@ import uuid
 
 import arrow
 import flask
+import slugify
 from pony import orm
 from werkzeug.utils import cached_property
 
 from . import (caching, cards, config, html_entry, links, markdown, model,
                path_alias, queries, tokens, user, utils)
-from .utils import CallableProxy, CallableValue, TrueCallableProxy, make_slug
+from .utils import CallableProxy, CallableValue, TrueCallableProxy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -729,7 +730,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
         'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
         'entry_type': entry.get('Entry-Type', ''),
-        'slug_text': make_slug(entry.get('Slug-Text', title)),
+        'slug_text': slugify.slugify(entry.get('Slug-Text', title)),
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),

@@ -12,7 +12,6 @@ import urllib.parse
 
 import arrow
 import flask
-import slugify
 import werkzeug.routing
 
 from . import config
@@ -159,11 +158,6 @@ def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typin
             return candidate
 
     return None
-
-
-def make_slug(title: str) -> str:
-    """ convert a title into a URL-friendly slug """
-    return slugify.slugify(title)
 
 
 def static_url(path: str, absolute: bool = False) -> str:
