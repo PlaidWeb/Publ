@@ -230,7 +230,7 @@ class Category(caching.Memoizable):
         """
         def _tags(**spec) -> typing.List[TagCount]:
             entries = self._entries(spec)
-            tags = orm.select((tag.key, orm.count(tag.key, distinct=False))
+            tags = orm.select((tag.name, orm.count(tag.key, distinct=False))
                               for e in entries for tag in e.tags)
             return [TagCount(key, count) for (key, count) in tags]
         return utils.CallableProxy(_tags)

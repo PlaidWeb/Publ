@@ -228,10 +228,14 @@ def make_tag(name: str,
 
 def file_fingerprint(fullpath: str) -> str:
     """ Get a metadata fingerprint for a file """
-    stat = os.stat(fullpath)
-    return ','.join([str(value)
-                     for value in [stat.st_ino, stat.st_mtime, stat.st_size]
-                     if value])
+    try:
+        stat = os.stat(fullpath)
+        return ','.join([str(value)
+                         for value in [stat.st_ino, stat.st_mtime, stat.st_size]
+                         if value])
+    except FileNotFoundError:
+        LOGGER.warning("Attempted to get fingerprint of nonexistent file %s", fullpath)
+        return ''
 
 
 def remap_args(input_args: typing.Dict[str, typing.Any],
@@ -332,7 +336,7 @@ def prefix_normalize(kwargs: ArgDict) -> ArgDict:
 
 def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
-    return isinstance(item, (list, tuple, set))
+    return isinstance(item, (list, tuple, set, TagSet))
 
 
 def as_list(item: typing.Any) -> ListLike:
@@ -430,3 +434,66 @@ def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
     if isinstance(argument, str):
         return tuple(type_func(p.strip()) for p in argument.split(','))
     return argument
+
+
+class TagSet(typing.Set[str]):
+    """ A frozenset-equivalent class that is case-insensitive """
+
+    def __init__(self, contents: ListLike[str] = None):
+        storage = {v.casefold(): v for v in contents} if contents else {}
+        self._keys = frozenset(storage.keys())
+        self._values = frozenset(storage.values())
+
+    def __contains__(self, key) -> bool:
+        return key.casefold() in self._keys
+
+    def __iter__(self):
+        return self._values.__iter__()
+
+    def __hash__(self):
+        return hash(self._keys)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__, set(self._values))
+
+    def __str__(self):
+        return str(set(self._values))
+
+    def __or__(self, other):
+        return TagSet(list(self) + list(other))
+
+    @staticmethod
+    def _fold(items):
+        return {k.casefold() for k in items}
+
+    def __and__(self, other):
+        folded = self._fold(other)
+        return TagSet((k for k in self if k.casefold() in folded))
+
+    def __xor__(self, other):
+        folded = self._fold(self) ^ self._fold(other)
+        return TagSet((k for k in self | other if k.casefold() in folded))
+
+    def __sub__(self, other):
+        folded = self._fold(other)
+        return TagSet((k for k in self if k.casefold() not in folded))
+
+    def __len__(self):
+        return len(self._values)
+
+    def __bool__(self):
+        return bool(self._values)
+
+    def __eq__(self, other):
+        folded = self._fold(other)
+        return self._keys == folded
+
+    def __ne__(self, other):
+        folded = self._fold(other)
+        return self._keys != folded
+
+    def __le__(self, other):
+        return self._fold(self) <= self._fold(other)
+
+    def __lt__(self, other):
+        return self._fold(self) < self._fold(other)

@@ -325,8 +325,9 @@ class View(caching.Memoizable):
                                 "key {} is of type {}".format(k, type(val)))
                         break
 
-            if 'tag' in self.spec:
-                args['tag'] = self.spec['tag']
+            taglist = self.spec.get('tag')
+            if taglist:
+                args['tag'] = taglist if isinstance(taglist, str) else list(taglist)
 
             return flask.url_for('category',
                                  **args,
@@ -339,10 +340,10 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_link)
 
     @cached_property
-    def tags(self) -> utils.ListLike[str]:
+    def tags(self) -> utils.TagSet:
         """ Returns a list of all the tags applied to this view """
         tag_list = self.spec.get('tag', [])
-        return utils.as_list(tag_list)
+        return utils.TagSet(utils.as_list(tag_list))
 
     @cached_property
     def current(self) -> typing.Callable[..., 'View']:
@@ -464,15 +465,15 @@ class View(caching.Memoizable):
 
     def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
-        return View({**self.spec, 'tag': list(set(self.tags) | set(tags))})
+        return View({**self.spec, 'tag': self.tags | set(tags)})
 
     def tag_remove(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags removed """
-        return View({**self.spec, 'tag': list(set(self.tags) - set(tags))})
+        return View({**self.spec, 'tag': self.tags - set(tags)})
 
     def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
-        return View({**self.spec, 'tag': list(set(self.tags) ^ set(tags))})
+        return View({**self.spec, 'tag': self.tags ^ set(tags)})
 
 
 def get_view(**kwargs) -> View:

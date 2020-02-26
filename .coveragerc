@@ -1,0 +1,3 @@
+[run]
+source=publ/
+omit=*/.local/*
