@@ -823,11 +823,11 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
                 LOGGER.debug("tag %s/%s entry count went to 0", tag.key, tag.name)
                 tag.delete()
 
-        for (key,name) in set_tags.items():
+        for (key, name) in set_tags.items():
             tag_record = model.EntryTag.get(key=key)
             if not tag_record:
                 LOGGER.debug("creating tag %s/%s", key, name)
-                tag_record = model.EntryTag(key=key,name=name)
+                tag_record = model.EntryTag(key=key, name=name)
             elif name != tag_record.name:
                 LOGGER.debug("updating tag name %s/%s -> %s", key, tag_record.name, name)
                 tag_record.name = name

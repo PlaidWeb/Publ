@@ -1,4 +1,4 @@
-all: setup format mypy pylint flake8
+all: setup format mypy test pylint flake8
 
 .PHONY: setup
 	pipenv run which coverage || pipenv install --dev
@@ -10,7 +10,7 @@ format:
 
 .PHONY: pylint
 pylint:
-	pipenv run pylint publ pytests
+	pipenv run pylint publ tests
 
 .PHONY: flake8
 flake8:
@@ -18,7 +18,7 @@ flake8:
 
 .PHONY: mypy
 mypy:
-	pipenv run mypy -p publ -m tests -m pytests --ignore-missing-imports
+	pipenv run mypy -p publ -m tests --ignore-missing-imports
 
 .PHONY: preflight
 preflight:
@@ -38,12 +38,12 @@ preflight:
 
 .PHONY: test
 test:
-	pipenv run coverage run -p --omit='*/.local/*' -m pytest pytests -Werror
+	pipenv run coverage run -m pytest -Werror
 
 .PHONY: cov
 cov: test
-	pipenv run coverage report -m
 	pipenv run coverage html
+	pipenv run coverage report
 
 .PHONY: build
 build: preflight pylint flake8
@@ -52,7 +52,7 @@ build: preflight pylint flake8
 
 .PHONY: clean
 clean:
-	rm -rf build dist .mypy_cache
+	rm -rf build dist
 
 .PHONY: upload
 upload: clean test build

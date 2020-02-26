@@ -1,3 +1,6 @@
+""" Smoke test site runner """
+# pylint:disable=invalid-name
+
 import logging
 import os
 
@@ -14,11 +17,11 @@ logging.basicConfig(level=logging.DEBUG)
 config = {
     'database_config': {
         'provider': 'sqlite',
-        'filename': os.path.join(APP_PATH, 'index.db')
+        'filename': os.path.join(APP_PATH, '..', 'index.db')
     },
-    'content_folder': 'tests/content',
-    'template_folder': 'tests/templates',
-    'static_folder': 'tests/static',
+    'content_folder': 'content',
+    'template_folder': 'templates',
+    'static_folder': 'static',
     'cache': {
         'CACHE_TYPE': os.environ['TEST_CACHING'],
         'CACHE_DEFAULT_TIMEOUT': 600,
@@ -42,7 +45,7 @@ config = {
         'EMAIL_SUBJECT': 'Log in to authl test',
         'EMAIL_CHECK_MESSAGE': 'Use the link printed to the test console',
     },
-    'user_list': 'tests/users.cfg',
+    'user_list': 'users.cfg',
 }
 
 app = publ.Publ(__name__, config)
@@ -51,6 +54,7 @@ app.secret_key = "We are insecure"
 
 @app.route('/favicon.<ext>')
 def favicon(ext):
+    """ render a favicon """
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
     img, _ = logo.get_rendition(format=ext, width=128, height=128, resize='fill')
     return flask.redirect(img)

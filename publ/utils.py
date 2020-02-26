@@ -228,10 +228,14 @@ def make_tag(name: str,
 
 def file_fingerprint(fullpath: str) -> str:
     """ Get a metadata fingerprint for a file """
-    stat = os.stat(fullpath)
-    return ','.join([str(value)
-                     for value in [stat.st_ino, stat.st_mtime, stat.st_size]
-                     if value])
+    try:
+        stat = os.stat(fullpath)
+        return ','.join([str(value)
+                         for value in [stat.st_ino, stat.st_mtime, stat.st_size]
+                         if value])
+    except FileNotFoundError:
+        LOGGER.warning("Attempted to get fingerprint of nonexistent file %s", fullpath)
+        return ''
 
 
 def remap_args(input_args: typing.Dict[str, typing.Any],
@@ -431,14 +435,16 @@ def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
         return tuple(type_func(p.strip()) for p in argument.split(','))
     return argument
 
-class TagSet:
+
+class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
-    def __init__(self, contents: ListLike[str]):
-        storage = {v.casefold():v for v in contents}
+
+    def __init__(self, contents: ListLike[str] = None):
+        storage = {v.casefold(): v for v in contents} if contents else {}
         self._keys = frozenset(storage.keys())
         self._values = frozenset(storage.values())
 
-    def __contains__(self, key:str) -> bool:
+    def __contains__(self, key) -> bool:
         return key.casefold() in self._keys
 
     def __iter__(self):
@@ -454,7 +460,7 @@ class TagSet:
         return str(set(self._values))
 
     def __or__(self, other):
-        return TagSet([k for k in self] + [k for k in other])
+        return TagSet(list(self) + list(other))
 
     @staticmethod
     def _fold(items):
@@ -475,7 +481,7 @@ class TagSet:
     def __len__(self):
         return len(self._values)
 
-    def __bool__(self, other):
+    def __bool__(self):
         return bool(self._values)
 
     def __eq__(self, other):

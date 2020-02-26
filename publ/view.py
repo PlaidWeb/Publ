@@ -340,11 +340,8 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_link)
 
     @cached_property
-    def tags(self) -> utils.ListLike[str]:
+    def tags(self) -> utils.TagSet:
         """ Returns a list of all the tags applied to this view """
-        # TODO: this should return a Set[str] that is case-insensitive for membership tests
-        # it could be backed with a dict that maps item.casefold():item, and where the
-        # __iter__ returns the dict's .values()
         tag_list = self.spec.get('tag', [])
         return utils.TagSet(utils.as_list(tag_list))
 
@@ -477,7 +474,6 @@ class View(caching.Memoizable):
     def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
         return View({**self.spec, 'tag': self.tags ^ set(tags)})
-
 
 
 def get_view(**kwargs) -> View:
