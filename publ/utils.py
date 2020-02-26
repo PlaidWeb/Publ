@@ -332,7 +332,7 @@ def prefix_normalize(kwargs: ArgDict) -> ArgDict:
 
 def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
-    return isinstance(item, (list, tuple, set))
+    return isinstance(item, (list, tuple, set, TagSet))
 
 
 def as_list(item: typing.Any) -> ListLike:
@@ -430,3 +430,37 @@ def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
     if isinstance(argument, str):
         return tuple(type_func(p.strip()) for p in argument.split(','))
     return argument
+
+class TagSet:
+    """ A frozenset-equivalent class that is case-insensitive """
+    def __init__(self, contents: ListLike[str]):
+        storage = {v.casefold():v for v in contents}
+        self._keys = frozenset(storage.keys())
+        self._values = frozenset(storage.values())
+
+    def __contains__(self, key:str) -> bool:
+        return key.casefold() in self._keys
+
+    def __iter__(self):
+        return self._values.__iter__()
+
+    def __hash__(self):
+        return hash(self._keys)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__, set(self._values))
+
+    def __str__(self):
+        return str(set(self._values))
+
+    def __or__(self, other):
+        return TagSet([k for k in self] + [k for k in other])
+
+    def __and__(self, other):
+        return TagSet((k for k in self if k in other))
+
+    def __xor__(self, other):
+        return TagSet((k for k in self | other if (k in self) != (k in other)))
+
+    def __sub__(self, other):
+        return TagSet((k for k in self if k not in other))

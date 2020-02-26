@@ -325,8 +325,9 @@ class View(caching.Memoizable):
                                 "key {} is of type {}".format(k, type(val)))
                         break
 
-            if 'tag' in self.spec:
-                args['tag'] = self.spec['tag']
+            taglist = self.spec.get('tag')
+            if taglist:
+                args['tag'] = taglist if isinstance(taglist, str) else list(taglist)
 
             return flask.url_for('category',
                                  **args,
@@ -341,8 +342,11 @@ class View(caching.Memoizable):
     @cached_property
     def tags(self) -> utils.ListLike[str]:
         """ Returns a list of all the tags applied to this view """
+        # TODO: this should return a Set[str] that is case-insensitive for membership tests
+        # it could be backed with a dict that maps item.casefold():item, and where the
+        # __iter__ returns the dict's .values()
         tag_list = self.spec.get('tag', [])
-        return utils.as_list(tag_list)
+        return utils.TagSet(utils.as_list(tag_list))
 
     @cached_property
     def current(self) -> typing.Callable[..., 'View']:
@@ -464,24 +468,16 @@ class View(caching.Memoizable):
 
     def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
-        return View({**self.spec,
-            'tag': list({v.casefold(): v for v in set(self.tags) | set(tags)}.values())})
+        return View({**self.spec, 'tag': self.tags | set(tags)})
 
     def tag_remove(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags removed """
-        remove = {t.casefold() for t in tags}
-        return View({**self.spec,
-            'tag': list({v for v in set(self.tags) if v not in remove_lower}.values())})
+        return View({**self.spec, 'tag': self.tags - set(tags)})
 
     def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
-        mine = {t.casefold() for t in self.tags}
-        other = {t.casefold() for t in tags}
-        either = {t.casefold(): t for t in set(self.tags) | set(tags)}.values()
-        return View({**self.spec,
-            'tag': [t for t in either
-            if (t.casefold() in mine) != (t.casefold() in other)]
-            })
+        return View({**self.spec, 'tag': self.tags ^ set(tags)})
+
 
 
 def get_view(**kwargs) -> View:
