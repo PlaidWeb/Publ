@@ -1,6 +1,7 @@
 """ tests of publ.utils class """
 
 import flask
+import pytest
 
 from publ import utils
 
@@ -169,3 +170,53 @@ def test_tagset_operators():
     assert not TagSet(('a', 's', 'd')) < TagSet(('a', 's', 'd'))
     assert not TagSet(('a', 's', 'd')) < TagSet(('q', 'w', 'e'))
     assert not TagSet(('a', 's', 'd')) <= TagSet(('q', 'w', 'e'))
+
+
+def test_parse_tuple_string():
+    """ test of parse_tuple_string() """
+    assert utils.parse_tuple_string((1, 2, 3)) == (1, 2, 3)
+    assert utils.parse_tuple_string([1, 2, 3]) == (1, 2, 3)
+    assert utils.parse_tuple_string("1,2,3") == (1, 2, 3)
+    assert utils.parse_tuple_string("a,,", bool) == (True, False, False)
+    with pytest.raises(Exception):
+        utils.parse_tuple_string("a,b,c", float)
+
+
+def test_make_tag():
+    """ test of utils.make_tag """
+
+    assert utils.make_tag('a', {'href': 'foo'}, False) == '<a href="foo">'
+    assert utils.make_tag('a',
+                          [('href', 'foo'), ('href', 'bar')],
+                          True) == '<a href="foo" href="bar" />'
+    with pytest.raises(Exception):
+        utils.make_tag('a', (('href', 'foo')))
+
+    app = flask.Flask(__name__)
+    with app.test_request_context():
+        proxy = utils.CallableValue("<hello>")
+        assert utils.make_tag('a', {'href': proxy}) == '<a href="&lt;hello&gt;">'
+
+    escaped = flask.Markup("&amp;")
+    assert utils.make_tag('a', {'href': escaped}) == '<a href="&amp;">'
+
+
+def test_listlike():
+    """ test functions involving the ListLike inference class """
+    assert utils.is_list((1, 2, 3))
+    assert utils.is_list([])
+    assert utils.is_list([1, 2, 3])
+    assert utils.is_list({1, 2, 3})
+    assert utils.is_list(frozenset((1, 2, 3)))
+    assert utils.is_list(utils.TagSet(('1', '2', 'A', 'a')))
+    assert not utils.is_list("")
+    assert not utils.is_list("foo")
+    assert not utils.is_list(123)
+    assert not utils.is_list(True)
+    assert not utils.is_list(None)
+
+    assert utils.as_list([1, 2, 3]) == [1, 2, 3]
+    assert utils.as_list((1, 2, 3)) == (1, 2, 3)
+    assert utils.as_list("foo") == ("foo",)
+    assert utils.as_list(True) == (True,)
+    assert utils.as_list(None) == ()

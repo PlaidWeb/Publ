@@ -328,7 +328,7 @@ def prefix_normalize(kwargs: ArgDict) -> ArgDict:
 
 def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
-    return isinstance(item, (list, tuple, set, TagSet))
+    return getattr(item, '__iter__', None) and not isinstance(item, str)
 
 
 def as_list(item: typing.Any) -> ListLike:
@@ -421,11 +421,12 @@ def stash(key: str) -> typing.Callable:
     return decorator
 
 
-def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
+def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
+                       type_func=int) -> typing.Tuple:
     """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
     if isinstance(argument, str):
         return tuple(type_func(p.strip()) for p in argument.split(','))
-    return argument
+    return tuple(argument)
 
 
 class TagSet(typing.Set[str]):
