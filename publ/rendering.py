@@ -392,7 +392,7 @@ def render_entry(entry_id, slug_text='', category=''):
     record = model.Entry.get(id=entry_id)
 
     # see if the file still exists
-    if not os.path.isfile(record.file_path):
+    if record and not os.path.isfile(record.file_path):
         expire_record(record)
         record = None
 
