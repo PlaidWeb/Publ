@@ -221,3 +221,32 @@ def test_listlike():
     assert utils.as_list("foo") == ("foo",)
     assert utils.as_list(True) == (True,)
     assert utils.as_list(None) == ()
+
+
+def test_parse_date():
+    """ tests for the date parser """
+    import arrow
+    from publ import config
+
+    def make_date(year=None, month=None, day=None):
+        return arrow.Arrow(year=year or 1,
+                           month=month or 1,
+                           day=day or 1,
+                           tzinfo=config.timezone)
+
+    with pytest.raises(ValueError):
+        utils.parse_date("not a date")
+    with pytest.raises(ValueError):
+        utils.parse_date("12345678")
+    with pytest.raises(ValueError):
+        utils.parse_date("")
+
+    assert utils.parse_date('1978-06-14') == (make_date(1978, 6, 14), 'day', utils.DAY_FORMAT)
+    assert utils.parse_date('19780614') == (make_date(1978, 6, 14), 'day', utils.DAY_FORMAT)
+
+    assert utils.parse_date('1983-07') == (make_date(1983, 7), 'month', utils.MONTH_FORMAT)
+    assert utils.parse_date('198307') == (make_date(1983, 7), 'month', utils.MONTH_FORMAT)
+
+    assert utils.parse_date("1979") == (make_date(1979), 'year', utils.YEAR_FORMAT)
+
+    assert utils.parse_date('19810505_w') == (make_date(1981, 5, 4), 'week', utils.WEEK_FORMAT)

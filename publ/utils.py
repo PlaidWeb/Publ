@@ -125,7 +125,7 @@ def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
     if not match:
         return (arrow.get(datestr,
                           tzinfo=config.timezone).replace(tzinfo=config.timezone),
-                'day', 'YYYY-MM-DD')
+                'day', DAY_FORMAT)
 
     year, month, day, week = match.group(1, 3, 5, 6)
     start = arrow.Arrow(year=int(year), month=int(
@@ -133,14 +133,14 @@ def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
 
     if week:
         return start.span('week')[0], 'week', WEEK_FORMAT
+
     if day:
         return start, 'day', DAY_FORMAT
+
     if month:
         return start, 'month', MONTH_FORMAT
-    if year:
-        return start, 'year', YEAR_FORMAT
 
-    raise ValueError("Could not parse date: {}".format(datestr))
+    return start, 'year', YEAR_FORMAT
 
 
 def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typing.Optional[str]:
