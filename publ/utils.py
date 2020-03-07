@@ -231,7 +231,7 @@ def file_fingerprint(fullpath: str) -> str:
 
 
 def remap_args(input_args: typing.Dict[str, typing.Any],
-               remap: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+               remap: typing.Dict[str, str]) -> typing.Dict[str, typing.Any]:
     """ Generate a new argument list by remapping keys. The 'remap'
     dict maps from destination key -> priority list of source keys
     """

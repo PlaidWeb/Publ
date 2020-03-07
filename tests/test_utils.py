@@ -1,4 +1,5 @@
 """ tests of publ.utils class """
+# pylint:disable=missing-function-docstring
 
 import flask
 import pytest
@@ -85,10 +86,8 @@ def test_truecallable_proxy():
     app = flask.Flask(__name__)
     with app.test_request_context('/foo'):
         assert stash['call_count'] == 0
-        if proxy:
-            assert stash['call_count'] == 0
-        else:
-            raise AssertionError("proxy should have been truthy!")
+        assert proxy
+        assert stash['call_count'] == 0
 
 
 def test_callablevalue():
@@ -101,6 +100,7 @@ def test_callablevalue():
         assert proxy == "flonk"
         assert len(proxy) == 5
         assert proxy + "foo" == "flonkfoo"
+        assert proxy
         assert not falsy
 
 
@@ -250,3 +250,67 @@ def test_parse_date():
     assert utils.parse_date("1979") == (make_date(1979), 'year', utils.YEAR_FORMAT)
 
     assert utils.parse_date('19810505_w') == (make_date(1981, 5, 4), 'week', utils.WEEK_FORMAT)
+
+
+def test_find_file():
+    """ tests for the file finder """
+    assert utils.find_file("anything", []) is None
+
+    assert utils.find_file("anything", ["tests/templates"]) is None
+    assert utils.find_file("auth", ["tests/templates"]) is None
+
+    assert utils.find_file("index.html",
+                           ("tests/templates")
+                           ) == "tests/templates/index.html"
+    assert utils.find_file("index.html",
+                           ("tests/templates", "tests/templates/auth")
+                           ) == "tests/templates/index.html"
+    assert utils.find_file("index.html",
+                           ("tests/templates/auth", "tests/templates")
+                           ) == "tests/templates/auth/index.html"
+
+
+def test_static_url():
+    """ tests for the static URL builder """
+    app = flask.Flask("tests", static_folder="asdf")
+    with app.test_request_context("https://foo.bar/poiupoiupoiu"):
+        assert utils.static_url("thing", absolute=False) == "/asdf/thing"
+        assert utils.static_url("thong", absolute=True) == "https://foo.bar/asdf/thong"
+
+
+def test_remap_link_target():
+    """ test the target remapper """
+    app = flask.Flask("tests", static_folder="feedme")
+    with app.test_request_context("https://feed.me/blah/merry"):
+        assert utils.remap_link_target("@fred") == "/feedme/fred"
+        assert utils.remap_link_target("@fred", absolute=True) == "https://feed.me/feedme/fred"
+        assert utils.remap_link_target("daphne") == "daphne"
+        assert utils.remap_link_target("daphne", absolute=True) == "https://feed.me/blah/daphne"
+
+
+def test_get_category():
+    import os.path
+    assert utils.get_category(os.path.join("foo", "bar", "entry.html")) == "foo/bar"
+
+
+def test_remap_args():
+    """ test the argument parser remapper """
+    args = {'foo': 'bar', 'quuz': 'quux'}
+    assert utils.remap_args(args, {}) == args
+    assert utils.remap_args(args, {"foo": "poiu"}) == args
+    assert utils.remap_args(args, {"foo": "quuz"})['foo'] == 'quux'
+
+
+def test_prefix_normalize():
+    """ test the prefix remapping thing """
+    args = {'here': '1',
+            'prefix_here':
+            '2', 'prefix_there': '3',
+            'anywhere': '4',
+            'prefix': 'prefix_'}
+    assert utils.prefix_normalize(args) == {
+        'here': '2',
+        'there': '3',
+        'anywhere': '4',
+        'prefix': 'prefix_'
+    }
