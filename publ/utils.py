@@ -12,14 +12,11 @@ import urllib.parse
 
 import arrow
 import flask
-import slugify
 import werkzeug.routing
 
 from . import config
 
 LOGGER = logging.getLogger(__name__)
-
-LOG_TRIVIAL = logging.DEBUG - 1
 
 T = typing.TypeVar('T')  # pylint:disable=invalid-name
 ArgDict = typing.Dict[str, typing.Any]
@@ -42,10 +39,8 @@ class CallableProxy:
         self._func: typing.Callable[..., T] = func
 
     @functools.lru_cache()
-    def _cached_default(self, *cache_params):
+    def _cached_default(self, *_):
         """ caching wrapper to memoize call against everything that might affect it """
-        LOGGER.log(LOG_TRIVIAL, '%s %s _cached_default %s', self.__class__.__name__, self._func,
-                   cache_params)
         return self._func()
 
     def _default(self):
@@ -54,35 +49,37 @@ class CallableProxy:
 
     def __call__(self, *args, **kwargs) -> T:
         # use the new kwargs to override the defaults
-        LOGGER.log(LOG_TRIVIAL, '%s %s __call__ %s %s', self.__class__.__name__, self._func,
-                   args, kwargs)
         return self._func(*args, **kwargs)
 
     def __getattr__(self, name):
-        LOGGER.log(LOG_TRIVIAL, '%s %s __getattr__ %s', self.__class__.__name__, self._func,
-                   name)
         return getattr(self._default(), name)
 
     def __bool__(self) -> bool:
-        LOGGER.log(LOG_TRIVIAL, '%s %s __bool__', self.__class__.__name__, self._func)
         return bool(self._default())
 
     def __len__(self) -> int:
-        LOGGER.log(LOG_TRIVIAL, '%s %s __len__', self.__class__.__name__, self._func)
         return len(self._default())
 
     def __str__(self) -> str:
-        LOGGER.log(LOG_TRIVIAL, '%s %s __str__', self.__class__.__name__, self._func)
         return str(self._default())
 
     def __iter__(self):
-        LOGGER.log(LOG_TRIVIAL, '%s %s __iter__', self.__class__.__name__, self._func)
         return self._default().__iter__()
 
     def __getitem__(self, key):
-        LOGGER.log(LOG_TRIVIAL, '%s %s __getitem__ %s', self.__class__.__name__, self._func,
-                   key)
         return self._default().__getitem__(key)
+
+    def __hash__(self):
+        return hash((CallableProxy, self._func))
+
+    def __eq__(self, other):
+        return self._default() == other
+
+    def __contains__(self, item):
+        return item in self._default()
+
+    def __add__(self, other):
+        return self._default() + other
 
 
 class TrueCallableProxy(CallableProxy):
@@ -128,7 +125,7 @@ def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
     if not match:
         return (arrow.get(datestr,
                           tzinfo=config.timezone).replace(tzinfo=config.timezone),
-                'day', 'YYYY-MM-DD')
+                'day', DAY_FORMAT)
 
     year, month, day, week = match.group(1, 3, 5, 6)
     start = arrow.Arrow(year=int(year), month=int(
@@ -136,14 +133,14 @@ def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
 
     if week:
         return start.span('week')[0], 'week', WEEK_FORMAT
+
     if day:
         return start, 'day', DAY_FORMAT
+
     if month:
         return start, 'month', MONTH_FORMAT
-    if year:
-        return start, 'year', YEAR_FORMAT
 
-    raise ValueError("Could not parse date: {}".format(datestr))
+    return start, 'year', YEAR_FORMAT
 
 
 def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typing.Optional[str]:
@@ -161,11 +158,6 @@ def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typin
             return candidate
 
     return None
-
-
-def make_slug(title: str) -> str:
-    """ convert a title into a URL-friendly slug """
-    return slugify.slugify(title)
 
 
 def static_url(path: str, absolute: bool = False) -> str:
@@ -239,7 +231,7 @@ def file_fingerprint(fullpath: str) -> str:
 
 
 def remap_args(input_args: typing.Dict[str, typing.Any],
-               remap: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+               remap: typing.Dict[str, str]) -> typing.Dict[str, typing.Any]:
     """ Generate a new argument list by remapping keys. The 'remap'
     dict maps from destination key -> priority list of source keys
     """
@@ -336,7 +328,7 @@ def prefix_normalize(kwargs: ArgDict) -> ArgDict:
 
 def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
-    return isinstance(item, (list, tuple, set, TagSet))
+    return getattr(item, '__iter__', None) and not isinstance(item, str)
 
 
 def as_list(item: typing.Any) -> ListLike:
@@ -429,11 +421,14 @@ def stash(key: str) -> typing.Callable:
     return decorator
 
 
-def parse_tuple_string(argument, type_func=int) -> typing.Tuple:
+def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
+                       type_func=int) -> typing.Optional[typing.Tuple]:
     """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
+    if argument is None:
+        return None
     if isinstance(argument, str):
         return tuple(type_func(p.strip()) for p in argument.split(','))
-    return argument
+    return tuple(argument)
 
 
 class TagSet(typing.Set[str]):
