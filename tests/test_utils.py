@@ -180,6 +180,7 @@ def test_parse_tuple_string():
     assert utils.parse_tuple_string("a,,", bool) == (True, False, False)
     with pytest.raises(Exception):
         utils.parse_tuple_string("a,b,c", float)
+    assert utils.parse_tuple_string(None) is None
 
 
 def test_make_tag():

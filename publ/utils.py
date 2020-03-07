@@ -422,8 +422,10 @@ def stash(key: str) -> typing.Callable:
 
 
 def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
-                       type_func=int) -> typing.Tuple:
+                       type_func=int) -> typing.Optional[typing.Tuple]:
     """ Return a tuple from parsing 'a,b,c,d' -> (a,b,c,d) """
+    if argument is None:
+        return None
     if isinstance(argument, str):
         return tuple(type_func(p.strip()) for p in argument.split(','))
     return tuple(argument)
