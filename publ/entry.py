@@ -2,7 +2,6 @@
 """ Functions for handling content items """
 
 import email
-import functools
 import hashlib
 import logging
 import os
@@ -23,7 +22,6 @@ from .utils import CallableProxy, CallableValue, TrueCallableProxy
 LOGGER = logging.getLogger(__name__)
 
 
-@functools.lru_cache(10)
 def load_message(filepath) -> email.message.Message:
     """ Load a message from the filesystem """
     with open(filepath, 'r', encoding='utf-8') as file:
@@ -701,9 +699,6 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
     """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
-    # Since a file has changed, the lrucache is invalid.
-    load_message.cache_clear()
-
     try:
         entry = load_message(fullpath)
     except FileNotFoundError:
@@ -848,7 +843,6 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
 @orm.db_session(retry=5)
 def expire_file(filepath):
     """ Expire a record for a missing file """
-    load_message.cache_clear()
 
     # SQLite doesn't support cascading deletes so clean up manually
     orm.delete(pa for pa in model.PathAlias if pa.entry.file_path == filepath)
@@ -860,12 +854,9 @@ def expire_file(filepath):
 @orm.db_session(retry=5)
 def expire_record(record):
     """ Expire a record for a missing entry """
-    load_message.cache_clear()
 
-    # This entry no longer exists so delete it, and anything that references it
-
-    # SQLite doesn't support cascading deletes so let's just clean up
-    # manually
+    # This entry no longer exists so delete it, and anything that references it.
+    # SQLite doesn't support cascading deletes so let's just clean up manually.
     orm.delete(pa for pa in model.PathAlias if pa.entry == record)
 
     record.delete()

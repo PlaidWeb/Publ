@@ -3,7 +3,6 @@
 
 import collections
 import email
-import functools
 import logging
 import os
 import typing
@@ -21,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 TagCount = collections.namedtuple('TagCount', ['name', 'count'])
 
 
-@functools.lru_cache(10)
 def load_metafile(filepath):
     """ Load a metadata file from the filesystem """
     try:
@@ -284,8 +282,6 @@ class Category(caching.Memoizable):
 @orm.db_session(retry=5)
 def scan_file(fullpath, relpath) -> bool:
     """ scan a file and put it into the index """
-
-    load_metafile.cache_clear()
 
     meta = load_metafile(fullpath)
     if not meta:
