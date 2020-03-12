@@ -185,5 +185,5 @@ def strip_html(text,
                remove_tags: typing.Iterable[str] = None) -> str:
     """ Strip all HTML formatting off of a chunk of text """
     strip = HTMLStripper(allowed_tags, allowed_attrs, remove_tags)
-    strip.feed(text)
+    strip.feed(str(text))
     return strip.get_data()
