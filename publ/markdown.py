@@ -400,7 +400,7 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
                                  or config.markdown_extensions)(text)
 
     if not markup:
-        text = html_entry.strip_html(text)
+        text = html_entry.strip_html(text, remove_tags=('del'))
 
     if smartquotes:
         text = misaka.smartypants(text)
