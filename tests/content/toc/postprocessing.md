@@ -25,7 +25,7 @@ This heading has an en-dash -- and maybe an em-dash --- yes
 
 ### Fractions like 1/2 and 1/4 are silly
 
-They are.
+They sure are.
 
 ## Image stuff
 
@@ -72,3 +72,11 @@ This is also supported and sensible.
 ### Math? $$d\frac{e^x}{dx} = e^x$$
 
 I mean, this isn't actually HTML so that's up to MathJax...
+
+### Also ~~misteaks~~ mistakes can be made
+
+Sure.
+
+### Is this ==notable?==
+
+Sure, why not.

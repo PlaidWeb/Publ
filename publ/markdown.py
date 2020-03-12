@@ -21,7 +21,13 @@ TocEntry = typing.Tuple[int, str]
 TocBuffer = typing.List[TocEntry]
 
 # Allow these tags in TOC entries
-TOC_ALLOWED_TAGS = ('sup', 'sub', 'em', 'strong', 'b', 'i', 'code')
+TOC_ALLOWED_TAGS = ('sup', 'sub',
+                    'em', 'strong',
+                    'b', 'i',
+                    'code',
+                    'del', 'add', 'mark')
+# Remove these tags from plaintext-style conversions
+PLAINTEXT_REMOVE_TAGS = ('del')
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
@@ -118,8 +124,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Make a header with anchor """
 
         htag = 'h{level}'.format(level=level)
-        hid = self._header_id(html_entry.strip_html(content), level,
-                              len(self._toc_buffer) + 1)
+        hid = self._header_id(html_entry.strip_html(content, remove_tags=PLAINTEXT_REMOVE_TAGS),
+                              level, len(self._toc_buffer) + 1)
 
         atag = utils.make_tag('a', {
             'href': urllib.parse.urljoin(self._config.get('toc_link', ''),
@@ -400,7 +406,7 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
                                  or config.markdown_extensions)(text)
 
     if not markup:
-        text = html_entry.strip_html(text, remove_tags=('del'))
+        text = html_entry.strip_html(text, remove_tags=PLAINTEXT_REMOVE_TAGS)
 
     if smartquotes:
         text = misaka.smartypants(text)
