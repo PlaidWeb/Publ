@@ -28,7 +28,7 @@ TOC_ALLOWED_TAGS = ('sup', 'sub',
                     'del', 'add', 'mark')
 
 # Remove these tags from plaintext-style conversions
-PLAINTEXT_REMOVE_TAGS = ('del', 's')
+PLAINTEXT_REMOVE_ELEMENTS = ('del', 's')
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
@@ -125,7 +125,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Make a header with anchor """
 
         htag = 'h{level}'.format(level=level)
-        hid = self._header_id(html_entry.strip_html(content, remove_tags=PLAINTEXT_REMOVE_TAGS),
+        hid = self._header_id(html_entry.strip_html(content, remove_elements=PLAINTEXT_REMOVE_ELEMENTS),
                               level, len(self._toc_buffer) + 1)
 
         atag = utils.make_tag('a', {
@@ -407,7 +407,7 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
                                  or config.markdown_extensions)(text)
 
     if not markup:
-        text = html_entry.strip_html(text, remove_tags=PLAINTEXT_REMOVE_TAGS)
+        text = html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
 
     if smartquotes:
         text = misaka.smartypants(text)

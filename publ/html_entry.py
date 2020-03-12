@@ -144,11 +144,11 @@ class HTMLStripper(utils.HTMLTransform):
     def __init__(self,
                  allowed_tags: typing.Iterable[str] = None,
                  allowed_attrs: typing.Iterable[str] = None,
-                 remove_tags: typing.Iterable[str] = None):
+                 remove_elements: typing.Iterable[str] = None):
         super().__init__()
         self._allowed_tags = set(utils.as_list(allowed_tags))
         self._allowed_attrs = set(utils.as_list(allowed_attrs))
-        self._remove_tags = set(utils.as_list(remove_tags))
+        self._remove_elements = set(utils.as_list(remove_elements))
         self._remove_depth = 0
 
     def _filter(self, tag, attrs, **kwargs) -> str:
@@ -158,7 +158,7 @@ class HTMLStripper(utils.HTMLTransform):
                                    for key, val in attrs
                                    if key in self._allowed_attrs},
                                   **kwargs)
-        if self._remove_tags and tag in self._remove_tags:
+        if self._remove_elements and tag in self._remove_elements:
             self._remove_depth += 1
         return ''
 
@@ -168,7 +168,7 @@ class HTMLStripper(utils.HTMLTransform):
     def handle_endtag(self, tag):
         if self._allowed_tags and tag in self._allowed_tags:
             self.append('</{tag}>'.format(tag=tag))
-        elif self._remove_tags and tag in self._remove_tags:
+        elif self._remove_elements and tag in self._remove_elements:
             self._remove_depth -= 1
 
     def handle_startendtag(self, tag, attrs):
@@ -182,8 +182,8 @@ class HTMLStripper(utils.HTMLTransform):
 def strip_html(text,
                allowed_tags: typing.Iterable[str] = None,
                allowed_attrs: typing.Iterable[str] = None,
-               remove_tags: typing.Iterable[str] = None) -> str:
+               remove_elements: typing.Iterable[str] = None) -> str:
     """ Strip all HTML formatting off of a chunk of text """
-    strip = HTMLStripper(allowed_tags, allowed_attrs, remove_tags)
+    strip = HTMLStripper(allowed_tags, allowed_attrs, remove_elements)
     strip.feed(str(text))
     return strip.get_data()
