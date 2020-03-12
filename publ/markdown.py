@@ -26,8 +26,9 @@ TOC_ALLOWED_TAGS = ('sup', 'sub',
                     'b', 'i',
                     'code',
                     'del', 'add', 'mark')
+
 # Remove these tags from plaintext-style conversions
-PLAINTEXT_REMOVE_TAGS = ('del')
+PLAINTEXT_REMOVE_TAGS = ('del', 's')
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
