@@ -213,7 +213,7 @@ def make_tag(name: str,
                     escaped = re.sub(r'&amp;([a-zA-Z0-9.\-_\:]+;)', r'&\1', val)
                 text += '="{}"'.format(escaped)
     if start_end:
-        text += ' /'
+        text += ' /' if attrs else '/'
     text += '>'
     return flask.Markup(text)
 

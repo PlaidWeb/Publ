@@ -1,0 +1,9 @@
+{% for entry in view.entries %}
+## {{entry.title | strip_html }}
+
+{{ entry.body | strip_html(remove_tags=['sup']) }}
+{{ entry.more | strip_html(remove_tags=['sup']) }}
+
+{{ entry.footnotes | strip_html(['sup','a'],['href'])}}
+
+{% endfor %}

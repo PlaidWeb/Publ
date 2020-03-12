@@ -718,14 +718,16 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
         relpath = os.path.relpath(fullpath, config.content_folder)
 
     basename = os.path.basename(relpath)
-    title = entry['title'] or guess_title(basename)
+    title = entry.get('title', guess_title(basename))
 
     values = {
         'file_path': fullpath,
         'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
         'entry_type': entry.get('Entry-Type', ''),
-        'slug_text': slugify.slugify(entry.get('Slug-Text', title)),
+        'slug_text': slugify.slugify(
+            entry.get('Slug-Text',
+                      markdown.render_title(title, markup=False, smartquotes=False))),
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),

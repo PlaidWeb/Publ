@@ -13,8 +13,8 @@ import authl.flask
 import flask
 import werkzeug.exceptions
 
-from . import (caching, config, image, index, maintenance, model, rendering,
-               tokens, user, utils, view)
+from . import (caching, config, html_entry, image, index, maintenance, model,
+               rendering, tokens, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -155,6 +155,8 @@ This configuration value will stop being supported in Publ 0.6.
             login=utils.auth_link('login'),
             logout=utils.auth_link('logout')
         )
+
+        self.jinja_env.filters['strip_html'] = html_entry.strip_html  # pylint: disable=no-member
 
         caching.init_app(self, config.cache)
 

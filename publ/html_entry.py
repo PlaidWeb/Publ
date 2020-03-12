@@ -142,20 +142,24 @@ class HTMLStripper(utils.HTMLTransform):
     """ Strip all HTML tags from a document, except those which are allowed """
 
     def __init__(self,
-                 allowed_tags: typing.Tuple[str] = None,
-                 allowed_attrs: typing.Tuple[str] = None):
+                 allowed_tags: typing.Iterable[str] = None,
+                 allowed_attrs: typing.Iterable[str] = None,
+                 remove_elements: typing.Iterable[str] = None):
         super().__init__()
-        self._allowed_tags = allowed_tags
-        self._allowed_attrs = allowed_attrs
+        self._allowed_tags = set(utils.as_list(allowed_tags))
+        self._allowed_attrs = set(utils.as_list(allowed_attrs))
+        self._remove_elements = set(utils.as_list(remove_elements))
+        self._remove_depth = 0
 
     def _filter(self, tag, attrs, **kwargs) -> str:
         if self._allowed_tags and tag in self._allowed_tags:
             return utils.make_tag(tag,
                                   {key: val
                                    for key, val in attrs
-                                   if self._allowed_attrs
-                                   and key in self._allowed_attrs},
+                                   if key in self._allowed_attrs},
                                   **kwargs)
+        if self._remove_elements and tag in self._remove_elements:
+            self._remove_depth += 1
         return ''
 
     def handle_starttag(self, tag, attrs):
@@ -164,18 +168,22 @@ class HTMLStripper(utils.HTMLTransform):
     def handle_endtag(self, tag):
         if self._allowed_tags and tag in self._allowed_tags:
             self.append('</{tag}>'.format(tag=tag))
+        elif self._remove_elements and tag in self._remove_elements:
+            self._remove_depth -= 1
 
     def handle_startendtag(self, tag, attrs):
         self.append(self._filter(tag, attrs, start_end=True))
 
     def handle_data(self, data):
-        self.append(data)
+        if not self._remove_depth:
+            self.append(data)
 
 
 def strip_html(text,
-               allowed_tags: typing.Tuple[str] = None,
-               allowed_attrs: typing.Tuple[str] = None) -> str:
+               allowed_tags: typing.Iterable[str] = None,
+               allowed_attrs: typing.Iterable[str] = None,
+               remove_elements: typing.Iterable[str] = None) -> str:
     """ Strip all HTML formatting off of a chunk of text """
-    strip = HTMLStripper(allowed_tags, allowed_attrs)
-    strip.feed(text)
+    strip = HTMLStripper(allowed_tags, allowed_attrs, remove_elements)
+    strip.feed(str(text))
     return strip.get_data()

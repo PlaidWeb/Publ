@@ -1,4 +1,4 @@
-""" tests of publ.utils class """
+""" tests of publ.utils module """
 # pylint:disable=missing-function-docstring
 
 import flask
