@@ -2,6 +2,7 @@
 """ HTML entry processing functionality """
 
 import logging
+import re
 import typing
 
 import flask
@@ -186,4 +187,4 @@ def strip_html(text,
     """ Strip all HTML formatting off of a chunk of text """
     strip = HTMLStripper(allowed_tags, allowed_attrs, remove_elements)
     strip.feed(str(text))
-    return strip.get_data()
+    return re.sub(r' +', r' ', strip.get_data()).strip()
