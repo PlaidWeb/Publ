@@ -125,7 +125,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Make a header with anchor """
 
         htag = 'h{level}'.format(level=level)
-        hid = self._header_id(html_entry.strip_html(content, remove_elements=PLAINTEXT_REMOVE_ELEMENTS),
+        hid = self._header_id(html_entry.strip_html(content,
+                                                    remove_elements=PLAINTEXT_REMOVE_ELEMENTS),
                               level, len(self._toc_buffer) + 1)
 
         atag = utils.make_tag('a', {
