@@ -16,6 +16,7 @@ coverage = "*"
 
 [packages]
 publ = {editable = true,path = "."}
+gunicorn = "*"
 
 [requires]
 python_version = "3.7"

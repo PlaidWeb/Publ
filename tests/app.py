@@ -19,9 +19,9 @@ config = {
         'provider': 'sqlite',
         'filename': os.path.join(APP_PATH, '..', 'index.db')
     },
-    'content_folder': 'content',
-    'template_folder': 'templates',
-    'static_folder': 'static',
+    'content_folder': os.path.join(APP_PATH, 'content'),
+    'template_folder': os.path.join(APP_PATH, 'templates'),
+    'static_folder': os.path.join(APP_PATH, 'static'),
     'cache': {
         'CACHE_TYPE': os.environ['TEST_CACHING'],
         'CACHE_DEFAULT_TIMEOUT': 600,
