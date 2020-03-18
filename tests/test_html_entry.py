@@ -68,3 +68,5 @@ def test_strip_html():
     assert strip_html(doc, remove_elements=('sup')) == 'blah'
 
     assert strip_html(doc, ('br')) == 'blahboo<br/>'
+
+    assert strip_html("this &amp; that") == "this & that"

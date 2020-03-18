@@ -407,11 +407,11 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
                                  extensions=markdown_extensions
                                  or config.markdown_extensions)(text)
 
-    if not markup:
-        text = html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
-
     if smartquotes:
         text = misaka.smartypants(text)
+
+    if not markup:
+        text = html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
 
     return flask.Markup(text)
 
