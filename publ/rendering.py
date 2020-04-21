@@ -408,16 +408,22 @@ def render_entry(entry_id, slug_text='', category=''):
     return render_entry_record(record, category, None)
 
 
+STATUS_EXCEPTIONS = {
+    # Draft entries are a 403 with a custom error
+    model.PublishStatus.DRAFT.value: http_error.Forbidden("Entry not available"),
+
+    model.PublishStatus.GONE.value: http_error.Gone(),
+    model.PublishStatus.ILLEGAL.value: http_error.UnavailableForLegalReasons(),
+    model.PublishStatus.TEAPOT.value: http_error.ImATeapot(),
+}
+
+
 def render_entry_record(record: model.Entry, category: str, template: typing.Optional[str],
                         _mounted=False):
     """ Render an entry object """
 
-    # Show an access denied error if the entry has been set to draft mode
-    if record.status == model.PublishStatus.DRAFT.value:
-        raise http_error.Forbidden("Entry not available")
-    # Show a gone error if the entry has been deleted
-    if record.status == model.PublishStatus.GONE.value:
-        raise http_error.Gone()
+    if record.status in STATUS_EXCEPTIONS:
+        raise STATUS_EXCEPTIONS[record.status]
 
     # If the entry is private and the user isn't logged in, redirect
     result = _check_authorization(record, category)

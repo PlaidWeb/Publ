@@ -30,12 +30,23 @@ class GlobalConfig(DbEntity):
 class PublishStatus(Enum):
     """ The status of the entry """
     DRAFT = 0       # Entry should not be rendered
+
     HIDDEN = 1      # Entry should be shown via direct link, but not shown on a view
     UNLISTED = 1    # Synonym for HIDDEN
+
     PUBLISHED = 2   # Entry is visible
+
     SCHEDULED = 3   # Entry will be visible in the future
+
     GONE = 4        # Entry is gone, won't be coming back
     DELETED = 4     # synonym for GONE
+
+    ILLEGAL = 5     # taken down for legal reasons (error code 451)
+    BURNT = 5
+    BURNED = 5
+    DMCA = 5
+
+    TEAPOT = 6      # RFC 2324
 
 
 class AliasType(Enum):
