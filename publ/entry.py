@@ -423,8 +423,12 @@ class Entry(caching.Memoizable):
             tags += og_tag('og:url', self.link(absolute=True))
 
             card = self._get_card_data(kwargs)
-            for image in card.images[:kwargs.get('count', 1)]:
+            for (image, width, height) in card.images[:kwargs.get('count', 1)]:
                 tags += og_tag('og:image', image)
+                if width:
+                    tags += og_tag('og:image:width', width)
+                if height:
+                    tags += og_tag('og:image:height', height)
             description = self.get('Summary', card.description)
             if description:
                 tags += og_tag('og:description', description)
@@ -445,6 +449,7 @@ class Entry(caching.Memoizable):
                                                **kwargs,
                                                "max_scale": 1,
                                                "_suppress_footnotes": True,
+                                               "_no_resize_external": True,
                                                "absolute": True},
                                          footnote_buffer=footnote,
                                          toc_buffer=toc)
