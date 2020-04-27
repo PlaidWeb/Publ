@@ -57,11 +57,12 @@ SCHEDULED_FILES = ConcurrentSet()
 def last_modified() -> typing.Tuple[typing.Optional[str],
                                     typing.Optional[int],
                                     typing.Optional[str]]:
-    """ information about the most recently modified file """
+    """ information about the most recently modified file, for cache-busting
+    purposes """
     files = model.FileFingerprint.select().order_by(
         orm.desc(model.FileFingerprint.file_mtime))
     for file in files:
-        return file.file_path, file.file_mtime, utils.file_fingerprint(file.file_path)
+        return file.file_path, file.file_mtime, file.fingerprint
     return None, None, None
 
 

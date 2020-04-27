@@ -35,7 +35,6 @@ class ExternalImage(Image):
         if 'id' in spec:
             attrs['id'] = spec['id']
 
-
         if not spec.get('_no_resize_external'):
             # try to fudge the sizing
             max_width = spec.get('max_width')

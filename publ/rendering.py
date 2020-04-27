@@ -112,10 +112,18 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return text, caching.get_etag(text)
 
     try:
+        # Cache-busting query based on most recently-visible entry
+        cb_query = queries.build_query({})
+        cb_query = cb_query.filter(lambda e: e.status == model.PublishStatus.SCHEDULED.value)
+        cb_query = cb_query.order_by(orm.desc(model.Entry.utc_date))
+        latest = Entry(cb_query.first()) if cb_query.first() else None
+        LOGGER.debug("Most recently-scheduled entry: %s", latest)
+
         return do_render(template,
                          user=user.get_active(),
                          _url=request.url,
                          _index_time=index.last_modified(),
+                         _latest=latest,
                          **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
