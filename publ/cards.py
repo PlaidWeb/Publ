@@ -4,6 +4,8 @@
 import logging
 import typing
 
+import flask
+
 from . import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +26,7 @@ class CardData():
     def commit(self):
         """ Apply all finalization to the card data """
         if self.description:
-            self.description = self.description.strip()
+            self.description = flask.Markup(self.description.strip())
 
 
 class HtmlCardParser(utils.HTMLTransform):

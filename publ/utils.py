@@ -288,6 +288,12 @@ class HTMLTransform(html.parser.HTMLParser):
         self.convert_charrefs = False
         self._fed = []
 
+    def feed(self, data: str):
+        """ Feed in some text data. Overrides the base class to ensure that
+        it's handled like a plain string and not a MarkupSafe string (which
+        causes double-escaping to happen) """
+        super().feed(str(data))
+
     def append(self, item: str):
         """ Append some text to the output """
         self._fed.append(item)
