@@ -171,11 +171,11 @@ This configuration value will stop being supported in Publ 0.6.
         def logout(redir=''):
             """ Log out from the thing """
             if flask.request.method == 'POST':
-                LOGGER.info("Logging out")
+                LOGGER.info("Logging out %s", flask.session.get('me'))
                 LOGGER.info("Redir: %s", redir)
                 LOGGER.info("Request path: %s", flask.request.path)
 
-                flask.session['me'] = ''
+                flask.session.pop('me')
                 return flask.redirect('/' + redir)
 
             tmpl = rendering.map_template('/', 'logout')
