@@ -174,6 +174,19 @@ class View(caching.Memoizable):
         query = queries.build_query({**self.spec,
                                      'future': False,
                                      '_deleted': True})
+        if self.spec.get('count'):
+            # We're using a count constraint, so we'll want to limit this to
+            # entries that come before our next page of non-deleted results.
+            #
+            # We only use the next-page start because our pagination constraint
+            # (if any) will have already limited this query appropriately, and
+            # we consider deleted entries in the gap between two views to
+            # belong to the first page of views.
+            if self._order_by == 'oldest' and self.next:
+                query = queries.where_before_entry(query, self.next.first)
+            elif self._order_by == 'newest' and self.next:
+                query = queries.where_after_entry(query, self.next.first)
+
         return [Entry(e) for e in query]
 
     @cached_property

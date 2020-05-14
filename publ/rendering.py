@@ -88,6 +88,7 @@ def image_function(template=None,
 
     return lambda filename: image.get_image(filename, path)
 
+
 @orm.db_session
 def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]:
     """ Render out a template, providing the image function based on the args.
