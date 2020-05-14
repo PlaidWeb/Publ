@@ -88,7 +88,7 @@ def image_function(template=None,
 
     return lambda filename: image.get_image(filename, path)
 
-
+@orm.db_session
 def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]:
     """ Render out a template, providing the image function based on the args.
 
@@ -111,19 +111,23 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         text = template.render(**args)
         return text, caching.get_etag(text)
 
-    try:
+    def latest_entry():
         # Cache-busting query based on most recently-visible entry
         cb_query = queries.build_query({})
         cb_query = cb_query.filter(lambda e: e.status == model.PublishStatus.SCHEDULED.value)
         cb_query = cb_query.order_by(orm.desc(model.Entry.utc_date))
-        latest = Entry(cb_query.first()) if cb_query.first() else None
-        LOGGER.debug("Most recently-scheduled entry: %s", latest)
+        latest = cb_query.first()
+        if latest:
+            LOGGER.debug("Most recently-scheduled entry: %s", latest)
+            return latest.id
+        return None
 
+    try:
         return do_render(template,
                          user=user.get_active(),
                          _url=request.url,
                          _index_time=index.last_modified(),
-                         _latest=latest,
+                         _latest=latest_entry,
                          **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
