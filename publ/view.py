@@ -384,11 +384,57 @@ class View(caching.Memoizable):
         Returns a tuple of older page, newer page.
         """
 
-        oldest = self.oldest
-        newest = self.newest
-
         base = {key: val for key, val in self.spec.items()
                 if key not in OFFSET_PRIORITY}
+
+        if 'date' in self.spec:
+            LOGGER.debug('by date')
+            return self._get_date_pagination(base)
+
+        if 'count' in self.spec:
+            LOGGER.debug('by count')
+            return self._get_count_pagination(base)
+
+        # we're not paginating
+        return None, None
+
+    def _get_date_pagination(self,
+                             base: ViewSpec
+                             ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
+        """ Compute the pagination for date-based views """
+        date, interval, date_format = utils.parse_date(self.spec['date'])
+        start_date, end_date = date.span(interval)
+
+        base_query = queries.build_query(base)
+        oldest_neighbor = base_query.filter(
+            lambda e: e.local_date < start_date.datetime).order_by(*ORDER_BY['newest']).first()
+        newest_neighbor = base_query.filter(
+            lambda e: e.local_date > end_date.datetime).order_by(*ORDER_BY['oldest']).first()
+
+        older_view: typing.Optional['View'] = None
+        newer_view: typing.Optional['View'] = None
+
+        if newest_neighbor:
+            newer_date = newest_neighbor.display_date
+            newer_view = View({**base,
+                               'order': self._order_by,
+                               'date': arrow.get(newer_date).format(date_format)})
+
+        if oldest_neighbor:
+            older_date = oldest_neighbor.display_date
+            older_view = View({**base,
+                               'order': self._order_by,
+                               'date': arrow.get(older_date).format(date_format)})
+
+        return older_view, newer_view
+
+    def _get_count_pagination(self,
+                              base: ViewSpec
+                              ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
+        """ Compute the pagination for count-based views """
+
+        oldest = self.oldest
+        newest = self.newest
 
         oldest_neighbor = View({
             **base,
@@ -401,45 +447,6 @@ class View(caching.Memoizable):
             'after': newest,
             'order': 'oldest'
         }).first if newest else None
-
-        if 'date' in self.spec:
-            return self._get_date_pagination(base, oldest_neighbor, newest_neighbor)
-
-        if 'count' in self.spec:
-            return self._get_count_pagination(base, oldest_neighbor, newest_neighbor)
-
-        # we're not paginating
-        return None, None
-
-    def _get_date_pagination(self, base: ViewSpec,
-                             oldest_neighbor: typing.Optional[Entry],
-                             newest_neighbor: typing.Optional[Entry]
-                             ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
-        """ Compute the pagination for date-based views """
-        _, span, date_format = utils.parse_date(self.spec['date'])
-
-        older_view: typing.Optional['View'] = None
-        newer_view: typing.Optional['View'] = None
-
-        if newest_neighbor:
-            newer_date = newest_neighbor.date.span(span)[0]
-            newer_view = View({**base,
-                               'order': self._order_by,
-                               'date': newer_date.format(date_format)})
-
-        if oldest_neighbor:
-            older_date = oldest_neighbor.date.span(span)[0]
-            older_view = View({**base,
-                               'order': self._order_by,
-                               'date': older_date.format(date_format)})
-
-        return older_view, newer_view
-
-    def _get_count_pagination(self, base: ViewSpec,
-                              oldest_neighbor: typing.Optional[Entry],
-                              newest_neighbor: typing.Optional[Entry]
-                              ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
-        """ Compute the pagination for count-based views """
 
         count = self.spec['count']
 
