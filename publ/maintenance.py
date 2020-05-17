@@ -7,7 +7,8 @@ import typing
 class Maintenance:
     """ Container for periodic maintenance tasks """
 
-    def __init__(self):
+    def __init__(self, app):
+        self.app = app
         self.tasks: typing.Dict[typing.Callable[[], None],
                                 typing.Dict[str, float]] = {}
 
@@ -18,8 +19,9 @@ class Maintenance:
     def run(self, force: bool = False):
         """ Run all pending tasks; 'force' will run all tasks whether they're
         pending or not. """
-        now = time.time()
-        for func, spec in self.tasks.items():
-            if force or now >= spec.get('next_run', 0):
-                func()
-                spec['next_run'] = now + spec['interval']
+        with self.app.app_context():
+            now = time.time()
+            for func, spec in self.tasks.items():
+                if force or now >= spec.get('next_run', 0):
+                    func()
+                    spec['next_run'] = now + spec['interval']

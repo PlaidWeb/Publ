@@ -282,7 +282,7 @@ class Entry(caching.Memoizable):
         try:
             return load_message(filepath)
         except FileNotFoundError:
-            expire_file(filepath)
+            expire_record(self._record)
             empty = email.message.Message()
             empty.set_payload('')
             return empty
@@ -678,7 +678,7 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     return entry_id
 
 
-def save_file(fullpath: str, entry: email.message.Message):
+def save_file(fullpath: str, entry: email.message.Message, fingerprint: str):
     """ Save a message file out, without mangling the headers """
     from atomicwrites import atomic_write
     with atomic_write(fullpath, overwrite=True) as file:
@@ -691,20 +691,27 @@ def save_file(fullpath: str, entry: email.message.Message):
         print('', file=file)
         file.write(entry.get_payload())
 
+        if utils.file_fingerprint(fullpath) != fingerprint:
+            LOGGER.warning("File %s changed during atomic write; aborting", fullpath)
+            raise RuntimeError("File changed during reindex")
+
+    return True
+
 
 @orm.db_session(retry=5)
-def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> bool:
+def scan_file(fullpath: str, relpath: typing.Optional[str], apply_fixups: bool) -> bool:
     """ scan a file and put it into the index
 
     :param fullpath str: The full file path
     :param relpath typing.Optional[str]: The file path relative to the content
         root; if None, this will be inferred
-    :param assign_id bool: Whether to assign an ID and fix up the file
+    :param apply_fixups bool: Whether to assign an ID and apply fixups
 
     """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
     try:
+        check_fingerprint = utils.file_fingerprint(fullpath)
         entry = load_message(fullpath)
     except FileNotFoundError:
         # The file doesn't exist, so remove it from the index
@@ -713,7 +720,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
             expire_record(record)
         return True
 
-    entry_id = get_entry_id(entry, fullpath, assign_id)
+    entry_id = get_entry_id(entry, fullpath, apply_fixups)
     if entry_id is None:
         return False
 
@@ -842,29 +849,16 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], assign_id: bool) -> 
         LOGGER.info("Not touching draft entry %s", fullpath)
     elif fixup_needed:
         LOGGER.info("Fixing up entry %s", fullpath)
-        save_file(fullpath, entry)
+        return save_file(fullpath, entry, check_fingerprint)
 
     return True
 
 
-@orm.db_session(retry=5)
-def expire_file(filepath):
-    """ Expire a record for a missing file """
-
-    # SQLite doesn't support cascading deletes so clean up manually
-    orm.delete(pa for pa in model.PathAlias if pa.entry.file_path == filepath)
-
-    orm.delete(item for item in model.Entry if item.file_path == filepath)
-    orm.commit()
-
-
-@orm.db_session(retry=5)
 def expire_record(record):
     """ Expire a record for a missing entry """
 
-    # This entry no longer exists so delete it, and anything that references it.
-    # SQLite doesn't support cascading deletes so let's just clean up manually.
+    # This entry no longer exists so delete anything that references it and
+    # mark the file GONE.
     orm.delete(pa for pa in model.PathAlias if pa.entry == record)
-
-    record.delete()
+    record.status = model.PublishStatus.GONE.value
     orm.commit()

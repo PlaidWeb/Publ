@@ -18,7 +18,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 class GlobalConfig(DbEntity):
@@ -64,7 +64,7 @@ class FileFingerprint(DbEntity):
 
 class Entry(DbEntity):
     """ Indexed entry """
-    file_path = orm.Required(str)
+    file_path = orm.Required(str, index=True)
     category = orm.Optional(str)
     status = orm.Required(int)
 

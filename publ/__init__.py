@@ -47,6 +47,8 @@ class Publ(flask.Flask):
             store the image rendition cache
         index_rescan_interval -- How frequently (in seconds) to rescan the
             content index
+        index_wait_time -- How long to wait (in seconds) before starting to
+            process content updates
         image_cache_interval -- How frequently (in seconds) to clean up the
             image rendition cache
         image_cache_age -- The maximum age (in seconds) of an image rendition
@@ -197,7 +199,8 @@ This configuration value will stop being supported in Publ 0.6.
         self.before_request(user.log_user)
         self.after_request(tokens.inject_auth_headers)
 
-        self._maint = maintenance.Maintenance()
+        self._maint = maintenance.Maintenance(self)
+        self.indexer = index.Indexer(config.index_wait_time)
 
         if config.index_rescan_interval:
             self._maint.register(functools.partial(index.scan_index,
@@ -273,12 +276,12 @@ This configuration value will stop being supported in Publ 0.6.
 
         return None, None
 
-    @staticmethod
-    def _startup():
+    def _startup(self):
         """ Startup routine for initiating the content indexer """
         model.setup()
-        index.scan_index(config.content_folder)
-        index.background_scan(config.content_folder)
+        with self.app_context():
+            index.scan_index(config.content_folder)
+            index.background_scan(config.content_folder)
 
     @staticmethod
     def _set_cache_expiry(response):
