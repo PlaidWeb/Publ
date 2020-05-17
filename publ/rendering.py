@@ -15,7 +15,8 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
                utils, view)
 from .caching import cache
 from .category import Category
-from .entry import Entry, expire_record
+from .entry import Entry
+from .entry import expire_record as entry_expire_record
 from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)
@@ -89,7 +90,6 @@ def image_function(template=None,
     return lambda filename: image.get_image(filename, path)
 
 
-@orm.db_session
 def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]:
     """ Render out a template, providing the image function based on the args.
 
@@ -134,7 +134,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         raise http_error.BadRequest(str(err))
 
 
-@orm.db_session(retry=5)
+@orm.db_session
 def render_error(category, error_message, error_codes,
                  exception=None,
                  headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
@@ -177,6 +177,7 @@ def render_error(category, error_message, error_codes,
     return '%d %s' % (error_code, error_message), error_code, headers
 
 
+@orm.db_session
 def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
 
@@ -230,7 +231,7 @@ def render_exception(error):
     })
 
 
-@orm.db_session(retry=5)
+@orm.db_session
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for forced .php redirects) """
 
@@ -309,6 +310,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
                       'ETag': etag}
 
 
+@orm.db_session
 def render_login_form(redir=None, **kwargs):
     """ Renders the login form using the mapped login template """
 
@@ -406,7 +408,7 @@ def render_entry(entry_id, slug_text='', category=''):
 
     # see if the file still exists
     if record and not os.path.isfile(record.file_path):
-        expire_record(record)
+        entry_expire_record(record)
         record = None
 
     if not record:
@@ -498,7 +500,6 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     return rendered, headers
 
 
-@orm.db_session(retry=5)
 def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()
@@ -540,7 +541,7 @@ def render_transparent_chit():
                        'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
 
 
-@orm.db_session(retry=5)
+@orm.db_session
 def retrieve_asset(filename):
     """ Retrieves a non-image asset associated with an entry """
 

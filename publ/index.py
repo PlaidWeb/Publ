@@ -5,10 +5,12 @@ import concurrent.futures
 import logging
 import os
 import threading
+import time
 import typing
 
 import watchdog.events
 import watchdog.observers
+from flask import current_app
 from pony import orm
 
 from . import category, entry, model, utils
@@ -18,39 +20,99 @@ LOGGER = logging.getLogger(__name__)
 ENTRY_TYPES = ['.md', '.htm', '.html']
 CATEGORY_TYPES = ['.cat', '.meta']
 
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(
-    max_workers=1,
-    thread_name_prefix="Indexer")
 
-# Get the _work_queue attribute from the pool, if any
-WORK_QUEUE = getattr(THREAD_POOL, '_work_queue', None)
+class Indexer:
+    """ Class which handles the scheduling of file indexing """
+    # pylint:disable=too-few-public-methods
+    QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], bool]
 
-
-class ConcurrentSet:
-    """ Simple quasi-atomic set """
-
-    def __init__(self):
+    def __init__(self, wait_time: float):
+        self.thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="Indexer")
+        self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
         self._lock = threading.Lock()
-        self._set = set()
+        self._running: typing.Optional[concurrent.futures.Future] = None
+        self._wait_time = wait_time
 
-    def add(self, item) -> bool:
-        """ Add an item to the set, and return whether it was newly added """
+    def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
+        """ Scan a file for the index
+
+        fullpath -- The full path to the file
+        relpath -- The path to the file, relative to its base directory
+        fixups -- Whether to perform fixup routines on the file
+
+        This calls into various modules' scanner functions; the expectation is that
+        the scan_file function will return a truthy value if it was scanned
+        successfully, False if it failed, and None if there is nothing to scan.
+        """
+
         with self._lock:
-            if item in self._set:
+            self._pending.add((fullpath, relpath, fixups))
+        self._schedule(self._wait_time)
+
+    def _schedule(self, wait: float = 0):
+        with self._lock:
+            if not self._running or self._running.done():
+                if wait:
+                    # busywait the worker thread to wait for things to settle down
+                    # (and to batch up a bunch of updates in a row)
+                    self.thread_pool.submit(time.sleep, wait)
+
+                # run the actual pending task
+                self._running = self.thread_pool.submit(self._scan_pending)
+
+                LOGGER.debug("worker started %s", self._running)
+
+    def _scan_pending(self):
+        """ Scan all the pending items """
+        try:
+            with self._lock:
+                items = self._pending
+                self._pending = set()
+            LOGGER.debug("Processing %d files", len(items))
+
+            # process the known items
+            for item in items:
+                self._scan_file(*item)
+
+            # and then schedule a catchup for anything that happened
+            # while this scan was happening
+            if items:
+                self.thread_pool.submit(self._schedule)
+
+        except Exception:  # pylint:disable=broad-except
+            LOGGER.exception("_scan_pending failed")
+
+    def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
+        LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, fixups)
+
+        def do_scan() -> typing.Optional[bool]:
+            """ helper function to do the scan and gather the result """
+            _, ext = os.path.splitext(fullpath)
+
+            try:
+                if ext in ENTRY_TYPES:
+                    LOGGER.info("Scanning entry: %s", fullpath)
+                    return entry.scan_file(fullpath, relpath, fixups)
+
+                if ext in CATEGORY_TYPES:
+                    LOGGER.info("Scanning meta info: %s", fullpath)
+                    return category.scan_file(fullpath, relpath)
+
+                return None
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.exception("Got error parsing %s", fullpath)
                 return False
-            self._set.add(item)
-            return True
 
-    def remove(self, item) -> bool:
-        """ Remove an item from the set, returning whether it was present """
-        with self._lock:
-            if item in self._set:
-                self._set.remove(item)
-                return True
-            return False
-
-
-SCHEDULED_FILES = ConcurrentSet()
+        result = do_scan()
+        if result is False and not fixups:
+            LOGGER.info("Scheduling fixup for %s", fullpath)
+            self.scan_file(fullpath, relpath, True)
+        else:
+            LOGGER.debug("%s complete", fullpath)
+            set_fingerprint(fullpath)
+        return result
 
 
 @orm.db_session
@@ -66,64 +128,25 @@ def last_modified() -> typing.Tuple[typing.Optional[str],
     return None, None, None
 
 
+def _work_queue():
+    return getattr(current_app.indexer.thread_pool, '_work_queue', None)
+
+
 def queue_length() -> typing.Optional[int]:
-    """ Get the approximate length of the indexer work queue """
-    return WORK_QUEUE.qsize() if WORK_QUEUE else None
+    """ Return the approximate length of the work queue """
+    work_queue = _work_queue()
+    return work_queue.qsize() if work_queue else None
 
 
 def in_progress() -> bool:
     """ Return if there's an index in progress """
-    remaining = queue_length()
-    return remaining is not None and remaining > 0
+    return bool(queue_length)
 
 
 def is_scannable(fullpath) -> bool:
     """ Determine if a file needs to be scanned """
     _, ext = os.path.splitext(fullpath)
     return ext in ENTRY_TYPES or ext in CATEGORY_TYPES
-
-
-def scan_file(fullpath, relpath, assign_id) -> typing.Optional[bool]:
-    """ Scan a file for the index
-
-    fullpath -- The full path to the file
-    relpath -- The path to the file, relative to its base directory
-    assign_id -- Whether to assign an ID to the file if not yet assigned
-
-    This calls into various modules' scanner functions; the expectation is that
-    the scan_file function will return a truthy value if it was scanned
-    successfully, False if it failed, and None if there is nothing to scan.
-    """
-
-    LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, assign_id)
-
-    def do_scan() -> typing.Optional[bool]:
-        """ helper function to do the scan and gather the result """
-        _, ext = os.path.splitext(fullpath)
-
-        try:
-            if ext in ENTRY_TYPES:
-                LOGGER.info("Scanning entry: %s", fullpath)
-                return entry.scan_file(fullpath, relpath, assign_id)
-
-            if ext in CATEGORY_TYPES:
-                LOGGER.info("Scanning meta info: %s", fullpath)
-                return category.scan_file(fullpath, relpath)
-
-            return None
-        except:  # pylint: disable=bare-except
-            LOGGER.exception("Got error parsing %s", fullpath)
-            return False
-
-    result = do_scan()
-    if result is False and not assign_id:
-        LOGGER.info("Scheduling fixup for %s", fullpath)
-        THREAD_POOL.submit(scan_file, fullpath, relpath, True)
-    else:
-        LOGGER.debug("%s complete", fullpath)
-        set_fingerprint(fullpath)
-        SCHEDULED_FILES.remove(fullpath)
-    return result
 
 
 @orm.db_session
@@ -158,16 +181,16 @@ def set_fingerprint(fullpath, fingerprint=None):
 class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
     """ Watchdog handler """
 
-    def __init__(self, content_dir):
+    def __init__(self, indexer, content_dir):
         super().__init__(ignore_directories=True)
+        self._indexer = indexer
         self.content_dir = content_dir
 
     def update_file(self, fullpath):
         """ Update a file """
-        if SCHEDULED_FILES.add(fullpath):
-            LOGGER.debug("Scheduling reindex of %s", fullpath)
-            relpath = os.path.relpath(fullpath, self.content_dir)
-            THREAD_POOL.submit(scan_file, fullpath, relpath, False)
+        LOGGER.debug("Scheduling reindex of %s", fullpath)
+        relpath = os.path.relpath(fullpath, self.content_dir)
+        self._indexer.scan_file(fullpath, relpath, False)
 
     def on_created(self, event):
         """ on_created handler """
@@ -198,7 +221,7 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
 def background_scan(content_dir):
     """ Start background scanning a directory for changes """
     observer = watchdog.observers.Observer()
-    observer.schedule(IndexWatchdog(content_dir),
+    observer.schedule(IndexWatchdog(current_app.indexer, content_dir),
                       content_dir, recursive=True)
     logging.info("Watching %s for changes", content_dir)
     observer.start()
@@ -216,7 +239,7 @@ def prune_missing(table):
                 if not os.path.isfile(item.file_path):
                     LOGGER.info("%s disappeared: %s", table.__name__, item.file_path)
                     removed_paths.append(item.file_path)
-        except:  # pylint:disable=bare-except
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Error pruning %s", table.__name__)
 
     @orm.db_session(retry=5)
@@ -226,7 +249,7 @@ def prune_missing(table):
             item = table.get(file_path=path)
             if item and not os.path.isfile(item.file_path):
                 item.delete()
-        except:  # pylint:disable=bare-except
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Error pruning %s", table.__name__)
 
     fill()
@@ -237,6 +260,8 @@ def prune_missing(table):
 def scan_index(content_dir):
     """ Scan all files in a content directory """
     LOGGER.debug("Reindexing content from %s", content_dir)
+
+    indexer = current_app.indexer
 
     def scan_directory(root, files):
         """ Helper function to scan a single directory """
@@ -251,14 +276,14 @@ def scan_index(content_dir):
 
                 fingerprint = utils.file_fingerprint(fullpath)
                 last_fingerprint = get_last_fingerprint(fullpath)
-                if fingerprint != last_fingerprint and SCHEDULED_FILES.add(fullpath):
+                if fingerprint != last_fingerprint:
                     LOGGER.debug("%s: %s -> %s", fullpath, last_fingerprint, fingerprint)
-                    scan_file(fullpath, relpath, False)
-        except:  # pylint:disable=bare-except
+                    indexer.scan_file(fullpath, relpath, False)
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
-        THREAD_POOL.submit(scan_directory, root, files)
+        indexer.thread_pool.submit(scan_directory, root, files)
 
     for table in (model.Entry, model.Category, model.Image, model.FileFingerprint):
-        THREAD_POOL.submit(prune_missing, table)
+        indexer.thread_pool.submit(prune_missing, table)

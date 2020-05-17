@@ -14,6 +14,7 @@ database_config = {
     'filename': ':memory:'
 }
 index_rescan_interval = 7200
+index_wait_time = 1
 
 # Site content locations
 content_folder = 'content'

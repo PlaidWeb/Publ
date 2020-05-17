@@ -18,7 +18,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 class GlobalConfig(DbEntity):
@@ -64,7 +64,7 @@ class FileFingerprint(DbEntity):
 
 class Entry(DbEntity):
     """ Indexed entry """
-    file_path = orm.Required(str)
+    file_path = orm.Required(str, index=True)
     category = orm.Optional(str)
     status = orm.Required(int)
 
@@ -219,7 +219,7 @@ def setup():
                             version.int_value)
             else:
                 rebuild = False
-    except:  # pylint:disable=bare-except
+    except Exception:  # pylint:disable=broad-except
         LOGGER.exception("Error mapping schema")
 
     if rebuild:
