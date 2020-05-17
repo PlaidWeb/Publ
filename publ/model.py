@@ -219,7 +219,7 @@ def setup():
                             version.int_value)
             else:
                 rebuild = False
-    except:  # pylint:disable=bare-except
+    except Exception:  # pylint:disable=broad-except
         LOGGER.exception("Error mapping schema")
 
     if rebuild:

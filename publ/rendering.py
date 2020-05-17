@@ -15,7 +15,8 @@ from . import (caching, config, image, index, model, path_alias, queries, user,
                utils, view)
 from .caching import cache
 from .category import Category
-from .entry import Entry, expire_record as entry_expire_record
+from .entry import Entry
+from .entry import expire_record as entry_expire_record
 from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)

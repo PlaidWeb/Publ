@@ -26,13 +26,13 @@ class Indexer:
     # pylint:disable=too-few-public-methods
     QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], bool]
 
-    def __init__(self, wait_time:float):
+    def __init__(self, wait_time: float):
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="Indexer")
         self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
         self._lock = threading.Lock()
-        self._running: concurrent.futures.Future = None
+        self._running: typing.Optional[concurrent.futures.Future] = None
         self._wait_time = wait_time
 
     def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
@@ -51,7 +51,7 @@ class Indexer:
             self._pending.add((fullpath, relpath, fixups))
         self._schedule(self._wait_time)
 
-    def _schedule(self, wait:float=0):
+    def _schedule(self, wait: float = 0):
         with self._lock:
             if not self._running or self._running.done():
                 if wait:
@@ -239,7 +239,7 @@ def prune_missing(table):
                 if not os.path.isfile(item.file_path):
                     LOGGER.info("%s disappeared: %s", table.__name__, item.file_path)
                     removed_paths.append(item.file_path)
-        except:  # pylint:disable=bare-except
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Error pruning %s", table.__name__)
 
     @orm.db_session(retry=5)
@@ -249,7 +249,7 @@ def prune_missing(table):
             item = table.get(file_path=path)
             if item and not os.path.isfile(item.file_path):
                 item.delete()
-        except:  # pylint:disable=bare-except
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Error pruning %s", table.__name__)
 
     fill()
@@ -279,7 +279,7 @@ def scan_index(content_dir):
                 if fingerprint != last_fingerprint:
                     LOGGER.debug("%s: %s -> %s", fullpath, last_fingerprint, fingerprint)
                     indexer.scan_file(fullpath, relpath, False)
-        except:  # pylint:disable=bare-except
+        except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
