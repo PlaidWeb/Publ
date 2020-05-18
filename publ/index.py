@@ -31,9 +31,16 @@ class Indexer:
             max_workers=1,
             thread_name_prefix="Indexer")
         self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
+        self._wait_count = 0
         self._lock = threading.Lock()
         self._running: typing.Optional[concurrent.futures.Future] = None
         self._wait_time = wait_time
+
+    @property
+    def in_progress(self) -> bool:
+        """ Returns whether there's an active or pending indexer task """
+        with self._lock:
+            return self._wait_count > 0
 
     def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
         """ Scan a file for the index
@@ -62,7 +69,9 @@ class Indexer:
                 # run the actual pending task
                 self._running = self.thread_pool.submit(self._scan_pending)
 
-                LOGGER.debug("worker started %s", self._running)
+                self._wait_count += 1
+                LOGGER.debug("worker started %s, wait_count now %d",
+                             self._running, self._wait_count)
 
     def _scan_pending(self):
         """ Scan all the pending items """
@@ -83,6 +92,8 @@ class Indexer:
 
         except Exception:  # pylint:disable=broad-except
             LOGGER.exception("_scan_pending failed")
+        self._wait_count -= 1
+        LOGGER.info("Wait count now %s", self._wait_count)
 
     def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
         LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, fixups)
@@ -140,7 +151,7 @@ def queue_length() -> typing.Optional[int]:
 
 def in_progress() -> bool:
     """ Return if there's an index in progress """
-    return bool(queue_length)
+    return current_app.indexer.in_progress
 
 
 def is_scannable(fullpath) -> bool:

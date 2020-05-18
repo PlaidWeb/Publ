@@ -188,13 +188,14 @@ def render_exception(error):
     category = request.path[1:]
 
     qsize = index.queue_length()
-    if isinstance(error, http_error.NotFound) and qsize:
+    if isinstance(error, http_error.NotFound) and (qsize or index.in_progress()):
         retry = max(5, qsize / 5)
         return render_error(
             category, "Site reindex in progress", 503,
             exception={
                 'type': 'Service Unavailable',
-                'str': "The site's contents are not fully known; please try again later",
+                'str': "The site's contents are not fully known; please try again later (qs="
+                + str(qsize) + ")",
                 'qsize': qsize
             },
             headers={
