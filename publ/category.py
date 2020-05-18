@@ -37,7 +37,7 @@ def load_metafile(filepath):
     return None
 
 
-def search_path(category:str) -> str:
+def search_path(category: str) -> str:
     """ Return the file search path for a named category """
     return os.path.join(config.content_folder, category)
 

@@ -6,10 +6,9 @@ import typing
 
 import arrow
 import flask
-from pony import orm
 from werkzeug.utils import cached_property
 
-from . import caching, model, queries, tokens, user, utils
+from . import caching, queries, tokens, user, utils
 from .entry import Entry
 
 ViewSpec = typing.Dict[str, typing.Any]  # pylint:disable=invalid-name
@@ -393,9 +392,9 @@ class View(caching.Memoizable):
 
         base_query = queries.build_query(base)
         oldest_neighbor = base_query.filter(lambda e: e.local_date < start_date.datetime)\
-        .order_by(*queries.ORDER_BY['newest']).first()
+            .order_by(*queries.ORDER_BY['newest']).first()
         newest_neighbor = base_query.filter(lambda e: e.local_date > end_date.datetime)\
-        .order_by(*queries.ORDER_BY['oldest']).first()
+            .order_by(*queries.ORDER_BY['oldest']).first()
 
         older_view: typing.Optional['View'] = None
         newer_view: typing.Optional['View'] = None

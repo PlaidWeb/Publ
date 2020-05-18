@@ -38,6 +38,7 @@ REVERSE_ORDER_BY = {
     'title': (orm.desc(model.Entry.sort_title), orm.desc(model.Entry.id))
 }
 
+
 def where_entry_visible(query, date=None):
     """ Generate a where clause for currently-visible entries
 
@@ -200,21 +201,26 @@ def where_entry_date(query, datespec):
                         e.local_date <= end_date.naive
                         )
 
+
 def where_entry_attachments(query, entry):
     """ Where clause for entries which are attachments of the specified one. """
     return query.filter(lambda e: e in entry.attachments)
+
 
 def where_entry_attached(query, entry):
     """ Where clause for entries which this one is attached onto. """
     return query.filter(lambda e: e in entry.attached)
 
+
 def where_entry_has_attachments(query, val):
     """ Where clause for entries which have attachments """
     return query.filter(lambda e: val == orm.exists(e.attachments))
 
+
 def where_entry_is_attached(query, val):
     """ Where clause for entries which are attached """
     return query.filter(lambda e: val == orm.exists(e.attached))
+
 
 def get_entry(entry):
     """ Helper function to get an entry by ID or by object """

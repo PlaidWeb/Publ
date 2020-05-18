@@ -525,12 +525,11 @@ class Entry(caching.Memoizable):
     def attachments(self) -> typing.Callable[..., typing.List]:
         """ Returns a view of entries that are attached to this one. Takes the
         standard view arguments. """
-        from .view import View
 
-        def _get_attachments(order=None, **kwargs) -> str:
+        def _get_attachments(order=None, **kwargs) -> typing.List:
             query = queries.build_query({**kwargs,
-                'attachments': self._record
-                })
+                                         'attachments': self._record
+                                         })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
             return [Entry(e) for e in query]
@@ -541,10 +540,10 @@ class Entry(caching.Memoizable):
     def attached(self) -> typing.Callable[..., typing.List]:
         """ Get all the entries that have attached this one """
 
-        def _get_attached(order=None, **kwargs) -> str:
+        def _get_attached(order=None, **kwargs) -> typing.List:
             query = queries.build_query({**kwargs,
-                'attached': self._record
-                })
+                                         'attached': self._record
+                                         })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
             return [Entry(e) for e in query]
