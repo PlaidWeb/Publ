@@ -1,6 +1,25 @@
 {% extends '/index.html' %}
 
 {% block body scoped %}
-<p>Attachment count: {{entry.attachments|length}} {{entry.attachments}}</p>
+<p>Attachment count: {{entry.attachments|length}}</p>
 {{super()}}
+{% endblock %}
+
+{% block entries scoped %}
+{{super()}}
+
+<h2>Entries with attachments</h2>
+<ul>
+    {% for entry in content(is_attached=None,has_attachments=True) %}
+    <li><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
+</ul>
+
+<h2>Entries which are attached</h2>
+<ul>
+    {% for entry in content(has_attachments=None,is_attached=True) %}
+    <li><a href="{{entry.link}}">{{entry.title}}</a></li>
+    {% endfor %}
+</ul>
+
 {% endblock %}

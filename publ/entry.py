@@ -528,8 +528,9 @@ class Entry(caching.Memoizable):
         from .view import View
 
         def _get_attachments(order=None, **kwargs) -> str:
-            query = queries.build_query(kwargs)
-            query = query.filter(lambda e: self._record in e.attached)
+            query = queries.build_query({**kwargs,
+                'attachments': self._record
+                })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
             return [Entry(e) for e in query]
@@ -541,8 +542,9 @@ class Entry(caching.Memoizable):
         """ Get all the entries that have attached this one """
 
         def _get_attached(order=None, **kwargs) -> str:
-            query = queries.build_query(kwargs)
-            query = query.filter(lambda e: self._record in e.attachments)
+            query = queries.build_query({**kwargs,
+                'attached': self._record
+                })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
             return [Entry(e) for e in query]

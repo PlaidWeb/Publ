@@ -469,6 +469,9 @@ class View(caching.Memoizable):
     def __call__(self, **restrict):
         return View({**self.spec, **restrict})
 
+    def __iter__(self):
+        return self.entries().__iter__()
+
     def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
         return View({**self.spec, 'tag': self.tags | set(tags)})

@@ -44,7 +44,7 @@
 
 {% block content %}
 <div id="content">
-    {% set content = view(entry_type_not=['sidebar','supplement'],count=20) %}
+    {% set content = view(entry_type_not=['sidebar'],is_attached=False,count=20) %}
 
     <div class="nav">
         {% if content.previous %}
@@ -65,7 +65,7 @@
         </div>
         {% endif %}
 
-        {% for entry in content.entries %}
+        {% for entry in content %}
 
         <article class="h-entry entry">
         {% block entry scoped %}
