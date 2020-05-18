@@ -1,0 +1,6 @@
+{% extends '/index.html' %}
+
+{% block body scoped %}
+<p>Attachment count: {{entry.attachments|length}} {{entry.attachments}}</p>
+{{super()}}
+{% endblock %}

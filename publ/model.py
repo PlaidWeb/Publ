@@ -18,7 +18,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 
 class GlobalConfig(DbEntity):
@@ -90,6 +90,9 @@ class Entry(DbEntity):
 
     auth = orm.Set("EntryAuth")
     auth_log = orm.Set("AuthLog")
+
+    attachments = orm.Set("Entry", reverse="attached")
+    attached = orm.Set("Entry", reverse="attachments")
 
     canonical_path = orm.Optional(str)
 

@@ -37,6 +37,11 @@ def load_metafile(filepath):
     return None
 
 
+def search_path(category:str) -> str:
+    """ Return the file search path for a named category """
+    return os.path.join(config.content_folder, category)
+
+
 class Category(caching.Memoizable):
     """ Wrapper for category information """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -193,8 +198,8 @@ class Category(caching.Memoizable):
 
     @cached_property
     def search_path(self) -> str:
-        """ Get the image search path for the category """
-        return os.path.join(config.content_folder, self.path)
+        """ Get the file search path for this category """
+        return search_path(self.path)
 
     @cached_property
     def breadcrumb(self) -> typing.List["Category"]:

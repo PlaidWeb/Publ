@@ -1,0 +1,19 @@
+{% extends '/entry.html' %}
+
+{% block entrybody scoped %}
+{% if entry.attached %}
+<p>see also: {{entry.attached}}</p>
+{% endif %}
+{{ super() }}
+{% endblock %}
+
+{% block entrymore scoped %}
+{{ super() }}
+{% for attach in entry.attachments %}
+<h3>{{attach.title}}</h3>
+
+{{attach.body}}
+{{attach.more}}
+</h3>
+{% endfor %}
+{% endblock %}

@@ -168,7 +168,7 @@ def set_fingerprint(fullpath, fingerprint=None):
         if record and record.fingerprint != fingerprint:
             record.set(fingerprint=fingerprint,
                        file_mtime=os.stat(fullpath).st_mtime)
-        else:
+        elif not record:
             record = model.FileFingerprint(
                 file_path=fullpath,
                 fingerprint=fingerprint,
