@@ -25,6 +25,19 @@ class FilterCombiner(Enum):
     NOT = 2     # synonym for NONE
 
 
+# Ordering queries for different sort orders
+ORDER_BY = {
+    'newest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'oldest': (model.Entry.local_date, model.Entry.id),
+    'title': (model.Entry.sort_title, model.Entry.id)
+}
+
+REVERSE_ORDER_BY = {
+    'newest': (model.Entry.local_date, model.Entry.id),
+    'oldest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'title': (orm.desc(model.Entry.sort_title), orm.desc(model.Entry.id))
+}
+
 def where_entry_visible(query, date=None):
     """ Generate a where clause for currently-visible entries
 

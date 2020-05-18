@@ -28,20 +28,6 @@ PAGINATION_PRIORITY = ['date', 'count']
 # All spec keys that indicate a pagination
 PAGINATION_SPECS = OFFSET_PRIORITY + PAGINATION_PRIORITY
 
-#: Ordering queries for different sort orders
-ORDER_BY = {
-    'newest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
-    'oldest': (model.Entry.local_date, model.Entry.id),
-    'title': (model.Entry.sort_title, model.Entry.id)
-}
-
-REVERSE_ORDER_BY = {
-    'newest': (model.Entry.local_date, model.Entry.id),
-    'oldest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
-    'title': (orm.desc(model.Entry.sort_title), orm.desc(model.Entry.id))
-}
-
-
 SPAN_FORMATS = {
     'day': 'YYYY/MM/DD',
     'week': 'YYYY/MM/DD',
@@ -94,7 +80,7 @@ class View(caching.Memoizable):
                 self.spec['last'] = self.spec['start']
 
         self._entries = queries.build_query(
-            spec).order_by(*ORDER_BY[self._order_by])
+            spec).order_by(*queries.ORDER_BY[self._order_by])
 
         if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
@@ -406,10 +392,10 @@ class View(caching.Memoizable):
         start_date, end_date = date.span(interval)
 
         base_query = queries.build_query(base)
-        oldest_neighbor = base_query.filter(
-            lambda e: e.local_date < start_date.datetime).order_by(*ORDER_BY['newest']).first()
-        newest_neighbor = base_query.filter(
-            lambda e: e.local_date > end_date.datetime).order_by(*ORDER_BY['oldest']).first()
+        oldest_neighbor = base_query.filter(lambda e: e.local_date < start_date.datetime)\
+        .order_by(*queries.ORDER_BY['newest']).first()
+        newest_neighbor = base_query.filter(lambda e: e.local_date > end_date.datetime)\
+        .order_by(*queries.ORDER_BY['oldest']).first()
 
         older_view: typing.Optional['View'] = None
         newer_view: typing.Optional['View'] = None

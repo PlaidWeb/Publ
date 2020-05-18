@@ -521,6 +521,34 @@ class Entry(caching.Memoizable):
             args,
             search_path=self.search_path)
 
+    @cached_property
+    def attachments(self) -> typing.Callable[..., typing.List]:
+        """ Returns a view of entries that are attached to this one. Takes the
+        standard view arguments. """
+        from .view import View
+
+        def _get_attachments(order=None, **kwargs) -> str:
+            query = queries.build_query(kwargs)
+            query = query.filter(lambda e: self._record in e.attached)
+            if order:
+                query = query.order_by(*queries.ORDER_BY[order])
+            return [Entry(e) for e in query]
+
+        return CallableProxy(_get_attachments)
+
+    @cached_property
+    def attached(self) -> typing.Callable[..., typing.List]:
+        """ Get all the entries that have attached this one """
+
+        def _get_attached(order=None, **kwargs) -> str:
+            query = queries.build_query(kwargs)
+            query = query.filter(lambda e: self._record in e.attachments)
+            if order:
+                query = query.order_by(*queries.ORDER_BY[order])
+            return [Entry(e) for e in query]
+
+        return CallableProxy(_get_attached)
+
     def _get_footnotes(self, body, more, args) -> str:
         """ get the rendered Markdown footnotes for the entry """
         footnotes: typing.List[str] = []

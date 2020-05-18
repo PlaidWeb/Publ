@@ -2,15 +2,17 @@
 
 {% block entrybody scoped %}
 {% if entry.attached %}
-<p>see also: {{entry.attached}}</p>
+<p>see also: {% for attached in entry.attached %}
+    <a href="{{attached.link}}">{{attached.title}}</a>
+{% endfor %}</p>
 {% endif %}
 {{ super() }}
 {% endblock %}
 
 {% block entrymore scoped %}
 {{ super() }}
-{% for attach in entry.attachments %}
-<h3>{{attach.title}}</h3>
+{% for attach in entry.attachments(order='title') %}
+<h3><a href="{{attach.link}}">{{attach.title}}</a></h3>
 
 {{attach.body}}
 {{attach.more}}
