@@ -26,9 +26,9 @@ def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = Fal
     path, sep, anchor = path.partition('#')
 
     # Resolve entries
-    found = _find_entry(path, search_path)
+    found = find_entry(path, search_path)
     if found:
-        return found.permalink(absolute=absolute) + sep + anchor
+        return entry.Entry(found).permalink(absolute=absolute) + sep + anchor
 
     # Resolve images and assets
     img_path, img_args, _ = image.parse_image_spec(path)
@@ -43,7 +43,7 @@ def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = Fal
     return path + sep + anchor
 
 
-def _find_entry(rel_path: str, search_path: typing.Tuple[str, ...]):
+def find_entry(rel_path: str, search_path: typing.Tuple[str, ...]) -> typing.Optional[model.Entry]:
     """ Find an entry by relative path. Arguments:
 
     rel_path -- the entry's filename (or entry ID)
@@ -56,7 +56,7 @@ def _find_entry(rel_path: str, search_path: typing.Tuple[str, ...]):
         entry_id = int(rel_path)
         record = model.Entry.get(id=entry_id)
         if record:
-            return entry.Entry(record)
+            return record
     except ValueError:
         pass
 
@@ -68,5 +68,5 @@ def _find_entry(rel_path: str, search_path: typing.Tuple[str, ...]):
         abspath = os.path.normpath(os.path.join(where, rel_path))
         record = model.Entry.get(file_path=abspath)
         if record:
-            return entry.Entry(record)
+            return record
     return None

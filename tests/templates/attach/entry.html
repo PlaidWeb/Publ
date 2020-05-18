@@ -1,0 +1,36 @@
+{% extends '/entry.html' %}
+
+{% block entrybody scoped %}
+{% if entry.attached %}
+<p>see also: {% for attached in entry.attached %}
+    <a href="{{attached.link}}">{{attached.title}}</a>
+{% endfor %}</p>
+{% endif %}
+{{ super() }}
+{% endblock %}
+
+{% block entrymore scoped %}
+{{ super() }}
+{% for attach in entry.attachments(order='title') %}
+<h3><a href="{{attach.link}}">{{attach.title}}</a></h3>
+
+{{attach.body}}
+{{attach.more}}
+</h3>
+{% endfor %}
+
+<p>Attachments of this entry via get_view:</p>
+<ul>
+{% for attach in get_view(attachments=entry) %}
+<li>{{attach.title}}</li>
+{% endfor %}
+</ul>
+
+<p>What this entry is attached to via get_view:</p>
+<ul>
+{% for attach in get_view(attached=entry) %}
+<li>{{attach.title}}</li>
+{% endfor %}
+</ul>
+
+{% endblock %}

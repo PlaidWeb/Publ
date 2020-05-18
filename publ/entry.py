@@ -521,6 +521,35 @@ class Entry(caching.Memoizable):
             args,
             search_path=self.search_path)
 
+    @cached_property
+    def attachments(self) -> typing.Callable[..., typing.List]:
+        """ Returns a view of entries that are attached to this one. Takes the
+        standard view arguments. """
+
+        def _get_attachments(order=None, **kwargs) -> typing.List:
+            query = queries.build_query({**kwargs,
+                                         'attachments': self._record
+                                         })
+            if order:
+                query = query.order_by(*queries.ORDER_BY[order])
+            return [Entry(e) for e in query]
+
+        return CallableProxy(_get_attachments)
+
+    @cached_property
+    def attached(self) -> typing.Callable[..., typing.List]:
+        """ Get all the entries that have attached this one """
+
+        def _get_attached(order=None, **kwargs) -> typing.List:
+            query = queries.build_query({**kwargs,
+                                         'attached': self._record
+                                         })
+            if order:
+                query = query.order_by(*queries.ORDER_BY[order])
+            return [Entry(e) for e in query]
+
+        return CallableProxy(_get_attached)
+
     def _get_footnotes(self, body, more, args) -> str:
         """ get the rendered Markdown footnotes for the entry """
         footnotes: typing.List[str] = []
@@ -845,20 +874,54 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], apply_fixups: bool) 
 
         orm.commit()
 
+    result = True
+
+    # manage entry attachments
+    with orm.db_session:
+        from .category import search_path as cat_search_path
+        search_path = (os.path.dirname(fullpath), cat_search_path(record.category))
+
+        set_attach = set()
+        for attach in entry.get_all('Attach', []):
+            other = links.find_entry(attach, search_path)
+            if other:
+                set_attach.add(other)
+            elif not apply_fixups:
+                # The entry hasn't been found, so treat this as a fixup task
+                LOGGER.info("Attempted to link to unknown entry '%s/%s'; retrying", relpath, attach)
+                result = False
+            else:
+                LOGGER.warning("Failed to link to unknown entry '%s/%s'; ignoring", relpath, attach)
+
+        remove_attach = []
+        for attach in record.attachments:
+            if attach not in set_attach:
+                remove_attach.append(attach)
+
+        LOGGER.debug("set_attach %s remove_attach %s", set_attach, remove_attach)
+        for attach in remove_attach:
+            record.attachments.remove(attach)
+        for attach in set_attach:
+            record.attachments.add(attach)
+
+        orm.commit()
+
+    # do final fixups
     if record.status == model.PublishStatus.DRAFT.value:
         LOGGER.info("Not touching draft entry %s", fullpath)
     elif fixup_needed:
         LOGGER.info("Fixing up entry %s", fullpath)
-        return save_file(fullpath, entry, check_fingerprint)
+        result = save_file(fullpath, entry, check_fingerprint)
 
-    return True
+    return result
 
 
 def expire_record(record):
     """ Expire a record for a missing entry """
 
-    # This entry no longer exists so delete anything that references it and
-    # mark the file GONE.
+    # This entry no longer exists so delete anything that relies on it
     orm.delete(pa for pa in model.PathAlias if pa.entry == record)
+
+    # mark the entry as GONE to remove it from indexes
     record.status = model.PublishStatus.GONE.value
     orm.commit()

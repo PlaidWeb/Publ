@@ -16,7 +16,8 @@ modified in it, and shouldn't require an
 <a href="https://flask.palletsprojects.com/en/1.1.x/appcontext/">application
 context</a> to function.</p>
 
-<img src="//example.com/some-image.png">
+<img src="//example.com/some-image.png" width="500">
+<img data-qwer="poiu" width="yes" height="no">
 
 <br/><br/>
 
@@ -44,6 +45,16 @@ def test_process_attr_rewrites():
             '<div data-something="/bleh/something" />'
         assert process('<div $data-something="@something" />', {'absolute': True}, ()) == \
             '<div data-something="https://foo.bar/bleh/something" />'
+
+
+def test_image_args():
+    import flask
+    from publ.html_entry import process
+
+    app = flask.Flask(__name__, static_folder="bleh")
+    with app.test_request_context("https://foo.bar/baz"):
+        assert process('<img src="//example.com/image.png{500}">', {}, ()) == \
+            '<img src="//example.com/image.png" width="500">'
 
 
 def test_process_strip_html():

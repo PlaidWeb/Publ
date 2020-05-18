@@ -25,6 +25,20 @@ class FilterCombiner(Enum):
     NOT = 2     # synonym for NONE
 
 
+# Ordering queries for different sort orders
+ORDER_BY = {
+    'newest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'oldest': (model.Entry.local_date, model.Entry.id),
+    'title': (model.Entry.sort_title, model.Entry.id)
+}
+
+REVERSE_ORDER_BY = {
+    'newest': (model.Entry.local_date, model.Entry.id),
+    'oldest': (orm.desc(model.Entry.local_date), orm.desc(model.Entry.id)),
+    'title': (orm.desc(model.Entry.sort_title), orm.desc(model.Entry.id))
+}
+
+
 def where_entry_visible(query, date=None):
     """ Generate a where clause for currently-visible entries
 
@@ -188,14 +202,38 @@ def where_entry_date(query, datespec):
                         )
 
 
+def where_entry_attachments(query, entry):
+    """ Where clause for entries which are attachments of the specified one. """
+    return query.filter(lambda e: e in entry.attachments)
+
+
+def where_entry_attached(query, entry):
+    """ Where clause for entries which this one is attached onto. """
+    return query.filter(lambda e: e in entry.attached)
+
+
+def where_entry_has_attachments(query, val):
+    """ Where clause for entries which have attachments """
+    return query.filter(lambda e: val == orm.exists(e.attachments))
+
+
+def where_entry_is_attached(query, val):
+    """ Where clause for entries which are attached """
+    return query.filter(lambda e: val == orm.exists(e.attached))
+
+
 def get_entry(entry):
     """ Helper function to get an entry by ID or by object """
 
-    if hasattr(entry, 'id'):
+    if isinstance(entry, model.Entry):
         return entry
+
+    if hasattr(entry, '_record'):
+        return getattr(entry, '_record')
 
     if isinstance(entry, (int, str)):
         return model.Entry.get(id=int(entry))
+
     raise ValueError("entry is of unknown type {}".format(type(entry)))
 
 
@@ -258,5 +296,17 @@ def build_query(spec):
 
     if spec.get('after') is not None:
         query = where_after_entry(query, get_entry(spec['after']))
+
+    if spec.get('attachments') is not None:
+        query = where_entry_attachments(query, get_entry(spec['attachments']))
+
+    if spec.get('attached') is not None:
+        query = where_entry_attached(query, get_entry(spec['attached']))
+
+    if spec.get('has_attachments') is not None:
+        query = where_entry_has_attachments(query, spec['has_attachments'])
+
+    if spec.get('is_attached') is not None:
+        query = where_entry_is_attached(query, spec['is_attached'])
 
     return query.distinct()
