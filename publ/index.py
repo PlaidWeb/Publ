@@ -24,7 +24,7 @@ CATEGORY_TYPES = ['.cat', '.meta']
 class Indexer:
     """ Class which handles the scheduling of file indexing """
     # pylint:disable=too-few-public-methods
-    QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], bool]
+    QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], int]
 
     def __init__(self, wait_time: float):
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(
@@ -42,12 +42,12 @@ class Indexer:
         with self._lock:
             return self._wait_count > 0
 
-    def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
+    def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         """ Scan a file for the index
 
         fullpath -- The full path to the file
         relpath -- The path to the file, relative to its base directory
-        fixups -- Whether to perform fixup routines on the file
+        fixup_pass -- Which phase of the fixup process we're on
 
         This calls into various modules' scanner functions; the expectation is that
         the scan_file function will return a truthy value if it was scanned
@@ -55,7 +55,7 @@ class Indexer:
         """
 
         with self._lock:
-            self._pending.add((fullpath, relpath, fixups))
+            self._pending.add((fullpath, relpath, fixup_pass))
         self._schedule(self._wait_time)
 
     def _schedule(self, wait: float = 0):
@@ -95,8 +95,8 @@ class Indexer:
         self._wait_count -= 1
         LOGGER.info("Wait count now %s", self._wait_count)
 
-    def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixups: bool):
-        LOGGER.debug("Scanning file: %s (%s) %s", fullpath, relpath, fixups)
+    def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
+        LOGGER.debug("Scanning file: %s (%s) pass=%d", fullpath, relpath, fixup_pass)
 
         def do_scan() -> typing.Optional[bool]:
             """ helper function to do the scan and gather the result """
@@ -105,7 +105,7 @@ class Indexer:
             try:
                 if ext in ENTRY_TYPES:
                     LOGGER.info("Scanning entry: %s", fullpath)
-                    return entry.scan_file(fullpath, relpath, fixups)
+                    return entry.scan_file(fullpath, relpath, fixup_pass)
 
                 if ext in CATEGORY_TYPES:
                     LOGGER.info("Scanning meta info: %s", fullpath)
@@ -117,9 +117,9 @@ class Indexer:
                 return False
 
         result = do_scan()
-        if result is False and not fixups:
-            LOGGER.info("Scheduling fixup for %s", fullpath)
-            self.scan_file(fullpath, relpath, True)
+        if result is False:
+            LOGGER.info("Scheduling fixup pass %d for %s", fixup_pass + 1, fullpath)
+            self.scan_file(fullpath, relpath, fixup_pass + 1)
         else:
             LOGGER.debug("%s complete", fullpath)
             set_fingerprint(fullpath)

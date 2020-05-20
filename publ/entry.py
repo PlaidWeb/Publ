@@ -728,13 +728,13 @@ def save_file(fullpath: str, entry: email.message.Message, fingerprint: str):
 
 
 @orm.db_session(retry=5)
-def scan_file(fullpath: str, relpath: typing.Optional[str], apply_fixups: bool) -> bool:
+def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> bool:
     """ scan a file and put it into the index
 
     :param fullpath str: The full file path
     :param relpath typing.Optional[str]: The file path relative to the content
         root; if None, this will be inferred
-    :param apply_fixups bool: Whether to assign an ID and apply fixups
+    :param fixup_pass int: Which iteration of fixing-up we're on
 
     """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -749,7 +749,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], apply_fixups: bool) 
             expire_record(record)
         return True
 
-    entry_id = get_entry_id(entry, fullpath, apply_fixups)
+    entry_id = get_entry_id(entry, fullpath, fixup_pass > 0)
     if entry_id is None:
         return False
 
@@ -886,12 +886,16 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], apply_fixups: bool) 
             other = links.find_entry(attach, search_path)
             if other:
                 set_attach.add(other)
-            elif not apply_fixups:
+            elif fixup_pass < 3:
                 # The entry hasn't been found, so treat this as a fixup task
-                LOGGER.info("Attempted to link to unknown entry '%s/%s'; retrying", relpath, attach)
+                # Pass 0 - this entry might not have an ID
+                # Pass 1 - the other entry might not have an ID (since this can be scheduled
+                #    before pass 1 of the other entry)
+                # Pass 2 - everything should have an ID now
+                LOGGER.info("Attempted to link to unknown entry '%s -> %s'; retrying", relpath, attach)
                 result = False
             else:
-                LOGGER.warning("Failed to link to unknown entry '%s/%s'; ignoring", relpath, attach)
+                LOGGER.warning("Failed to link to unknown entry '%s -> %s'; ignoring", relpath, attach)
 
         remove_attach = []
         for attach in record.attachments:

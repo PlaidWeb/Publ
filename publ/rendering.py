@@ -115,7 +115,6 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
     def latest_entry():
         # Cache-busting query based on most recently-visible entry
         cb_query = queries.build_query({})
-        cb_query = cb_query.filter(lambda e: e.status == model.PublishStatus.SCHEDULED.value)
         cb_query = cb_query.order_by(orm.desc(model.Entry.utc_date))
         latest = cb_query.first()
         if latest:
