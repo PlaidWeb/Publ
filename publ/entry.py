@@ -892,10 +892,12 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
                 # Pass 1 - the other entry might not have an ID (since this can be scheduled
                 #    before pass 1 of the other entry)
                 # Pass 2 - everything should have an ID now
-                LOGGER.info("Attempted to link to unknown entry '%s -> %s'; retrying", relpath, attach)
+                LOGGER.info("Attempted to link to unknown entry '%s -> %s'; retrying",
+                            relpath, attach)
                 result = False
             else:
-                LOGGER.warning("Failed to link to unknown entry '%s -> %s'; ignoring", relpath, attach)
+                LOGGER.warning(
+                    "Failed to link to unknown entry '%s -> %s'; ignoring", relpath, attach)
 
         remove_attach = []
         for attach in record.attachments:
