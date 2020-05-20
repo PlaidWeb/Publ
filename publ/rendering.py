@@ -11,8 +11,8 @@ import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
 
-from . import (caching, config, image, index, model, path_alias, queries, user,
-               utils, view)
+from . import (__version__, caching, config, image, index, model, path_alias,
+               queries, user, utils, view)
 from .caching import cache
 from .category import Category
 from .entry import Entry
@@ -128,6 +128,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
                          _url=request.url,
                          _index_time=index.last_modified(),
                          _latest=latest_entry(),
+                         _publ_version=__version__.__version__,
                          **kwargs)
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
