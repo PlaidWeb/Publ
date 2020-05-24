@@ -501,6 +501,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     return rendered, headers
 
 
+@orm.db_session(retry=5)
 def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()

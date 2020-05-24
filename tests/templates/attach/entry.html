@@ -22,7 +22,7 @@
 <p>Attachments of this entry via get_view:</p>
 <ul>
 {% for attach in get_view(attachments=entry) %}
-<li>{{attach.title}}</li>
+<li>{{attach.title}} ({{attach.entry_type}})</li>
 {% endfor %}
 </ul>
 
