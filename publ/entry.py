@@ -804,6 +804,9 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     values['local_date'] = entry_date.naive
 
     LOGGER.debug("getting entry %s with id %d", fullpath, entry_id)
+
+    remove_by_path(fullpath, entry_id)
+
     record = model.Entry.get(id=entry_id)
     if record:
         LOGGER.debug("Reusing existing entry %d", record.id)
@@ -922,6 +925,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     return result
 
 
+@orm.db_session
 def expire_record(record):
     """ Expire a record for a missing entry """
 
@@ -930,4 +934,17 @@ def expire_record(record):
 
     # mark the entry as GONE to remove it from indexes
     record.status = model.PublishStatus.GONE.value
+    orm.commit()
+
+
+@orm.db_session
+def remove_by_path(fullpath: str, entry_id: int):
+    """ Remove entries for a path that don't match the expected ID """
+
+    orm.delete(pa for pa in model.PathAlias  # type:ignore
+               if pa.entry.file_path == fullpath
+               and pa.entry.id != entry_id)
+    orm.delete(e for e in model.Entry  # type:ignore
+               if e.file_path == fullpath
+               and e.id != entry_id)
     orm.commit()
