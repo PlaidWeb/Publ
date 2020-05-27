@@ -84,8 +84,8 @@ def image_function(template=None,
         # this too
         path += (category.search_path,)
     if template is not None:
-        path += os.path.join(config.content_folder,
-                             os.path.dirname(template.filename)),
+        path += (os.path.join(config.content_folder,
+                              os.path.dirname(template.filename)),)
 
     return lambda filename: image.get_image(filename, path)
 
@@ -464,7 +464,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         current_id: typing.Optional[int] = int(entry_obj.get('Entry-ID'))  # type:ignore
     except (KeyError, TypeError, ValueError) as err:
         LOGGER.debug("Error checking entry ID: %s", err)
-        current_id = None
+        current_id = record.id
     if current_id != record.id:
         LOGGER.debug("entry %s says it has id %d, index says %d",
                      entry_obj.file_path, current_id, record.id)
@@ -472,7 +472,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         from .entry import scan_file
         scan_file(entry_obj.file_path, None, True)
 
-        return redirect(url_for('entry', entry_id=record.id))
+        return redirect(url_for('entry', entry_id=current_id))
 
     entry_template = (template
                       or entry_obj.get('Entry-Template')
