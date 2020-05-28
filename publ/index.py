@@ -27,12 +27,13 @@ class Indexer:
     QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], int]
 
     def __init__(self, wait_time: float):
-        self.thread_pool = concurrent.futures.ThreadPoolExecutor(
+        self._thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="Indexer")
         self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
         self._wait_count = 0
         self._lock = threading.Lock()
+        self._count_lock = threading.Lock()
         self._running: typing.Optional[concurrent.futures.Future] = None
         self._wait_time = wait_time
 
@@ -41,6 +42,12 @@ class Indexer:
         """ Returns whether there's an active or pending indexer task """
         with self._lock:
             return self._wait_count > 0
+
+    @property
+    def queue_size(self) -> int:
+        """ Returns the number of queued work items """
+        with self._lock:
+            return self._wait_count
 
     def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         """ Scan a file for the index
@@ -56,44 +63,49 @@ class Indexer:
 
         with self._lock:
             self._pending.add((fullpath, relpath, fixup_pass))
-        self._schedule(self._wait_time)
+        self._start_scan(self._wait_time)
 
-    def _schedule(self, wait: float = 0):
+    def submit(self, func, *args, **kwargs):
+        """ Schedule a task into the task pool """
+        with self._count_lock:
+            self._wait_count += 1
+
+        def do_task():
+            try:
+                func(*args, **kwargs)
+            except Exception:  # pylint:disable=broad-except
+                LOGGER.exception("Task failed")
+            with self._count_lock:
+                self._wait_count -= 1
+
+        return self._thread_pool.submit(do_task)
+
+    def _start_scan(self, wait: float = 0):
         with self._lock:
             if not self._running or self._running.done():
                 if wait:
                     # busywait the worker thread to wait for things to settle down
                     # (and to batch up a bunch of updates in a row)
-                    self.thread_pool.submit(time.sleep, wait)
+                    self.submit(time.sleep, wait)
 
                 # run the actual pending task
-                self._running = self.thread_pool.submit(self._scan_pending)
-
-                self._wait_count += 1
-                LOGGER.debug("worker started %s, wait_count now %d",
-                             self._running, self._wait_count)
+                self._running = self.submit(self._scan_pending)
 
     def _scan_pending(self):
         """ Scan all the pending items """
-        try:
-            with self._lock:
-                items = self._pending
-                self._pending = set()
-            LOGGER.debug("Processing %d files", len(items))
+        with self._lock:
+            items = self._pending
+            self._pending = set()
+        LOGGER.debug("Processing %d files", len(items))
 
-            # process the known items
-            for item in items:
-                self._scan_file(*item)
+        # process the known items
+        for item in items:
+            self._scan_file(*item)
 
-            # and then schedule a catchup for anything that happened
-            # while this scan was happening
-            if items:
-                self.thread_pool.submit(self._schedule)
-
-        except Exception:  # pylint:disable=broad-except
-            LOGGER.exception("_scan_pending failed")
-        self._wait_count -= 1
-        LOGGER.info("Wait count now %s", self._wait_count)
+        # and then schedule a catchup for anything that happened
+        # while this scan was happening
+        if items:
+            self.submit(self._start_scan)
 
     def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         LOGGER.debug("Scanning file: %s (%s) pass=%d", fullpath, relpath, fixup_pass)
@@ -139,14 +151,9 @@ def last_modified() -> typing.Tuple[typing.Optional[str],
     return None, None, None
 
 
-def _work_queue():
-    return getattr(current_app.indexer.thread_pool, '_work_queue', None)
-
-
-def queue_length() -> typing.Optional[int]:
+def queue_size() -> typing.Optional[int]:
     """ Return the approximate length of the work queue """
-    work_queue = _work_queue()
-    return work_queue.qsize() if work_queue else None
+    return current_app.indexer.queue_size
 
 
 def in_progress() -> bool:
@@ -294,7 +301,7 @@ def scan_index(content_dir):
             LOGGER.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
-        indexer.thread_pool.submit(scan_directory, root, files)
+        indexer.submit(scan_directory, root, files)
 
     for table in (model.Entry, model.Category, model.Image, model.FileFingerprint):
-        indexer.thread_pool.submit(prune_missing, table)
+        indexer.submit(prune_missing, table)
