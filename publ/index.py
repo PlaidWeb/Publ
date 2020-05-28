@@ -37,6 +37,7 @@ class Indexer:
         self._count_lock = threading.Lock()
         self._running: typing.Optional[concurrent.futures.Future] = None
         self._wait_time = wait_time
+        self.last_indexed: typing.Optional[str] = None
 
     @property
     def in_progress(self) -> bool:
@@ -151,20 +152,17 @@ class Indexer:
         else:
             LOGGER.debug("%s complete", fullpath)
             set_fingerprint(fullpath)
+            self.last_indexed = fullpath
         return result
 
 
-@orm.db_session
-def last_modified() -> typing.Tuple[typing.Optional[str],
-                                    typing.Optional[int],
-                                    typing.Optional[str]]:
-    """ information about the most recently modified file, for cache-busting
+def last_indexed() -> typing.Optional[str]:
+    """ information about the most recently indexed file, for cache-busting
     purposes """
-    files = model.FileFingerprint.select().order_by(
-        orm.desc(model.FileFingerprint.file_mtime))
-    for file in files:
-        return file.file_path, file.file_mtime, file.fingerprint
-    return None, None, None
+    last_indexed = current_app.indexer.last_indexed
+    if last_indexed:
+        return get_last_fingerprint(last_indexed)
+    return None
 
 
 def queue_size() -> typing.Optional[int]:
@@ -184,7 +182,7 @@ def is_scannable(fullpath) -> bool:
 
 
 @orm.db_session
-def get_last_fingerprint(fullpath) -> typing.Optional[str]:
+def get_last_fingerprint(fullpath: str) -> typing.Optional[str]:
     """ Get the last known fingerprint for a file """
     record = model.FileFingerprint.get(file_path=fullpath)
     if record:

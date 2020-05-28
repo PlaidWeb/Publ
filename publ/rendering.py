@@ -126,7 +126,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return do_render(template,
                          user=user.get_active(),
                          _url=request.url,
-                         _index_time=index.last_modified(),
+                         _index_time=index.last_indexed(),
                          _latest=latest_entry(),
                          _publ_version=__version__.__version__,
                          **kwargs)

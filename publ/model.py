@@ -59,7 +59,7 @@ class FileFingerprint(DbEntity):
     """ File modification time """
     file_path = orm.PrimaryKey(str)
     fingerprint = orm.Required(str)
-    file_mtime = orm.Required(float, index=True)
+    file_mtime = orm.Required(float)
 
 
 class Entry(DbEntity):
