@@ -23,16 +23,18 @@ CATEGORY_TYPES = ['.cat', '.meta']
 
 class Indexer:
     """ Class which handles the scheduling of file indexing """
-    # pylint:disable=too-few-public-methods
+    # pylint:disable=too-many-instance-attributes
     QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], int]
 
     def __init__(self, wait_time: float):
-        self.thread_pool = concurrent.futures.ThreadPoolExecutor(
+        self._thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="Indexer")
         self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
         self._wait_count = 0
+        self._in_progress = 0
         self._lock = threading.Lock()
+        self._count_lock = threading.Lock()
         self._running: typing.Optional[concurrent.futures.Future] = None
         self._wait_time = wait_time
 
@@ -42,12 +44,26 @@ class Indexer:
         with self._lock:
             return self._wait_count > 0
 
-    def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
+    @property
+    def queue_size(self) -> int:
+        """ Returns the number of queued work items """
+        total = 0
+        with self._count_lock:
+            total += self._wait_count
+        with self._lock:
+            total += self._in_progress
+        return total
+
+    def scan_file(self,
+                  fullpath: str, relpath: typing.Optional[str],
+                  fixup_pass: int,
+                  wait: bool = False):
         """ Scan a file for the index
 
         fullpath -- The full path to the file
         relpath -- The path to the file, relative to its base directory
         fixup_pass -- Which phase of the fixup process we're on
+        wait -- whether to wait for the initial safety delay
 
         This calls into various modules' scanner functions; the expectation is that
         the scan_file function will return a truthy value if it was scanned
@@ -56,44 +72,56 @@ class Indexer:
 
         with self._lock:
             self._pending.add((fullpath, relpath, fixup_pass))
-        self._schedule(self._wait_time)
+            self._in_progress += 1
+        self._start_scan(self._wait_time if wait else 0)
 
-    def _schedule(self, wait: float = 0):
+    def submit(self, func, *args, **kwargs):
+        """ Schedule a task into the task pool """
+        with self._count_lock:
+            self._wait_count += 1
+
+        def do_task():
+            try:
+                func(*args, **kwargs)
+            except Exception:  # pylint:disable=broad-except
+                LOGGER.exception("Task failed")
+            with self._count_lock:
+                self._wait_count -= 1
+
+        return self._thread_pool.submit(do_task)
+
+    def _start_scan(self, wait: float = 0):
         with self._lock:
             if not self._running or self._running.done():
                 if wait:
                     # busywait the worker thread to wait for things to settle down
                     # (and to batch up a bunch of updates in a row)
-                    self.thread_pool.submit(time.sleep, wait)
+                    self.submit(time.sleep, wait)
 
                 # run the actual pending task
-                self._running = self.thread_pool.submit(self._scan_pending)
-
-                self._wait_count += 1
-                LOGGER.debug("worker started %s, wait_count now %d",
-                             self._running, self._wait_count)
+                self._running = self.submit(self._scan_pending)
 
     def _scan_pending(self):
         """ Scan all the pending items """
-        try:
+        with self._lock:
+            items = self._pending
+            self._in_progress = len(items)
+            self._pending = set()
+        LOGGER.debug("Processing %d files", len(items))
+
+        # process the known items
+        for item in items:
+            self._scan_file(*item)
             with self._lock:
-                items = self._pending
-                self._pending = set()
-            LOGGER.debug("Processing %d files", len(items))
+                self._in_progress -= 1
 
-            # process the known items
-            for item in items:
-                self._scan_file(*item)
-
-            # and then schedule a catchup for anything that happened
-            # while this scan was happening
-            if items:
-                self.thread_pool.submit(self._schedule)
-
-        except Exception:  # pylint:disable=broad-except
-            LOGGER.exception("_scan_pending failed")
-        self._wait_count -= 1
-        LOGGER.info("Wait count now %s", self._wait_count)
+        # and then schedule a catchup for anything that happened
+        # while this scan was happening
+        if items:
+            self.submit(self._start_scan)
+        else:
+            with self._lock:
+                self._in_progress = 0
 
     def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         LOGGER.debug("Scanning file: %s (%s) pass=%d", fullpath, relpath, fixup_pass)
@@ -139,14 +167,9 @@ def last_modified() -> typing.Tuple[typing.Optional[str],
     return None, None, None
 
 
-def _work_queue():
-    return getattr(current_app.indexer.thread_pool, '_work_queue', None)
-
-
-def queue_length() -> typing.Optional[int]:
+def queue_size() -> typing.Optional[int]:
     """ Return the approximate length of the work queue """
-    work_queue = _work_queue()
-    return work_queue.qsize() if work_queue else None
+    return current_app.indexer.queue_size
 
 
 def in_progress() -> bool:
@@ -268,7 +291,7 @@ def prune_missing(table):
         kill(item)
 
 
-def scan_index(content_dir):
+def scan_index(content_dir, wait_start=True):
     """ Scan all files in a content directory """
     LOGGER.debug("Reindexing content from %s", content_dir)
 
@@ -289,12 +312,12 @@ def scan_index(content_dir):
                 last_fingerprint = get_last_fingerprint(fullpath)
                 if fingerprint != last_fingerprint:
                     LOGGER.debug("%s: %s -> %s", fullpath, last_fingerprint, fingerprint)
-                    indexer.scan_file(fullpath, relpath, False)
+                    indexer.scan_file(fullpath, relpath, 0, wait_start)
         except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Got error parsing directory %s", root)
 
     for root, _, files in os.walk(content_dir, followlinks=True):
-        indexer.thread_pool.submit(scan_directory, root, files)
+        indexer.submit(scan_directory, root, files)
 
     for table in (model.Entry, model.Category, model.Image, model.FileFingerprint):
-        indexer.thread_pool.submit(prune_missing, table)
+        indexer.submit(prune_missing, table)

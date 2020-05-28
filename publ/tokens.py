@@ -20,10 +20,21 @@ def signer():
     return itsdangerous.URLSafeTimedSerializer(flask.current_app.secret_key)
 
 
+def get_token(id_url: str, scope: str = None) -> str:
+    """ Gets a signed token for the given identity and scope """
+    identity = {
+        'me': id_url,
+        'scope': scope
+    }
+
+    return signer().dumps({k: v for k, v in identity.items() if v})
+
+
 def token_endpoint():
     """ Public endpoint for token generation
 
     This implements the Token Request protocol described at
+    https://indieauth.spec.indieweb.org/#token-endpoint-0 and
     https://github.com/sknebel/AutoAuth/blob/master/AutoAuth.md#token-request
     """
 
@@ -37,13 +48,15 @@ def token_endpoint():
             raise http_error.BadRequest("Unsupported grant type")
 
         data = {k: v for k, v in post.items() if k in (
+            'callback_url',
             'client_id',
             'code',
             'me',
             'realm',
             'redirect_uri',
-            'root_url',
+            'root_uri',
             'scope',
+            'state',
         )}
 
         LOGGER.debug("Verification data: %s", data)
@@ -59,7 +72,7 @@ def token_endpoint():
             LOGGER.error("Endpoint returned %d: %s",
                          validation.status_code,
                          validation.text)
-            raise http_error.BadRequest(
+            raise http_error.Forbidden(
                 "Authorization endpoint returned error " + str(validation.status_code))
 
         response = validation.json()
@@ -71,19 +84,14 @@ def token_endpoint():
         else:
             id_url = post['me']
 
-        identity = {
-            'me': id_url,
-            'scope': response.get('scope', post.get('scope'))
-        }
-
-        token = signer().dumps({k: v for k, v in identity.items() if v})
+        token = get_token(id_url, response.get('scope', post.get('scope')))
 
         return flask.jsonify({
             'access_token': token,
             'expires_in': config.max_token_age,
             'scope': response.get('scope', 'read'),
             'token_type': 'bearer',
-        })
+        }), 202 if 'callback_url' in data else 200, {'Content-Type': 'text/json'}
     except KeyError as key:
         raise http_error.BadRequest("Missing value: " + str(key))
 

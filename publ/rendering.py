@@ -187,7 +187,7 @@ def render_exception(error):
     # what the actual category is
     category = request.path[1:]
 
-    qsize = index.queue_length()
+    qsize = index.queue_size()
     if isinstance(error, http_error.NotFound) and (qsize or index.in_progress()):
         retry = max(5, qsize / 5)
         return render_error(
