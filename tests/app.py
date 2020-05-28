@@ -45,7 +45,7 @@ config = {
         'EMAIL_SUBJECT': 'Log in to authl test',
         'EMAIL_CHECK_MESSAGE': 'Use the link printed to the test console',
     },
-    'user_list': 'users.cfg',
+    'user_list': os.path.join(APP_PATH, 'users.cfg'),
 }
 
 app = publ.Publ(__name__, config)

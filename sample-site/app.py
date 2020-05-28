@@ -10,6 +10,7 @@ config = {
         'provider': 'sqlite',
         'filename': os.path.join(APP_PATH, 'index.db')
     },
+    'user_list': os.path.join(APP_PATH, 'users.cfg'),
 }
 app = publ.publ(__name__, config)
 if __name__ == "__main__":
