@@ -32,6 +32,7 @@ class Indexer:
             thread_name_prefix="Indexer")
         self._pending: typing.Set[Indexer.QUEUE_ITEM] = set()
         self._wait_count = 0
+        self._in_progress = 0
         self._lock = threading.Lock()
         self._count_lock = threading.Lock()
         self._running: typing.Optional[concurrent.futures.Future] = None
@@ -46,8 +47,12 @@ class Indexer:
     @property
     def queue_size(self) -> int:
         """ Returns the number of queued work items """
+        total = 0
+        with self._count_lock:
+            total += self._wait_count
         with self._lock:
-            return self._wait_count
+            total += self._in_progress
+        return total
 
     def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         """ Scan a file for the index
@@ -63,6 +68,7 @@ class Indexer:
 
         with self._lock:
             self._pending.add((fullpath, relpath, fixup_pass))
+            self._in_progress += 1
         self._start_scan(self._wait_time)
 
     def submit(self, func, *args, **kwargs):
@@ -95,17 +101,23 @@ class Indexer:
         """ Scan all the pending items """
         with self._lock:
             items = self._pending
+            self._in_progress = len(items)
             self._pending = set()
         LOGGER.debug("Processing %d files", len(items))
 
         # process the known items
         for item in items:
             self._scan_file(*item)
+            with self._lock:
+                self._in_progress -= 1
 
         # and then schedule a catchup for anything that happened
         # while this scan was happening
         if items:
             self.submit(self._start_scan)
+        else:
+            with self._lock:
+                self._in_progress = 0
 
     def _scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
         LOGGER.debug("Scanning file: %s (%s) pass=%d", fullpath, relpath, fixup_pass)
