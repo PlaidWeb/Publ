@@ -13,8 +13,8 @@ import authl.flask
 import flask
 import werkzeug.exceptions
 
-from . import (caching, config, html_entry, image, index, maintenance, model,
-               rendering, tokens, user, utils, view)
+from . import (caching, cli, config, html_entry, image, index, maintenance,
+               model, rendering, tokens, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -155,7 +155,9 @@ This configuration value will stop being supported in Publ 0.6.
             static=utils.static_url,
             get_template=rendering.get_template,
             login=utils.auth_link('login'),
-            logout=utils.auth_link('logout')
+            logout=utils.auth_link('logout'),
+            token_endpoint=utils.CallableProxy(lambda: utils.secure_link('token')),
+            secure_url=utils.secure_link,
         )
 
         self.jinja_env.filters['strip_html'] = html_entry.strip_html  # pylint: disable=no-member
@@ -232,6 +234,8 @@ This configuration value will stop being supported in Publ 0.6.
             self.register_error_handler(Exception, rendering.render_exception)
             self._startup()
 
+        cli.setup(self)
+
     def path_alias_regex(self, regex):
         r""" A decorator that adds a path-alias regular expression; calls
         add_path_regex.
@@ -278,10 +282,15 @@ This configuration value will stop being supported in Publ 0.6.
 
     def _startup(self):
         """ Startup routine for initiating the content indexer """
+        import click
+
         model.setup()
-        with self.app_context():
-            index.scan_index(config.content_folder)
-            index.background_scan(config.content_folder)
+
+        ctx = click.get_current_context(silent=True)
+        if not ctx or ctx.info_name == 'run':
+            with self.app_context():
+                index.scan_index(config.content_folder)
+                index.background_scan(config.content_folder)
 
     @staticmethod
     def _set_cache_expiry(response):

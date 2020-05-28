@@ -398,12 +398,13 @@ def secure_link(endpoint: str, *args, **kwargs) -> str:
     return flask.url_for(endpoint, *args, **kwargs)
 
 
-def auth_link(endpoint: str) -> typing.Callable[..., str]:
+def auth_link(endpoint: str, auto_redir=True) -> typing.Callable[..., str]:
     """ Generates a function that maps an optional redir parameter to the
-    specified endpoint. """
+    specified endpoint. If redir is unspecified it defaults to the current
+    request's full_path. """
     def endpoint_link(redir=None, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
-        redir = redir_path(redir)
+        redir = redir_path(redir) if redir or auto_redir else None
 
         return secure_link(endpoint, redir=redir, **kwargs)
 
