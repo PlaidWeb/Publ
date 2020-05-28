@@ -665,7 +665,8 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
             other_entry = model.Entry.get(id=entry_id)
             if (other_entry
                     and os.path.isfile(other_entry.file_path)
-                    and not os.path.samefile(other_entry.file_path, fullpath)):
+                    and not os.path.samefile(other_entry.file_path, fullpath)
+                    and other_entry.status != model.PublishStatus.DRAFT.value):
                 entry_id = None
             else:
                 other_entry = None
