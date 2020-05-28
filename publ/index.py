@@ -23,7 +23,7 @@ CATEGORY_TYPES = ['.cat', '.meta']
 
 class Indexer:
     """ Class which handles the scheduling of file indexing """
-    # pylint:disable=too-few-public-methods
+    # pylint:disable=too-many-instance-attributes
     QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], int]
 
     def __init__(self, wait_time: float):
@@ -54,12 +54,16 @@ class Indexer:
             total += self._in_progress
         return total
 
-    def scan_file(self, fullpath: str, relpath: typing.Optional[str], fixup_pass: int):
+    def scan_file(self,
+                  fullpath: str, relpath: typing.Optional[str],
+                  fixup_pass: int,
+                  wait: bool = False):
         """ Scan a file for the index
 
         fullpath -- The full path to the file
         relpath -- The path to the file, relative to its base directory
         fixup_pass -- Which phase of the fixup process we're on
+        wait -- whether to wait for the initial safety delay
 
         This calls into various modules' scanner functions; the expectation is that
         the scan_file function will return a truthy value if it was scanned
@@ -69,7 +73,7 @@ class Indexer:
         with self._lock:
             self._pending.add((fullpath, relpath, fixup_pass))
             self._in_progress += 1
-        self._start_scan(self._wait_time)
+        self._start_scan(self._wait_time if wait else 0)
 
     def submit(self, func, *args, **kwargs):
         """ Schedule a task into the task pool """
@@ -287,7 +291,7 @@ def prune_missing(table):
         kill(item)
 
 
-def scan_index(content_dir):
+def scan_index(content_dir, wait_start=True):
     """ Scan all files in a content directory """
     LOGGER.debug("Reindexing content from %s", content_dir)
 
@@ -308,7 +312,7 @@ def scan_index(content_dir):
                 last_fingerprint = get_last_fingerprint(fullpath)
                 if fingerprint != last_fingerprint:
                     LOGGER.debug("%s: %s -> %s", fullpath, last_fingerprint, fingerprint)
-                    indexer.scan_file(fullpath, relpath, False)
+                    indexer.scan_file(fullpath, relpath, 0, wait_start)
         except Exception:  # pylint:disable=broad-except
             LOGGER.exception("Got error parsing directory %s", root)
 

@@ -24,7 +24,7 @@ def reindex_command(quietly, fresh):
 
     spinner = itertools.cycle('|/-\\')
 
-    index.scan_index(config.content_folder)
+    index.scan_index(config.content_folder, False)
     while index.in_progress():
         if not quietly:
             qlen = index.queue_size() or ''
