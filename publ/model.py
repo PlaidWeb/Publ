@@ -202,8 +202,21 @@ class KnownUser(DbEntity):
     last_seen = orm.Required(datetime.datetime, index=True)
 
 
+def reset():
+    """ Completely reset the database """
+    LOGGER.info("Rebuilding schema")
+    try:
+        db.drop_all_tables(with_all_data=True)
+        db.create_tables()
+    except:
+        raise RuntimeError("Unable to upgrade schema automatically; please " +
+                           "delete the existing database and try again.")
+
+
 def setup():
     """ Set up the database """
+    rebuild = False
+
     try:
         db.bind(**config.database_config)
     except OSError:
@@ -211,28 +224,23 @@ def setup():
         # exist
         db.bind(**config.database_config, create_db=True)
 
-    rebuild = True
-
     try:
         db.generate_mapping(create_tables=True)
         with orm.db_session:
             version = GlobalConfig.get(key='schema_version')
-            if version and version.int_value != SCHEMA_VERSION:
+            if not version or version.int_value != SCHEMA_VERSION:
+                LOGGER.info("Wanted schema %d, got %s", SCHEMA_VERSION, version)
+                rebuild = True
+            else:
                 LOGGER.info("Existing database has schema version %d",
                             version.int_value)
-            else:
-                rebuild = False
+
     except Exception:  # pylint:disable=broad-except
         LOGGER.exception("Error mapping schema")
+        rebuild = True
 
     if rebuild:
-        LOGGER.info("Rebuilding schema")
-        try:
-            db.drop_all_tables(with_all_data=True)
-            db.create_tables()
-        except:
-            raise RuntimeError("Unable to upgrade schema automatically; please " +
-                               "delete the existing database and try again.")
+        reset()
 
     with orm.db_session:
         if not GlobalConfig.get(key='schema_version'):
