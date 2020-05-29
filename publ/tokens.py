@@ -111,7 +111,7 @@ def inject_auth_headers(response):
     """ If the request triggered a need to authenticate, add the appropriate
     headers. """
 
-    if flask.g.get('needs_token'):
+    if flask.g.stash.get('needs_token'):
         header = 'Bearer, realm="posts", scope="read"'
         if 'token_error' in flask.g:
             header += ', error="invalid_token", error_description="{msg}"'.format(
@@ -127,5 +127,5 @@ def request(user):
     """ Called whenever an authenticated access fails; marks authentication
     as being upgradeable. """
     if not user:
-        flask.g.needs_token = True
+        flask.g.stash['needs_token'] = True
     return user

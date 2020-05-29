@@ -110,7 +110,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         }
 
         text = template.render(**args)
-        return text, caching.get_etag(text)
+        return text, caching.get_etag(text), flask.g.stash
 
     def latest_entry():
         # Cache-busting query based on most recently-visible entry
@@ -123,13 +123,16 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return None
 
     try:
-        return do_render(template,
+        flask.g.stash = {}
+        text, etag, flask.g.stash = do_render(
+            template,
                          user=user.get_active(),
                          _url=request.url,
                          _index_time=index.last_indexed(),
                          _latest=latest_entry(),
                          _publ_version=__version__.__version__,
                          **kwargs)
+        return text, etag
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
 
