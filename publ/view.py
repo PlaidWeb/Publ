@@ -39,7 +39,7 @@ class View(caching.Memoizable):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """ A view of entries """
 
-    __hash__ = caching.Memoizable.__hash__
+    __hash__ = caching.Memoizable.__hash__  # type:ignore
 
     @staticmethod
     @utils.stash

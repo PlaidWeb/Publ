@@ -46,7 +46,7 @@ class Category(caching.Memoizable):
     """ Wrapper for category information """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
-    __hash__ = caching.Memoizable.__hash__
+    __hash__ = caching.Memoizable.__hash__  # type:ignore
 
     @staticmethod
     @utils.stash
