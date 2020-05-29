@@ -112,6 +112,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         text = template.render(**args)
         return text, caching.get_etag(text), flask.g.stash
 
+    @orm.db_session
     def latest_entry():
         # Cache-busting query based on most recently-visible entry
         cb_query = queries.build_query({})
