@@ -46,11 +46,21 @@ class Category(caching.Memoizable):
     """ Wrapper for category information """
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
-    def __init__(self, path):
-        """ Initialize a category wrapper
+    __hash__ = caching.Memoizable.__hash__
+
+    @staticmethod
+    @utils.stash
+    def load(path: str):
+        """ Get a category wrapper object
 
         path -- the path to the category
         """
+        return Category(Category.load.__name__, path)
+
+    def __init__(self, create_key, path: str):
+        """ Initialize a category wrapper """
+
+        assert create_key == Category.load.__name__, "Category must be created with Category.load()"
 
         if path is None:
             path = ''
@@ -58,7 +68,7 @@ class Category(caching.Memoizable):
         self.path = path
         self.basename = os.path.basename(path)
 
-        subcat_query = orm.select(e.category for e in model.Entry)
+        subcat_query = orm.select(e.category for e in model.Entry)  # type:ignore
         if path:
             subcat_query = orm.select(
                 c for c in subcat_query if c.startswith(path + '/'))
@@ -106,7 +116,7 @@ class Category(caching.Memoizable):
 
             if recurse:
                 # No need to filter
-                return sorted([Category(e) for e in self._subcats_recursive],
+                return sorted([Category.load(e) for e in self._subcats_recursive],
                               key=lambda cat: tuple(crumb.sort_name for crumb in cat.breadcrumb))
 
             # get all the subcategories, with only the first subdir added
@@ -119,7 +129,7 @@ class Category(caching.Memoizable):
             subcats = {'/'.join(c.split('/', parts)[:parts]) for c in self._subcats_recursive}
 
             # convert to a bunch of Category objects
-            return sorted([Category(c) for c in subcats], key=lambda c: c.sort_name)
+            return sorted([Category.load(c) for c in subcats], key=lambda c: c.sort_name)
 
         return utils.CallableProxy(_get_subcats)
 
@@ -133,7 +143,7 @@ class Category(caching.Memoizable):
             """ Get the earliest entry in this category, optionally including subcategories """
             for record in self._entries(spec).order_by(model.Entry.local_date,
                                                        model.Entry.id)[:1]:
-                return entry.Entry(record)
+                return entry.Entry.load(record)
             return None
 
         return utils.CallableProxy(_first)
@@ -148,7 +158,7 @@ class Category(caching.Memoizable):
             """ Get the latest entry in this category, optionally including subcategories """
             for record in self._entries(spec).order_by(orm.desc(model.Entry.local_date),
                                                        orm.desc(model.Entry.id))[:1]:
-                return entry.Entry(record)
+                return entry.Entry.load(record)
             return None
 
         return utils.CallableProxy(_last)
@@ -207,7 +217,7 @@ class Category(caching.Memoizable):
         root and self.
 
         For example, path/to/long/category will return a list containing
-        Category('path'), Category('path/to'), and Category('path/to/long').
+        Category.load('path'), Category.load('path/to'), and Category.load('path/to/long').
         """
         ret = []
         here = self
@@ -269,14 +279,14 @@ class Category(caching.Memoizable):
     def parent(self) -> typing.Optional["Category"]:
         """ Get the parent category """
         if self.path:
-            return Category(os.path.dirname(self.path))
+            return Category.load(os.path.dirname(self.path))
         return None
 
     @cached_property
     def root(self):
         """ Get the root category object. Equivalent to `breadcrumb[0]` but faster/easier. """
         if self.path:
-            return Category(None)
+            return Category.load(None)
         return self
 
     def _entries(self, spec):

@@ -35,11 +35,21 @@ class Entry(caching.Memoizable):
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
-    def __init__(self, record):
-        """ Construct an Entry wrapper
+    __hash__ = caching.Memoizable.__hash__
+
+    @staticmethod
+    @utils.stash
+    def load(record: model.Entry):
+        """ Get a pooled Entry wrapper
 
         record -- the index record to use as the basis
         """
+        return Entry(Entry.load.__name__, record)
+
+    def __init__(self, create_key, record):
+        """ Instantiate the Entry wrapper """
+
+        assert create_key == Entry.load.__name__, "Entry must be created with Entry.load()"
 
         LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
@@ -210,7 +220,7 @@ class Entry(caching.Memoizable):
             for record in query.order_by(model.Entry.local_date,
                                          model.Entry.id):
                 if record.is_authorized(cur_user):
-                    return Entry(record)
+                    return Entry.load(record)
 
                 LOGGER.debug("User unauthorized for entry %d", record.id)
                 tokens.request(cur_user)
@@ -235,7 +245,7 @@ class Entry(caching.Memoizable):
             for record in query.order_by(orm.desc(model.Entry.local_date),
                                          orm.desc(model.Entry.id)):
                 if record.is_authorized(cur_user):
-                    return Entry(record)
+                    return Entry.load(record)
 
                 LOGGER.debug("User unauthorized for entry %d", record.id)
                 tokens.request(cur_user)
@@ -246,7 +256,7 @@ class Entry(caching.Memoizable):
     def category(self):
         """ Get the category this entry belongs to. """
         from .category import Category  # pylint: disable=cyclic-import
-        return Category(self._record.category)
+        return Category.load(self._record.category)
 
     @cached_property
     def title(self) -> typing.Callable[..., str]:
@@ -532,7 +542,7 @@ class Entry(caching.Memoizable):
                                          })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
-            return [Entry(e) for e in query]
+            return [Entry.load(e) for e in query]
 
         return CallableProxy(_get_attachments)
 
@@ -546,7 +556,7 @@ class Entry(caching.Memoizable):
                                          })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
-            return [Entry(e) for e in query]
+            return [Entry.load(e) for e in query]
 
         return CallableProxy(_get_attached)
 

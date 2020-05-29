@@ -159,9 +159,9 @@ class Indexer:
 def last_indexed() -> typing.Optional[str]:
     """ information about the most recently indexed file, for cache-busting
     purposes """
-    last_indexed = current_app.indexer.last_indexed
-    if last_indexed:
-        return get_last_fingerprint(last_indexed)
+    ref = current_app.indexer.last_indexed
+    if ref:
+        return get_last_fingerprint(ref)
     return None
 
 

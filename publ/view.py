@@ -39,7 +39,11 @@ class View(caching.Memoizable):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """ A view of entries """
 
-    def __init__(self, input_spec: ViewSpec):
+    __hash__ = caching.Memoizable.__hash__
+
+    @staticmethod
+    @utils.stash
+    def load(input_spec: ViewSpec):
         """ Generate a view.
 
         input_spec -- the parameters to the view. In addition to the values provided
@@ -47,6 +51,12 @@ class View(caching.Memoizable):
             count -- How many entries to include in a page
             order -- How to order the entries ('newest' or 'oldest')
         """
+        return View(View.load.__name__, input_spec)
+
+    def __init__(self, create_key, input_spec: ViewSpec):
+        """ Instantiate the view """
+
+        assert create_key == View.load.__name__, "View must be created with View.load()"
 
         # filter out any priority override things
         spec: ViewSpec = {
@@ -120,7 +130,7 @@ class View(caching.Memoizable):
 
                 auth = record.is_authorized(cur_user)
                 if auth or unauthorized:
-                    result.append(Entry(record))
+                    result.append(Entry.load(record))
                     if not auth and unauthorized is not True:
                         unauthorized -= 1
 
@@ -147,7 +157,7 @@ class View(caching.Memoizable):
 
                 if not record.is_authorized(cur_user):
                     tokens.request(cur_user)
-                    result.append(Entry(record))
+                    result.append(Entry.load(record))
 
             return result
 
@@ -172,7 +182,7 @@ class View(caching.Memoizable):
             elif self._order_by == 'newest' and self.next:
                 query = queries.where_after_entry(query, self.next.first)
 
-        return [Entry(e) for e in query]
+        return [Entry.load(e) for e in query]
 
     @cached_property
     def count(self) -> int:
@@ -350,7 +360,7 @@ class View(caching.Memoizable):
         def _get_current(**restrict) -> 'View':
             spec = {k: v for (k, v) in self.spec.items()
                     if k not in OFFSET_PRIORITY}
-            return View({**spec, **restrict})
+            return View.load({**spec, **restrict})
 
         return utils.CallableProxy(_get_current)
 
@@ -401,15 +411,15 @@ class View(caching.Memoizable):
 
         if newest_neighbor:
             newer_date = newest_neighbor.display_date
-            newer_view = View({**base,
-                               'order': self._order_by,
-                               'date': arrow.get(newer_date).format(date_format)})
+            newer_view = View.load({**base,
+                                    'order': self._order_by,
+                                    'date': arrow.get(newer_date).format(date_format)})
 
         if oldest_neighbor:
             older_date = oldest_neighbor.display_date
-            older_view = View({**base,
-                               'order': self._order_by,
-                               'date': arrow.get(older_date).format(date_format)})
+            older_view = View.load({**base,
+                                    'order': self._order_by,
+                                    'date': arrow.get(older_date).format(date_format)})
 
         return older_view, newer_view
 
@@ -421,13 +431,13 @@ class View(caching.Memoizable):
         oldest = self.oldest
         newest = self.newest
 
-        oldest_neighbor = View({
+        oldest_neighbor = View.load({
             **base,
             'before': oldest,
             'order': 'newest'
         }).first if oldest else None
 
-        newest_neighbor = View({
+        newest_neighbor = View.load({
             **base,
             'after': newest,
             'order': 'oldest'
@@ -438,55 +448,55 @@ class View(caching.Memoizable):
         out_spec = {**base, 'count': count, 'order': self._order_by}
 
         if self._order_by == 'newest':
-            older_view = View({**out_spec,
-                               'last': oldest_neighbor}) if oldest_neighbor else None
+            older_view = View.load({**out_spec,
+                                    'last': oldest_neighbor}) if oldest_neighbor else None
 
-            newer_count = View({**base,
-                                'first': newest_neighbor,
-                                'order': 'oldest',
-                                'count': count}) if newest_neighbor else None
-            newer_view = View({**out_spec,
-                               'last': newer_count.last}) if newer_count else None
+            newer_count = View.load({**base,
+                                     'first': newest_neighbor,
+                                     'order': 'oldest',
+                                     'count': count}) if newest_neighbor else None
+            newer_view = View.load({**out_spec,
+                                    'last': newer_count.last}) if newer_count else None
 
             return older_view, newer_view
 
         if self._order_by == 'oldest':
-            older_count = View({**base,
-                                'last': oldest_neighbor,
-                                'order': 'newest',
-                                'count': count}) if oldest_neighbor else None
-            older_view = View({**out_spec,
-                               'first': older_count.last}) if older_count else None
+            older_count = View.load({**base,
+                                     'last': oldest_neighbor,
+                                     'order': 'newest',
+                                     'count': count}) if oldest_neighbor else None
+            older_view = View.load({**out_spec,
+                                    'first': older_count.last}) if older_count else None
 
-            newer_view = View({**out_spec,
-                               'first': newest_neighbor}) if newest_neighbor else None
+            newer_view = View.load({**out_spec,
+                                    'first': newest_neighbor}) if newest_neighbor else None
 
             return older_view, newer_view
 
         return None, None
 
     def __call__(self, **restrict):
-        return View({**self.spec, **restrict})
+        return View.load({**self.spec, **restrict})
 
     def __iter__(self):
         return self.entries().__iter__()
 
     def tag_add(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags added """
-        return View({**self.spec, 'tag': self.tags | set(tags)})
+        return View.load({**self.spec, 'tag': self.tags | set(tags)})
 
     def tag_remove(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags removed """
-        return View({**self.spec, 'tag': self.tags - set(tags)})
+        return View.load({**self.spec, 'tag': self.tags - set(tags)})
 
     def tag_toggle(self, *tags: utils.ListLike[str]) -> 'View':
         """ Return a view with the specified tags toggled """
-        return View({**self.spec, 'tag': self.tags ^ set(tags)})
+        return View.load({**self.spec, 'tag': self.tags ^ set(tags)})
 
 
 def get_view(**kwargs) -> View:
     """ Wrapper function for constructing a view from scratch """
-    return View(input_spec=kwargs)
+    return View.load(input_spec=kwargs)
 
 
 def parse_view_spec(args) -> ViewSpec:

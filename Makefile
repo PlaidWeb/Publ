@@ -53,7 +53,7 @@ build: preflight pylint flake8
 
 .PHONY: clean
 clean:
-	rm -rf build dist
+	rm -rf build dist __pycache__
 
 .PHONY: upload
 upload: clean test build

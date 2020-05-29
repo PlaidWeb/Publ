@@ -102,7 +102,6 @@ def parse_token(token: str) -> typing.Dict[str, str]:
         return signer().loads(token, max_age=config.max_token_age)
     except itsdangerous.BadData as error:
         LOGGER.error("Got token parse error: %s", error)
-        flask.g.user = None
         flask.g.token_error = error.message
         raise http_error.Unauthorized(error.message)
 
@@ -111,7 +110,7 @@ def inject_auth_headers(response):
     """ If the request triggered a need to authenticate, add the appropriate
     headers. """
 
-    if flask.g.stash.get('needs_token'):
+    if 'stash' in flask.g and flask.g.stash.get('needs_token'):
         header = 'Bearer, realm="posts", scope="read"'
         if 'token_error' in flask.g:
             header += ', error="invalid_token", error_description="{msg}"'.format(
