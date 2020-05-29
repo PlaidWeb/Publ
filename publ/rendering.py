@@ -96,7 +96,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
     Returns tuple of (rendered text, etag)
     """
     @cache.memoize(unless=caching.do_not_cache)
-    def do_render(template: Template, **kwargs) -> typing.Tuple[str, str]:
+    def do_render(template: Template, **kwargs) -> typing.Tuple[str, str, typing.Dict]:
         LOGGER.debug("Rendering template %s with args %s and kwargs %s; caching=%s",
                      template, request.args, kwargs, not caching.do_not_cache)
 
@@ -112,6 +112,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         text = template.render(**args)
         return text, caching.get_etag(text), flask.g.stash
 
+    @orm.db_session
     def latest_entry():
         # Cache-busting query based on most recently-visible entry
         cb_query = queries.build_query({})
@@ -126,12 +127,12 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         flask.g.stash = {}
         text, etag, flask.g.stash = do_render(
             template,
-                         user=user.get_active(),
-                         _url=request.url,
-                         _index_time=index.last_indexed(),
-                         _latest=latest_entry(),
-                         _publ_version=__version__.__version__,
-                         **kwargs)
+            user=user.get_active(),
+            _url=request.url,
+            _index_time=index.last_indexed(),
+            _latest=latest_entry(),
+            _publ_version=__version__.__version__,
+            **kwargs)
         return text, etag
     except queries.InvalidQueryError as err:
         raise http_error.BadRequest(str(err))
@@ -173,7 +174,7 @@ def render_error(category, error_message, error_codes,
     if template:
         return render_publ_template(
             template,
-            category=Category(category),
+            category=Category.load(category),
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
 
@@ -281,7 +282,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
             raise http_error.NotFound("No such category")
 
     if not template:
-        template = Category(category).get('Index-Template') or 'index'
+        template = Category.load(category).get('Index-Template') or 'index'
 
     tmpl = map_template(category, template)
 
@@ -300,11 +301,11 @@ def render_category_path(category: str, template: typing.Optional[str]):
 
     view_spec = view.parse_view_spec(request.args)
     view_spec['category'] = category
-    view_obj = view.View(view_spec)
+    view_obj = view.View.load(view_spec)
 
     rendered, etag = render_publ_template(
         tmpl,
-        category=Category(category),
+        category=Category.load(category),
         view=view_obj)
 
     if request.if_none_match.contains(etag):
@@ -344,7 +345,9 @@ def handle_unauthorized(cur_user, category='', **kwargs):
                 "User {name} does not have access".format(name=cur_user.name))
 
         # Render the category's unauthorized template
-        return render_publ_template(tmpl, category=Category(category), **kwargs)[0], 403, NO_CACHE
+        return render_publ_template(tmpl,
+                                    category=Category.load(category),
+                                    **kwargs)[0], 403, NO_CACHE
 
     # User is not already logged in, so present a login page
     raise http_error.Unauthorized()
@@ -360,7 +363,7 @@ def _check_authorization(record, category):
 
         if not authorized:
             return handle_unauthorized(cur_user,
-                                       entry=Entry(record),
+                                       entry=Entry.load(record),
                                        category=category)
     return None
 
@@ -460,7 +463,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         return redirect(record.redirect_url)
 
     # Get the viewable entry
-    entry_obj = Entry(record)
+    entry_obj = Entry.load(record)
 
     # does the entry-id header mismatch? If so the old one is invalid
     try:
@@ -479,7 +482,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
 
     entry_template = (template
                       or entry_obj.get('Entry-Template')
-                      or Category(category).get('Entry-Template')
+                      or Category.load(category).get('Entry-Template')
                       or 'entry')
 
     tmpl = map_template(category, entry_template)
@@ -489,7 +492,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     rendered, etag = render_publ_template(
         tmpl,
         entry=entry_obj,
-        category=Category(category))
+        category=Category.load(category))
 
     if request.if_none_match.contains(etag):
         return 'Not modified', 304

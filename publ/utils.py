@@ -411,21 +411,40 @@ def auth_link(endpoint: str, auto_redir=True) -> typing.Callable[..., str]:
     return CallableProxy(endpoint_link)
 
 
-def stash(key: str) -> typing.Callable:
+def stash(func: typing.Optional[typing.Callable] = None):
     """ Decorator to memoize a function onto the global context.
-
-    :param str key: The memoization key
     """
 
-    def decorator(func: typing.Callable) -> typing.Callable:
+    def make_hashable(item):
+        from . import caching
+        if isinstance(item, (str, caching.Memoizable)):
+            return item
+        if isinstance(item, (list, tuple)):
+            return tuple(make_hashable(i) for i in item)
+        if isinstance(item, set):
+            return tuple(sorted(make_hashable(i) for i in item))
+        if isinstance(item, dict):
+            return tuple(sorted((make_hashable(k), make_hashable(v)) for k, v in item.items()))
+        return item
+
+    def decorator(inner: typing.Callable):
         def wrapped_func(*args, **kwargs):
-            if key in flask.g:
-                return flask.g.get(key)
-            val = func(*args, **kwargs)
-            setattr(flask.g, key, val)
+            if 'store' not in flask.g:
+                flask.g.store = {}
+            if inner not in flask.g.store:
+                flask.g.store[inner] = {}
+            store = flask.g.store[inner]
+
+            cache_key = make_hashable(args) + make_hashable(kwargs)
+            if cache_key in store:
+                return store[cache_key]
+
+            val = inner(*args, **kwargs)
+            store[cache_key] = val
             return val
         return wrapped_func
-    return decorator
+
+    return decorator(func) if func else decorator
 
 
 def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],

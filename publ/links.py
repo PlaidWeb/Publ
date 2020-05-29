@@ -28,7 +28,7 @@ def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = Fal
     # Resolve entries
     found = find_entry(path, search_path)
     if found:
-        return entry.Entry(found).permalink(absolute=absolute) + sep + anchor
+        return entry.Entry.load(found).permalink(absolute=absolute) + sep + anchor
 
     # Resolve images and assets
     img_path, img_args, _ = image.parse_image_spec(path)

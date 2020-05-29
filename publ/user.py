@@ -110,7 +110,7 @@ class User(caching.Memoizable):
         return bool(config.admin_group and config.admin_group in self.groups)
 
 
-@utils.stash('user')
+@utils.stash
 def get_active() -> typing.Optional[User]:
     """ Get the active user """
     if 'Authorization' in flask.request.headers:
