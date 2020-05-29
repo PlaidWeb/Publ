@@ -74,7 +74,7 @@ class Publ(flask.Flask):
         # pylint:disable=too-many-branches,too-many-statements
 
         if Publ._instance and Publ._instance is not self:
-            raise RuntimeError("Only one Publ app can run at a time")
+            LOGGER.warning("Only one Publ app can run at a time (%s,%s)", Publ._instance, self)
         Publ._instance = self
 
         config.setup(cfg)  # https://github.com/PlaidWeb/Publ/issues/113
