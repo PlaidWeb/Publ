@@ -452,15 +452,16 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     if result:
         return result
 
+    # if the entry canonically redirects, do that now
+    if record.redirect_url:
+        LOGGER.debug("Redirecting to %s", record.redirect_url)
+        return redirect(record.redirect_url)
+
     # check if the canonical URL matches
     if not _mounted:
         result = _check_canon_entry_url(record)
         if result:
             return result
-
-    # if the entry canonically redirects, do that now
-    if record.redirect_url:
-        return redirect(record.redirect_url)
 
     # Get the viewable entry
     entry_obj = Entry.load(record)

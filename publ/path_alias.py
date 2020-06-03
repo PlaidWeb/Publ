@@ -148,6 +148,8 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
             if record.entry:
                 args['id'] = record.entry.id
         else:
+            if record.entry.redirect_url:
+                return Response(redirect(record.entry.redirect_url, PERMANENT))
             endpoint = 'entry'
             args['entry_id'] = record.entry.id
 
