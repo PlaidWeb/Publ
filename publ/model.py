@@ -9,8 +9,6 @@ from enum import Enum
 
 from pony import orm
 
-from . import config
-
 db = orm.Database()  # pylint: disable=invalid-name
 
 DbEntity: orm.core.Entity = db.Entity
@@ -213,16 +211,16 @@ def reset():
                            "delete the existing database and try again.")
 
 
-def setup():
+def setup(config):
     """ Set up the database """
     rebuild = False
 
     try:
-        db.bind(**config.database_config)
+        db.bind(**config)
     except OSError:
         # Attempted to connect to a file-based database where the file didn't
         # exist
-        db.bind(**config.database_config, create_db=True)
+        db.bind(**config, create_db=True)
 
     try:
         db.generate_mapping(create_tables=True)

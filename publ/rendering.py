@@ -11,10 +11,11 @@ import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
 
-from . import (__version__, caching, config, image, index, model, path_alias,
-               queries, user, utils, view)
+from . import (__version__, caching, image, index, model, path_alias, queries,
+               user, utils, view)
 from .caching import cache
 from .category import Category
+from .config import config
 from .entry import Entry
 from .entry import expire_record as entry_expire_record
 from .template import Template, map_template

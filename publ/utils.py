@@ -14,7 +14,7 @@ import arrow
 import flask
 import werkzeug.routing
 
-from . import config
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

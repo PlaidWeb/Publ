@@ -8,7 +8,8 @@ import typing
 import arrow
 import flask
 
-from . import config, utils
+from . import utils
+from .config import config
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
 

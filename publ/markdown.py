@@ -13,7 +13,8 @@ import pygments.formatters
 import pygments.lexers
 import slugify
 
-from . import config, html_entry, image, links, utils
+from . import html_entry, image, links, utils
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

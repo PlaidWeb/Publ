@@ -12,7 +12,8 @@ import flask
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import caching, config, model, tokens, utils
+from . import caching, model, tokens, utils
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

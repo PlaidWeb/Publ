@@ -13,7 +13,8 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import entry  # pylint: disable=cyclic-import
-from . import caching, config, markdown, model, path_alias, queries, utils
+from . import caching, markdown, model, path_alias, queries, utils
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

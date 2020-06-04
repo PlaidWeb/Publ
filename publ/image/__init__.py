@@ -17,7 +17,8 @@ import flask
 import PIL.Image
 from pony import orm
 
-from .. import config, model, utils
+from .. import model, utils
+from ..config import config
 from .external import ExternalImage
 from .image import Image, ImgSpec
 from .local import LocalImage, fix_orientation
