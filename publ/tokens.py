@@ -9,8 +9,9 @@ import requests
 import werkzeug.exceptions as http_error
 from authl.handlers import indieauth
 
-from . import config, utils
+from . import utils
 from .caching import cache
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 

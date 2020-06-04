@@ -77,15 +77,15 @@ class Publ(flask.Flask):
             LOGGER.warning("Only one Publ app can run at a time (%s,%s)", Publ._instance, self)
         Publ._instance = self
 
-        config.setup(cfg)  # https://github.com/PlaidWeb/Publ/issues/113
-
         super().__init__(name,
-                         template_folder=config.template_folder,
-                         static_folder=config.static_folder,
-                         static_url_path=config.static_url_path,
+                         template_folder=cfg.get('template_folder', 'templates'),
+                         static_folder=cfg.get('static_folder', 'static'),
+                         static_url_path=cfg.get('static_url_path', '/static'),
                          **kwargs)
 
-        if 'AUTH_FORCE_SSL' in config.auth:
+        self.publ_config = config.Config(cfg)
+
+        if 'AUTH_FORCE_SSL' in self.publ_config.auth:
             LOGGER.warning("""The configuration key AUTH_FORCE_SSL has been \
 deprecated in favor of AUTH_FORCE_HTTPS. Please change your configuration \
 accordingly.
@@ -93,8 +93,8 @@ accordingly.
 This configuration value will stop being supported in Publ 0.6.
 """)
 
-        auth_force_https = config.auth.get('AUTH_FORCE_HTTPS',
-                                           config.auth.get('AUTH_FORCE_SSL'))
+        auth_force_https = self.publ_config.auth.get('AUTH_FORCE_HTTPS',
+                                                     self.publ_config.auth.get('AUTH_FORCE_SSL'))
         if auth_force_https:
             self.config['SESSION_COOKIE_SECURE'] = True
 
@@ -162,9 +162,9 @@ This configuration value will stop being supported in Publ 0.6.
 
         self.jinja_env.filters['strip_html'] = html_entry.strip_html  # pylint: disable=no-member
 
-        caching.init_app(self, config.cache)
+        caching.init_app(self, self.publ_config.cache)
 
-        self.authl = authl.flask.AuthlFlask(self, config.auth,
+        self.authl = authl.flask.AuthlFlask(self, self.publ_config.auth,
                                             login_path='/_login',
                                             login_name='login',
                                             callback_path='/_cb',
@@ -202,26 +202,26 @@ This configuration value will stop being supported in Publ 0.6.
         self.after_request(tokens.inject_auth_headers)
 
         self._maint = maintenance.Maintenance(self)
-        self.indexer = index.Indexer(config.index_wait_time)
+        self.indexer = index.Indexer(self, self.publ_config.index_wait_time)
 
-        if config.index_rescan_interval:
+        if self.publ_config.index_rescan_interval:
             self._maint.register(functools.partial(index.scan_index,
-                                                   config.content_folder),
-                                 config.index_rescan_interval)
+                                                   self.publ_config.content_folder),
+                                 self.publ_config.index_rescan_interval)
 
-        if config.image_cache_interval and config.image_cache_age:
+        if self.publ_config.image_cache_interval and self.publ_config.image_cache_age:
             self._maint.register(functools.partial(image.clean_cache,
-                                                   config.image_cache_age),
-                                 config.image_cache_interval)
+                                                   self.publ_config.image_cache_age),
+                                 self.publ_config.image_cache_interval)
 
-        if config.auth_log_prune_interval and config.auth_log_prune_age:
+        if self.publ_config.auth_log_prune_interval and self.publ_config.auth_log_prune_age:
             self._maint.register(functools.partial(user.prune_log,
-                                                   config.auth_log_prune_age),
-                                 config.auth_log_prune_interval)
+                                                   self.publ_config.auth_log_prune_age),
+                                 self.publ_config.auth_log_prune_interval)
 
         self.before_request(self._maint.run)
 
-        if 'CACHE_THRESHOLD' in config.cache:
+        if 'CACHE_THRESHOLD' in self.publ_config.cache:
             self.after_request(self._set_cache_expiry)
 
         if self.debug:
@@ -282,21 +282,22 @@ This configuration value will stop being supported in Publ 0.6.
 
     def _startup(self):
         """ Startup routine for initiating the content indexer """
-        import click
 
-        model.setup()
+        with self.app_context():
+            model.setup(self.publ_config.database_config)
 
-        ctx = click.get_current_context(silent=True)
-        if not ctx or ctx.info_name == 'run':
-            with self.app_context():
-                index.scan_index(config.content_folder)
-                index.background_scan(config.content_folder)
+            import click
 
-    @staticmethod
-    def _set_cache_expiry(response):
+            ctx = click.get_current_context(silent=True)
+            if not ctx or ctx.info_name == 'run':
+                index.scan_index(self.publ_config.content_folder)
+                index.background_scan(self.publ_config.content_folder)
+
+    def _set_cache_expiry(self, response):
         """ Set the cache control headers """
-        if response.cache_control.max_age is None and 'CACHE_DEFAULT_TIMEOUT' in config.cache:
-            response.cache_control.max_age = config.cache['CACHE_DEFAULT_TIMEOUT']
+        if (response.cache_control.max_age is None
+                and 'CACHE_DEFAULT_TIMEOUT' in self.publ_config.cache):
+            response.cache_control.max_age = self.publ_config.cache['CACHE_DEFAULT_TIMEOUT']
         return response
 
 

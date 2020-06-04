@@ -14,7 +14,8 @@ import slugify
 from atomicwrites import atomic_write
 from werkzeug.utils import cached_property
 
-from .. import config, utils
+from .. import utils
+from ..config import config
 from .image import Image
 
 LOGGER = logging.getLogger(__name__)

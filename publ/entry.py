@@ -15,8 +15,9 @@ import slugify
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import (caching, cards, config, html_entry, links, markdown, model,
-               path_alias, queries, tokens, user, utils)
+from . import (caching, cards, html_entry, links, markdown, model, path_alias,
+               queries, tokens, user, utils)
+from .config import config
 from .utils import CallableProxy, CallableValue, TrueCallableProxy
 
 LOGGER = logging.getLogger(__name__)

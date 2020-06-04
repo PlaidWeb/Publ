@@ -9,7 +9,8 @@ from urllib.parse import urljoin
 from flask import request
 
 from . import entry  # pylint:disable=cyclic-import
-from . import config, image, model, utils
+from . import image, model, utils
+from .config import config
 
 
 def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = False) -> str:

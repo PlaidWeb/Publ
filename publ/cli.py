@@ -6,7 +6,7 @@ import time
 import click
 from flask.cli import AppGroup, with_appcontext
 
-from . import config
+from .config import config
 
 publ_cli = AppGroup('publ', short_help="Publ-specific commands")  # pylint:disable=invalid-name
 

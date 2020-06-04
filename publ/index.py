@@ -26,7 +26,8 @@ class Indexer:
     # pylint:disable=too-many-instance-attributes
     QUEUE_ITEM = typing.Tuple[str, typing.Optional[str], int]
 
-    def __init__(self, wait_time: float):
+    def __init__(self, app, wait_time: float):
+        self._app = app
         self._thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="Indexer")
@@ -83,7 +84,8 @@ class Indexer:
 
         def do_task():
             try:
-                func(*args, **kwargs)
+                with self._app.app_context():
+                    func(*args, **kwargs)
             except Exception:  # pylint:disable=broad-except
                 LOGGER.exception("Task failed")
             with self._count_lock:
