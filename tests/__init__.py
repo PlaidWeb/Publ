@@ -11,3 +11,4 @@ class PublMock(flask.Flask):
     def __init__(self, cfg: dict = None):
         super().__init__(__name__)
         self.publ_config = config.Config(cfg or {})
+
