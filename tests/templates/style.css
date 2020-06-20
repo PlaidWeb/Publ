@@ -33,16 +33,81 @@ h4 a {
     text-decoration: none;
 }
 
-code,
-.highlight pre {
+.blockcode {
     background: #eee;
+    border: solid #777 1px;
+    border-radius: 1ex;
+    margin-bottom: 1em;
+    overflow: hidden;
+}
+
+.blockcode .caption {
+    font-size: small;
+    color: #77f;
+    font-style: italic;
+    border-bottom: solid #777 1px;
+    padding: 0 1ex;
+    background: #fff7f7;
+}
+
+code,
+pre {
     font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
+    margin: 0;
+    padding: 0;
+    line-height: 1em;
 }
 
 pre {
-    background: #eee;
-    border: dotted black 1px;
-    padding: 1ex;
+    overflow-x: auto;
+}
+
+.line-content {
+    width: 100%;
+    padding: 0 1ex;
+}
+
+.highlight {
+    display: table;
+    counter-reset: codeline;
+    border-collapse: collapse;
+}
+
+.highlight .line {
+    display: table-row;
+    counter-increment: codeline;
+}
+
+pre .line {
+    width: 100%;
+}
+
+pre .line:first-child .line-content {
+    padding-top: 0.5em;
+}
+
+pre .line:last-child .line-content {
+    padding-bottom: 0.5em;
+}
+
+.highlight .line-number:hover {
+    background: rgba(255,255,0,0.5);
+}
+.highlight .line-number::before {
+    display: table-cell;
+    content: counter(codeline);
+    font-size: small;
+    font-family: 'Trebuchet MS', 'Verdana', 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
+    min-width: 2em;
+    text-align: right;
+    padding: 0 0.5ex;
+    color: #555;
+    vertical-align: baseline;
+}
+
+.highlight .line-content {
+    display: table-cell;
+    border-left: solid #999 1px;
 }
 
 .images {

@@ -325,13 +325,14 @@ class Entry(caching.Memoizable):
 
             footnotes: typing.List[str] = []
             tocs: markdown.TocBuffer = []
+
+            counter = markdown.ItemCounter()
             body_text = self._get_markup(body, is_markdown, args=kwargs,
                                          footnote_buffer=footnotes,
-                                         toc_buffer=tocs)
+                                         toc_buffer=tocs,
+                                         counter=counter)
 
-            self._set_counter('body', kwargs,
-                              markdown.ItemCounter(footnote=len(footnotes),
-                                                   toc=len(tocs)))
+            self._set_counter('body', kwargs, counter)
 
             return body_text
 
@@ -346,22 +347,15 @@ class Entry(caching.Memoizable):
             LOGGER.debug("Rendering more; kwargs=%s", kwargs)
 
             body_count = self._get_counter('body', kwargs)
-            LOGGER.debug("intro footnotes=%s tocs=%s", body_count.footnote, body_count.toc)
+            LOGGER.debug("intro footnotes=%d tocs=%d codeblocks=%d",
+                         body_count.footnote, body_count.toc, body_count.code_blocks)
 
-            # pre-fill the buffer with empty entries so the counts are correct
-            footnotes = [''] * body_count.footnote
-
-            # pre-fill the buffer with empty entries so the counts are correct
-            tocs = [(0, '')] * body_count.toc
-
+            counter = body_count.copy()
             more_text = self._get_markup(more, is_markdown,
-                                         footnote_buffer=footnotes,
-                                         toc_buffer=tocs,
-                                         args=kwargs)
+                                         args=kwargs,
+                                         counter=counter)
 
-            self._set_counter('more', kwargs,
-                              markdown.ItemCounter(footnote=len(footnotes) - body_count.footnote,
-                                                   toc=len(tocs) - body_count.toc))
+            self._set_counter('more', kwargs, counter)
 
             return more_text
 
@@ -453,6 +447,7 @@ class Entry(caching.Memoizable):
         if body or more:
             footnote: typing.List[str] = []
             toc: markdown.TocBuffer = []
+            counter = markdown.ItemCounter()
             html_text = self._get_markup(body or more,
                                          is_markdown,
                                          args={'count': 1,
@@ -462,10 +457,11 @@ class Entry(caching.Memoizable):
                                                "_no_resize_external": True,
                                                "absolute": True},
                                          footnote_buffer=footnote,
-                                         toc_buffer=toc)
+                                         toc_buffer=toc,
+                                         counter=counter)
 
             self._set_counter('body' if body else 'more',
-                              kwargs, markdown.ItemCounter(toc=len(toc), footnote=len(footnote)))
+                              kwargs, counter)
         else:
             html_text = ''
 
@@ -500,6 +496,7 @@ class Entry(caching.Memoizable):
         return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, args,
+                    counter: markdown.ItemCounter,
                     footnote_buffer: typing.Optional[list] = None,
                     toc_buffer: typing.Optional[markdown.TocBuffer] = None,
                     postprocess: bool = True) -> str:
@@ -523,7 +520,8 @@ class Entry(caching.Memoizable):
                 entry_id=self._record.id,
                 footnote_buffer=footnote_buffer,
                 toc_buffer=toc_buffer,
-                postprocess=postprocess
+                postprocess=postprocess,
+                counter=counter
             )
 
         return html_entry.process(
@@ -563,10 +561,16 @@ class Entry(caching.Memoizable):
     def _get_footnotes(self, body, more, args) -> str:
         """ get the rendered Markdown footnotes for the entry """
         footnotes: typing.List[str] = []
+        counter = markdown.ItemCounter()
         if body and self._get_counter('body', args).footnote:
-            self._get_markup(body, True, args=args, footnote_buffer=footnotes, postprocess=False)
+            self._get_markup(body, True, args=args,
+                             footnote_buffer=footnotes,
+                             postprocess=False,
+                             counter=counter)
         if more and self._get_counter('more', args).footnote:
-            self._get_markup(more, True, args=args, footnote_buffer=footnotes)
+            self._get_markup(more, True, args=args,
+                             footnote_buffer=footnotes,
+                             counter=counter)
 
         if footnotes:
             return flask.Markup(f"<ol>{''.join(footnotes)}</ol>")
@@ -576,10 +580,12 @@ class Entry(caching.Memoizable):
         """ get the rendered ToC for the entry """
         tocs: markdown.TocBuffer = []
         args = {**args, '_suppress_footnotes': True}
+        counter = markdown.ItemCounter()
         if body and self._get_counter('body', args).toc:
-            self._get_markup(body, True, args=args, toc_buffer=tocs, postprocess=False)
+            self._get_markup(body, True, args=args, toc_buffer=tocs, postprocess=False,
+                             counter=counter)
         if more and self._get_counter('more', args).toc:
-            self._get_markup(more, True, args=args, toc_buffer=tocs)
+            self._get_markup(more, True, args=args, toc_buffer=tocs, counter=counter)
 
         if tocs:
             return flask.Markup(markdown.toc_to_html(tocs, max_depth))
@@ -589,7 +595,7 @@ class Entry(caching.Memoizable):
         """ Count the countables given the specified section and arguments """
         body, more, is_markdown = self._entry_content
         if not is_markdown:
-            return markdown.ItemCounter(toc=0, footnote=0)
+            return markdown.ItemCounter()
 
         footnotes = 'footnotes' in args.get('markdown_extensions', config.markdown_extensions)
 
@@ -610,7 +616,7 @@ class Entry(caching.Memoizable):
             self._counters[(section, footnotes)] = counter
             return counter
 
-        return markdown.ItemCounter(toc=0, footnote=0)
+        return markdown.ItemCounter()
 
     def _set_counter(self, section, args, counter: markdown.ItemCounter):
         """ Register the counts that we already know """

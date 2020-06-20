@@ -23,7 +23,8 @@ ArgDict = typing.Dict[str, typing.Any]
 ListLike = typing.Union[typing.List[T],
                         typing.Tuple[T, ...],
                         typing.Set[T]]
-TagAttrs = typing.Dict[str, typing.Union[str, bool, None]]
+TagAttr = typing.Union[str, bool, None]
+TagAttrs = typing.Dict[str, TagAttr]
 
 
 class CallableProxy:
@@ -215,7 +216,7 @@ def make_tag(name: str,
     if start_end:
         text += ' /' if attrs else '/'
     text += '>'
-    return flask.Markup(text)
+    return text
 
 
 def file_fingerprint(fullpath: str) -> str:
