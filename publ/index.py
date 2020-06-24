@@ -148,7 +148,7 @@ class Indexer:
                 return False
 
         result = do_scan()
-        if result is False:
+        if result is False and fixup_pass < 5:
             LOGGER.info("Scheduling fixup pass %d for %s", fixup_pass + 1, fullpath)
             self.scan_file(fullpath, relpath, fixup_pass + 1)
         else:
