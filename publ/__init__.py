@@ -221,9 +221,6 @@ This configuration value will stop being supported in Publ 0.6.
 
         self.before_request(self._maint.run)
 
-        if 'CACHE_THRESHOLD' in self.publ_config.cache:
-            self.after_request(self._set_cache_expiry)
-
         if self.debug:
             # We're in debug mode so we don't want to scan until everything's up
             # and running
@@ -292,13 +289,6 @@ This configuration value will stop being supported in Publ 0.6.
             if not ctx or ctx.info_name == 'run':
                 index.scan_index(self.publ_config.content_folder)
                 index.background_scan(self.publ_config.content_folder)
-
-    def _set_cache_expiry(self, response):
-        """ Set the cache control headers """
-        if (response.cache_control.max_age is None
-                and 'CACHE_DEFAULT_TIMEOUT' in self.publ_config.cache):
-            response.cache_control.max_age = self.publ_config.cache['CACHE_DEFAULT_TIMEOUT']
-        return response
 
 
 def publ(name, cfg):
