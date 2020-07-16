@@ -25,7 +25,7 @@
 
     {% for entry in view.entries %}
     <entry>
-        <title>{{entry.title(markup=False,no_smartquotes=True)}}</title>
+        {% if entry.title %}<title>{{entry.title(markup=False,no_smartquotes=True)}}</title>{% endif %}
         <link href="{{ entry.permalink(absolute=True) }}" rel="alternate" type="text/html" />
         <published>{{entry.date.isoformat()}}</published>
         <updated>{{entry.last_modified.isoformat()}}</updated>

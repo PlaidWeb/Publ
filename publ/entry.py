@@ -5,7 +5,6 @@ import email
 import hashlib
 import logging
 import os
-import re
 import typing
 import uuid
 
@@ -278,7 +277,7 @@ class Entry(caching.Memoizable):
             smartquotes = kwargs.get('smartquotes', not kwargs.get('no_smartquotes', False))
             return markdown.render_title(self._record.title, markup, smartquotes,
                                          markdown_extensions)
-        return CallableProxy(_title)
+        return TrueCallableProxy(_title) if self._record.title else CallableValue('')
 
     @cached_property
     def search_path(self) -> typing.Tuple[str, ...]:
@@ -654,13 +653,6 @@ class Entry(caching.Memoizable):
         return isinstance(other, Entry) and (other is self or other._record == self._record)
 
 
-def guess_title(basename) -> str:
-    """ Attempt to guess the title from the filename """
-
-    base, _ = os.path.splitext(basename)
-    return re.sub(r'[ _-]+', r' ', base).title()
-
-
 def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     """ Get or generate an entry ID for an entry """
     other_entry: typing.Optional[model.Entry] = None
@@ -770,8 +762,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     if not relpath:
         relpath = os.path.relpath(fullpath, config.content_folder)
 
-    basename = os.path.basename(relpath)
-    title = entry.get('title', guess_title(basename))
+    title = entry.get('title', '')
 
     values = {
         'file_path': fullpath,

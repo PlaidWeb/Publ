@@ -36,7 +36,7 @@
     {% endfor %}
 
     {% for entry in view(category='',entry_type='sidebar').entries %}
-    <li class="{{entry.get('Redirect-To') and 'extlink' or 'sblink'}}"><a href="{{entry.link}}">{{entry.title}}</a></li>
+    <li class="{{entry.get('Redirect-To') and 'extlink' or 'sblink'}}"><a href="{{entry.link}}">{{entry.title or '(no title)'}}</a></li>
     {% endfor %}
     </ul>
     {% endblock %}
@@ -71,7 +71,7 @@
         <article class="h-entry entry">
         {% block entry scoped %}
         <h2 class="p-name">
-            <a class="u-url" href="{{entry.link}}">{{entry.title}}</a>
+            <a class="u-url" href="{{entry.link}}">{{entry.title or '🗒'}}</a>
         </h2>
 
         {% block body scoped %}
