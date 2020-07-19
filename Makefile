@@ -2,24 +2,24 @@ all: setup format mypy cov pylint flake8
 
 .PHONY: setup
 setup:
-	pipenv run which coverage || pipenv install --dev
+	poetry install
 
 .PHONY: format
 format:
-	pipenv run isort -y
-	pipenv run autopep8 -r --in-place .
+	poetry run isort -y
+	poetry run autopep8 -r --in-place .
 
 .PHONY: pylint
 pylint:
-	pipenv run pylint publ tests
+	poetry run pylint publ tests
 
 .PHONY: flake8
 flake8:
-	pipenv run flake8
+	poetry run flake8
 
 .PHONY: mypy
 mypy:
-	pipenv run mypy -p publ -m tests --ignore-missing-imports
+	poetry run mypy -p publ -m tests --ignore-missing-imports
 
 .PHONY: preflight
 preflight:
@@ -39,22 +39,29 @@ preflight:
 
 .PHONY: test
 test:
-	pipenv run coverage run -m pytest -Werror
+	poetry run coverage run -m pytest -Werror
 
 .PHONY: cov
 cov: test
-	pipenv run coverage html
-	pipenv run coverage report
+	poetry run coverage html
+	poetry run coverage report
+
+.PHONY: version
+version:
+	# Kind of a hacky way to get the version updated, until the poetry folks
+	# settle on a better approach
+	printf '""" version """\n__version__ = "%s"\n' \
+		`poetry version | cut -f2 -d\ ` > publ/__version__.py
 
 .PHONY: build
-build: preflight pylint flake8
-	pipenv run python3 setup.py sdist
-	pipenv run python3 setup.py bdist_wheel
+build: version preflight pylint flake8
+	poetry build
 
 .PHONY: clean
 clean:
-	rm -rf build dist .mypy_cache __pycache__
+	rm -rf dist .mypy_cache .pytest_cache .coverage
+	find . -name __pycache__ -delete
 
 .PHONY: upload
 upload: clean test build
-	pipenv run twine upload dist/*
+	poetry publish
