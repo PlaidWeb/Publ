@@ -181,7 +181,7 @@ class LocalImage(Image):
                 if ext == '.gif' or stash.get('paletted') or quantize:
                     return image.quantize(colors=quantize or 256)
                 return image
-            pipeline.append(('q{}'.format(quantize) if quantize else None, to_paletted))
+            pipeline.append((f'q{quantize}' if quantize else None, to_paletted))
 
         # Set JPEG quality
         if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
@@ -213,10 +213,10 @@ class LocalImage(Image):
             if 'scale_filter' in kwargs:
                 try:
                     scale_filter = getattr(PIL.Image, kwargs['scale_filter'].upper())
-                    label += 'f{}'.format(scale_filter)
+                    label += f'f{scale_filter}'
                 except AttributeError as error:
-                    raise ValueError("Invalid scale_filter value '{}'".format(
-                        kwargs['scale_filter'])) from error
+                    raise ValueError(
+                        f"Invalid scale_filter value '{kwargs['scale_filter']}'") from error
             else:
                 scale_filter = PIL.Image.LANCZOS
             return size, (label,
@@ -322,7 +322,7 @@ class LocalImage(Image):
         if mode == 'stretch':
             return self._get_rendition_stretch_size(spec, width, height, output_scale)
 
-        raise ValueError("Unknown resize mode {}".format(mode))
+        raise ValueError(f"Unknown resize mode {mode}")
 
     @staticmethod
     def _get_rendition_fit_size(spec, input_w, input_h, output_scale) -> SizeSpecType:
@@ -502,7 +502,7 @@ class LocalImage(Image):
         }
 
         if img_1x != img_2x:
-            attrs['srcset'] = "{} 1x, {} 2x".format(img_1x, img_2x)
+            attrs['srcset'] = f"{img_1x} 1x, {img_2x} 2x"
 
         return attrs
 
@@ -512,12 +512,11 @@ class LocalImage(Image):
         # Get the 1x and 2x renditions
         img_1x, img_2x, _ = self._get_renditions(kwargs)
 
-        tmpl = 'background-image: url("{s1x}");'
+        tmpl = f'background-image: url("{img_1x}");'
         if img_1x != img_2x:
-            image_set = 'image-set(url("{s1x}") 1x, url("{s2x}") 2x)'
-            tmpl += 'background-image: {ss};background-image: -webkit-{ss};'.format(
-                ss=image_set)
-        return tmpl.format(s1x=img_1x, s2x=img_2x)
+            image_set = f'image-set(url("{img_1x}") 1x, url("{img_2x}") 2x)'
+            tmpl += f'background-image: {image_set};background-image: -webkit-{image_set};'
+        return tmpl
 
     @staticmethod
     def clean_cache(max_age):

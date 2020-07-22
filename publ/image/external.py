@@ -53,12 +53,12 @@ class ExternalImage(Image):
                 height = max_height
 
             if width and height and size_mode != 'stretch':
+                fill_crop_x = spec.get('fill_crop_x', 0.5) * 100
+                fill_crop_y = spec.get('fill_crop_y', 0.5) * 100
                 style_parts += [
-                    'background-image:url(\'{}\')'.format(html.escape(url)),
-                    'background-size:{}'.format(self.CSS_SIZE_MODE[size_mode]),
-                    'background-position:{:.1f}% {:.1f}%'.format(
-                        spec.get('fill_crop_x', 0.5) * 100,
-                        spec.get('fill_crop_y', 0.5) * 100),
+                    f'background-image:url(\'{html.escape(url)}\')',
+                    f'background-size:{self.CSS_SIZE_MODE[size_mode]}',
+                    f'background-position:{fill_crop_x:.2f}% {fill_crop_y:.2f}%',
                     'background-repeat:no-repeat'
                 ]
                 attrs['src'] = flask.url_for(
@@ -73,7 +73,7 @@ class ExternalImage(Image):
 
     def _css_background(self, **kwargs) -> str:
         """ Get the CSS background-image for the remote image """
-        return 'background-image: url("{}");'.format(self._get_url(kwargs.get('absolute')))
+        return f'background-image: url("{self._get_url(kwargs.get("absolute"))}");'
 
     @property
     def _filename(self) -> str:

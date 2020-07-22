@@ -64,7 +64,7 @@ class Image(ABC):
 
         shape = self._get_shape_style(params)
         if shape:
-            styles.append("shape-outside: url('{}')".format(shape))
+            styles.append(f"shape-outside: url('{shape}')")
 
         def set_val(key, val):
             if val is not None:
@@ -116,8 +116,8 @@ class Image(ABC):
                     thumb,
                     title))
         except FileNotFoundError as error:
-            text = '<span class="error">Image not found: <code>{}</code>'.format(
-                html.escape(error.filename))
+            text = '<span class="error">Image not found: '
+            text += f'<code>{html.escape(error.filename)}</code>'
             if ' ' in error.filename:
                 text += ' (Did you forget a <code>|</code>?)'
             text += '</span>'
@@ -156,7 +156,7 @@ class Image(ABC):
 
         text = self._css_background(**kwargs)
         if uncomment:
-            text = ' */ {} /* '.format(text)
+            text = f' */ {text} /* '
 
         return text
 
@@ -191,8 +191,7 @@ class Image(ABC):
                 text)
 
         if kwargs.get('gallery_id'):
-            return '{}{}</a>'.format(
-                self._fullsize_link_tag(kwargs, title), text)
+            return f'{self._fullsize_link_tag(kwargs, title)}{text}</a>'
 
         return text
 

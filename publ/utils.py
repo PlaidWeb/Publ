@@ -201,7 +201,7 @@ def make_tag(name: str,
 
     for key, val in attr_list:
         if val is not False:
-            text += ' {}'.format(key)
+            text += f' {key}'
             if val is not None:
                 import markupsafe
                 escaped = html.escape(str(val), False).replace('"', '&#34;')
@@ -211,7 +211,7 @@ def make_tag(name: str,
                 if isinstance(val, markupsafe.Markup):
                     # We just double-escaped all entities...
                     escaped = re.sub(r'&amp;([a-zA-Z0-9.\-_\:]+;)', r'&\1', val)
-                text += '="{}"'.format(escaped)
+                text += f'="{escaped}"'
     if start_end:
         text += ' /' if attrs else '/'
     text += '>'

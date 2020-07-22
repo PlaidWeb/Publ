@@ -115,12 +115,12 @@ class HTMLEntry(utils.HTMLTransform):
             img_attrs = img.get_img_attrs(**config)
         except FileNotFoundError as error:
             img_attrs = {
-                'data-publ-error': 'File Not Found: {}'.format(error.filename)
+                'data-publ-error': f'File Not Found: {error.filename}'
             }
         except Exception as error:  # pylint:disable=broad-except
             LOGGER.exception("Got exception: %s", error)
             img_attrs = {
-                'data-publ-error': 'Error: {}'.format(str(error))
+                'data-publ-error': f'Error: {error}'
             }
 
         # return the original attr list with the computed overrides in place
@@ -169,7 +169,7 @@ class HTMLStripper(utils.HTMLTransform):
 
     def handle_endtag(self, tag):
         if self._allowed_tags and tag in self._allowed_tags:
-            self.append('</{tag}>'.format(tag=tag))
+            self.append(f'</{tag}>')
         elif self._remove_elements and tag in self._remove_elements:
             self._remove_depth -= 1
 

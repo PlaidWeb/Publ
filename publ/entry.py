@@ -178,7 +178,7 @@ class Entry(caching.Memoizable):
             elif paging == 'offset' or not paging:
                 args['id'] = self._record.id
             else:
-                raise ValueError("Unknown paging type '{}'".format(paging))
+                raise ValueError(f"Unknown paging type '{paging}'")
 
             if tag:
                 args['tag'] = tag
@@ -569,7 +569,7 @@ class Entry(caching.Memoizable):
             self._get_markup(more, True, args=args, footnote_buffer=footnotes)
 
         if footnotes:
-            return flask.Markup("<ol>{notes}</ol>".format(notes=''.join(footnotes)))
+            return flask.Markup(f"<ol>{''.join(footnotes)}</ol>")
         return ''
 
     def _get_toc(self, body, more, max_depth, args) -> str:
@@ -700,7 +700,7 @@ def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
         while not entry_id or model.Entry.get(id=entry_id):
             # Stably generate a quasi-random entry ID from the file path
             md5 = hashlib.md5()
-            md5.update("{} {}".format(fullpath, attempt).encode('utf-8'))
+            md5.update(f"{fullpath} {attempt}".encode('utf-8'))
             entry_id = int.from_bytes(md5.digest(), byteorder='big') % limit
             attempt = attempt + 1
 
@@ -720,7 +720,7 @@ def save_file(fullpath: str, entry: email.message.Message, fingerprint: str):
         # str(val) is necessary to get around email.header's encoding
         # shenanigans
         for key, val in entry.items():
-            print('{}: {}'.format(key, str(val)), file=file)
+            print(f'{key}: {str(val)}', file=file)
         print('', file=file)
         file.write(entry.get_payload())
 

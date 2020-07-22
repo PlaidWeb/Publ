@@ -6,7 +6,6 @@ for more information. """
 import functools
 import logging
 import re
-import uuid
 
 import arrow
 import authl.flask
@@ -198,7 +197,7 @@ This configuration value will stop being supported in Publ 0.6.
 
         # Force the authl instance to load before the first request, after the
         # app has had a chance to set secret_key
-        self.before_first_request(lambda:self.authl)
+        self.before_first_request(lambda: self.authl)
 
         if self.debug:
             # We're in debug mode so we don't want to scan until everything's up

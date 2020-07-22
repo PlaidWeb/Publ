@@ -73,7 +73,7 @@ def remove_aliases(target: typing.Union[model.Entry, model.Category]):
         orm.delete(p for p in model.PathAlias  # type:ignore
                    if p.category == target)
     else:
-        raise TypeError("Unknown type {}".format(type(target)))
+        raise TypeError(f"Unknown type {type(target)}")
     orm.commit()
 
 

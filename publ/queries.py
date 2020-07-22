@@ -234,7 +234,7 @@ def get_entry(entry):
     if isinstance(entry, (int, str)):
         return model.Entry.get(id=int(entry))
 
-    raise ValueError("entry is of unknown type {}".format(type(entry)))
+    raise ValueError(f"entry is of unknown type {type(entry)}")
 
 
 def build_query(spec):
