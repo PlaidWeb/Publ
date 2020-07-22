@@ -1,6 +1,7 @@
 # markdown.py
 """ markdown formatting functionality """
 
+import html
 import logging
 import re
 import typing
@@ -32,6 +33,83 @@ TOC_ALLOWED_TAGS = ('sup', 'sub',
 PLAINTEXT_REMOVE_ELEMENTS = ('del', 's')
 
 
+class ItemCounter(misaka.BaseRenderer):
+    """ Just counts the number of things in an entry without any further processing """
+
+    def __init__(self, toc: int = 0, footnote: int = 0, code_blocks: int = 0):
+        super().__init__()
+        self.toc = toc
+        self.footnote = footnote
+        self.code_blocks = code_blocks
+
+    def __str__(self):
+        return 'ItemCounter(footnote={footnote},toc={toc},code_blocks={bc})'.format(
+            footnote=self.footnote,
+            toc=self.toc,
+            bc=self.code_blocks
+        )
+
+    def copy(self):
+        """ Return a copy of this counter """
+        return ItemCounter(self.toc, self.footnote, self.code_blocks)
+
+    def header(self, content, level):
+        """ count this header """
+        # pylint:disable=unused-argument
+        self.toc += 1
+
+    def footnote_def(self, content, num):
+        """ count this footnote """
+        # pylint:disable=unused-argument
+        self.footnote += 1
+
+    def blockcode(self, text, lang):
+        """ count this blockcode """
+        # pylint:disable=unused-argument
+        self.code_blocks += 1
+
+
+class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no-member
+    """ Customized code block formatter
+
+    Constructor arguments:
+
+    line_id_prefix -- the prefix for each line's <span> id
+    link_base -- the base URL for the line links
+    """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self,
+                 line_id_prefix: str,
+                 link_base: str,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.line_id_prefix = line_id_prefix
+        self.link_base = link_base
+
+    def wrap(self, source, outfile):
+        """ called by pygments """
+        # pylint:disable=unused-argument
+        return self._wrap_code(source)
+
+    def _wrap_code(self, source):
+        line_number = 0
+        for i, line in source:
+            if i == 1:
+                line_number += 1
+                line_id = "{}L{}".format(self.line_id_prefix, line_number)
+
+                yield 1, (utils.make_tag('span', {
+                    'class': 'line',
+                    'id': line_id
+                }) + utils.make_tag('a', {
+                    'class': 'line-number',
+                    'href': self.link_base + '#' + line_id,
+                }) + '</a>' + utils.make_tag('span', {
+                    'class': 'line-content',
+                }) + line.rstrip().replace('  ', '&nbsp; ') + '</span></span>\n')
+
+
 class HtmlRenderer(misaka.HtmlRenderer):
     """ Customized renderer for enhancing Markdown formatting
 
@@ -39,13 +117,17 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     config -- The configuration for the Markdown tags
     search_path -- Directories to look in for resolving relatively-linked files
+    entry_id -- the numeric entry ID
+    footnote_buffer -- the buffer of footnote entries so far
+    toc_buffer -- the buffer of TOC entries so far
     """
 
     def __init__(self, args: typing.Dict,
                  search_path: typing.Tuple[str],
                  entry_id: typing.Optional[int],
                  footnote_buffer: typing.Optional[typing.List[str]],
-                 toc_buffer: typing.Optional[TocBuffer]):
+                 toc_buffer: typing.Optional[TocBuffer],
+                 counter: ItemCounter):
         # pylint:disable=no-member,too-many-arguments
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
@@ -53,10 +135,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._search_path = search_path
         self._entry_id = entry_id
 
-        self._footnote_ofs = len(footnote_buffer) if footnote_buffer is not None else 0
+        self._footnote_ofs = counter.footnote
         self._footnote_buffer = footnote_buffer
 
         self._toc_buffer = toc_buffer
+
+        self._counter = counter
 
     @staticmethod
     def footnotes(_):
@@ -96,6 +180,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """ Render the footnote body, deferring it if so configured """
         LOGGER.debug("footnote_def %d: %s", num, content)
 
+        self._counter.footnote_def(content, num)
+
         # Insert the return anchor before the end of the first content block
         before, partition, after = content.partition('</p>')
         text = '{li}{before}&nbsp;{link}{icon}</a>{partition}{after}</li>'.format(
@@ -125,10 +211,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def header(self, content, level):
         """ Make a header with anchor """
 
+        self._counter.header(content, level)
         htag = f'h{level}'
+
         hid = self._header_id(html_entry.strip_html(content,
                                                     remove_elements=PLAINTEXT_REMOVE_ELEMENTS),
-                              level, len(self._toc_buffer) + 1)
+                              level, self._counter.toc)
 
         atag = utils.make_tag('a', {
             'href': urllib.parse.urljoin(self._config.get('toc_link', ''),
@@ -218,18 +306,42 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     def blockcode(self, text, lang):
         """ Pass a code fence through pygments """
+        LOGGER.debug("blockcode lang=%s", lang)
+
+        self._counter.blockcode(text, lang)
+
+        out = '\n<div class="blockcode">'
+
+        if text.startswith('!'):
+            caption, _, text = text.partition('\n')
+            caption = misaka.Markdown(TitleRenderer())(caption[1:].strip())
+            out += '<div class="caption">' + caption.strip() + '</div>'
+
+        out += '<pre>'
+
         if lang and self._config.get('highlight_syntax', 'True'):
             try:
-                lexer = pygments.lexers.get_lexer_by_name(lang, stripall=True)
+                lexer = pygments.lexers.get_lexer_by_name(lang or 'text', stripall=True)
             except pygments.lexers.ClassNotFound:
-                lexer = None
+                lexer = pygments.lexers.TextLexer()  # pylint:disable=no-member
+        else:
+            lexer = None
 
-            if lexer:
-                formatter = pygments.formatters.HtmlFormatter()  # pylint: disable=no-member
-                return pygments.highlight(text, lexer, formatter)
+        if lexer:
+            formatter = HtmlCodeFormatter(
+                line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
+                link_base=self._config.get('footnotes_link', ''),
+            )
+            out += '<code class="highlight">{}</code>'.format(
+                pygments.highlight(str(text), lexer, formatter))
+        else:
+            for line in text.split('\n'):
+                out += '<span class="line"><span class="line-content">{}</span></span>\n'.format(
+                    html.escape(line))
 
-        return '\n<div class="highlight"><pre>{}</pre></div>\n'.format(
-            flask.escape(text.strip()))
+        out += '</pre></div>'
+
+        return out
 
     def link(self, content, link, title=''):
         """ Emit a link, potentially remapped based on our embed or static rules """
@@ -283,34 +395,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 flask.escape(spec), flask.escape(str(err))))
 
 
-class ItemCounter(misaka.BaseRenderer):
-    """ Just counts the number of things in an entry without any further processing """
-
-    def __init__(self, toc: int = 0, footnote: int = 0):
-        super().__init__()
-        self.toc = toc
-        self.footnote = footnote
-
-    def __str__(self):
-        return f'ItemCounter(footnote={self.footnote},toc={self.toc})'
-
-    def header(self, content, level):
-        """ count this header """
-        # pylint:disable=unused-argument
-        self.toc += 1
-
-    def footnote_def(self, content, num):
-        """ count this footnote """
-        # pylint:disable=unused-argument
-        self.footnote += 1
-
-
 def to_html(text, args, search_path,
+            counter: ItemCounter,
             entry_id: typing.Optional[int] = None,
             toc_buffer: typing.Optional[TocBuffer] = None,
             footnote_buffer: typing.Optional[typing.List[str]] = None,
             postprocess: bool = True):
-    # pylint:disable=too-many-arguments
     """ Convert Markdown text to HTML.
 
     toc_buffer -- a list of (level,text) for all headings in the entry
@@ -320,6 +410,9 @@ def to_html(text, args, search_path,
 
     postprocess -- whether to postprocess the buffers for smartypants/HTML/etc.
     """
+    # pylint:disable=too-many-arguments
+
+    LOGGER.debug("counter: %s %s", id(counter), counter)
 
     footnotes: typing.List[str] = footnote_buffer if footnote_buffer is not None else []
     tocs: TocBuffer = toc_buffer if toc_buffer is not None else []
@@ -329,7 +422,8 @@ def to_html(text, args, search_path,
                             search_path,
                             toc_buffer=tocs,
                             footnote_buffer=footnotes,
-                            entry_id=entry_id)
+                            entry_id=entry_id,
+                            counter=counter)
     processor = misaka.Markdown(renderer,
                                 args.get('markdown_extensions', config.markdown_extensions))
     text = processor(text)
@@ -368,7 +462,8 @@ class TitleRenderer(HtmlRenderer):
     """ A renderer that is suitable for rendering out page titles and nothing else """
 
     def __init__(self):
-        super().__init__({}, [], entry_id=0, toc_buffer=[], footnote_buffer=[])
+        super().__init__({}, [], entry_id=0, toc_buffer=[], footnote_buffer=[],
+                         counter=ItemCounter())
 
     @staticmethod
     def paragraph(content):

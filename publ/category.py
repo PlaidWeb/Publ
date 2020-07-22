@@ -200,7 +200,8 @@ class Category(caching.Memoizable):
             if self._meta:
                 return flask.Markup(markdown.to_html(self._meta.get_payload(),
                                                      args=kwargs,
-                                                     search_path=self.search_path))
+                                                     search_path=self.search_path,
+                                                     counter=markdown.ItemCounter()))
             return ''
 
         if self._meta and self._meta.get_payload():
