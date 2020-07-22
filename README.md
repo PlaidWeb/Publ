@@ -32,10 +32,11 @@ work in progress! The documentation site for Publ itself (which is also a work i
 
 ## Operating requirements
 
-I am designing this to work in any WSGI-capable environment with Python 3.5+. This
-means that it will, for example, be deployable on any shared hosting which
-has Passenger support (such as Dreamhost), as well as on Heroku, Google AppEngine,
-S3, or any other simple containerized deployment target.
+I am designing this to work in any WSGI-capable environment with a supported
+version of Python. This means that it will, for example, be deployable on any
+shared hosting which has Passenger support (such as Dreamhost), as well as on
+Heroku, Google AppEngine, S3, or any other simple containerized deployment
+target.
 
 The file system is the ground truth for all site data, and while it does use a
 database as a content index, the actual choice of database shouldn't matter all
@@ -44,9 +45,14 @@ be supported as well.
 
 ## Additional resources
 
-The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of the templates, site content, and configuration for the [Publ site](http://publ.beesbuzz.biz).
+The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of
+the templates, site content, and configuration for the [Publ
+site](http://publ.beesbuzz.biz).
 
-The [Publ-templates-beesbuzz.biz](https://github.com/PlaidWeb/Publ-templates-beesbuzz.biz) repository provides a stripped-down sample site based on [my personal homepage](http://beesbuzz.biz).
+The
+[Publ-templates-beesbuzz.biz](https://github.com/PlaidWeb/Publ-templates-beesbuzz.biz)
+repository provides a stripped-down sample site based on [my personal
+homepage](http://beesbuzz.biz).
 
 ## Authors
 

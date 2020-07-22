@@ -329,8 +329,7 @@ class View(caching.Memoizable):
                             # id
                             args['id'] = val.id
                         else:
-                            raise ValueError(
-                                "key {} is of type {}".format(k, type(val)))
+                            raise ValueError(f"key {k} is of type {type(val)}")
                         break
 
             taglist = self.spec.get('tag')

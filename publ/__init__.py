@@ -6,12 +6,12 @@ for more information. """
 import functools
 import logging
 import re
-import uuid
 
 import arrow
 import authl.flask
 import flask
 import werkzeug.exceptions
+from werkzeug.utils import cached_property
 
 from . import (caching, cli, config, html_entry, image, index, maintenance,
                model, rendering, tokens, user, utils, view)
@@ -58,12 +58,10 @@ class Publ(flask.Flask):
         markdown_extensions -- The extensions to enable by default for the
             Markdown processing library. See https://misaka.61924.nl/#extensions
             for details
-        secret_key -- Authentication signing secret. This should remain private.
-            The default value is randomly generated at every application restart.
         auth -- Authentication configuration. See the Authl configuration
             documentation at [link TBD]. Additionally, setting the key
             AUTH_FORCE_HTTPS to a truthy value can be used to force the user to
-            switch to an SSL connection when they log in.
+            switch to a secure connection when they log in.
         user_list -- The file that configures the user and group list
         admin_group -- The user or group that has full administrative access
             to all entries regardless of permissions
@@ -92,22 +90,6 @@ accordingly.
 
 This configuration value will stop being supported in Publ 0.6.
 """)
-
-        auth_force_https = self.publ_config.auth.get('AUTH_FORCE_HTTPS',
-                                                     self.publ_config.auth.get('AUTH_FORCE_SSL'))
-        if auth_force_https:
-            self.config['SESSION_COOKIE_SECURE'] = True
-
-        if 'secret_key' in cfg:
-            LOGGER.warning("""secret_key is no longer configured in the configuration \
-dictionary; please configure it by setting the secret_key property on the Publ object \
-after initialization.
-
-This configuration value will stop being supported in Publ 0.6.
-""")
-            self.secret_key = cfg['secret_key']
-        else:
-            self.secret_key = uuid.uuid4().bytes
 
         self._regex_map = []
 
@@ -164,14 +146,6 @@ This configuration value will stop being supported in Publ 0.6.
 
         caching.init_app(self, self.publ_config.cache)
 
-        self.authl = authl.flask.AuthlFlask(self, self.publ_config.auth,
-                                            login_path='/_login',
-                                            login_name='login',
-                                            callback_path='/_cb',
-                                            tester_path='/_ct',
-                                            force_ssl=auth_force_https,
-                                            login_render_func=rendering.render_login_form)
-
         def logout(redir=''):
             """ Log out from the thing """
             if flask.request.method == 'POST':
@@ -221,6 +195,10 @@ This configuration value will stop being supported in Publ 0.6.
 
         self.before_request(self._maint.run)
 
+        # Force the authl instance to load before the first request, after the
+        # app has had a chance to set secret_key
+        self.before_first_request(lambda: self.authl)
+
         if self.debug:
             # We're in debug mode so we don't want to scan until everything's up
             # and running
@@ -232,6 +210,26 @@ This configuration value will stop being supported in Publ 0.6.
             self._startup()
 
         cli.setup(self)
+
+    @cached_property
+    def authl(self):
+        """ Get the authl instance """
+        if self.publ_config.auth:
+            auth_force_https = self.publ_config.auth.get(
+                'AUTH_FORCE_HTTPS',
+                self.publ_config.auth.get('AUTH_FORCE_SSL'))
+            if auth_force_https:
+                self.config['SESSION_COOKIE_SECURE'] = True
+
+            return authl.flask.AuthlFlask(
+                self, self.publ_config.auth,
+                login_path='/_login',
+                login_name='login',
+                callback_path='/_cb',
+                tester_path='/_ct',
+                force_https=bool(self.publ_config.auth.get('AUTH_FORCE_HTTPS')),
+                login_render_func=rendering.render_login_form)
+        return None
 
     def path_alias_regex(self, regex):
         r""" A decorator that adds a path-alias regular expression; calls

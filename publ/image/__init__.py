@@ -93,7 +93,7 @@ class ImageNotFound(Image):
             errno.ENOENT, os.strerror(errno.ENOENT), self.path)
 
     def _css_background(self, **kwargs):
-        return '/* not found: {} */'.format(self.path)
+        return f'/* not found: {self.path} */'
 
     @property
     def _filename(self):
@@ -186,14 +186,14 @@ def parse_arglist(args: str) -> ImgSpec:
     """ Parses an arglist into arguments for Image, as a kwargs dict """
     # per https://stackoverflow.com/a/49723227/318857
 
-    tree = ast.parse('f({})'.format(args))
+    tree = ast.parse(f'f({args})')
     expr = typing.cast(ast.Expr, tree.body[0])
     funccall = typing.cast(ast.Call, expr.value)
 
     pos_args = [ast.literal_eval(arg) for arg in funccall.args]
     if len(pos_args) > 2:
         raise TypeError(
-            "Expected at most 2 positional args but {} were given".format(len(pos_args)))
+            f"Expected at most 2 positional args but {len(pos_args)} were given")
 
     spec = {arg.arg: ast.literal_eval(arg.value)
             for arg in funccall.keywords if arg.arg}

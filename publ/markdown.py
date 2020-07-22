@@ -125,7 +125,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def header(self, content, level):
         """ Make a header with anchor """
 
-        htag = 'h{level}'.format(level=level)
+        htag = f'h{level}'
         hid = self._header_id(html_entry.strip_html(content,
                                                     remove_elements=PLAINTEXT_REMOVE_ELEMENTS),
                               level, len(self._toc_buffer) + 1)
@@ -175,7 +175,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         image_specs = raw_url
         if title:
-            image_specs += ' "{}"'.format(title)
+            image_specs += f' "{title}"'
 
         alt, container_args = image.parse_alt_text(alt)
 
@@ -292,8 +292,7 @@ class ItemCounter(misaka.BaseRenderer):
         self.footnote = footnote
 
     def __str__(self):
-        return 'ItemCounter(footnote={footnote},toc={toc})'.format(footnote=self.footnote,
-                                                                   toc=self.toc)
+        return f'ItemCounter(footnote={self.footnote},toc={self.toc})'
 
     def header(self, content, level):
         """ count this header """

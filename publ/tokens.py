@@ -114,11 +114,11 @@ def inject_auth_headers(response):
     if 'stash' in flask.g and flask.g.stash.get('needs_token'):
         header = 'Bearer, realm="posts", scope="read"'
         if 'token_error' in flask.g:
-            header += ', error="invalid_token", error_description="{msg}"'.format(
-                msg=flask.g.token_error)
+            header += f', error="invalid_token", error_description="{flask.g.token_error}"'
         response.headers.add('WWW-Authenticate', header)
-        response.headers.add('Link', '<{endpoint}>; rel="token_endpoint"'.format(
-            endpoint=utils.secure_link('token', _external=True)))
+        response.headers.add(
+            'Link',
+            f'<{utils.secure_link("token", _external=True)}>; rel="token_endpoint"')
 
     return response
 

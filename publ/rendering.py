@@ -297,8 +297,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
             return redirect(url_for('category', category=test_path, **request.args))
 
         # nope, we just don't know what this is
-        raise http_error.NotFound(
-            "No such view '{template}'".format(template=template))
+        raise http_error.NotFound(f"No such view '{template}'")
 
     view_spec = view.parse_view_spec(request.args)
     view_spec['category'] = category
@@ -342,8 +341,7 @@ def handle_unauthorized(cur_user, category='', **kwargs):
         tmpl = map_template(category, 'unauthorized')
         if not tmpl:
             # Use the default error handler
-            raise http_error.Forbidden(
-                "User {name} does not have access".format(name=cur_user.name))
+            raise http_error.Forbidden(f"User {cur_user.name} does not have access")
 
         # Render the category's unauthorized template
         return render_publ_template(tmpl,

@@ -1,4 +1,4 @@
-all: setup format mypy cov pylint flake8
+all: setup version format mypy cov pylint flake8
 
 .PHONY: setup
 setup:
@@ -47,7 +47,8 @@ cov: test
 	poetry run coverage report
 
 .PHONY: version
-version:
+version: publ/__version__.py
+publ/__version__.py: pyproject.toml
 	# Kind of a hacky way to get the version updated, until the poetry folks
 	# settle on a better approach
 	printf '""" version """\n__version__ = "%s"\n' \
@@ -60,7 +61,7 @@ build: version preflight pylint flake8
 .PHONY: clean
 clean:
 	rm -rf dist .mypy_cache .pytest_cache .coverage
-	find . -name __pycache__ -delete
+	find . -name __pycache__ -print0 | xargs -0 rm -r
 
 .PHONY: upload
 upload: clean test build
