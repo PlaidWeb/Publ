@@ -219,9 +219,8 @@ def render_exception(error):
                                               **request.args))
 
         flask.g.needs_token = True
-        if 'token_error' in flask.g:
-            flask.flash(flask.g.token_error)
-        return app.authl.render_login_form(destination=utils.redir_path()), 401
+        return app.authl.render_login_form(destination='/' + utils.redir_path(),
+                                           error=flask.g.get('token_error')), 401
 
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
