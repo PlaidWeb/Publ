@@ -106,7 +106,7 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
                               'href': self.link_base + '#' + line_id})
                              + '</a>' if self.link_base else '')
                           + utils.make_tag('span', {'class': 'line-content'})
-                          + line.replace('  ', '&nbsp; ').rstrip()
+                          + line
                           + '</span></span>\n')
 
 
@@ -120,27 +120,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     :param list toc_buffer: the buffer of TOC entries so far
     :param ItemCounter counter: item count accumulator
 
-    Configuration used by the Markdown processor itself:
-
-    * ``footnotes_link``: The base URL for footnote links
-    * ``footnotes_class``: The class to apply to a footnote marker
-    * ``footnotes_return``: The return symbol on an expanded footnote (default: ``'↩'``)
-    * ``toc_link``: The base URL for table of contents links from a heading
-    * ``heading_link_class``: The class to apply to a TOC link from a heading
-    * ``heading_link_attrs``: Additional attributes to apply to TOC links from headings
-    * ``heading_template``: The format template for a heading's TOC link
-      (default: ``{link}</a>{{text}}``). Receives the following template arguments:
-        * ``{link}``: The ``<a>`` tag linking to the TOC entry
-        * ``{text}``: The text of the heading
-    * ``code_highlight``: Whether to apply syntax highlighting to fenced code blocks
-      (default: ``True``)
-    * ``code_number_links``: Whether to add line-numbering links to fenced code blocks' lines;
-      If set to a string, specifies the base URL for these links (default: ``True``)
-    * ``absolute``: Whether to produce absolute/external, rather than relative,
-      links (default: ``False``)
-
-    For image configuration flags, see :py:func:`HtmlRenderer.image`
-    and :py:mod:`publ.image`.
+    For configuration values, see the individual Markdown implementation functions,
+    :py:func:`HtmlRenderer.image`, and py:mod:`publ.image`.
 
     """
 
@@ -172,7 +153,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     @staticmethod
     def footnotes(_):
-        """ Actual footnote rendering is handled by the caller """
+        """ Stub function; footnote rendering is handled by
+        :py:func:entry.entry.footnotes """
         return None
 
     def _footnote_num(self, num):
@@ -189,7 +171,12 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                     '#' + self._footnote_id(num, anchor))
 
     def footnote_ref(self, num):
-        """ Render a link to this footnote """
+        """ Render a link to a footnote
+
+        Relevant configuration options:
+        * ``footnotes_class``: The class to apply to a footnote marker
+        * ``footnotes_link``: The base URL for footnote links
+        """
         if self._config.get('_suppress_footnotes'):
             return '\u200b'  # zero-width space to prevent Misaka fallback
 
@@ -205,7 +192,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
             content=self._footnote_num(num))
 
     def footnote_def(self, content, num):
-        """ Render the footnote body, deferring it if so configured """
+        """ Renders the body of a footnote to be used by :py:func:`entry.Entry.footnotes`.
+
+        Relevant configuration options:
+
+        * ``footnotes_link``: The base URL for footnote links
+        * ``footnotes_return``: The return symbol on an expanded footnote
+          (default: ``'↩'``)
+        """
         LOGGER.debug("footnote_def %d: %s", num, content)
 
         self._counter.footnote_def(content, num)
@@ -229,7 +223,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._footnote_buffer.append(text)
 
     def _header_id(self, content, level, num):
-        """ Return a reasonable anchor ID for a heading """
+        """ Return a reasonable anchor ID for a heading."""
         return '{eid}_h{level}_{num}_{slug}'.format(
             eid=self._entry_id,
             level=level,
@@ -237,7 +231,18 @@ class HtmlRenderer(misaka.HtmlRenderer):
             slug=slugify.slugify(content, max_length=32))
 
     def header(self, content, level):
-        """ Make a header with anchor """
+        """ Make a header with anchor.
+
+        Relevant configuration:
+
+        * ``toc_link``: The base URL for table of contents links from a heading
+        * ``heading_link_class``: The class to apply to a TOC link from a heading
+        * ``heading_link_attrs``: Additional attributes to apply to TOC links from headings
+        * ``heading_template``: The format template for a heading's TOC link
+          (default: ``{link}</a>{{text}}``). Receives the following template arguments:
+            * ``{link}``: The ``<a>`` tag linking to the TOC entry
+            * ``{text}``: The text of the heading
+         """
 
         self._counter.header(content, level)
         htag = f'h{level}'
@@ -369,7 +374,17 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return text or ' '
 
     def blockcode(self, text, lang):
-        """ Pass a code fence through pygments, and add line-numbering scaffolding """
+        """ Pass a code fence through pygments, and add line-numbering scaffolding.
+
+        Relevant configuration:
+
+        * ``code_highlight``: Whether to apply syntax highlighting to fenced
+          code blocks (default: ``True``)
+        * ``code_number_links``: Whether to add line-numbering links to fenced
+          code blocks' lines. If set to a string, specifies the base URL for
+          these links (default: ``True``)
+
+        """
         LOGGER.debug("blockcode lang=%s", lang)
 
         self._counter.blockcode(text, lang)
@@ -385,13 +400,17 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         if text.startswith('!'):
             caption, _, text = text.partition('\n')
-            caption = self._inner(caption[1:])
-            out += '<figcaption>' + utils.strip_single_paragraph(caption) + '</figcaption>'
-        elif text.startswith(r'\!'):
-            # Allow the initial ! to be escaped out
+            caption = self._inner(caption[1:]).strip()
+            if caption:
+                out += '<figcaption>' + utils.strip_single_paragraph(caption) + '</figcaption>'
+        elif text.startswith(r'\!') or text.startswith('\n'):
+            # Allow the initial ! to be escaped out, or skip an initial blank line
             text = text[1:]
 
-        if args.get('code_highlight', True):
+        highlight = lang and args.get('code_highlight', True)
+        number_lines = highlight and args.get('code_number_links', True)
+
+        if highlight:
             try:
                 lexer = pygments.lexers.get_lexer_by_name(lang or 'text', stripall=True)
             except pygments.lexers.ClassNotFound:
@@ -400,32 +419,40 @@ class HtmlRenderer(misaka.HtmlRenderer):
             lexer = None
 
         out += utils.make_tag('pre', {
-            'class': 'highlight',
-            'data-language': lang
+            'class': 'highlight' if highlight else False,
+            'data-language': lang if lang else False,
+            'data-line-numbers': None if number_lines else False,
         } if lang else {})
 
-        if lexer and args.get('code_highlight', True):
-            link_base = args.get('code_number_links')
-            if link_base and not isinstance(link_base,str):
+        if lexer:
+            link_base = number_lines
+            if link_base is True:
+                # It was set explicitly True, which means we need to re-inherit the
+                # default from the template
                 link_base = self._config.get('code_number_links')
             formatter = HtmlCodeFormatter(
-                line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
+                line_id_prefix=f"e{self._entry_id}cb{self._counter.code_blocks}",
                 link_base=link_base,
             )
-            out += '{}'.format(
-                pygments.highlight(str(text), lexer, formatter))
+            out += pygments.highlight(str(text), lexer, formatter)
         else:
             lines = text.splitlines()
-            out += '\n'.join('<span class="line"><span class="line-content">'
-                             + html.escape(line) + '</span></span>'
-                             for line in lines)
+            for line in lines:
+                out += ('<span class="line"><span class="line-content">'
+                        + html.escape(line) + '</span></span>\n')
 
         out += '</pre></figure>'
 
         return out
 
     def link(self, content, link, title=''):
-        """ Emit a link, potentially remapped based on our embed or static rules """
+        """ Emit a link, potentially remapped based on our embed or static rules.
+
+        Relevant configuration:
+
+        * ``absolute``: Whether to produce absolute/external, rather than relative,
+          links (default: ``False``)
+        """
 
         link = links.resolve(link, self._search_path,
                              self._config.get('absolute'))
@@ -439,7 +466,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
     @staticmethod
     def paragraph(content):
-        """ emit a paragraph, stripping out any leading or following empty paragraphs """
+        """ emit a paragraph """
 
         # if the content contains a top-level block element then don't wrap it in a <p>
         # tag
@@ -447,9 +474,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if content.startswith(f'<{element}') and content.endswith(f'</{element}>'):
                 return '\n' + content + '\n'
 
-        text = '<p>' + content + '</p>'
-        text = re.sub(r'<p>\s*</p>', r'', text)
-        return text or ' '
+        return '<p>' + content + '</p>'
 
     def _render_image(self, spec, show, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """

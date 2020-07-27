@@ -49,6 +49,9 @@ foo
 ! invalid.py
 def foo():
     return None + "bar"
+
+def bar():
+    return "bar" + foo()
 ```
 
 bar
@@ -90,4 +93,20 @@ No declared language, and disabled number links
 
 ```{code_number_links=True}
 number links explicitly set True
+but there is no declared language
+```
+
+```
+\! first line has !
+second line does not
+```
+
+```
+
+! first line is blank
+```
+
+```
+!
+! empty caption
 ```

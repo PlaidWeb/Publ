@@ -183,7 +183,6 @@ def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
 
 def parse_img_config(text: str) -> typing.Tuple[str, utils.ArgDict]:
     """ Parses an arglist into arguments for Image, as a kwargs dict """
-    # per https://stackoverflow.com/a/49723227/318857
 
     text, pos_args, kwargs = utils.parse_spec(text, 2)
 
@@ -199,21 +198,19 @@ def parse_img_config(text: str) -> typing.Tuple[str, utils.ArgDict]:
     return text, kwargs
 
 
-def parse_image_spec(spec: str) -> typing.Tuple[str, utils.ArgDict, typing.Optional[str]]:
+def parse_image_spec(path: str) -> typing.Tuple[str, utils.ArgDict, typing.Optional[str]]:
     """ Parses out a Publ-Markdown image spec into a tuple of path, args, title """
 
     title: typing.Optional[str] = None
 
-    # I was having trouble coming up with a single RE that did it right,
-    # so let's just break it down into sub-problems. First, parse out the
-    # alt text...
-    match = re.match(r'(.+)\s+\"(.*)\"\s*$', spec)
+    # Parse out the title..
+    match = re.match(r'(.+)\s+\"(.*)\"\s*$', path)
     if match:
-        spec, title = match.group(1, 2)
+        path, title = match.group(1, 2)
 
-    spec, args = parse_img_config(spec)
+    path, args = parse_img_config(path)
 
-    return spec, args, (title and html.unescape(title))
+    return path, args, (title and html.unescape(title))
 
 
 def get_spec_list(image_specs: str, container_args: utils.ArgDict):

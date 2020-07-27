@@ -524,7 +524,8 @@ class TagSet(typing.Set[str]):
 
 def strip_single_paragraph(text: str):
     """ If the provided HTML text has only a single paragraph, strip it off. """
-    stripped = re.sub(r'<p>(.*)</p>', r'\1', text.strip())
+
+    stripped = re.sub(r'^<p>(.*)</p>$', r'\1', text.strip())
     if '<p>' in stripped:
         return text
     return stripped

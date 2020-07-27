@@ -509,11 +509,10 @@ class Entry(caching.Memoizable):
         if is_markdown:
             # Set defaults for the ID link generators, so permalinks from category
             # pages work correctly
-            for link_flag in ('footnotes_link', 'toc_link'):
-                if link_flag not in args:
-                    args[link_flag] = self.link(absolute=args.get('absolute'))
-            if not isinstance(args.get('code_number_links'), str):
-                args['code_number_links'] = self.link(absolute=args.get('absolute'))
+            default_link = self.link(absolute=args.get('absolute'))
+            for link_flag in ('footnotes_link', 'toc_link', 'code_number_links'):
+                if link_flag not in args or args[link_flag] is True:
+                    args[link_flag] = default_link
 
             return markdown.to_html(
                 text,

@@ -1,4 +1,5 @@
 @import url('{{static("pygments.default.css")}}');
+@import url('{{static("fancy-code.css")}}');
 
 html {
     padding: 0;
@@ -33,14 +34,6 @@ h4 a {
     text-decoration: none;
 }
 
-.blockcode {
-    background: #eee;
-    border: solid #777 1px;
-    border-radius: 1ex;
-    margin-bottom: 1em;
-    overflow: hidden;
-}
-
 figure {
     border: dashed black 1px;
 }
@@ -50,64 +43,6 @@ figcaption {
     color: #77f;
     font-style: italic;
     padding: 0 1ex;
-}
-
-.blockcode figcaption {
-    border-bottom: solid #777 1px;
-    background: #fff7f7;
-}
-
-code,
-pre {
-    font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
-    margin: 0;
-    padding: 0;
-}
-
-pre {
-    overflow-x: auto;
-    display: table;
-    counter-reset: codeline;
-    border-collapse: collapse;
-}
-
-pre .line {
-    display: table-row;
-    counter-increment: codeline;
-    width: 100%;
-}
-
-pre .line-content {
-    display: table-cell;
-    width: 100%;
-    padding: 0 1ex;
-}
-
-pre .line:first-child .line-content {
-    padding-top: 0.5ex;
-}
-
-pre .line:last-child .line-content {
-    padding-bottom: 0.5ex;
-}
-
-pre .line-number:hover {
-    background: rgba(255,255,0,0.5);
-}
-pre .line-number::before {
-    display: table-cell;
-    content: counter(codeline);
-    font-size: small;
-    font-family: 'Trebuchet MS', 'Verdana', 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
-    min-width: 2em;
-    text-align: right;
-    padding: 0 0.5ex;
-    color: #555;
-    vertical-align: baseline;
-}
-
-pre .line-content {
-    border-left: solid #999 1px;
 }
 
 .images {
