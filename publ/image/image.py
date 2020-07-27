@@ -8,7 +8,6 @@ import flask
 
 from .. import utils
 
-ImgSpec = typing.Dict[str, typing.Any]
 ImgSize = typing.Tuple[int, int]
 RenditionAttrs = typing.Dict[str, typing.Any]
 
@@ -37,7 +36,7 @@ class Image(ABC):
 
     @abstractmethod
     def _get_img_attrs(self,
-                       spec: ImgSpec,
+                       spec: utils.ArgDict,
                        style_parts: typing.List[str]) -> utils.TagAttrs:
         """ Get the img attributes for the given rendition arguments. Style parts
         should be appended to the style_parts instead.

@@ -66,3 +66,28 @@ bar
 ! A caption line
 ![An image line]()
 ```
+
+Arguments:
+
+```bash{code_highlight=False}
+cat << EOF
+This code has had highlighting disabled.
+
+Test 1
+Test 2
+EOF
+```
+
+
+
+```html{code_number_links=False}
+<span>This code has had number links disabled</span>
+```
+
+```{code_number_links=False}
+No declared language, and disabled number links
+```
+
+```{code_number_links=True}
+number links explicitly set True
+```

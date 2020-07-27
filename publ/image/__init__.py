@@ -1,6 +1,5 @@
 """ Handlers for images and files """
 
-import ast
 import errno
 import hashlib
 import html
@@ -20,7 +19,7 @@ from pony import orm
 from .. import model, utils
 from ..config import config
 from .external import ExternalImage
-from .image import Image, ImgSpec
+from .image import Image
 from .local import LocalImage, fix_orientation
 
 LOGGER = logging.getLogger(__name__)
@@ -182,49 +181,25 @@ def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
     return LocalImage(record, search_path)
 
 
-def parse_arglist(args: str) -> ImgSpec:
+def parse_img_config(text: str) -> typing.Tuple[str, utils.ArgDict]:
     """ Parses an arglist into arguments for Image, as a kwargs dict """
     # per https://stackoverflow.com/a/49723227/318857
 
-    tree = ast.parse(f'f({args})')
-    expr = typing.cast(ast.Expr, tree.body[0])
-    funccall = typing.cast(ast.Call, expr.value)
-
-    pos_args = [ast.literal_eval(arg) for arg in funccall.args]
-    if len(pos_args) > 2:
-        raise TypeError(
-            f"Expected at most 2 positional args but {len(pos_args)} were given")
-
-    spec = {arg.arg: ast.literal_eval(arg.value)
-            for arg in funccall.keywords if arg.arg}
-
-    LOGGER.debug("pos_args=%s spec=%s", pos_args, spec)
+    text, pos_args, kwargs = utils.parse_spec(text, 2)
 
     if len(pos_args) >= 1:
-        if 'width' in spec:
+        if 'width' in kwargs:
             raise TypeError("Got multiple values for width")
-        spec['width'] = int(pos_args[0])
+        kwargs['width'] = int(pos_args[0])
     if len(pos_args) >= 2:
-        if 'height' in spec:
+        if 'height' in kwargs:
             raise TypeError("Got multiple values for height")
-        spec['height'] = int(pos_args[1])
+        kwargs['height'] = int(pos_args[1])
 
-    return spec
-
-
-def parse_alt_text(alt: str) -> typing.Tuple[str, ImgSpec]:
-    """ Parses the arguments out from a Publ-Markdown alt text into a tuple of text, args """
-    match = re.match(r'([^\{]*)(\{(.*)\})$', alt)
-    if match:
-        alt = match.group(1)
-        args = parse_arglist(match.group(3))
-    else:
-        args = {}
-
-    return alt, args
+    return text, kwargs
 
 
-def parse_image_spec(spec: str) -> typing.Tuple[str, ImgSpec, typing.Optional[str]]:
+def parse_image_spec(spec: str) -> typing.Tuple[str, utils.ArgDict, typing.Optional[str]]:
     """ Parses out a Publ-Markdown image spec into a tuple of path, args, title """
 
     title: typing.Optional[str] = None
@@ -236,18 +211,12 @@ def parse_image_spec(spec: str) -> typing.Tuple[str, ImgSpec, typing.Optional[st
     if match:
         spec, title = match.group(1, 2)
 
-    # and now parse out the arglist
-    match = re.match(r'([^\{]*)(\{(.*)\})\s*$', spec)
-    if match:
-        spec = match.group(1)
-        args = parse_arglist(match.group(3))
-    else:
-        args = {}
+    spec, args = parse_img_config(spec)
 
     return spec, args, (title and html.unescape(title))
 
 
-def get_spec_list(image_specs: str, container_args: ImgSpec):
+def get_spec_list(image_specs: str, container_args: utils.ArgDict):
     """ Given a list of specs and a set of container args, return a list of
     tuples of (image_spec,bool), where the bool indicates whether the image
     is visible. """

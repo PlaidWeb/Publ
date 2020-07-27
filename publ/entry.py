@@ -507,11 +507,13 @@ class Entry(caching.Memoizable):
         """
         # pylint:disable=too-many-arguments
         if is_markdown:
-            if 'footnotes_link' not in args:
-                args['footnotes_link'] = self.link(absolute=args.get('absolute'))
-
-            if 'toc_link' not in args:
-                args['toc_link'] = self.link(absolute=args.get('absolute'))
+            # Set defaults for the ID link generators, so permalinks from category
+            # pages work correctly
+            for link_flag in ('footnotes_link', 'toc_link'):
+                if link_flag not in args:
+                    args[link_flag] = self.link(absolute=args.get('absolute'))
+            if not isinstance(args.get('code_number_links'), str):
+                args['code_number_links'] = self.link(absolute=args.get('absolute'))
 
             return markdown.to_html(
                 text,

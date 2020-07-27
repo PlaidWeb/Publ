@@ -81,7 +81,7 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
 
     def __init__(self,
                  line_id_prefix: str,
-                 link_base: str,
+                 link_base: typing.Union[str, bool],
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.line_id_prefix = line_id_prefix
@@ -101,10 +101,10 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
 
                 yield 1, (utils.make_tag('span', {'class': 'line',
                                                   'id': line_id})
-                          + utils.make_tag('a', {
+                          + (utils.make_tag('a', {
                               'class': 'line-number',
                               'href': self.link_base + '#' + line_id})
-                          + '</a>'
+                             + '</a>' if self.link_base else '')
                           + utils.make_tag('span', {'class': 'line-content'})
                           + line.replace('  ', '&nbsp; ').rstrip()
                           + '</span></span>\n')
@@ -134,8 +134,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         * ``{text}``: The text of the heading
     * ``code_highlight``: Whether to apply syntax highlighting to fenced code blocks
       (default: ``True``)
-    * ``code_number_lines``: Whether to add line-numbering links to fenced code blocks' lines
-      (default: ``True``)
+    * ``code_number_links``: Whether to add line-numbering links to fenced code blocks' lines;
+      If set to a string, specifies the base URL for these links (default: ``True``)
     * ``absolute``: Whether to produce absolute/external, rather than relative,
       links (default: ``False``)
 
@@ -167,7 +167,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def _inner(self, text):
         """ process some inner markdown """
         return misaka.Markdown(self,
-            self._config.get('markdown_extensions', config.markdown_extensions))(text)
+                               self._config.get('markdown_extensions',
+                                                config.markdown_extensions))(text)
 
     @staticmethod
     def footnotes(_):
@@ -285,16 +286,24 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         * ``figure``: If set, wrap the image set in a ``<figure>`` tag. If this
           value is a string, use the string value as the CSS class name.
+
         * ``caption``: If set, add the text as a ``<figcaption>``. Markdown supported.
           Implies ``figure=True``.
+
         * ``div_class``: The CSS class name to use on any wrapper div
+
         * ``div_style``: Additional CSS styles to apply to the wrapper div
+
         * ``count``: The maximum number of images to show at once
-        * ``more_text``: If there are more than ``count`` images, add this text indicating
-          that there are more images to be seen. This string gets two template
-          arguments, ``{count}`` which is the total number of images in the set,
-          and ``{remain}`` which is the number of images omitted from the set.
-        * ``more_link``: If `more_text` is shown, this will format the text as a link to this location.
+
+        * ``more_text``: If there are more than ``count`` images, add this text
+          indicating that there are more images to be seen. This string gets two template
+          arguments, ``{count}`` which is the total number of images in the set, and
+          ``{remain}`` which is the number of images omitted from the set.
+
+        * ``more_link``: If `more_text` is shown, this will format the text as a link
+          to this location.
+
         * ``more_class``: If `more_text` is shown, applies this CSS class to the link
 
         See :py:mod:`publ.image` for configuration for image renditions.
@@ -308,7 +317,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         if title:
             image_specs += f' "{title}"'
 
-        alt, container_args = image.parse_alt_text(alt)
+        alt, container_args = image.parse_img_config(alt)
 
         container_args = utils.prefix_normalize({**self._config, **container_args})
 
@@ -332,7 +341,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                     a=utils.make_tag('a', {
                         'href': container_args['more_link'],
                         'class': container_args.get('more_class', False)
-                        }))
+                    }))
             text += flask.Markup(more_text)
 
         if text and (container_args.get('div_class') or
@@ -352,7 +361,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 caption = ''
             text = '{tag}{text}{caption}</figure>'.format(
                 tag=utils.make_tag('figure',
-                    {'class': fig_class if isinstance(fig_class, str) else False}),
+                                   {'class': fig_class if isinstance(fig_class, str) else False}),
                 text=text,
                 caption=caption)
 
@@ -367,6 +376,13 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         out = '<figure class="blockcode">'
 
+        lang, _, args = utils.parse_spec(lang, 0)
+        if args:
+            args = {**self._config, **args}
+        else:
+            args = self._config
+        LOGGER.debug("Code: language=%s args=%s", lang, args)
+
         if text.startswith('!'):
             caption, _, text = text.partition('\n')
             caption = self._inner(caption[1:])
@@ -375,7 +391,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             # Allow the initial ! to be escaped out
             text = text[1:]
 
-        if self._config.get('code_highlight', True):
+        if args.get('code_highlight', True):
             try:
                 lexer = pygments.lexers.get_lexer_by_name(lang or 'text', stripall=True)
             except pygments.lexers.ClassNotFound:
@@ -388,14 +404,14 @@ class HtmlRenderer(misaka.HtmlRenderer):
             'data-language': lang
         } if lang else {})
 
-        if lexer and self._config.get('code_highlight', True):
-            if self._config.get('code_number_links', True):
-                formatter = HtmlCodeFormatter(
-                    line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
-                    link_base=self._config.get('footnotes_link', ''),
-                )
-            else:
-                formatter = pygments.formatters.HtmlFormatter()
+        if lexer and args.get('code_highlight', True):
+            link_base = args.get('code_number_links')
+            if link_base and not isinstance(link_base,str):
+                link_base = self._config.get('code_number_links')
+            formatter = HtmlCodeFormatter(
+                line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
+                link_base=link_base,
+            )
             out += '{}'.format(
                 pygments.highlight(str(text), lexer, formatter))
         else:

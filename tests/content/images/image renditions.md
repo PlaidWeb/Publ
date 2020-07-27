@@ -12,28 +12,28 @@ Image rendition tests
 
 External image with width set
 
-![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{250} "so smol")
+![](//publ.plaidweb.site/static/images/IMG_0377.jpg{250} "so smol")
 
-`![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{250} "so smol")`
+`![](//publ.plaidweb.site/static/images/IMG_0377.jpg{250} "so smol")`
 
 External image with height set
 
-![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{height=250} "less smol")
+![](//publ.plaidweb.site/static/images/IMG_0377.jpg{height=250} "less smol")
 
-`![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{height=250} "less smol")`
+`![](//publ.plaidweb.site/static/images/IMG_0377.jpg{height=250} "less smol")`
 
 External image with width and height set, with different scaling modes:
 
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//publ.beesbuzz.biz/static/images/IMG_0377.jpg "fit"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="fill"} "fill"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
+//publ.plaidweb.site/static/images/IMG_0377.jpg "fit"
+| //publ.plaidweb.site/static/images/IMG_0377.jpg{resize="fill"} "fill"
+| //publ.plaidweb.site/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
 
 ```markdown
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//publ.beesbuzz.biz/static/images/IMG_0377.jpg "fit"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="fill"} "fill"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
+//publ.plaidweb.site/static/images/IMG_0377.jpg "fit"
+| //publ.plaidweb.site/static/images/IMG_0377.jpg{resize="fill"} "fill"
+| //publ.plaidweb.site/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
 ```
 
 Image using static path
@@ -45,9 +45,9 @@ Image using static path
 
 Force absolute URLs
 
-![{640,320,absolute=True}](//publ.beesbuzz.biz/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)
+![{640,320,absolute=True}](//publ.plaidweb.site/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)
 
-`![{640,320,absolute=True}](//publ.beesbuzz.biz/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)`
+`![{640,320,absolute=True}](//publ.plaidweb.site/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)`
 
 
 ## Local images
@@ -123,11 +123,11 @@ should still be in a paragraph
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg
 | rawr.jpg{fullscreen_width=50} "Rawr!"
 | rawr.jpg{100}
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg)
+| //publ.plaidweb.site/static/images/IMG_0377.jpg)
 
 ```markdown
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg | rawr.jpg{fullscreen_width=50} "Rawr!" | rawr.jpg{100}
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg)
+| //publ.plaidweb.site/static/images/IMG_0377.jpg)
 ```
 
 ## PNG transparency
