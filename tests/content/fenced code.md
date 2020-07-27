@@ -36,8 +36,11 @@ This code block has no declared language.
 Oh well!
 ```
 
+
 ```skdjflsjflsl
 This code block declares an unknown language.
+
+As a result, we treat it as plain text.
 ```
 
 foo
@@ -49,3 +52,17 @@ def foo():
 ```
 
 bar
+
+```markdown
+\![literal escape on the first exclamation mark](foo)
+```
+
+```markdown
+
+![a blank line works too]()
+```
+
+```markdown
+! A caption line
+![An image line]()
+```

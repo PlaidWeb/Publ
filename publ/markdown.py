@@ -99,27 +99,49 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
                 line_number += 1
                 line_id = "{}L{}".format(self.line_id_prefix, line_number)
 
-                yield 1, (utils.make_tag('span', {
-                    'class': 'line',
-                    'id': line_id
-                }) + utils.make_tag('a', {
-                    'class': 'line-number',
-                    'href': self.link_base + '#' + line_id,
-                }) + '</a>' + utils.make_tag('span', {
-                    'class': 'line-content',
-                }) + line.rstrip().replace('  ', '&nbsp; ') + '</span></span>\n')
+                yield 1, (utils.make_tag('span', {'class': 'line',
+                                                  'id': line_id})
+                          + utils.make_tag('a', {
+                              'class': 'line-number',
+                              'href': self.link_base + '#' + line_id})
+                          + '</a>'
+                          + utils.make_tag('span', {'class': 'line-content'})
+                          + line.replace('  ', '&nbsp; ').rstrip()
+                          + '</span></span>\n')
 
 
 class HtmlRenderer(misaka.HtmlRenderer):
-    """ Customized renderer for enhancing Markdown formatting
+    """ Customized renderer for enhanced Markdown formatting
 
-    Constructor arguments:
+    :param dict config: The configuration for the Markdown tags
+    :param list search_path: Directories to look in for resolving relatively-linked files
+    :param int entry_id: the numeric entry ID
+    :param list footnote_buffer: the buffer of footnote entries so far
+    :param list toc_buffer: the buffer of TOC entries so far
+    :param ItemCounter counter: item count accumulator
 
-    config -- The configuration for the Markdown tags
-    search_path -- Directories to look in for resolving relatively-linked files
-    entry_id -- the numeric entry ID
-    footnote_buffer -- the buffer of footnote entries so far
-    toc_buffer -- the buffer of TOC entries so far
+    Configuration used by the Markdown processor itself:
+
+    * ``footnotes_link``: The base URL for footnote links
+    * ``footnotes_class``: The class to apply to a footnote marker
+    * ``footnotes_return``: The return symbol on an expanded footnote (default: ``'↩'``)
+    * ``toc_link``: The base URL for table of contents links from a heading
+    * ``heading_link_class``: The class to apply to a TOC link from a heading
+    * ``heading_link_attrs``: Additional attributes to apply to TOC links from headings
+    * ``heading_template``: The format template for a heading's TOC link
+      (default: ``{link}</a>{{text}}``). Receives the following template arguments:
+        * ``{link}``: The ``<a>`` tag linking to the TOC entry
+        * ``{text}``: The text of the heading
+    * ``code_highlight``: Whether to apply syntax highlighting to fenced code blocks
+      (default: ``True``)
+    * ``code_number_lines``: Whether to add line-numbering links to fenced code blocks' lines
+      (default: ``True``)
+    * ``absolute``: Whether to produce absolute/external, rather than relative,
+      links (default: ``False``)
+
+    For image configuration flags, see :py:func:`HtmlRenderer.image`
+    and :py:mod:`publ.image`.
+
     """
 
     def __init__(self, args: typing.Dict,
@@ -141,6 +163,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
         self._toc_buffer = toc_buffer
 
         self._counter = counter
+
+    def _inner(self, text):
+        """ process some inner markdown """
+        return misaka.Markdown(self,
+            self._config.get('markdown_extensions', config.markdown_extensions))(text)
 
     @staticmethod
     def footnotes(_):
@@ -222,7 +249,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             'href': urllib.parse.urljoin(self._config.get('toc_link', ''),
                                          '#' + hid),
             'class': self._config.get('heading_link_class', False),
-            **self._config.get('heading_link_config', {})
+            **self._config.get('heading_link_attrs', {})
         })
 
         if self._toc_buffer is not None:
@@ -245,17 +272,33 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def image(self, raw_url, title='', alt=''):
         """ Adapt a standard Markdown image to a generated rendition set.
 
-        Container arguments used (in addition to the rendition tags):
+        Extended syntax::
 
-        div_class -- The CSS class name to use on any wrapper div
-        div_style -- Additional CSS styles to apply to the wrapper div
-        count -- The maximum number of images to show at once
-        more_text -- If there are more than `count` images, add this text indicating
-            that there are more images to be seen. This string gets two template
-            arguments, `{count}` which is the total number of images in the set,
-            and `{remain}` which is the number of images omitted from the set.
-        more_link -- If `more_text` is shown, this will format the text as a link to this location.
-        more_class -- If `more_text` is shown, wraps it in a `<div>` with this class.
+            ![alt text{container_args}](image1.jpg{img_args} "title text"
+            |image2.jpg{img_args} "title text"
+            |...)
+
+        Configuration for each image comes from the page template, then from the
+        ``container_args``, then from the ``img_args``.
+
+        Configuration that applies to the image set itself:
+
+        * ``figure``: If set, wrap the image set in a ``<figure>`` tag. If this
+          value is a string, use the string value as the CSS class name.
+        * ``caption``: If set, add the text as a ``<figcaption>``. Markdown supported.
+          Implies ``figure=True``.
+        * ``div_class``: The CSS class name to use on any wrapper div
+        * ``div_style``: Additional CSS styles to apply to the wrapper div
+        * ``count``: The maximum number of images to show at once
+        * ``more_text``: If there are more than ``count`` images, add this text indicating
+          that there are more images to be seen. This string gets two template
+          arguments, ``{count}`` which is the total number of images in the set,
+          and ``{remain}`` which is the number of images omitted from the set.
+        * ``more_link``: If `more_text` is shown, this will format the text as a link to this location.
+        * ``more_class``: If `more_text` is shown, applies this CSS class to the link
+
+        See :py:mod:`publ.image` for configuration for image renditions.
+
         """
         # pylint: disable=too-many-locals
 
@@ -286,11 +329,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
             if 'more_link' in container_args:
                 more_text = '{a}{text}</a>'.format(
                     text=more_text,
-                    a=utils.make_tag('a', {'href': container_args['more_link']}))
-            if 'more_class' in container_args:
-                more_text = '{div}{text}</div>'.format(
-                    text=more_text,
-                    div=utils.make_tag('div', {'class': container_args['more_class']}))
+                    a=utils.make_tag('a', {
+                        'href': container_args['more_link'],
+                        'class': container_args.get('more_class', False)
+                        }))
             text += flask.Markup(more_text)
 
         if text and (container_args.get('div_class') or
@@ -301,25 +343,39 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                     'style': container_args.get('div_style') or False}),
                 text=text)
 
+        if text and (container_args.get('figure') or container_args.get('caption')):
+            fig_class = container_args.get('figure')
+            if container_args.get('caption'):
+                caption = '<figcaption>' + utils.strip_single_paragraph(
+                    self._inner(container_args['caption'])) + '</figcaption>'
+            else:
+                caption = ''
+            text = '{tag}{text}{caption}</figure>'.format(
+                tag=utils.make_tag('figure',
+                    {'class': fig_class if isinstance(fig_class, str) else False}),
+                text=text,
+                caption=caption)
+
         # if text is ''/falsy then misaka interprets this as a failed parse...
         return text or ' '
 
     def blockcode(self, text, lang):
-        """ Pass a code fence through pygments """
+        """ Pass a code fence through pygments, and add line-numbering scaffolding """
         LOGGER.debug("blockcode lang=%s", lang)
 
         self._counter.blockcode(text, lang)
 
-        out = '\n<div class="blockcode">'
+        out = '<figure class="blockcode">'
 
         if text.startswith('!'):
             caption, _, text = text.partition('\n')
-            caption = misaka.Markdown(TitleRenderer())(caption[1:].strip())
-            out += '<div class="caption">' + caption.strip() + '</div>'
+            caption = self._inner(caption[1:])
+            out += '<figcaption>' + utils.strip_single_paragraph(caption) + '</figcaption>'
+        elif text.startswith(r'\!'):
+            # Allow the initial ! to be escaped out
+            text = text[1:]
 
-        out += '<pre>'
-
-        if lang and self._config.get('highlight_syntax', 'True'):
+        if self._config.get('code_highlight', True):
             try:
                 lexer = pygments.lexers.get_lexer_by_name(lang or 'text', stripall=True)
             except pygments.lexers.ClassNotFound:
@@ -327,19 +383,28 @@ class HtmlRenderer(misaka.HtmlRenderer):
         else:
             lexer = None
 
-        if lexer:
-            formatter = HtmlCodeFormatter(
-                line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
-                link_base=self._config.get('footnotes_link', ''),
-            )
-            out += '<code class="highlight">{}</code>'.format(
+        out += utils.make_tag('pre', {
+            'class': 'highlight',
+            'data-language': lang
+        } if lang else {})
+
+        if lexer and self._config.get('code_highlight', True):
+            if self._config.get('code_number_links', True):
+                formatter = HtmlCodeFormatter(
+                    line_id_prefix="e{}cb{}".format(self._entry_id, self._counter.code_blocks),
+                    link_base=self._config.get('footnotes_link', ''),
+                )
+            else:
+                formatter = pygments.formatters.HtmlFormatter()
+            out += '{}'.format(
                 pygments.highlight(str(text), lexer, formatter))
         else:
-            for line in text.split('\n'):
-                out += '<span class="line"><span class="line-content">{}</span></span>\n'.format(
-                    html.escape(line))
+            lines = text.splitlines()
+            out += '\n'.join('<span class="line"><span class="line-content">'
+                             + html.escape(line) + '</span></span>'
+                             for line in lines)
 
-        out += '</pre></div>'
+        out += '</pre></figure>'
 
         return out
 
@@ -360,10 +425,11 @@ class HtmlRenderer(misaka.HtmlRenderer):
     def paragraph(content):
         """ emit a paragraph, stripping out any leading or following empty paragraphs """
 
-        # if the content contains a top-level div then don't wrap it in a <p>
+        # if the content contains a top-level block element then don't wrap it in a <p>
         # tag
-        if content.startswith('<div') and content.endswith('</div>'):
-            return '\n' + content + '\n'
+        for element in ('div', 'figure'):
+            if content.startswith(f'<{element}') and content.endswith(f'</{element}>'):
+                return '\n' + content + '\n'
 
         text = '<p>' + content + '</p>'
         text = re.sub(r'<p>\s*</p>', r'', text)

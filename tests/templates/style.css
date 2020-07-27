@@ -41,12 +41,19 @@ h4 a {
     overflow: hidden;
 }
 
-.blockcode .caption {
+figure {
+    border: dashed black 1px;
+}
+
+figcaption {
     font-size: small;
     color: #77f;
     font-style: italic;
-    border-bottom: solid #777 1px;
     padding: 0 1ex;
+}
+
+.blockcode figcaption {
+    border-bottom: solid #777 1px;
     background: #fff7f7;
 }
 
@@ -55,45 +62,39 @@ pre {
     font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
     margin: 0;
     padding: 0;
-    line-height: 1em;
 }
 
 pre {
     overflow-x: auto;
-}
-
-.line-content {
-    width: 100%;
-    padding: 0 1ex;
-}
-
-.highlight {
     display: table;
     counter-reset: codeline;
     border-collapse: collapse;
 }
 
-.highlight .line {
+pre .line {
     display: table-row;
     counter-increment: codeline;
-}
-
-pre .line {
     width: 100%;
 }
 
+pre .line-content {
+    display: table-cell;
+    width: 100%;
+    padding: 0 1ex;
+}
+
 pre .line:first-child .line-content {
-    padding-top: 0.5em;
+    padding-top: 0.5ex;
 }
 
 pre .line:last-child .line-content {
-    padding-bottom: 0.5em;
+    padding-bottom: 0.5ex;
 }
 
-.highlight .line-number:hover {
+pre .line-number:hover {
     background: rgba(255,255,0,0.5);
 }
-.highlight .line-number::before {
+pre .line-number::before {
     display: table-cell;
     content: counter(codeline);
     font-size: small;
@@ -105,8 +106,7 @@ pre .line:last-child .line-content {
     vertical-align: baseline;
 }
 
-.highlight .line-content {
-    display: table-cell;
+pre .line-content {
     border-left: solid #999 1px;
 }
 
