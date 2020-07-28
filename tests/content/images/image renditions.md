@@ -12,28 +12,29 @@ Image rendition tests
 
 External image with width set
 
-![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{250} "so smol")
+![](//placekitten.com/800/600{250} "so smol")
 
-`![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{250} "so smol")`
+`![](//placekitten.com/800/600{250} "so smol")`
 
 External image with height set
 
-![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{height=250} "less smol")
+![](//placekitten.com/800/600{height=250} "less smol")
 
-`![](//publ.beesbuzz.biz/static/images/IMG_0377.jpg{height=250} "less smol")`
+`![](//placekitten.com/800/600{height=250} "less smol")`
 
 External image with width and height set, with different scaling modes:
 
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//publ.beesbuzz.biz/static/images/IMG_0377.jpg "fit"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="fill"} "fill"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
+//placekitten.com/960/480 "fit"
+| //placekitten.com/960/480{resize="fill"} "fill"
+| //placekitten.com/960/480{resize="stretch"} "stretch")
 
 ```markdown
+
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//publ.beesbuzz.biz/static/images/IMG_0377.jpg "fit"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="fill"} "fill"
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg{resize="stretch"} "stretch")
+//placekitten.com/960/480 "fit"
+| //placekitten.com/960/480{resize="fill"} "fill"
+| //placekitten.com/960/480{resize="stretch"} "stretch")
 ```
 
 Image using static path
@@ -45,9 +46,9 @@ Image using static path
 
 Force absolute URLs
 
-![{640,320,absolute=True}](//publ.beesbuzz.biz/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)
+![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg)
 
-`![{640,320,absolute=True}](//publ.beesbuzz.biz/static/images/IMG_0377.jpg | @images/IMG_0377.jpg)`
+`![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg)`
 
 
 ## Local images
@@ -63,6 +64,7 @@ rawr.jpg "image 3"
 )
 
 ```markdown
+
 ![alt text](
 rawr.jpg{width=240} "test lightbox" |
 rawr.jpg{width=120} |
@@ -76,20 +78,23 @@ rawr.jpg "image 3"
 
 ![alt text](rawr.jpg{120,crop=(0,0,240,352)} "test crop (left half of rawr.jpg, scaled down)")
 
-```
+```markdown
+
 ![alt text](rawr.jpg{120,crop=(0,0,240,352)} "test crop (left half of rawr.jpg, scaled down)")
 ```
 
 ![](rawr.jpg{gallery_id='crops',crop=(107,72,89,82)} "just rawr's eye")
 
-```
+```markdown
+
 ![](rawr.jpg{gallery_id='crops',crop=(107,72,89,82)} "just rawr's eye")
 ```
 
 ![](croptest.png{gallery_id='crops',crop=(462,389,183,133),fullsize_crop=(119,142,343,247)}
     "different crops for thumbnail as fullsize")
 
-```
+```markdown
+
 ![](croptest.png{gallery_id='crops',crop=(462,389,183,133),fullsize_crop=(119,142,343,247)}
     "different crops for thumbnail as fullsize")
 ```
@@ -98,7 +103,8 @@ rawr.jpg "image 3"
   croptest.png{crop='119,142,343,247',resize='fit'} "fit crop"
 | croptest.png{crop='119,142,343,247',resize='fill'} "fill crop")
 
-```
+```markdown
+
 ![{100,100}](
   croptest.png{crop='119,142,343,247',resize='fit'} "fit crop"
 | croptest.png{crop='119,142,343,247',resize='fill'} "fill crop")
@@ -123,11 +129,12 @@ should still be in a paragraph
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg
 | rawr.jpg{fullscreen_width=50} "Rawr!"
 | rawr.jpg{100}
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg)
+| //placekitten.com/1280/720)
 
 ```markdown
+
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg | rawr.jpg{fullscreen_width=50} "Rawr!" | rawr.jpg{100}
-| //publ.beesbuzz.biz/static/images/IMG_0377.jpg)
+| //placekitten.com/800/600)
 ```
 
 ## PNG transparency
@@ -164,6 +171,7 @@ notsmiley.png{quality=1} "quality 1"
 )
 
 ```markdown
+
 ![{256,background='cyan',format='jpg'}](
 notsmiley.png{quality=1} "quality 1"
 | notsmiley.png{quality=50} "quality 50"
@@ -186,6 +194,7 @@ notsmiley.png{quality=1} "quality 1"
 )
 
 ```markdown
+
 ![{256,256}](Landscape_4.jpg{format='png'} "png24"
 | Landscape_4.jpg{format='png',quantize=0} "png8 0"
 | Landscape_4.jpg{format='png',quantize=128} "png8 128"
@@ -208,7 +217,8 @@ notsmiley.png{quality=1} "quality 1"
 | Landscape_1.jpg{scale_filter='xyzzy'} "xyzzy"
 )
 
-```
+```markdown
+
 ![{512,512,format='png'}](Landscape_1.jpg "default"
 | Landscape_1.jpg{scale_filter='nearest'} "nearest"
 | Landscape_1.jpg{scale_filter='box'} "box"

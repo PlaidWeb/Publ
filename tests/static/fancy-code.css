@@ -1,0 +1,85 @@
+/** Separated CSS for the fancy code blocks on this site.
+
+This reformats fenced-code blocks into tables with CSS-generated line numbers on each line.
+
+*/
+
+.blockcode {
+    border: solid #ccc 1px;
+    border-radius: 1ex;
+    margin-bottom: 1em;
+    overflow: hidden;
+}
+
+.blockcode figcaption {
+    font-size: small;
+    color: #77f;
+    font-style: italic;
+    border-bottom: solid #777 1px;
+    padding: 0 1ex;
+    background: #fff7f7;
+}
+
+/* Set the code font */
+code,
+pre {
+    font-family: 'Andale Mono', 'Liberation Mono', 'Monaco', 'Lucida Console', monospace;
+    background: #eee;
+}
+
+/* Set up <pre> blocks to work as a table with a row per line, and put the lines in cells */
+.blockcode pre {
+    overflow-x: auto;
+    display: table;
+    width: 100%;
+    counter-reset: codeline;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+}
+
+.blockcode pre .line-content {
+    padding: 0 1ex;
+    width: 100%;
+    display: table-cell;
+}
+
+.blockcode pre .line {
+    display: table-row;
+    counter-increment: codeline;
+}
+
+/* Force empty lines to have a space in them */
+.blockcode pre .line::after {
+    content: '\00a0';
+}
+
+/* Add some inner padding to the first and last lines */
+.blockcode pre .line:first-child .line-content {
+    padding-top: 0.5em;
+}
+
+.blockcode pre .line:last-child .line-content {
+    padding-bottom: 0.5em;
+}
+
+/* Configure display of the line numbers, if present */
+.blockcode pre .line-number:hover {
+    background: rgba(255,255,0,0.5);
+}
+.blockcode pre .line-number::before {
+    display: table-cell;
+    content: counter(codeline);
+    font-size: small;
+    font-family: 'Trebuchet MS', 'Verdana', 'Liberation Sans', 'Helvetica', 'Arial', sans-serif;
+    min-width: 2em;
+    text-align: right;
+    padding: 0 0.5ex;
+    color: #555;
+    vertical-align: baseline;
+}
+
+/* If there are line numbers, add a border to the left side of the content cells */
+.blockcode pre[data-line-numbers] .line-content {
+    border-left: solid #999 1px;
+}

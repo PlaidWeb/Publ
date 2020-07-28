@@ -36,8 +36,11 @@ This code block has no declared language.
 Oh well!
 ```
 
+
 ```skdjflsjflsl
 This code block declares an unknown language.
+
+As a result, we treat it as plain text.
 ```
 
 foo
@@ -46,6 +49,64 @@ foo
 ! invalid.py
 def foo():
     return None + "bar"
+
+def bar():
+    return "bar" + foo()
 ```
 
 bar
+
+```markdown
+\![literal escape on the first exclamation mark](foo)
+```
+
+```markdown
+
+![a blank line works too]()
+```
+
+```markdown
+! A caption line
+![An image line]()
+```
+
+Arguments:
+
+```bash{code_highlight=False}
+cat << EOF
+This code has had highlighting disabled.
+
+Test 1
+Test 2
+EOF
+```
+
+
+
+```html{code_number_links=False}
+<span>This code has had number links disabled</span>
+```
+
+```{code_number_links=False}
+No declared language, and disabled number links
+```
+
+```{code_number_links=True}
+number links explicitly set True
+but there is no declared language
+```
+
+```
+\! first line has !
+second line does not
+```
+
+```
+
+! first line is blank
+```
+
+```
+!
+! empty caption
+```

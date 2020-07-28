@@ -1,6 +1,7 @@
 # utils.py
 """ Some useful utilities that don't belong anywhere else """
 
+import ast
 import functools
 import html
 import html.parser
@@ -519,3 +520,45 @@ class TagSet(typing.Set[str]):
 
     def __lt__(self, other):
         return self._fold(self) < self._fold(other)
+
+
+def strip_single_paragraph(text: str):
+    """ If the provided HTML text has only a single paragraph, strip it off. """
+
+    stripped = re.sub(r'^<p>(.*)</p>$', r'\1', text.strip())
+    if '<p>' in stripped:
+        return text
+    return stripped
+
+
+def parse_spec(text: str, pos_limit: int = None) -> typing.Tuple[str, list, ArgDict]:
+    """ Given a string like ``foo{10,bar=baz}``, parse out the argument lists.
+
+    :param str text: The text to parse
+    :param int pos_limit: The maximum number of positional args to allow
+    :returns: Tuple of text, pos_args, kw_args
+    """
+    match = re.match(r'([^\{]*)(\{(.*)\})$', text)
+    if match:
+        pos_args, kw_args = parse_arglist(match.group(3), pos_limit)
+        return match.group(1), pos_args, kw_args
+
+    return text, [], {}
+
+
+def parse_arglist(args: str, pos_limit: int = None) -> typing.Tuple[list, ArgDict]:
+    """ Parse an argument list into pos_args, kw_args"""
+    tree = ast.parse(f'f({args})')
+    expr = typing.cast(ast.Expr, tree.body[0])
+    funccall = typing.cast(ast.Call, expr.value)
+
+    pos_args = [ast.literal_eval(arg) for arg in funccall.args]
+    if pos_limit is not None and len(pos_args) > pos_limit:
+        raise TypeError(
+            f"Expected at most {pos_limit} positional args but {len(pos_args)} were given")
+
+    kwargs = {arg.arg: ast.literal_eval(arg.value)
+              for arg in funccall.keywords if arg.arg}
+
+    LOGGER.debug("pos_args=%s kw_args=%s", pos_args, kwargs)
+    return pos_args, kwargs
