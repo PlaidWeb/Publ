@@ -541,7 +541,10 @@ class Entry(caching.Memoizable):
                                          })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
-            return [Entry.load(e) for e in query]
+            cur_user = user.get_active()
+
+            return [Entry.load(e) for e in query
+                    if e.is_authorized(cur_user) or tokens.request(cur_user)]
 
         return CallableProxy(_get_attachments)
 

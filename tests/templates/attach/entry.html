@@ -12,7 +12,7 @@
 {% block entrymore scoped %}
 {{ super() }}
 {% for attach in entry.attachments(order='title') %}
-<h3><a href="{{attach.link}}">{{attach.title}}</a></h3>
+<h3>{{attach.id}} <a href="{{attach.link}}">{{attach.title}}</a></h3>
 
 {{attach.body}}
 {{attach.more}}

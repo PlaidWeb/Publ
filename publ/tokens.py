@@ -128,4 +128,3 @@ def request(user):
     as being upgradeable. """
     if not user:
         flask.g.stash['needs_token'] = True
-    return user
