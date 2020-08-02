@@ -25,6 +25,10 @@ h1 {
     border-bottom: dotted black 1px;
 }
 
+h1 span {
+    font-size: 80%;
+}
+
 table {
     border-collapse: collapse;
     border: solid black 3px;
@@ -104,7 +108,55 @@ th a:hover {
     background: rgba(255,255,255,0.1);
 }
 
-    </style>
+td a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 1ex;
+    margin: -1ex;
+}
+
+a.avatar {
+    float: right;
+}
+a.avatar img {
+    max-height: 250px;
+    max-width: 250px;
+    height: auto;
+    width: auto;
+    margin: 0 0 1em 1em;
+    border-radius: 1em;
+}
+
+img.avatar {
+    height: 1em;
+    width: auto;
+}
+
+img.avatar:hover {
+    height: auto;
+    position: absolute;
+}
+
+td.user {
+    padding: .25ex 1ex;
+}
+
+.clear {
+    clear: right;
+}
+
+.profile a, .profile a:visited {
+    color: black;
+    text-decoration: none;
+    background: #fef;
+}
+
+.profile a:hover {
+    background: #fcf;
+}
+
+</style>
 </head>
 
 {%- macro list_groups(groups) -%}
@@ -117,35 +169,70 @@ th a:hover {
 {%- endif -%}
 {%- endmacro -%}
 
+{%- macro date(d) -%}
+{{d.format('YYYY-MM-DD hh:mm A')}} ({{d.humanize()}})
+{%- endmacro -%}
+
 <body>
 <section id="logins">
     <h1>Recent users</h1>
 
     <table>
-        <tr><th>Username</th>
+        <tr><th colspan=2>Username</th>
             <th>Groups</th>
             <th>Last seen</th>
         </tr>
         {%- for user,last_seen in users -%}
         <tr>
-            <td class="{{'admin' if user.is_admin else ''}}"><a href="{{user.name}}">{{user.name}}</a></td>
+            <td class="profile">
+                <a href="{{url_for('admin',user=user.identity)}}#userinfo">ℹ︎</a>
+            </td><td class="user {{'admin' if user.is_admin else ''}}">
+                <a href="{{user.identity}}">{{user.humanize}}</a>
+            </td>
             <td>{{list_groups(user.groups)}}</td>
-            <td>{{last_seen.format('YYYY-MM-DD hh:mm A')}} ({{last_seen.humanize()}})</td>
+            <td>{{date(last_seen)}}</td>
         </tr>
         {%- endfor -%}
     </table>
 </section>
+
+{% if focus_user %}
+<section id="userinfo">
+    {% with user=focus_user, profile=focus_user.profile %}
+    <h1>Profile for <a href="{{user.identity}}">{{user.humanize}}</a>
+    {% if user.name != user.humanize %}<span>({{user.name}})</span>{% endif %}</h1>
+
+    {% if profile.avatar %}
+    <a class="avatar" href="{{user.avatar}}"><img src="{{user.avatar}}"></a>
+    {% endif %}
+
+    {% if bio %}<p>{{profile.bio}}</p>{% endif %}
+    <ul>
+        {% if profile.email %}<li>Email: <a href="mailto:{{profile.email}}">{{profile.email}}</a></li>{% endif %}
+        {% if profile.homepage and profile.homepage != user.identity %}
+        <li>Homepage: <a href="{{profile.homepage}}">{{profile.homepage}}</a></li>
+        {% endif %}
+        {% if profile.pronouns %}
+        <li>Pronouns: {{profile.pronouns}}</li>
+        {% endif %}
+        <li>Logged in: {{date(user.last_login)}}</li>
+        <li>Last seen: {{date(user.last_seen)}}</li>
+    </ul>
+    <div class="clear"></div>
+    {% endwith %}
+</section>
+{% endif %}
 
 <section id="access">
     <h1>Access Log</h1>
 
 
 {%- set columns = [
-    ('authorized',True),
-    ('date',False),
-    ('user',True),
-    ('entry',True),
-    ('groups',False),
+    ('authorized',True,1),
+    ('date',False,1),
+    ('user',True,2),
+    ('entry',True,1),
+    ('groups',False,1),
 ] -%}
 
 {%- set headers = {
@@ -155,7 +242,8 @@ th a:hover {
 {%- macro format(col, rec, grouper=False) -%}
 {%- if col == 'entry' -%}<a href="{{url_for('entry',entry_id=rec.id,category=rec.category,slug_text=rec.slug_text)}}">{{rec.title}}</a>
 {%- elif col == 'date' -%}{{rec.format('YYYY-MM-DD hh:mm A')}}
-{%- elif col == 'user' -%}{%- if rec.name -%}<a href="{{rec.name}}">{{rec.name}}</a>{%- elif grouper -%}No user{%- endif -%}
+{%- elif col == 'profile' -%}<a href="{{url_for('admin',user=rec.identity)}}#userinfo">ℹ︎</a>
+{%- elif col == 'user' -%}<a href="{{rec.identity}}">{{rec.humanize}}</a>
 {%- elif col == 'groups' -%}{{list_groups(rec)}}
 {%- elif col == 'authorized' -%}{%- if grouper -%}
         {{'Authorized' if rec else 'Forbidden'}}
@@ -173,6 +261,7 @@ th a:hover {
 <tr class="access {{'allowed' if access.authorized else 'denied'}}">
     {{column('authorized', access.authorized)}}
     {{column('date', access.date)}}
+    {{column('profile', access.user, ' admin' if access.user.is_admin else '')}}
     {{column('user', access.user, ' admin' if access.user.is_admin else '')}}
     {{column('entry', access.entry)}}
     {{column('groups', access.user_groups)}}
@@ -202,9 +291,9 @@ th a:hover {
 
     <table>
         <tr>
-        {%- for column, groupable in columns -%}
+        {%- for column, groupable, colspan in columns -%}
             {%- if by != column -%}
-                <th>{%- if groupable -%}
+                <th colspan={{colspan}}>{%- if groupable -%}
                     <a href="{{navlink(by=column)}}">{{headers.get(column,column.title())}}</a>
                     {%- elif column == 'date' -%}
                     <a href="{{navlink(by=None)}}">{{column.title()}}</a>
@@ -217,7 +306,7 @@ th a:hover {
         </tr>
         {%- if by -%}
             {%- for group in log|groupby(by)|sort -%}
-                <tr class="group {{by}}"><th colspan="4">{{format(by, group.grouper, True)}}</th></tr>
+                <tr class="group {{by}}"><th colspan="5">{{format(by, group.grouper, True)}}</th></tr>
                 {%- for access in group.list|sort(True,'date') -%}
                 {{ show_row(access) }}
                 {%- endfor -%}

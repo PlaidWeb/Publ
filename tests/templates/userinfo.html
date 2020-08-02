@@ -8,12 +8,18 @@
 <body>
     {% if user %}
     <ul>
+        <li>identity: <a href="{{user.identity}}">{{user.humanize}}</a></li>
         <li>name: {{user.name}}</li>
         <li>auth type: {{user.auth_type}}</li>
         <li>scope: {{user.scope}}</li>
         <li>groups: {{user.groups}}</li>
         <li>auth_groups: {{user.auth_groups}}</li>
         <li>is_admin: {{user.is_admin}}</li>
+        <li>profile:<ul>
+            {% for key,val in user.profile.items() %}
+            <li>{{key}}: {{val}}</li>
+            {% endfor %}
+        </ul></li>
     </ul>
     {% else %}
     No active user

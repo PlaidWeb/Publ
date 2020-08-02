@@ -6,8 +6,10 @@ import configparser
 import datetime
 import logging
 import typing
+import urllib.parse
 
 import arrow
+import authl.disposition
 import flask
 from pony import orm
 from werkzeug.utils import cached_property
@@ -19,15 +21,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 @caching.cache.memoize(timeout=30)
-def get_groups(username: str, include_self: bool = True) -> typing.Set[str]:
-    """ Get the group membership for the given username """
+def get_groups(identity: str, include_self: bool = True) -> typing.Set[str]:
+    """ Get the group membership for the given identity """
 
     @caching.cache.memoize(timeout=30)
     def load_groups() -> typing.DefaultDict[str, typing.Set[str]]:
         # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
         cfg = configparser.ConfigParser(delimiters=(
             '\000'), allow_no_value=True, interpolation=None)
-        # disable authentication lowercasing; usernames should only be case-densitized
+        # disable authentication lowercasing; identities should only be case-desensitized
         # by the auth backend
         cfg.optionxform = lambda option: option  # type:ignore
         cfg.read(config.user_list)
@@ -45,12 +47,12 @@ def get_groups(username: str, include_self: bool = True) -> typing.Set[str]:
     result: typing.Set[str] = set()
     pending: typing.Deque[str] = collections.deque()
 
-    pending.append(username)
+    pending.append(identity)
 
     while pending:
         check = pending.popleft()
         if check not in result:
-            if include_self or check != username:
+            if include_self or check != identity:
                 result.add(check)
             pending += groups.get(check, [])
 
@@ -60,30 +62,30 @@ def get_groups(username: str, include_self: bool = True) -> typing.Set[str]:
 class User(caching.Memoizable):
     """ An authenticated user """
 
-    def __init__(self, name: str,
+    def __init__(self, identity: str,
                  auth_type: typing.Optional[str] = None,
                  scope: typing.Optional[str] = None):
         """ Initialize the user object.
 
-        :param str name: The federated identity name
+        :param str identity: The federated identity name
         :param str auth_type: The authentication mechanism
         :param str scope: The user's access scope
         """
 
-        self._name = name
+        self._identity = identity
         self._auth_type = auth_type
         self._scope = scope
 
     def _key(self):
-        return self.name, self.auth_type, self.scope
+        return self.identity, self.auth_type, self.scope
 
     def __lt__(self, other):
-        return self.name < other.name
+        return self.identity < other.identity
 
     @cached_property
-    def name(self):
+    def identity(self):
         """ The federated identity name of the user """
-        return self._name
+        return self._identity
 
     @cached_property
     def auth_type(self):
@@ -98,17 +100,61 @@ class User(caching.Memoizable):
     @cached_property
     def auth_groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for auth purposes """
-        return get_groups(self.name, True)
+        return get_groups(self._identity, True)
 
     @cached_property
     def groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for display purposes """
-        return get_groups(self.name, False)
+        return get_groups(self._identity, False)
 
     @property
     def is_admin(self) -> bool:
         """ Returns whether this user has administrator permissions """
         return bool(config.admin_group and config.admin_group in self.groups)
+
+    @property
+    def name(self) -> str:
+        """ The readable name of the user """
+        if 'name' in self.profile:
+            return self.profile['name']
+
+        return self.humanize
+
+    @property
+    def humanize(self) -> str:
+        """ A humanized version of the identity string """
+        parsed = urllib.parse.urlparse(self._identity)
+        return ''.join(p for p in (
+            f'{parsed.scheme}:' if parsed.scheme not in ('http', 'https') else '',
+            parsed.netloc,
+            parsed.path,
+        ))
+
+    @cached_property
+    def _info(self) -> typing.Tuple[dict, arrow.Arrow, arrow.Arrow]:
+        """ Gets the user info from the database
+
+        :returns: profile, last_login, last_seen
+        """
+        with orm.db_session():
+            record = model.KnownUser.get(user=self._identity)
+            if record:
+                return (record.profile.copy(),
+                    arrow.get(record.last_login).to(config.timezone),
+                    arrow.get(record.last_seen).to(config.timezone))
+        return {}, arrow.get(), arrow.get()
+
+    @property
+    def profile(self) -> dict:
+        return self._info[0]
+
+    @property
+    def last_login(self) -> arrow.Arrow:
+        return self._info[1]
+
+    @property
+    def last_seen(self) -> arrow.Arrow:
+        return self._info[2]
 
 
 @utils.stash
@@ -135,19 +181,14 @@ def log_access(record, cur_user, authorized):
             'date': arrow.utcnow().datetime,
             'entry': record,
             'authorized': authorized,
-            'user': cur_user.name,
+            'user': cur_user.identity,
             'user_groups': str(cur_user.groups) if cur_user.groups else ''
         }
-        log_entry = model.AuthLog.get(entry=record, user=cur_user.name)
+        log_entry = model.AuthLog.get(entry=record, user=cur_user.identity)
         if log_entry:
             log_entry.set(**values)
         else:
             model.AuthLog(**values)
-
-
-@caching.cache.memoize(timeout=30)
-def _get_user(username):
-    return User(username)
 
 
 def _get_group_set(groups):
@@ -158,19 +199,39 @@ def _get_group_set(groups):
 
 
 @orm.db_session(retry=5)
+def register(verified: authl.disposition):
+    """ Registers a user from the on_verified Authl hook """
+    if isinstance(verified, authl.disposition.Verified):
+        LOGGER.info("Got login from user %s with profile %s", verified.identity, verified.profile)
+        identity = verified.identity
+        now = arrow.utcnow().datetime
+        values = {
+            'last_login': now,
+            'last_seen': now,
+            'profile': verified.profile
+        }
+
+        record = model.KnownUser.get(user=identity)
+        if record:
+            record.set(**values)
+        else:
+            record = model.KnownUser(user=identity, **values)
+
+
+@orm.db_session(retry=5)
 def log_user():
     """ Update the user table to see who's been by """
-    username = flask.session.get('me')
-    if username:
+    identity = flask.session.get('me')
+    if identity:
         values = {
             'last_seen': arrow.utcnow().datetime,
         }
 
-        record = model.KnownUser.get(user=username)
+        record = model.KnownUser.get(user=identity)
         if record:
             record.set(**values)
         else:
-            record = model.KnownUser(user=username, **values)
+            record = model.KnownUser(user=identity, **values)
 
 
 @orm.db_session()
@@ -181,7 +242,7 @@ def known_users(days=None):
         since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
         query = orm.select(e for e in query if e.last_seen >= since)
 
-    return [(_get_user(record.user), arrow.get(record.last_seen).to(config.timezone))
+    return [(User(record.user), arrow.get(record.last_seen).to(config.timezone))
             for record in query]
 
 
@@ -200,7 +261,7 @@ def auth_log(days=None, start=0, count=100):
 
     return [LogEntry(date=arrow.get(record.date).to(config.timezone),
                      entry=record.entry,
-                     user=_get_user(record.user),
+                     user=User(record.user),
                      user_groups=_get_group_set(record.user_groups),
                      authorized=record.authorized)
             for record in query[:count]], len(query) - count

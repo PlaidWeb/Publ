@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 
 
 class GlobalConfig(DbEntity):
@@ -183,21 +183,23 @@ class EntryAuth(DbEntity):
     orm.composite_key(entry, order)
 
 
+class KnownUser(DbEntity):
+    """ Users who are known to the system """
+    user = orm.PrimaryKey(str)
+    last_login = orm.Optional(datetime.datetime)
+    last_seen = orm.Required(datetime.datetime, index=True)
+    profile = orm.Optional(orm.Json)
+
+
 class AuthLog(DbEntity):
     """ Authentication log for private entries """
     date = orm.Required(datetime.datetime, index=True)
     entry = orm.Required(Entry, index=True)
     user = orm.Required(str, index=True)
-    user_groups = orm.Optional(str)
+    user_groups = orm.Optional(str)  # group membership at the time of access
     authorized = orm.Required(bool, index=True)
 
     orm.PrimaryKey(entry, user)
-
-
-class KnownUser(DbEntity):
-    """ Users who are known to the system """
-    user = orm.PrimaryKey(str)
-    last_seen = orm.Required(datetime.datetime, index=True)
 
 
 def reset():
