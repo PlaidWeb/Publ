@@ -208,6 +208,10 @@ td.user {
 
     {% if profile.bio %}<p>{{profile.bio}}</p>{% endif %}
     <ul>
+        {% if user.last_login %}
+        <li>Logged in: {{date(user.last_login)}}</li>
+        {% endif %}
+        <li>Last seen: {{date(user.last_seen)}}</li>
         {% if profile.email %}<li>Email: <a href="mailto:{{profile.email}}">{{profile.email}}</a></li>{% endif %}
         {% if profile.homepage and profile.homepage != user.identity %}
         <li>Homepage: <a href="{{profile.homepage}}">{{profile.homepage}}</a></li>
@@ -215,8 +219,6 @@ td.user {
         {% if profile.pronouns %}
         <li>Pronouns: {{profile.pronouns}}</li>
         {% endif %}
-        <li>Logged in: {{date(user.last_login)}}</li>
-        <li>Last seen: {{date(user.last_seen)}}</li>
     </ul>
     <div class="clear"></div>
     {% endwith %}
