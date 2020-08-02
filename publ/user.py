@@ -107,6 +107,7 @@ class User(caching.Memoizable):
 
     @property
     def profile(self) -> dict:
+        """ Get the user's profile """
         return self._info[0]
 
     @cached_property
@@ -134,7 +135,6 @@ class User(caching.Memoizable):
         """ The permission scope of the user """
         return self._scope
 
-
     @cached_property
     def _info(self) -> typing.Tuple[dict, arrow.Arrow, arrow.Arrow]:
         """ Gets the user info from the database
@@ -145,17 +145,19 @@ class User(caching.Memoizable):
             record = model.KnownUser.get(user=self._identity)
             if record:
                 return (record.profile.copy(),
-                    record.last_login,
-                    record.last_seen)
+                        record.last_login,
+                        record.last_seen)
         return {}, arrow.get(), arrow.get()
 
     @property
     def last_login(self) -> arrow.Arrow:
-        dt = self._info[1]
-        return arrow.get(dt).to(config.timezone) if dt else None
+        """ Get the latest known login time for the user, if any """
+        date = self._info[1]
+        return arrow.get(date).to(config.timezone) if date else None
 
     @property
     def last_seen(self) -> arrow.Arrow:
+        """ Get the latest known active time for the user """
         return arrow.get(self._info[2]).to(config.timezone)
 
 
