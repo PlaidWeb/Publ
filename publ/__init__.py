@@ -161,21 +161,39 @@ This configuration value will stop being supported in Publ 0.6.
             tmpl = rendering.map_template('/', 'logout')
             return rendering.render_publ_template(tmpl)[0]
 
-        for route in [
-                '/_logout',
-                '/_logout/',
-                '/_logout/<path:redir>'
-        ]:
-            self.add_url_rule(route, 'logout', logout, methods=['GET', 'POST'])
+        if self.publ_config.auth:
+            for route in [
+                    '/_logout',
+                    '/_logout/',
+                    '/_logout/<path:redir>'
+            ]:
+                self.add_url_rule(route, 'logout', logout, methods=['GET', 'POST'])
 
-        for route in [
-                '/_admin',
-                '/_admin/<by>'
-        ]:
-            self.add_url_rule(route, 'admin', rendering.admin_dashboard)
+            for route in [
+                    '/_admin',
+                    '/_admin/<by>'
+            ]:
+                self.add_url_rule(route, 'admin', rendering.admin_dashboard)
 
-        self.before_request(user.log_user)
-        self.after_request(tokens.inject_auth_headers)
+            self.before_request(user.log_user)
+            self.after_request(tokens.inject_auth_headers)
+
+            # Force the authl instance to load before the first request, after the
+            # app has had a chance to set secret_key
+            self.before_first_request(lambda: self.authl)
+        else:
+            # Auth isn't configured, so make some placeholder routes so that
+            # url_for doesn't fail and reasonable errors get raised
+            def no_auth(redir=''):
+                raise werkzeug.exceptions.NotFound()
+
+            for base in ('_login', '_logout'):
+                for route in (
+                    f'/{base}',
+                    f'/{base}/',
+                    f'/{base}/<path:redir>',
+                ):
+                    self.add_url_rule(route, 'login', no_auth, methods=['GET', 'POST'])
 
         self._maint = maintenance.Maintenance(self)
         self.indexer = index.Indexer(self, self.publ_config.index_wait_time)
@@ -196,10 +214,6 @@ This configuration value will stop being supported in Publ 0.6.
                                  self.publ_config.auth_log_prune_interval)
 
         self.before_request(self._maint.run)
-
-        # Force the authl instance to load before the first request, after the
-        # app has had a chance to set secret_key
-        self.before_first_request(lambda: self.authl)
 
         if self.debug:
             # We're in debug mode so we don't want to scan until everything's up
