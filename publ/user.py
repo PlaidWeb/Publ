@@ -77,7 +77,7 @@ class User(caching.Memoizable):
         self._scope = scope
 
     def _key(self):
-        return self.identity, self.auth_type, self.scope
+        return self._identity, self._auth_type, self._scope
 
     def __lt__(self, other):
         return self.identity < other.identity
@@ -86,6 +86,43 @@ class User(caching.Memoizable):
     def identity(self):
         """ The federated identity name of the user """
         return self._identity
+
+    @cached_property
+    def humanize(self) -> str:
+        """ A humanized version of the identity string """
+        parsed = urllib.parse.urlparse(self._identity)
+        return ''.join(p for p in (
+            f'{parsed.scheme}:' if parsed.scheme not in ('http', 'https') else '',
+            parsed.netloc,
+            parsed.path,
+        ))
+
+    @cached_property
+    def name(self) -> str:
+        """ The readable name of the user """
+        if 'name' in self.profile:
+            return self.profile['name']
+
+        return self.humanize
+
+    @property
+    def profile(self) -> dict:
+        return self._info[0]
+
+    @cached_property
+    def groups(self) -> typing.Set[str]:
+        """ The group memberships of the user, for display purposes """
+        return get_groups(self._identity, False)
+
+    @cached_property
+    def auth_groups(self) -> typing.Set[str]:
+        """ The group memberships of the user, for auth purposes """
+        return get_groups(self._identity, True)
+
+    @cached_property
+    def is_admin(self) -> bool:
+        """ Returns whether this user has administrator permissions """
+        return bool(config.admin_group and config.admin_group in self.groups)
 
     @cached_property
     def auth_type(self):
@@ -97,38 +134,6 @@ class User(caching.Memoizable):
         """ The permission scope of the user """
         return self._scope
 
-    @cached_property
-    def auth_groups(self) -> typing.Set[str]:
-        """ The group memberships of the user, for auth purposes """
-        return get_groups(self._identity, True)
-
-    @cached_property
-    def groups(self) -> typing.Set[str]:
-        """ The group memberships of the user, for display purposes """
-        return get_groups(self._identity, False)
-
-    @property
-    def is_admin(self) -> bool:
-        """ Returns whether this user has administrator permissions """
-        return bool(config.admin_group and config.admin_group in self.groups)
-
-    @property
-    def name(self) -> str:
-        """ The readable name of the user """
-        if 'name' in self.profile:
-            return self.profile['name']
-
-        return self.humanize
-
-    @property
-    def humanize(self) -> str:
-        """ A humanized version of the identity string """
-        parsed = urllib.parse.urlparse(self._identity)
-        return ''.join(p for p in (
-            f'{parsed.scheme}:' if parsed.scheme not in ('http', 'https') else '',
-            parsed.netloc,
-            parsed.path,
-        ))
 
     @cached_property
     def _info(self) -> typing.Tuple[dict, arrow.Arrow, arrow.Arrow]:
@@ -140,21 +145,18 @@ class User(caching.Memoizable):
             record = model.KnownUser.get(user=self._identity)
             if record:
                 return (record.profile.copy(),
-                    arrow.get(record.last_login).to(config.timezone),
-                    arrow.get(record.last_seen).to(config.timezone))
+                    record.last_login,
+                    record.last_seen)
         return {}, arrow.get(), arrow.get()
 
     @property
-    def profile(self) -> dict:
-        return self._info[0]
-
-    @property
     def last_login(self) -> arrow.Arrow:
-        return self._info[1]
+        dt = self._info[1]
+        return arrow.get(dt).to(config.timezone) if dt else None
 
     @property
     def last_seen(self) -> arrow.Arrow:
-        return self._info[2]
+        return arrow.get(self._info[2]).to(config.timezone)
 
 
 @utils.stash
