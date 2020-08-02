@@ -203,10 +203,10 @@ td.user {
     {% if user.name != user.humanize %}<span>({{user.name}})</span>{% endif %}</h1>
 
     {% if profile.avatar %}
-    <a class="avatar" href="{{user.avatar}}"><img src="{{user.avatar}}"></a>
+    <a class="avatar" href="{{profile.avatar}}"><img src="{{profile.avatar}}"></a>
     {% endif %}
 
-    {% if bio %}<p>{{profile.bio}}</p>{% endif %}
+    {% if profile.bio %}<p>{{profile.bio}}</p>{% endif %}
     <ul>
         {% if profile.email %}<li>Email: <a href="mailto:{{profile.email}}">{{profile.email}}</a></li>{% endif %}
         {% if profile.homepage and profile.homepage != user.identity %}
