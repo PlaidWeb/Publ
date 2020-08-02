@@ -521,6 +521,11 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
 
     log, remain = user.auth_log(start=offset, count=count, days=days)
 
+    if 'user' in request.args:
+        focus_user = user.User(request.args['user'])
+    else:
+        focus_user = None
+
     rendered, _ = render_publ_template(
         tmpl,
         users=user.known_users(days=days),
@@ -529,7 +534,8 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
         offset=offset,
         days=days,
         remain=remain,
-        by=by
+        by=by,
+        focus_user=focus_user,
     )
     return rendered
 

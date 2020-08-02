@@ -38,6 +38,10 @@
     {% for entry in view(category='',entry_type='sidebar').entries %}
     <li class="{{entry.get('Redirect-To') and 'extlink' or 'sblink'}}"><a href="{{entry.link}}">{{entry.title or '(no title)'}}</a></li>
     {% endfor %}
+
+    {% if user.is_admin %}
+    <li><a href="{{url_for('admin')}}">Admin dashboard</a></li>
+    {% endif %}
     </ul>
     {% endblock %}
 

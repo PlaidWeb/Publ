@@ -30,44 +30,46 @@ class Publ(flask.Flask):
     def __init__(self, name, cfg, **kwargs):
         """ Constructor for a Publ application. Accepts the following parameters:
 
-        name -- The name of the app
-        cfg -- Application configuration
+        :param str name: The name of the app
+        :param str cfg: Application configuration
 
         Additional keyword arguments are forwarded along to the Flask constructor.
 
         Configuration keys:
 
-        database_config -- The database confugiration to be provided to PonyORM.
+        * ``database_config``: The database confugiration to be provided to PonyORM.
             See https://docs.ponyorm.org/database.html for more information
-        content_folder -- The folder that stores the site content
-        template_folder -- The folder that contains the Jinja templates
-        static_folder -- The folder that contains static content
-        static_url_path -- The URL mount point for the static content folder
-        image_output_subdir -- The subdirectory of the static content folder to
+        * ``content_folder``: The folder that stores the site content
+        * ``template_folder``: The folder that contains the Jinja templates
+        * ``static_folder``: The folder that contains static content
+        * ``static_url_path``: The URL mount point for the static content folder
+        * ``image_output_subdir``: The subdirectory of the static content folder to
             store the image rendition cache
-        index_rescan_interval -- How frequently (in seconds) to rescan the
+        * ``index_rescan_interval``: How frequently (in seconds) to rescan the
             content index
-        index_wait_time -- How long to wait (in seconds) before starting to
+        * ``index_wait_time``: How long to wait (in seconds) before starting to
             process content updates
-        image_cache_interval -- How frequently (in seconds) to clean up the
+        * ``image_cache_interval``: How frequently (in seconds) to clean up the
             image rendition cache
-        image_cache_age -- The maximum age (in seconds) of an image rendition
-        timezone -- The site's local time zone
-        cache -- Page render cache configuration; see
+        * ``image_cache_age``: The maximum age (in seconds) of an image rendition
+        * ``timezone``: The site's local time zone
+        * ``cache``: Page render cache configuration; see
             https://flask-caching.readthedocs.io/en/latest/#configuring-flask-caching
-        markdown_extensions -- The extensions to enable by default for the
+        * ``markdown_extensions``: The extensions to enable by default for the
             Markdown processing library. See https://misaka.61924.nl/#extensions
             for details
-        auth -- Authentication configuration. See the Authl configuration
-            documentation at [link TBD]. Additionally, setting the key
-            AUTH_FORCE_HTTPS to a truthy value can be used to force the user to
-            switch to a secure connection when they log in.
-        user_list -- The file that configures the user and group list
-        admin_group -- The user or group that has full administrative access
+        * ``auth``: Authentication configuration. See the `Authl configuration
+            documentation <https://authl.readthedocs.io>`_. Additionally, setting
+            the key ``AUTH_FORCE_HTTPS`` to a truthy value can be used to force the
+            user to switch to a secure connection when they log in, and setting
+            ``AUTH_TOKEN_STORAGE`` to a :py:class:`authl.tokens.TokenStore` will
+            use that for token storage instead of the default.
+        * ``user_list``: The file that configures the user and group list
+        * ``admin_group``: The user or group that has full administrative access
             to all entries regardless of permissions
-        auth_log_prune_interval -- How frequently to prune the authentication log, in seconds
-        auth_log_prune_age -- How long to retain authentication log entries, in seconds
-        max_token_age -- The maximum lifetime of AutoAuth tokens
+        * ``auth_log_prune_interval``: How frequently to prune the authentication log, in seconds
+        * ``auth_log_prune_age``: How long to retain authentication log entries, in seconds
+        * ``max_token_age``: The maximum lifetime of AutoAuth tokens
         """
         # pylint:disable=too-many-branches,too-many-statements
 
@@ -228,7 +230,9 @@ This configuration value will stop being supported in Publ 0.6.
                 callback_path='/_cb',
                 tester_path='/_ct',
                 force_https=bool(self.publ_config.auth.get('AUTH_FORCE_HTTPS')),
-                login_render_func=rendering.render_login_form)
+                login_render_func=rendering.render_login_form,
+                on_verified=user.register,
+                token_storage=self.publ_config.auth.get('AUTH_TOKEN_STORAGE'))
         return None
 
     def path_alias_regex(self, regex):
