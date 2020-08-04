@@ -75,7 +75,7 @@
         <article class="h-entry entry">
         {% block entry scoped %}
         <h2 class="p-name">
-            <a class="u-url" href="{{entry.link}}">{{entry.title or '🗒'}}</a>
+            <a class="u-url" href="{{entry.link}}">{{entry.title or '<code>(no title)</code>'|safe}}</a>
         </h2>
 
         {% block body scoped %}

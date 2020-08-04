@@ -187,6 +187,9 @@ def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
 
     LOGGER.debug("render_exception %s %s", type(error), error)
+    result = handle_path_alias()
+    if result:
+        return result
 
     # Effectively strip off the leading '/', so map_template can decide
     # what the actual category is
