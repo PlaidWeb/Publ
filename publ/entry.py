@@ -1,4 +1,3 @@
-# item.py
 """ Functions for handling content items """
 
 import email

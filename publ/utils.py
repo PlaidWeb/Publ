@@ -35,7 +35,7 @@ class CallableProxy:
     def __init__(self, func: typing.Callable[..., T]):
         """ Construct the property proxy.
 
-        func -- The function to wrap
+        :param func: The function to wrap
         """
 
         self._func: typing.Callable[..., T] = func
@@ -115,11 +115,9 @@ WEEK_FORMAT = 'YYYYMMDD_w'
 
 def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
     """ Parse a date expression into a tuple of:
+    ``(start_date, span_type, span_format)``
 
-        (start_date, span_type, span_format)
-
-    Arguments:
-        datestr -- A date specification, in the format of YYYY-MM-DD (dashes optional)
+    :param str datestr: A date specification, in the format of YYYY-MM-DD (dashes optional)
     """
 
     match = re.match(
@@ -148,10 +146,10 @@ def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
 def find_file(path: str, search_path: typing.Union[str, ListLike[str]]) -> typing.Optional[str]:
     """ Find a file by relative path. Arguments:
 
-    path -- the image's filename
-    search_path -- a list of directories to check in
+    :param str path: the image's filename
+    :param list search_path: a list of directories to check in
 
-    Returns: the resolved file path
+    :returns: the resolved file path
     """
 
     for relative in as_list(search_path):
@@ -167,8 +165,8 @@ def static_url(path: str, absolute: bool = False) -> str:
 
     Arguments:
 
-    path -- the path to the file (relative to the static files directory)
-    absolute -- whether the link should be absolute or relative
+    :param str path: the path to the file (relative to the static files directory)
+    :param bool absolute: whether the link should be absolute or relative
     """
 
     if os.sep != '/':
@@ -182,14 +180,12 @@ def make_tag(name: str,
              start_end: bool = False) -> str:
     """ Build an HTML tag from the given name and attributes.
 
-    Arguments:
-
-    name -- the name of the tag (p, div, etc.)
-    attrs -- a dict of attributes to apply to the tag
-    start_end -- whether this tag should be self-closing
+    :param str name: the name of the tag (p, div, etc.)
+    :param attrs: a dict or list of attributes to apply to the tag
+    :param bool start_end: whether this tag should be self-closing
 
     If an attribute's value is None it will be written as a standalone attribute,
-    e.g. <audio controls>. To suppress it entirely, make the value explicitly False.
+    e.g. ``<audio controls>``. To suppress it entirely, make the value explicitly False.
     """
 
     text = '<' + name
@@ -233,9 +229,12 @@ def file_fingerprint(fullpath: str) -> str:
 
 
 def remap_args(input_args: typing.Dict[str, typing.Any],
-               remap: typing.Dict[str, str]) -> typing.Dict[str, typing.Any]:
-    """ Generate a new argument list by remapping keys. The 'remap'
-    dict maps from destination key -> priority list of source keys
+               remap: typing.Dict[str, typing.Union[str, ListLike[str]]]
+               ) -> typing.Dict[str, typing.Any]:
+    """ Generate a new argument list by remapping keys.
+
+    :param dict input_args: The input argument list
+    :param dict remap: A mapping of destination key -> priority list of source keys
     """
     out_args = input_args
     for dest_key, src_keys in remap.items():
@@ -255,7 +254,14 @@ def remap_args(input_args: typing.Dict[str, typing.Any],
 
 
 def remap_link_target(path: str, absolute: bool = False) -> str:
-    """ remap a link target to a static URL if it's prefixed with @ """
+    """ Remap a link target from a path, URL, or static file reference.
+
+    :param str path: The original link target; start with ``@`` to indicate a
+        static file
+
+    :param bool absolute: Whether to make the link absolute with respect to the
+        current page URL
+    """
     if path.startswith('@'):
         # static resource
         return static_url(path[1:], absolute=absolute)
@@ -276,10 +282,11 @@ class HTMLTransform(html.parser.HTMLParser):
     """ Wrapper to HTMLParser to make it easier to build a SAX-style processor.
 
     You will probably want to implement:
-        handle_starttag(self, tag, attrs)
-        handle_endtag(self, tag)
-        handle_data(self, data)
-        handle_startendtag(self, tag, attrs)
+
+    * ``handle_starttag(self, tag, attrs)``
+    * ``handle_endtag(self, tag)``
+    * ``handle_data(self, data)``
+    * ``handle_startendtag(self, tag, attrs)``
     """
 
     def __init__(self):
@@ -291,9 +298,11 @@ class HTMLTransform(html.parser.HTMLParser):
         self._fed = []
 
     def feed(self, data: str):
-        """ Feed in some text data. Overrides the base class to ensure that
-        it's handled like a plain string and not a MarkupSafe string (which
-        causes double-escaping to happen) """
+        """ Feed in some text data.
+
+        Overrides the base class to ensure that it's handled like a plain string
+        and not a MarkupSafe string (which causes double-escaping to happen)
+        """
         super().feed(str(data))
 
     def append(self, item: str):
@@ -315,8 +324,26 @@ class HTMLTransform(html.parser.HTMLParser):
 
 
 def prefix_normalize(kwargs: ArgDict) -> ArgDict:
-    """ Given an argument list where one of them is 'prefix', normalize the
-    arguments to convert {prefix}{key} to {key} and remove the prefixed versions
+    """
+
+    Given an argument list where one of them is ``prefix``, normalize the
+    arguments to convert ``{prefix}{key}`` to ``{key}`` and remove the prefixed
+    versions
+
+    For example::
+
+        {
+            'prefix': 'index_',
+            'width': 320,
+            'index_width': 256,
+        }
+
+    becomes::
+
+        {
+            'width': 256
+        }
+
     """
 
     prefixed = {}
@@ -351,11 +378,13 @@ def as_list(item: typing.Any) -> ListLike:
 
 
 class CategoryConverter(werkzeug.routing.PathConverter):
-    """ A version of PathConverter that doesn't accept paths beginning with _ """
+    """ A version of PathConverter that only accepts valid Publ categories
+    (i.e. no segment starts with _) """
 
     def to_python(self, value: str) -> str:
-        if value[0] == '_':
-            raise werkzeug.routing.ValidationError
+        for part in value.split('/'):
+            if part[0] == '_':
+                raise werkzeug.routing.ValidationError
         return super().to_python(value)
 
 
@@ -371,8 +400,9 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
 def redir_path(path: str = None) -> str:
     """ Convert a URI path to a path fragment, suitable for url_for
 
-    :param path: The path to redirect to; uses the current request.full_path if
-        unspecified
+    :param str path: The path to redirect to; uses the current request.full_path
+        if unspecified
+
     """
 
     if path is None:
@@ -389,8 +419,8 @@ def redir_path(path: str = None) -> str:
 
 
 def secure_link(endpoint: str, *args, **kwargs) -> str:
-    """ flask.url_for except it will force the link to be secure if we are
-    configured with AUTH_FORCE_HTTPS """
+    """ :py:func:`flask.url`_for except it will force the link to be secure if
+    we are configured with ``AUTH_FORCE_HTTPS`` """
     force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
 
     if force_ssl and flask.request.scheme != 'https':
@@ -414,7 +444,7 @@ def auth_link(endpoint: str, auto_redir=True) -> typing.Callable[..., str]:
 
 
 def stash(func: typing.Optional[typing.Callable] = None):
-    """ Decorator to memoize a function onto the global context.
+    """ Decorator to memoize a function onto the request's global context.
     """
 
     def make_hashable(item):
@@ -424,9 +454,9 @@ def stash(func: typing.Optional[typing.Callable] = None):
         if isinstance(item, (list, tuple)):
             return tuple(make_hashable(i) for i in item)
         if isinstance(item, set):
-            return tuple(sorted(make_hashable(i) for i in item))
+            return frozenset(make_hashable(i) for i in item)
         if isinstance(item, dict):
-            return tuple(sorted((make_hashable(k), make_hashable(v)) for k, v in item.items()))
+            return frozenset((make_hashable(k), make_hashable(v)) for k, v in item.items())
         return item
 
     def decorator(inner: typing.Callable):
@@ -437,7 +467,7 @@ def stash(func: typing.Optional[typing.Callable] = None):
                 flask.g.store[inner] = {}
             store = flask.g.store[inner]
 
-            cache_key = make_hashable(args) + make_hashable(kwargs)
+            cache_key = (make_hashable(args), make_hashable(kwargs))
             if cache_key in store:
                 return store[cache_key]
 
