@@ -106,7 +106,7 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
                               'href': self.link_base + '#' + line_id})
                              + '</a>' if self.link_base else '')
                           + utils.make_tag('span', {'class': 'line-content'})
-                          + line
+                          + line.rstrip('\n')
                           + '</span></span>\n')
 
 
