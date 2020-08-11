@@ -37,11 +37,12 @@ def reindex_command(quietly, fresh):
 @publ_cli.command('token', short_help="Generate a bearer token")
 @click.argument('identity')
 @click.option('--scope', '-s', help="The token's permission scope")
+@click.option('--lifetime', '-l', help="The token's lifetime (in seconds)")
 @with_appcontext
-def token_command(identity, scope):
+def token_command(identity, scope, lifetime=3600):
     """ Command to retrieve a bearer token """
     from . import tokens
-    print(tokens.get_token(identity, scope))
+    print(tokens.get_token(identity, int(lifetime), scope))
 
 
 def setup(app):

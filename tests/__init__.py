@@ -1,5 +1,7 @@
 """ test framework stuff """
 
+import uuid
+
 import flask
 
 from publ import config
@@ -11,3 +13,4 @@ class PublMock(flask.Flask):
     def __init__(self, cfg: dict = None):
         super().__init__(__name__)
         self.publ_config = config.Config(cfg or {})
+        self.secret_key = uuid.uuid4().bytes

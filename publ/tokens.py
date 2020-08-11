@@ -1,130 +1,57 @@
 """ IndieAuth token endpoint """
 
 import logging
+import time
 import typing
 
 import flask
 import itsdangerous
-import requests
 import werkzeug.exceptions as http_error
-from authl.handlers import indieauth
-
-from . import utils
-from .caching import cache
-from .config import config
 
 LOGGER = logging.getLogger(__name__)
 
 
 def signer():
     """ Gets the signer/validator for the tokens """
-    return itsdangerous.URLSafeTimedSerializer(flask.current_app.secret_key)
+    return itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
 
 
-def get_token(id_url: str, scope: str = None) -> str:
+def get_token(id_url: str, lifetime: int, scope: str = None) -> str:
     """ Gets a signed token for the given identity and scope """
-    identity = {
-        'me': id_url,
-        'scope': scope
+    token = {
+        'me': id_url
     }
+    if scope is not None:
+        token['scope'] = scope
 
-    return signer().dumps({k: v for k, v in identity.items() if v})
-
-
-def token_endpoint():
-    """ Public endpoint for token generation
-
-    This implements the Token Request protocol described at
-    https://indieauth.spec.indieweb.org/#token-endpoint-0 and
-    https://github.com/sknebel/AutoAuth/blob/master/AutoAuth.md#token-request
-    """
-
-    @cache.memoize()
-    def get_remote_endpoint(id_url):
-        return indieauth.find_endpoint(id_url)
-
-    try:
-        post = flask.request.form
-        if post['grant_type'] != 'authorization_code':
-            raise http_error.BadRequest("Unsupported grant type")
-
-        data = {k: v for k, v in post.items() if k in (
-            'callback_url',
-            'client_id',
-            'code',
-            'me',
-            'realm',
-            'redirect_uri',
-            'root_uri',
-            'scope',
-            'state',
-        )}
-
-        LOGGER.debug("Verification data: %s", data)
-
-        endpoint = get_remote_endpoint(post['me'])
-        LOGGER.debug("Endpoint: %s", endpoint)
-
-        validation = requests.post(endpoint, data=data, headers={
-            'accept': 'application/json'
-        })
-
-        if validation.status_code != 200:
-            LOGGER.error("Endpoint returned %d: %s",
-                         validation.status_code,
-                         validation.text)
-            raise http_error.Forbidden(
-                "Authorization endpoint returned error " + str(validation.status_code))
-
-        response = validation.json()
-
-        if 'me' in response:
-            id_url = indieauth.verify_id(post['me'], response['me'])
-            if not id_url:
-                raise http_error.BadRequest("Mismatched 'me' URL")
-        else:
-            id_url = post['me']
-
-        token = get_token(id_url, response.get('scope', post.get('scope')))
-
-        return flask.jsonify({
-            'access_token': token,
-            'expires_in': config.max_token_age,
-            'scope': response.get('scope', 'read'),
-            'token_type': 'bearer',
-        }), 202 if 'callback_url' in data else 200, {'Content-Type': 'text/json'}
-    except KeyError as key:
-        raise http_error.BadRequest("Missing value: " + str(key))
+    return signer().dumps((token, int(time.time() + lifetime)))
 
 
 def parse_token(token: str) -> typing.Dict[str, str]:
     """ Parse a bearer token to get the stored data """
     try:
-        return signer().loads(token, max_age=config.max_token_age)
+        ident, expires = signer().loads(token)
     except itsdangerous.BadData as error:
         LOGGER.error("Got token parse error: %s", error)
         flask.g.token_error = error.message
         raise http_error.Unauthorized(error.message)
 
+    if expires < time.time():
+        LOGGER.info("Got expired token for %s", ident['me'])
+        flask.g.token_error = "Token expired"
+        raise http_error.Unauthorized("Token expired")
 
-def inject_auth_headers(response):
-    """ If the request triggered a need to authenticate, add the appropriate
-    headers. """
-
-    if 'stash' in flask.g and flask.g.stash.get('needs_token'):
-        header = 'Bearer, realm="posts", scope="read"'
-        if 'token_error' in flask.g:
-            header += f', error="invalid_token", error_description="{flask.g.token_error}"'
-        response.headers.add('WWW-Authenticate', header)
-        response.headers.add(
-            'Link',
-            f'<{utils.secure_link("token", _external=True)}>; rel="token_endpoint"')
-
-    return response
+    return ident
 
 
 def request(user):
     """ Called whenever an authenticated access fails; marks authentication
-    as being upgradeable. """
+    as being upgradeable.
+
+    This was added for the purpose of supporting AutoAuth, but with the death
+    of that initiative the token_endpoint stuff was removed. This functionality
+    thus stays around as a just-in-case for later.
+    """
+
     if not user:
-        flask.g.stash['needs_token'] = True
+        flask.g.needs_auth = True
