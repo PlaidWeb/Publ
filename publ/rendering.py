@@ -111,7 +111,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         }
 
         text = template.render(**args)
-        return text, caching.get_etag(text), flask.g.stash
+        return text, caching.get_etag(text), flask.g.get('needs_auth')
 
     @orm.db_session
     def latest_entry():
@@ -125,8 +125,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return None
 
     try:
-        flask.g.stash = {}
-        text, etag, flask.g.stash = do_render(
+        text, etag, flask.g.needs_auth = do_render(
             template,
             user=user.get_active(),
             _url=request.url,

@@ -21,6 +21,8 @@
             {% endfor %}
         </ul></li>
     </ul>
+
+    <p>Auth token test: <code>curl -H 'Authorization: Bearer {{user.token(3600)}}' {{request.url}}</code></p>
     {% else %}
     No active user
     {% endif %}

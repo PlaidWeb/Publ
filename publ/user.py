@@ -160,6 +160,10 @@ class User(caching.Memoizable):
         """ Get the latest known active time for the user """
         return arrow.get(self._info[2]).to(config.timezone)
 
+    def token(self, lifetime: int, scope: str = None) -> str:
+        """ Get a bearer token for this user """
+        return tokens.get_token(self.identity, lifetime, scope)
+
 
 @utils.stash
 def get_active() -> typing.Optional[User]:

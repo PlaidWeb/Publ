@@ -53,7 +53,6 @@ class _Defaults:
     admin_group = 'admin'
     auth_log_prune_interval = 3600
     auth_log_prune_age = 86400 * 30  # one month
-    max_token_age = 3600
 
 
 class Config(_Defaults):

@@ -14,7 +14,7 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
 from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, tokens, user, utils, view)
+               model, rendering, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,7 +69,6 @@ class Publ(flask.Flask):
             to all entries regardless of permissions
         * ``auth_log_prune_interval``: How frequently to prune the authentication log, in seconds
         * ``auth_log_prune_age``: How long to retain authentication log entries, in seconds
-        * ``max_token_age``: The maximum lifetime of AutoAuth tokens
         """
         # pylint:disable=too-many-branches,too-many-statements
 
@@ -127,8 +126,6 @@ This configuration value will stop being supported in Publ 0.6.
         self.add_url_rule('/_file/<path:filename>',
                           'asset', rendering.retrieve_asset)
 
-        self.add_url_rule('/_token', 'token', tokens.token_endpoint, methods=['POST'])
-
         self.config['TRAP_HTTP_EXCEPTIONS'] = True
         self.register_error_handler(
             werkzeug.exceptions.HTTPException, rendering.render_exception)
@@ -176,7 +173,6 @@ This configuration value will stop being supported in Publ 0.6.
                 self.add_url_rule(route, 'admin', rendering.admin_dashboard)
 
             self.before_request(user.log_user)
-            self.after_request(tokens.inject_auth_headers)
 
             # Force the authl instance to load before the first request, after the
             # app has had a chance to set secret_key
