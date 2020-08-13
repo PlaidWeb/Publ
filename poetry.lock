@@ -54,7 +54,7 @@ description = "Framework-agnostic authentication wrapper"
 name = "authl"
 optional = false
 python-versions = ">=3.6,<4.0"
-version = "0.4.3"
+version = "0.4.4"
 
 [package.dependencies]
 beautifulsoup4 = ">=4.9.1,<5.0.0"
@@ -72,7 +72,7 @@ description = "A tool that automatically formats Python code to conform to the P
 name = "autopep8"
 optional = false
 python-versions = "*"
-version = "1.5.3"
+version = "1.5.4"
 
 [package.dependencies]
 pycodestyle = ">=2.6.0"
@@ -787,6 +787,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
 content-hash = "b52775c75d0ad8abcfea914259d53d59799a304605fa906502dfaa605daa6f52"
+lock-version = "1.0"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -807,11 +808,11 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 authl = [
-    {file = "Authl-0.4.3-py3-none-any.whl", hash = "sha256:c035aadb66afe717bd3fd2ab1acf043bbc7c9e4f65c1ae2e5936f45062553779"},
-    {file = "Authl-0.4.3.tar.gz", hash = "sha256:d9ed646b50b31cac7604d8c6ab7ef83dd531be5bfba02cb79e220b929303516e"},
+    {file = "Authl-0.4.4-py3-none-any.whl", hash = "sha256:1102b47997ea10887e0b66cf183a042c9fba3a373b4b33022533a4928adc7eb4"},
+    {file = "Authl-0.4.4.tar.gz", hash = "sha256:650225bb06ba216a444e36d4ffef767e1523813f6faaf7e86c6eeb4370b78ab7"},
 ]
 autopep8 = [
-    {file = "autopep8-1.5.3.tar.gz", hash = "sha256:60fd8c4341bab59963dafd5d2a566e94f547e660b9b396f772afe67d8481dbf0"},
+    {file = "autopep8-1.5.4.tar.gz", hash = "sha256:d21d3901cb0da6ebd1e83fc9b0dfbde8b46afc2ede4fe32fbda0c7c6118ca094"},
 ]
 awesome-slugify = [
     {file = "awesome-slugify-1.6.5.tar.gz", hash = "sha256:bbdec3fa2187917473a2efad092b57f7125a55f841a7cf6a1773178d32ccfd71"},
@@ -1082,6 +1083,8 @@ pillow = [
     {file = "Pillow-7.2.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:5e51ee2b8114def244384eda1c82b10e307ad9778dac5c83fb0943775a653cd8"},
     {file = "Pillow-7.2.0-cp38-cp38-win32.whl", hash = "sha256:725aa6cfc66ce2857d585f06e9519a1cc0ef6d13f186ff3447ab6dff0a09bc7f"},
     {file = "Pillow-7.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:a060cf8aa332052df2158e5a119303965be92c3da6f2d93b6878f0ebca80b2f6"},
+    {file = "Pillow-7.2.0-pp36-pypy36_pp73-macosx_10_10_x86_64.whl", hash = "sha256:9c87ef410a58dd54b92424ffd7e28fd2ec65d2f7fc02b76f5e9b2067e355ebf6"},
+    {file = "Pillow-7.2.0-pp36-pypy36_pp73-manylinux2010_x86_64.whl", hash = "sha256:e901964262a56d9ea3c2693df68bc9860b8bdda2b04768821e4c44ae797de117"},
     {file = "Pillow-7.2.0-pp36-pypy36_pp73-win32.whl", hash = "sha256:25930fadde8019f374400f7986e8404c8b781ce519da27792cbe46eabec00c4d"},
     {file = "Pillow-7.2.0.tar.gz", hash = "sha256:97f9e7953a77d5a70f49b9a48da7776dc51e9b738151b22dacf101641594a626"},
 ]
