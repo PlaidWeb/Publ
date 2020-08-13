@@ -125,9 +125,11 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return None
 
     try:
+        cur_user = user.get_active()
         text, etag, flask.g.needs_auth = do_render(
             template,
-            user=user.get_active(),
+            user=cur_user,
+            _user_auth=cur_user.auth_groups if cur_user else None,
             _url=request.url,
             _index_time=index.last_indexed(),
             _latest=latest_entry(),

@@ -20,11 +20,11 @@ from .config import config
 LOGGER = logging.getLogger(__name__)
 
 
-@caching.cache.memoize(timeout=30)
+@caching.cache.memoize(timeout=5)
 def get_groups(identity: str, include_self: bool = True) -> typing.Set[str]:
     """ Get the group membership for the given identity """
 
-    @caching.cache.memoize(timeout=30)
+    @caching.cache.memoize(timeout=10)
     def load_groups() -> typing.DefaultDict[str, typing.Set[str]]:
         # We only want empty keys; \000 is unlikely to turn up in a well-formed text file
         cfg = configparser.ConfigParser(delimiters=(
