@@ -79,9 +79,6 @@ class User(caching.Memoizable):
     def _key(self):
         return self._identity, self._auth_type, self._scope
 
-    def __lt__(self, other):
-        return self.identity < other.identity
-
     @cached_property
     def identity(self):
         """ The federated identity name of the user """
@@ -136,7 +133,9 @@ class User(caching.Memoizable):
         return self._scope
 
     @cached_property
-    def _info(self) -> typing.Tuple[dict, arrow.Arrow, arrow.Arrow]:
+    def _info(self) -> typing.Tuple[dict,
+                                    typing.Optional[datetime.datetime],
+                                    typing.Optional[datetime.datetime]]:
         """ Gets the user info from the database
 
         :returns: profile, last_login, last_seen
@@ -147,10 +146,10 @@ class User(caching.Memoizable):
                 return (record.profile.copy(),
                         record.last_login,
                         record.last_seen)
-        return {}, arrow.get(), arrow.get()
+        return {}, None, None
 
     @property
-    def last_login(self) -> arrow.Arrow:
+    def last_login(self) -> typing.Optional[arrow.Arrow]:
         """ Get the latest known login time for the user, if any """
         date = self._info[1]
         return arrow.get(date).to(config.timezone) if date else None
@@ -158,7 +157,8 @@ class User(caching.Memoizable):
     @property
     def last_seen(self) -> arrow.Arrow:
         """ Get the latest known active time for the user """
-        return arrow.get(self._info[2]).to(config.timezone)
+        date = self._info[2]
+        return arrow.get(date).to(config.timezone) if date else None
 
     def token(self, lifetime: int, scope: str = None) -> str:
         """ Get a bearer token for this user """
