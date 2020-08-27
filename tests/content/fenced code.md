@@ -16,9 +16,22 @@ Second code block in the intro:
 ```cpp
 #include <cstdlib>
 
+/* this is a multi-line comment
+
+It's important to make sure that this works
+*/
+
+int badlyFormattedFunction()
+{
+    // Who puts the open brace on its own line like that?
+
+    // (lots of people)
+    return 0;
+}
+
 int main() {
     std::cout << "Hello world" << std::endl;
-    return 0
+    return 0;
 }
 ```
 
