@@ -1,3 +1,4 @@
+
 """ Authenticated user functionality """
 
 import ast
@@ -249,6 +250,8 @@ def known_users(days=None):
     if days:
         since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
         query = orm.select(e for e in query if e.last_seen >= since)
+
+    query = query.order_by(orm.desc(model.KnownUser.last_seen))
 
     return [(User(record.user), arrow.get(record.last_seen).to(config.timezone))
             for record in query]
