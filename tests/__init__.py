@@ -3,7 +3,6 @@
 import uuid
 
 import flask
-import pytest
 
 from publ import config
 

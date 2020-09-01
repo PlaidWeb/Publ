@@ -188,6 +188,20 @@ def render_exception(error):
     """ Catch-all renderer for the top-level exception handler """
 
     LOGGER.debug("render_exception %s %s", type(error), error)
+
+    if isinstance(error, http_error.Unauthorized):
+        from flask import current_app as app
+
+        force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
+        if force_ssl and request.scheme != 'https':
+            return redirect(utils.secure_link(request.endpoint,
+                                              **request.view_args,
+                                              **request.args))
+
+        flask.g.needs_token = True
+        return app.authl.render_login_form(destination='/' + utils.redir_path(),
+                                           error=flask.g.get('token_error')), 401
+
     result = handle_path_alias()
     if result:
         return result
@@ -212,19 +226,6 @@ def render_exception(error):
                 'Retry-After': retry,
                 'Refresh': retry
             })
-
-    if isinstance(error, http_error.Unauthorized):
-        from flask import current_app as app
-
-        force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
-        if force_ssl and request.scheme != 'https':
-            return redirect(utils.secure_link(request.endpoint,
-                                              **request.view_args,
-                                              **request.args))
-
-        flask.g.needs_token = True
-        return app.authl.render_login_form(destination='/' + utils.redir_path(),
-                                           error=flask.g.get('token_error')), 401
 
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code, exception={
