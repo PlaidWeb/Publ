@@ -57,17 +57,15 @@ def where_entry_visible(query, date=None):
 def where_entry_visible_future(query):
     """ Generate a where clause for entries that are visible now or in the future """
 
-    return orm.select(
-        e for e in query
-        if e.status in (model.PublishStatus.PUBLISHED.value,
-                        model.PublishStatus.SCHEDULED.value))
+    return query.filter(lambda e:
+                        e.status in (model.PublishStatus.PUBLISHED.value,
+                                     model.PublishStatus.SCHEDULED.value))
 
 
 def where_entry_deleted(query):
     """ Generate a where clause for entries that have been deleted """
-    return orm.select(
-        e for e in query
-        if e.status == model.PublishStatus.GONE.value)
+    return query.filter(lambda e:
+                        e.status == model.PublishStatus.GONE.value)
 
 
 def where_entry_category(query, category, recurse=False):
