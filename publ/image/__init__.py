@@ -129,16 +129,20 @@ def _get_asset(file_path):
             image = None
 
         if image:
-            values['width'] = image.width
-            values['height'] = image.height
-            values['transparent'] = image.mode in ('RGBA', 'P')
-            values['is_asset'] = False
+            values.update({
+                'width': image.width,
+                'height': image.height,
+                'transparent': image.mode in ('RGBA', 'P'),
+                'is_asset': False,
+            })
         else:
             # PIL could not figure out what file type this is, so treat it as
             # an asset
-            values['is_asset'] = True
-            values['asset_name'] = os.path.join(values['checksum'][:5],
-                                                os.path.basename(file_path))
+            values.update({
+                'is_asset': True,
+                'asset_name': os.path.join(values['checksum'][:5],
+                                           os.path.basename(file_path)),
+            })
         record = model.Image.get(file_path=file_path)
         if record:
             record.set(**values)
@@ -157,10 +161,8 @@ def get_image(path: str, search_path: typing.Union[str, utils.ListLike[str]]) ->
     path -- the image's filename
     search_path -- a search path for the image (string or list of strings)
     """
-    return _get_image(path, tuple(utils.as_list(search_path)))
+    search_path = tuple(utils.as_list(search_path))
 
-
-def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
     if path.startswith('@'):
         return StaticImage(path[1:], search_path)
 
@@ -178,6 +180,7 @@ def _get_image(path: str, search_path: typing.Tuple[str, ...]) -> Image:
     record = _get_asset(file_path)
     if record.is_asset:
         return FileAsset(record, search_path)
+
     return LocalImage(record, search_path)
 
 
