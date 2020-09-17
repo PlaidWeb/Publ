@@ -101,8 +101,9 @@ class Entry(DbEntity):
     @property
     def visible(self) -> bool:
         """ Returns true if the entry should be viewable """
-        return self.status not in (PublishStatus.DRAFT.value,
-                                   PublishStatus.GONE.value)
+        return self.status in (PublishStatus.HIDDEN.value,
+                               PublishStatus.PUBLISHED.value,
+                               PublishStatus.SCHEDULED.value)
 
     def is_authorized(self, user) -> bool:
         """ Returns whether the entry is visible to the specified user """

@@ -69,7 +69,7 @@ class Category(caching.Memoizable):
         self.path = path
         self.basename = os.path.basename(path)
 
-        subcat_query = orm.select(e.category for e in model.Entry)  # type:ignore
+        subcat_query = orm.select(e.category for e in model.Entry if e.visible)  # type:ignore
         if path:
             subcat_query = orm.select(
                 c for c in subcat_query if c.startswith(path + '/'))
