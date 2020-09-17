@@ -234,7 +234,7 @@ def render_exception(error):
             'args': error.args
         })
 
-    return render_error(category, "Exception occurred", 500, exception={
+    return render_error(category, "Exception Occurred", 500, exception={
         'type': type(error).__name__,
         'str': str(error),
         'args': error.args
@@ -277,13 +277,13 @@ def render_category(category='', template=None):
 
 def render_category_path(category: str, template: typing.Optional[str]):
     """ Renders the actual category by path """
+    import arrow
 
     if category:
         # See if there's any entries for the view...
-        if not orm.select(e for e in model.Entry  # type:ignore
-                          if (e.category == category
-                              or e.category.startswith(category + '/'))
-                          and e.visible):
+        if not model.Entry.select(lambda e: (e.category == category
+                                             or e.category.startswith(category + '/'))
+                                  and e.visible).exists():
             raise http_error.NotFound("No such category")
 
     if not template:
@@ -295,17 +295,19 @@ def render_category_path(category: str, template: typing.Optional[str]):
         # this might actually be a malformed category URL
         test_path = '/'.join((category, template)) if category else template
         LOGGER.debug("Checking for malformed category %s", test_path)
-        record = orm.select(
-            e for e in model.Entry if e.category == test_path).exists()  # type:ignore
+        record = model.Entry.select(lambda e: e.category == test_path).exists()  # type:ignore
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
 
         # nope, we just don't know what this is
         raise http_error.NotFound(f"No such view '{template}'")
 
-    view_spec = view.parse_view_spec(request.args)
-    view_spec['category'] = category
-    view_obj = view.View.load(view_spec)
+    try:
+        view_spec = view.parse_view_spec(request.args)
+        view_spec['category'] = category
+        view_obj = view.View.load(view_spec)
+    except arrow.parser.ParserError as error:
+        raise http_error.BadRequest("Invalid date") from error
 
     rendered, etag = render_publ_template(
         tmpl,
@@ -414,7 +416,10 @@ def render_entry(entry_id, slug_text='', category=''):
     # pylint: disable=too-many-return-statements,too-many-branches,unused-argument
 
     # check if it's a valid entry
-    record = model.Entry.get(id=entry_id)
+    try:
+        record = model.Entry.get(id=entry_id)
+    except ValueError:
+        raise http_error.BadRequest("Invalid entry ID")
 
     # see if the file still exists
     if record and not os.path.isfile(record.file_path):
