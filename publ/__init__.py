@@ -72,10 +72,6 @@ class Publ(flask.Flask):
         """
         # pylint:disable=too-many-branches,too-many-statements
 
-        if Publ._instance and Publ._instance is not self:
-            LOGGER.warning("Only one Publ app can run at a time (%s,%s)", Publ._instance, self)
-        Publ._instance = self
-
         super().__init__(name,
                          template_folder=cfg.get('template_folder', 'templates'),
                          static_folder=cfg.get('static_folder', 'static'),

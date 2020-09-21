@@ -214,10 +214,15 @@ def reset():
                            "delete the existing database and try again.")
 
 
+# ensure that we only ever bind the same configuration to the database
+_BOUND_CONFIG = None
+
+
 def setup(config):
     """ Set up the database """
     rebuild = False
 
+    assert not _BOUND_CONFIG or config == _BOUND_CONFIG
     try:
         db.bind(**config)
     except OSError:

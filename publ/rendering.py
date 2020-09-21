@@ -295,7 +295,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         # this might actually be a malformed category URL
         test_path = '/'.join((category, template)) if category else template
         LOGGER.debug("Checking for malformed category %s", test_path)
-        record = model.Entry.select(lambda e: e.category == test_path and e.visible).exists()  # type:ignore
+        record = model.Entry.select(lambda e: e.category ==
+                                    test_path and e.visible).exists()  # type:ignore
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
 

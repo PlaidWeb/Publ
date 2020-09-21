@@ -4,7 +4,7 @@ import uuid
 
 import flask
 
-from publ import config
+import publ
 
 
 class PublMock(flask.Flask):
@@ -12,5 +12,14 @@ class PublMock(flask.Flask):
 
     def __init__(self, cfg: dict = None):
         super().__init__(__name__)
-        self.publ_config = config.Config(cfg or {})
+        self.publ_config = publ.config.Config(cfg or {})
         self.secret_key = uuid.uuid4().bytes
+
+
+def make_app(config):
+    """ Build a Publ app for integration test purposes, or testing the app itself """
+    app = publ.Publ({'cache': {
+        'CACHE_NO_NULL_WARNING': True
+        }})
+    app.secret_key = uuid.uuid4().bytes
+    return app
