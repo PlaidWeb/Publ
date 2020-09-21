@@ -295,7 +295,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         # this might actually be a malformed category URL
         test_path = '/'.join((category, template)) if category else template
         LOGGER.debug("Checking for malformed category %s", test_path)
-        record = model.Entry.select(lambda e: e.category == test_path and e.visible).exists()  # type:ignore
+        record = model.Entry.select(lambda e: e.category ==
+                                    test_path and e.visible).exists()  # type:ignore
         if record:
             return redirect(url_for('category', category=test_path, **request.args))
 
@@ -418,8 +419,8 @@ def render_entry(entry_id, slug_text='', category=''):
     # check if it's a valid entry
     try:
         record = model.Entry.get(id=entry_id)
-    except ValueError:
-        raise http_error.BadRequest("Invalid entry ID")
+    except ValueError as error:
+        raise http_error.BadRequest("Invalid entry ID") from error
 
     # see if the file still exists
     if record and not os.path.isfile(record.file_path):

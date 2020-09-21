@@ -209,9 +209,9 @@ def reset():
     try:
         db.drop_all_tables(with_all_data=True)
         db.create_tables()
-    except:
+    except Exception as error:  # pylint:disable=broad-except
         raise RuntimeError("Unable to upgrade schema automatically; please " +
-                           "delete the existing database and try again.")
+                           "delete the existing database and try again.") from error
 
 
 def setup(config):
