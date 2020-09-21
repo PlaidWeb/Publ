@@ -2,6 +2,7 @@
 """ Handling for URL aliases """
 
 import typing
+import urllib.parse
 
 from flask import current_app, redirect, url_for
 from pony import orm
@@ -33,7 +34,7 @@ def set_alias(alias: str, alias_type: model.AliasType, **kwargs) -> model.PathAl
 
     values = {
         **kwargs,
-        'path': path,
+        'path': urllib.parse.unquote(path),
         'alias_type': alias_type.value
     }
 
