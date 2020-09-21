@@ -80,6 +80,9 @@ class User(caching.Memoizable):
     def _key(self):
         return self._identity, self._auth_type, self._scope
 
+    def __lt__(self, other):
+        return self.identity < other.identity
+
     @cached_property
     def identity(self):
         """ The federated identity name of the user """
@@ -262,13 +265,9 @@ LogEntry = collections.namedtuple(
 
 
 @orm.db_session()
-def auth_log(days=None, start=0, count=100):
+def auth_log(start=0, count=100):
     """ Get the logged accesses to each entry """
-    query = model.AuthLog.select()
-    if days:
-        since = (arrow.utcnow() - datetime.timedelta(days=days)).datetime
-        query = orm.select(e for e in query if e.date >= since)
-    query = query.order_by(orm.desc(model.AuthLog.date))[start:]
+    query = model.AuthLog.select().order_by(orm.desc(model.AuthLog.date))[start:]
 
     return [LogEntry(date=arrow.get(record.date).to(config.timezone),
                      entry=record.entry,

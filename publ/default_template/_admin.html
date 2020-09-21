@@ -146,13 +146,15 @@ td.user {
     clear: right;
 }
 
-.profile a, .profile a:visited {
-    color: black;
-    text-decoration: none;
+td.profile {
     background: #fef;
 }
+td.profile a, td.profile a:visited {
+    color: black;
+    text-decoration: none;
+}
 
-.profile a:hover {
+td.profile:hover {
     background: #fcf;
 }
 
@@ -194,6 +196,13 @@ td.user {
         </tr>
         {%- endfor -%}
     </table>
+    <nav class="pagination">
+        {% if 'days' not in request.args %}
+        <a href="{{url_for('admin',by=by,days=0)}}">Show all</a>
+        {% else %}
+        <a href="{{url_for('admin',by=by)}}">Show less</a>
+        {% endif %}
+    </nav>
 </section>
 
 {% if focus_user %}
@@ -242,12 +251,17 @@ td.user {
 } -%}
 
 {%- macro format(col, rec, grouper=False) -%}
-{%- if col == 'entry' -%}<a href="{{url_for('entry',entry_id=rec.id,category=rec.category,slug_text=rec.slug_text)}}">{{rec.title}}</a>
-{%- elif col == 'date' -%}{{rec.format('YYYY-MM-DD hh:mm A')}}
-{%- elif col == 'profile' -%}<a href="{{url_for('admin',user=rec.identity)}}#userinfo">ℹ︎</a>
-{%- elif col == 'user' -%}<a href="{{rec.identity}}">{{rec.humanize}}</a>
+{%- if col == 'entry' -%}
+    <a href="{{url_for('entry',entry_id=rec.id,category=rec.category,slug_text=rec.slug_text)}}">{{rec.title}}</a>
+{%- elif col == 'date' -%}
+    {{rec.format('YYYY-MM-DD hh:mm A')}}
+{%- elif col == 'profile' -%}
+    <a class="profile" href="{{url_for('admin',user=rec.identity)}}#userinfo">ℹ︎</a>
+{%- elif col == 'user' -%}
+    <a href="{{rec.identity}}">{{rec.humanize}}</a>
 {%- elif col == 'groups' -%}{{list_groups(rec)}}
-{%- elif col == 'authorized' -%}{%- if grouper -%}
+{%- elif col == 'authorized' -%}
+    {%- if grouper -%}
         {{'Authorized' if rec else 'Forbidden'}}
     {%- else -%}
         {{'✅' if rec else '❌'}}
@@ -263,28 +277,30 @@ td.user {
 <tr class="access {{'allowed' if access.authorized else 'denied'}}">
     {{column('authorized', access.authorized)}}
     {{column('date', access.date)}}
-    {{column('profile', access.user, ' admin' if access.user.is_admin else '')}}
-    {{column('user', access.user, ' admin' if access.user.is_admin else '')}}
+    {%- if by != 'user' -%}
+        {{column('profile', access.user, ' admin' if access.user.is_admin else '')}}
+        {{column('user', access.user, ' admin' if access.user.is_admin else '')}}
+    {%- endif -%}
     {{column('entry', access.entry)}}
     {{column('groups', access.user_groups)}}
 </tr>
 {%- endmacro -%}
 
-{%- macro navlink(by=request.args['by'],offset=request.args['offset'],count=request.args['count'],days=request.args['days']) -%}
-{{url_for('admin',by=by or None,offset=offset or None,count=count or None,days=days or None,_anchor='access')}}
+{%- macro navlink(group,offset=request.args['offset'],count=request.args['count'],days=request.args['days']) -%}
+{{url_for('admin',by=group or None,offset=offset or None,count=count or None,days=days or None,_anchor='access')}}
 {%- endmacro -%}
 
 {%- set paging -%}
     <nav class="pagination">
         {% if offset %}
-        <a href="{{navlink(offset=0)}}" class="first">« start</a>
+        <a href="{{navlink(group=by,offset=0)}}" class="first">« start</a>
         {%- endif -%}
         {%- if offset > count -%}
-        <a href="{{navlink(offset=(0,offset-count)|max)}}" class="previous">« previous {{count}}</a>
+        <a href="{{navlink(group=by,offset=(0,offset-count)|max)}}" class="previous">« previous {{count}}</a>
         {% endif %}
 
         {% if remain > 0 %}
-        <a href="{{navlink(offset=offset+count)}}" class="next">next {{(count,remain)|min}}/{{remain}} »</a>
+        <a href="{{navlink(group=by,offset=offset+count)}}" class="next">next {{(count,remain)|min}}/{{remain}} »</a>
         {% endif %}
     </nav>
 {%- endset -%}
@@ -296,9 +312,9 @@ td.user {
         {%- for column, groupable, colspan in columns -%}
             {%- if by != column -%}
                 <th colspan={{colspan}}>{%- if groupable -%}
-                    <a href="{{navlink(by=column)}}">{{headers.get(column,column.title())}}</a>
+                    <a href="{{navlink(group=column)}}">{{headers.get(column,column.title())}}</a>
                     {%- elif column == 'date' -%}
-                    <a href="{{navlink(by=None)}}">{{column.title()}}</a>
+                    <a href="{{navlink(group=None)}}">{{column.title()}}</a>
                     {%- else -%}
                     {{column.title()}}
                     {%- endif -%}

@@ -525,11 +525,11 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
 
     tmpl = map_template('', '_admin')
 
-    days = int(request.args.get('days', 0))
+    days = int(request.args.get('days', 7))
     count = int(request.args.get('count', 50))
     offset = int(request.args.get('offset', 0))
 
-    log, remain = user.auth_log(start=offset, count=count, days=days)
+    log, remain = user.auth_log(start=offset, count=count)
 
     if 'user' in request.args:
         focus_user = user.User(request.args['user'])
