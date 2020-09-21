@@ -6,7 +6,7 @@ import typing
 from flask import current_app, redirect, url_for
 from pony import orm
 
-from . import model
+from . import model, user
 
 # redirection types
 PERMANENT = 301
@@ -115,6 +115,17 @@ class RenderCategory(Disposition):
         self.template = template
 
 
+class AuthFailed(Disposition):
+    """ Disposition that indicates that the pathalias was to an unauthorized entry """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, cur_user: user.User, entry: model.Entry, category: str):
+        super().__init__()
+        self.cur_user = cur_user
+        self.entry = entry
+        self.category = category
+
+
 def get_alias(path: str) -> typing.Optional[Disposition]:
     """ Get a path's alias mapping """
 
@@ -122,21 +133,20 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
 
     if not record or (record.entry and not record.entry.visible):
         url, permanent = current_app.test_path_regex(path)
-        if url:
-            return Response(redirect(url, PERMANENT if permanent else TEMPORARY))
-
-        return None
+        return Response(redirect(url, PERMANENT if permanent else TEMPORARY)) if url else None
 
     alias_type = model.AliasType(record.alias_type)
 
-    if record.category:
-        category = record.category.category
-    elif record.entry:
-        category = record.entry.category
-    else:
-        category = ''
+    category = (record.category.category if record.category
+                else record.entry.category if record.entry
+                else '')
 
     template_name = record.template if record.template != 'index' else None
+
+    if record.entry and record.entry.auth:
+        cur_user = user.get_active()
+        if not record.entry.is_authorized(cur_user):
+            return AuthFailed(cur_user, record.entry, category)
 
     if alias_type == model.AliasType.REDIRECT:
         args = {'category': category} if category else {}
@@ -147,9 +157,9 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
                 args['template'] = template_name
             if record.entry:
                 args['id'] = record.entry.id
+        elif record.entry.redirect_url:
+            return Response(redirect(record.entry.redirect_url, PERMANENT))
         else:
-            if record.entry.redirect_url:
-                return Response(redirect(record.entry.redirect_url, PERMANENT))
             endpoint = 'entry'
             args['entry_id'] = record.entry.id
 

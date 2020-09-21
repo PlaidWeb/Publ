@@ -67,6 +67,8 @@ def handle_path_alias(path: str = None):
         return render_entry_record(alias.entry, alias.category, alias.template, _mounted=True)
     if isinstance(alias, path_alias.RenderCategory):
         return render_category_path(alias.category, alias.template)
+    if isinstance(alias, path_alias.AuthFailed):
+        return handle_unauthorized(alias.cur_user, category=alias.category)
 
     return None
 
