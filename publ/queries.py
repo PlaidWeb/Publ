@@ -191,7 +191,10 @@ def where_entry_date(query, datespec):
 
     datespec -- The date spec to check for, in YYYY[[-]MM[[-]DD]] format
     """
-    date, interval, _ = utils.parse_date(datespec)
+    try:
+        date, interval, _ = utils.parse_date(datespec)
+    except ValueError as error:
+        raise InvalidQueryError(f"Invalid date {datespec}") from error
     start_date, end_date = date.span(interval)
 
     return query.filter(lambda e:
@@ -230,9 +233,12 @@ def get_entry(entry):
         return getattr(entry, '_record')
 
     if isinstance(entry, (int, str)):
-        return model.Entry.get(id=int(entry))
+        try:
+            return model.Entry.get(id=int(entry))
+        except ValueError as error:
+            raise InvalidQueryError(f"Invalid entry ID {entry}") from error
 
-    raise ValueError(f"entry is of unknown type {type(entry)}")
+    raise InvalidQueryError(f"entry is of unknown type {type(entry)}")
 
 
 def build_query(spec):

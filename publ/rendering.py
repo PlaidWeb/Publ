@@ -305,12 +305,14 @@ def render_category_path(category: str, template: typing.Optional[str]):
         # nope, we just don't know what this is
         raise http_error.NotFound(f"No such view '{template}'")
 
+    view_spec = view.parse_view_spec(request.args)
+    view_spec['category'] = category
     try:
-        view_spec = view.parse_view_spec(request.args)
-        view_spec['category'] = category
         view_obj = view.View.load(view_spec)
     except arrow.parser.ParserError as error:
         raise http_error.BadRequest("Invalid date") from error
+    except queries.InvalidQueryError as err:
+        raise http_error.BadRequest(str(err))
 
     rendered, etag = render_publ_template(
         tmpl,
