@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 
 class GlobalConfig(DbEntity):
@@ -144,7 +144,7 @@ class EntryTag(DbEntity):
 class Category(DbEntity):
     """ Metadata for a category """
 
-    category = orm.Optional(str)
+    category = orm.Optional(str, unique=True)
     file_path = orm.Required(str)
     sort_name = orm.Optional(str)
 
