@@ -515,8 +515,6 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         'Content-Type': entry_obj.get('Content-Type', mime_type(tmpl)),
         'ETag': etag
     }
-    if record.status == model.PublishStatus.HIDDEN.value:
-        headers = {**headers, **NO_CACHE}
 
     return rendered, headers
 
