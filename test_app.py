@@ -58,3 +58,4 @@ def favicon(ext):
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
     img, _ = logo.get_rendition(format=ext, width=128, height=128, resize='fill')
     return flask.redirect(img)
+
