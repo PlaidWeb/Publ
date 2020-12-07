@@ -402,7 +402,7 @@ def _check_canon_entry_url(record):
             return result
 
         # Redirect to the canonical URL
-        return redirect(canon_url)
+        return redirect(canon_url, code=301)
 
     return None
 
