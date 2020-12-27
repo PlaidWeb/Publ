@@ -882,7 +882,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             if not tag_record:
                 LOGGER.debug("creating tag %s/%s", key, name)
                 tag_record = model.EntryTag(key=key, name=name)
-            elif name != tag_record.name:
+            elif name != tag_record.name and not name.islower():
                 LOGGER.debug("updating tag name %s/%s -> %s", key, tag_record.name, name)
                 tag_record.name = name
             record.tags.add(tag_record)
