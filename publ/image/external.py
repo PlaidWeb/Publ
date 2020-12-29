@@ -66,10 +66,8 @@ class ExternalImage(Image):
 
             if width:
                 attrs['width'] = width
-                style_parts.append(f'width:{width}px')
             if height:
                 attrs['height'] = height
-                style_parts.append(f'height:{height}px')
             if max_width:
                 style_parts.append(f'max-width:{max_width}px')
             if max_height:

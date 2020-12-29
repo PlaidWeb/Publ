@@ -47,7 +47,7 @@ class Image(ABC):
     def _filename(self) -> str:
         """ Get the filename of the file, for default alt text purposes """
 
-    def get_img_attrs(self, params:dict) -> utils.TagAttrs:
+    def get_img_attrs(self, params: dict) -> utils.TagAttrs:
         """ Get an attribute list (src, style, et al) for the image.
 
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']

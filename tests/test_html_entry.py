@@ -7,6 +7,7 @@ from . import PublMock
 def test_process_passthrough():
     from publ.html_entry import process
 
+    app = PublMock()
     passthrough = '''<!DOCTYPE html>
 <html><head>
 <link rel="alternate" href="//example.com/" />
@@ -18,7 +19,6 @@ modified in it, and shouldn't require an
 <a href="https://flask.palletsprojects.com/en/1.1.x/appcontext/">application
 context</a> to function.</p>
 
-<img src="//example.com/some-image.png" width="500">
 <img data-qwer="poiu" width="yes" height="no">
 
 <br/><br/>
@@ -26,17 +26,18 @@ context</a> to function.</p>
 <!-- commentary -->
 
 </body></html>'''
-    assert process(passthrough, {}, ()) == passthrough
+    with app.test_request_context('https://foo.bar/baz'):
+        assert process(passthrough, {}, ()) == passthrough
 
-    assert process('<img data-publ-rewritten src="do_not_rewrite.jpg" width=400 height=400>',
-                   {}, ()) == '<img src="do_not_rewrite.jpg" width="400" height="400">'
+        assert process(
+            '<img data-publ-rewritten src="do_not_rewrite.jpg" width=400 height=400>',
+            {}, ()) == '<img src="do_not_rewrite.jpg" width="400" height="400">'
 
 
 def test_process_attr_rewrites():
-    import flask
     from publ.html_entry import process
 
-    app = flask.Flask(__name__, static_folder="bleh")
+    app = PublMock(static_url_path='/bleh')
     with app.test_request_context("https://foo.bar/baz"):
         assert process('<a href="@something">foo</a>', {}, ()) == \
             '<a href="/bleh/something">foo</a>'
@@ -50,10 +51,9 @@ def test_process_attr_rewrites():
 
 
 def test_image_args():
-    import flask
     from publ.html_entry import process
 
-    app = flask.Flask(__name__, static_folder="bleh")
+    app = PublMock()
     with app.test_request_context("https://foo.bar/baz"):
         assert process('<img src="//example.com/image.png{500}">', {}, ()) == \
             '<img src="//example.com/image.png" width="500">'
@@ -62,24 +62,29 @@ def test_image_args():
 def test_process_strip_html():
     from publ.html_entry import process
 
-    assert process('<a href="foo">bar</a>', {'markup': False}, ()) == "bar"
+    app = PublMock()
+    with app.test_request_context("https://foo"):
+        assert process('<a href="foo">bar</a>', {'markup': False}, ()) == "bar"
 
 
 def test_strip_html():
     from publ.html_entry import strip_html
 
-    assert strip_html("foobar") == "foobar"
+    app = PublMock()
+    with app.test_request_context('https://bar'):
 
-    doc = '<a href="zxcv" class="mew">blah<sup>boo</sup></a><br/>'
+        assert strip_html("foobar") == "foobar"
 
-    assert strip_html(doc) == "blahboo"
+        doc = '<a href="zxcv" class="mew">blah<sup>boo</sup></a><br/>'
 
-    assert strip_html(doc, ('sup')) == "blah<sup>boo</sup>"
+        assert strip_html(doc) == "blahboo"
 
-    assert strip_html(doc, ('a'), ('href')) == '<a href="zxcv">blahboo</a>'
+        assert strip_html(doc, ('sup')) == "blah<sup>boo</sup>"
 
-    assert strip_html(doc, remove_elements=('sup')) == 'blah'
+        assert strip_html(doc, ('a'), ('href')) == '<a href="zxcv">blahboo</a>'
 
-    assert strip_html(doc, ('br')) == 'blahboo<br/>'
+        assert strip_html(doc, remove_elements=('sup')) == 'blah'
 
-    assert strip_html("this &amp; that") == "this & that"
+        assert strip_html(doc, ('br')) == 'blahboo<br/>'
+
+        assert strip_html("this &amp; that") == "this & that"
