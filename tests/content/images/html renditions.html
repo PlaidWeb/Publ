@@ -3,9 +3,21 @@ Date: 2020-01-04 00:42:19-08:00
 Entry-ID: 2174
 UUID: b95a3bf1-a110-5c33-b41a-78a4e0c57bfb
 
-tests of how parse failures affect HTML entries
+tests of image renditions in HTML entries
 
 .....
+
+<h2>local images</h2>
+
+<img src="rawr.jpg" title="unsized">
+
+<img src="Landscape_1.jpg" title="unsized">
+
+<img src="Landscape_1.jpg" width=1024 title="width set above max width">
+
+<img src="Landscape_1.jpg{max_width=None}"  title="max_width overridden">
+
+<h2>parse failures</h2>
 
 <img src="not found.jpg" title="file not found">
 

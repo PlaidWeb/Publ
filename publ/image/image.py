@@ -47,13 +47,13 @@ class Image(ABC):
     def _filename(self) -> str:
         """ Get the filename of the file, for default alt text purposes """
 
-    def get_img_attrs(self, **kwargs) -> utils.TagAttrs:
+    def get_img_attrs(self, params:dict) -> utils.TagAttrs:
         """ Get an attribute list (src, style, et al) for the image.
 
         Returns: a dict of attributes e.g. {'src':'foo.jpg','srcset':'foo.jpg 1x, bar.jpg 2x']
         """
 
-        params = utils.prefix_normalize(kwargs)
+        params = utils.prefix_normalize(params)
 
         styles: typing.List[str] = []
         attrs = self._get_img_attrs(params, styles)
@@ -92,7 +92,7 @@ class Image(ABC):
 
         try:
             attrs = {
-                **self.get_img_attrs(**kwargs)
+                **self.get_img_attrs(kwargs)
             }
 
             if alt_text:

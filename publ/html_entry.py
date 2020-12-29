@@ -9,6 +9,7 @@ import typing
 import flask
 
 from . import image, links, utils
+from .config import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,11 +17,11 @@ LOGGER = logging.getLogger(__name__)
 class HTMLEntry(utils.HTMLTransform):
     """ An HTML manipulator to fixup src and href attributes """
 
-    def __init__(self, config, search_path):
+    def __init__(self, args, search_path):
         super().__init__()
 
         self._search_path = search_path
-        self._config = config
+        self._config = args
 
     def handle_decl(self, decl):
         self.append('<!' + decl + '>')
@@ -80,19 +81,20 @@ class HTMLEntry(utils.HTMLTransform):
         """
 
         path = None
-        config = {**self._config}
+        attr_args = {}
         is_rewritten = False
 
         for key, val in attrs:
             if key.lower() == 'width' or key.lower() == 'height':
                 try:
-                    config[key.lower()] = int(val)
+                    attr_args[key.lower()] = int(val)
                 except ValueError:
                     pass
             elif key.lower() == 'src':
                 path = val
             elif key == 'data-publ-rewritten':
                 is_rewritten = True
+                break
 
         if is_rewritten:
             # This img tag was already rewritten by a previous processor, so just
@@ -107,12 +109,10 @@ class HTMLEntry(utils.HTMLTransform):
         img_path, img_args, _ = image.parse_image_spec(path)
         img = image.get_image(img_path, self._search_path)
 
-        for key, val in img_args.items():
-            if val and key not in config:
-                config[key] = val
-
         try:
-            img_attrs = img.get_img_attrs(**config)
+            img_attrs = img.get_img_attrs({**self._config,
+                                           **attr_args,
+                                           **img_args})
         except FileNotFoundError as error:
             img_attrs = {
                 'data-publ-error': f'File Not Found: {error.filename}'
@@ -128,13 +128,14 @@ class HTMLEntry(utils.HTMLTransform):
                 if key.lower() not in img_attrs] + list(img_attrs.items())
 
 
-def process(text, config, search_path):
+def process(text, args, search_path):
     """ Process an HTML entry's HTML """
-    processor = HTMLEntry(config, search_path)
+    args = {**config.layout, **args}
+    processor = HTMLEntry(args, search_path)
     processor.feed(text)
     text = processor.get_data()
 
-    if not config.get('markup', True):
+    if not args.get('markup', True):
         text = strip_html(text)
 
     return flask.Markup(text)

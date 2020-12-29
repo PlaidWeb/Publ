@@ -37,6 +37,7 @@ class _Defaults:
 
     # Page rendering
     cache: typing.Dict[str, str] = {}
+    layout: typing.Dict[str, typing.Any] = {}
     markdown_extensions = (
         'tables',
         'fenced-code',

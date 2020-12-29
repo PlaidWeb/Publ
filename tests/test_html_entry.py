@@ -1,6 +1,8 @@
 """ tests of publ.html_entry module """
 # pylint:disable=missing-function-docstring
 
+from . import PublMock
+
 
 def test_process_passthrough():
     from publ.html_entry import process

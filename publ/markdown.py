@@ -525,7 +525,7 @@ def to_html(text, args, search_path,
     tocs: TocBuffer = toc_buffer if toc_buffer is not None else []
 
     # first process as Markdown
-    renderer = HtmlRenderer(args,
+    renderer = HtmlRenderer({**config.layout, **args},
                             search_path,
                             toc_buffer=tocs,
                             footnote_buffer=footnotes,

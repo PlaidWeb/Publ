@@ -46,6 +46,9 @@ config = {
         'EMAIL_CHECK_MESSAGE': 'Use the link printed to the test console',
     },
     'user_list': os.path.join(APP_PATH, 'users.cfg'),
+    'layout': {
+        'max_width': 768,
+    }
 }
 
 app = publ.Publ(__name__, config)
