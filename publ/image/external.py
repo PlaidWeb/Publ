@@ -38,9 +38,9 @@ class ExternalImage(Image):
         if not spec.get('_no_resize_external'):
             # try to fudge the sizing
             max_width = spec.get('max_width')
-            width = spec.get('width') or max_width
+            width = spec.get('width')
             max_height = spec.get('max_height')
-            height = spec.get('height') or max_height
+            height = spec.get('height')
             size_mode = spec.get('resize', 'fit')
 
             if width and max_width and max_width < width:
@@ -68,6 +68,10 @@ class ExternalImage(Image):
                 attrs['width'] = width
             if height:
                 attrs['height'] = height
+            if max_width:
+                style_parts.append(f'max-width:{max_width}px')
+            if max_height:
+                style_parts.append(f'max-height:{max_height}px')
 
         return attrs
 
