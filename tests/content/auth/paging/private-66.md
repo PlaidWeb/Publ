@@ -1,7 +1,7 @@
 Title: private 66
-Auth: friends
+Auth: friends test:66
+Date: 2020-12-30 01:34:05-08:00
 Entry-ID: 1492
-UUID: 36c091f9-a6e5-5dd0-b152-a57b8a8a050e
-Date: 2019-07-08 11:46:35-07:00
+UUID: 9eab72bf-e001-5c95-a39f-b9807bf30f27
 
-Friends-only entry 66
+Private entry 66

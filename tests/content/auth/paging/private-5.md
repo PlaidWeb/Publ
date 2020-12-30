@@ -1,7 +1,7 @@
 Title: private 5
-Auth: friends
+Auth: friends test:5
+Date: 2020-12-30 01:33:03-08:00
 Entry-ID: 75
-UUID: 44462930-7d26-59df-9816-c24936529540
-Date: 2019-07-08 11:46:35-07:00
+UUID: b77d1c3f-3bd7-5c61-bd5b-e33501825998
 
-Friends-only entry 5
+Private entry 5

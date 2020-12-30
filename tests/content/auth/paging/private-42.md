@@ -1,7 +1,7 @@
 Title: private 42
-Auth: friends
+Auth: friends test:42
+Date: 2020-12-30 01:33:41-08:00
 Entry-ID: 1000
-UUID: 7d18fb91-9022-5ede-bc15-2aaa5411e4fa
-Date: 2019-07-08 11:46:35-07:00
+UUID: 47796c0d-ba49-508c-a139-d6bc3fae877d
 
-Friends-only entry 42
+Private entry 42

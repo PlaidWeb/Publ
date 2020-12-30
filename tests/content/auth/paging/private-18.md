@@ -1,7 +1,7 @@
 Title: private 18
-Auth: friends
+Auth: friends test:18
+Date: 2020-12-30 01:33:17-08:00
 Entry-ID: 1213
-UUID: da84097f-a608-5f03-99c3-c0dca84e88aa
-Date: 2019-07-08 11:46:35-07:00
+UUID: 0db37bd3-680e-5a32-99b4-5bb3babc7598
 
-Friends-only entry 18
+Private entry 18

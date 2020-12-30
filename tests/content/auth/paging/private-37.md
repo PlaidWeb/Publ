@@ -1,7 +1,7 @@
 Title: private 37
-Auth: friends
+Auth: friends test:37
+Date: 2020-12-30 01:33:36-08:00
 Entry-ID: 1268
-UUID: 3786019f-412d-5f3a-b4ac-3dbe8979e292
-Date: 2019-07-08 11:46:35-07:00
+UUID: 4a91919e-3519-590d-b6d3-5a867d837d21
 
-Friends-only entry 37
+Private entry 37

@@ -1,7 +1,7 @@
 Title: private 27
-Auth: friends
+Auth: friends test:27
+Date: 2020-12-30 01:33:26-08:00
 Entry-ID: 1780
-UUID: ea224a76-8eb6-53d8-9799-b125cb0d1811
-Date: 2019-07-08 11:46:35-07:00
+UUID: 6022450e-88d0-5949-98e9-a05a3e6bda34
 
-Friends-only entry 27
+Private entry 27

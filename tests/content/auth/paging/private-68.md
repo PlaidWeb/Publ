@@ -1,7 +1,7 @@
 Title: private 68
-Auth: friends
+Auth: friends test:68
+Date: 2020-12-30 01:34:07-08:00
 Entry-ID: 864
-UUID: 782358fe-b83f-5b70-9681-4749beee1327
-Date: 2019-07-08 11:46:35-07:00
+UUID: 1853b6c2-285d-575e-989e-bff6c2939aef
 
-Friends-only entry 68
+Private entry 68

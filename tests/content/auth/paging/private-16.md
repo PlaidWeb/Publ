@@ -1,7 +1,7 @@
 Title: private 16
-Auth: friends
+Auth: friends test:16
+Date: 2020-12-30 01:33:15-08:00
 Entry-ID: 1794
-UUID: 8916a9af-ea3e-50f9-86b5-1f1853317876
-Date: 2019-07-08 11:46:35-07:00
+UUID: 6fa276f2-4aa1-59a8-b037-33a5f88b376f
 
-Friends-only entry 16
+Private entry 16

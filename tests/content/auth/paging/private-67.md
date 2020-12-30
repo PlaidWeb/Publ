@@ -1,7 +1,7 @@
 Title: private 67
-Auth: friends
+Auth: friends test:67
+Date: 2020-12-30 01:34:06-08:00
 Entry-ID: 1529
-UUID: 4692b899-f6a9-5cd5-a93b-6e8c229b8d09
-Date: 2019-07-08 11:46:35-07:00
+UUID: 6fef0ba6-4f5f-5608-bc50-1a254d7742f4
 
-Friends-only entry 67
+Private entry 67

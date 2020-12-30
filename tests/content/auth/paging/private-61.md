@@ -1,7 +1,7 @@
 Title: private 61
-Auth: friends
+Auth: friends test:61
+Date: 2020-12-30 01:34:00-08:00
 Entry-ID: 1654
-UUID: 62191f6d-d2bf-593e-8ec6-7c83b2a6ef6e
-Date: 2019-07-08 11:46:35-07:00
+UUID: e6a3c1e2-0f98-5593-a5ff-21e750ea2541
 
-Friends-only entry 61
+Private entry 61

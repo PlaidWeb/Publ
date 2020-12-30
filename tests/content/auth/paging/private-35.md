@@ -1,7 +1,7 @@
 Title: private 35
-Auth: friends
+Auth: friends test:35
+Date: 2020-12-30 01:33:34-08:00
 Entry-ID: 804
-UUID: 110af8bd-284c-5c9d-b4e4-3dce41f2b2a7
-Date: 2019-07-08 11:46:35-07:00
+UUID: 2e29fc23-47ba-5424-b908-2639ed2b7578
 
-Friends-only entry 35
+Private entry 35

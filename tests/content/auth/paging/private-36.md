@@ -1,7 +1,7 @@
 Title: private 36
-Auth: friends
+Auth: friends test:36
+Date: 2020-12-30 01:33:35-08:00
 Entry-ID: 1180
-UUID: 96193cbc-4302-50a3-9e4c-275b9c3a40a5
-Date: 2019-07-08 11:46:35-07:00
+UUID: 6b600b9c-5762-53ad-b2b3-f54a942ad4ea
 
-Friends-only entry 36
+Private entry 36

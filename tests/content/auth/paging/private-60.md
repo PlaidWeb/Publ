@@ -1,7 +1,7 @@
 Title: private 60
-Auth: friends
+Auth: friends test:60
+Date: 2020-12-30 01:33:59-08:00
 Entry-ID: 546
-UUID: 609db642-69a3-5f2c-9873-f152f174677f
-Date: 2019-07-08 11:46:35-07:00
+UUID: d7114e8a-3fba-53f6-9a62-d8a54d964e8d
 
-Friends-only entry 60
+Private entry 60

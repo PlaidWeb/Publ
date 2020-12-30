@@ -1,7 +1,7 @@
 Title: private 4
-Auth: friends
+Auth: friends test:4
+Date: 2020-12-30 01:33:02-08:00
 Entry-ID: 1477
-UUID: 44a1d8ee-2933-5eb4-b14f-04dc3949b716
-Date: 2019-07-08 11:46:35-07:00
+UUID: 3855cf12-6743-5804-b635-091eb448046a
 
-Friends-only entry 4
+Private entry 4

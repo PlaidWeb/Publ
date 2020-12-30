@@ -1,7 +1,7 @@
 Title: private 11
-Auth: friends
+Auth: friends test:11
+Date: 2020-12-30 01:33:10-08:00
 Entry-ID: 669
-UUID: 873d2a4e-5d54-54c6-a9e9-8eb93fa43655
-Date: 2019-07-08 11:46:35-07:00
+UUID: 7d4979c6-0c69-5135-952c-9f8de001de2d
 
-Friends-only entry 11
+Private entry 11

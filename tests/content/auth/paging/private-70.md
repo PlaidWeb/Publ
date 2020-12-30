@@ -1,7 +1,7 @@
 Title: private 70
-Auth: friends
+Auth: friends test:70
+Date: 2020-12-30 01:34:09-08:00
 Entry-ID: 398
-UUID: 6f0967ed-ada6-5859-a607-f7f5bcf2ef52
-Date: 2019-07-08 11:46:35-07:00
+UUID: a4df9984-1234-5cbb-9c31-66d817cedf5f
 
-Friends-only entry 70
+Private entry 70

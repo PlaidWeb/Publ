@@ -1,7 +1,7 @@
 Title: private 53
-Auth: friends
+Auth: friends test:53
+Date: 2020-12-30 01:33:52-08:00
 Entry-ID: 1015
-UUID: ae690d67-2b60-59c8-8a15-437c3421f2c4
-Date: 2019-07-08 11:46:35-07:00
+UUID: 058094df-51c2-505a-b204-b52ceac20979
 
-Friends-only entry 53
+Private entry 53

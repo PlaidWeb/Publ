@@ -1,7 +1,7 @@
 Title: private 23
-Auth: friends
+Auth: friends test:23
+Date: 2020-12-30 01:33:22-08:00
 Entry-ID: 849
-UUID: 641db684-6e95-5972-8f89-c6c5a4cfb2c3
-Date: 2019-07-08 11:46:35-07:00
+UUID: a1375b74-1097-5b5b-bd26-efa9cabc06c5
 
-Friends-only entry 23
+Private entry 23

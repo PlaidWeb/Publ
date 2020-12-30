@@ -1,6 +1,6 @@
 Title: public 38
+Date: 2020-12-30 01:33:37-08:00
 Entry-ID: 1075
-UUID: 11f5b77b-1c39-5df0-8bfe-525d1d08aa31
-Date: 2019-07-08 11:46:35-07:00
+UUID: a1c027ce-2206-5a97-b052-a421141eba03
 
 Public entry 38

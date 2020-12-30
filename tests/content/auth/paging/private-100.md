@@ -1,7 +1,7 @@
 Title: private 100
-Auth: friends
+Auth: friends test:100
+Date: 2020-12-30 01:35:47-08:00
 Entry-ID: 2063
-UUID: 3b3c3472-7608-5d28-b530-7074b83a42c8
-Date: 2019-07-08 11:46:35-07:00
+UUID: 4d28514c-6410-5318-92d4-c10e8b22e467
 
-Friends-only entry 100
+Private entry 100

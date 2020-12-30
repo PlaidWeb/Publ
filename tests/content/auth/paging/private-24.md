@@ -1,7 +1,7 @@
 Title: private 24
-Auth: friends
+Auth: friends test:24
+Date: 2020-12-30 01:33:23-08:00
 Entry-ID: 630
-UUID: 30cf0d77-6bcc-5351-b9e0-4ffa1d638574
-Date: 2019-07-08 11:46:35-07:00
+UUID: e176a40b-1d3a-5368-8827-623a600da762
 
-Friends-only entry 24
+Private entry 24

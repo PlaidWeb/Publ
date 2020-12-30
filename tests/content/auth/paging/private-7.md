@@ -1,7 +1,7 @@
 Title: private 7
-Auth: friends
+Auth: friends test:7
+Date: 2020-12-30 01:33:05-08:00
 Entry-ID: 1674
-UUID: a7d019ad-4ef9-5a64-ace3-1442a269a64a
-Date: 2019-07-08 11:46:35-07:00
+UUID: 24b8e6be-3912-5d35-b198-528cfa38f907
 
-Friends-only entry 7
+Private entry 7

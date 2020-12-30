@@ -1,7 +1,7 @@
 Title: private 62
-Auth: friends
+Auth: friends test:62
+Date: 2020-12-30 01:34:01-08:00
 Entry-ID: 1434
-UUID: f2a019a7-8a64-5b71-80f9-8167770058cb
-Date: 2019-07-08 11:46:35-07:00
+UUID: 54387d9d-90db-5f59-8e99-737e953fb702
 
-Friends-only entry 62
+Private entry 62

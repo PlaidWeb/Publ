@@ -1,7 +1,7 @@
 Title: private 12
-Auth: friends
+Auth: friends test:12
+Date: 2020-12-30 01:33:11-08:00
 Entry-ID: 263
-UUID: 7f7c094d-47d0-59c3-bacc-ab9022603803
-Date: 2019-07-08 11:46:35-07:00
+UUID: 0108125a-d7d3-5b2c-af47-c2e6265b4f8f
 
-Friends-only entry 12
+Private entry 12

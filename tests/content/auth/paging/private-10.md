@@ -1,7 +1,7 @@
 Title: private 10
-Auth: friends
+Auth: friends test:10
+Date: 2020-12-30 01:33:09-08:00
 Entry-ID: 1921
-UUID: 0e249310-cc57-5a53-934c-13f1b56eea3f
-Date: 2019-07-08 11:46:35-07:00
+UUID: 9e63a6ec-26cd-5a70-aafd-4fbd85da43fd
 
-Friends-only entry 10
+Private entry 10

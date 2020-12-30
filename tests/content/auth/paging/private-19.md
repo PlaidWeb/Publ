@@ -1,7 +1,7 @@
 Title: private 19
-Auth: friends
+Auth: friends test:19
+Date: 2020-12-30 01:33:18-08:00
 Entry-ID: 799
-UUID: 2c45cf92-28e1-5c56-92f5-78f00071358e
-Date: 2019-07-08 11:46:35-07:00
+UUID: f7c9a652-9000-5413-ae77-b77c6ace6909
 
-Friends-only entry 19
+Private entry 19

@@ -1,7 +1,7 @@
 Title: private 40
-Auth: friends
+Auth: friends test:40
+Date: 2020-12-30 01:33:39-08:00
 Entry-ID: 540
-UUID: edfca9f5-d1bf-5161-8ecb-7807af70fb78
-Date: 2019-07-08 11:46:35-07:00
+UUID: 4dc20335-3daa-507f-aec9-10b96ffc57fb
 
-Friends-only entry 40
+Private entry 40
