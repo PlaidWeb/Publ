@@ -164,6 +164,28 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_unauthorized)
 
     @cached_property
+    def has_unauthorized(self) -> bool:
+        """ Returns whether there's entries that the user could see if they
+        were authorized differently """
+
+        count = self.spec.get('count')
+        auth_count = 0
+        cur_user = user.get_active()
+        for record in self._entries:
+            if count is not None and auth_count >= count:
+                # we've already hit the end of the list
+                break
+
+            if not record.is_authorized(cur_user):
+                # there's at least one unauthorized, so fast quit
+                tokens.request(cur_user)
+                return True
+
+            auth_count += 1
+
+        return False
+
+    @cached_property
     def deleted(self) -> typing.List[Entry]:
         """ Gets the deleted entries from the view """
         query = queries.build_query({**self.spec,
