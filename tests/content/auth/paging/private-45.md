@@ -1,7 +1,7 @@
 Title: private 45
-Auth: friends
+Auth: friends test:45
+Date: 2020-12-30 01:33:44-08:00
 Entry-ID: 1597
-UUID: 1a674982-debc-5267-9b91-9e739f71d9e7
-Date: 2019-07-08 11:46:35-07:00
+UUID: 86d836f5-0600-5544-92de-db9fe9378612
 
-Friends-only entry 45
+Private entry 45

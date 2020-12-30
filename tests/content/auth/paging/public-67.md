@@ -1,6 +1,6 @@
 Title: public 67
+Date: 2020-12-30 01:34:06-08:00
 Entry-ID: 492
-UUID: 723b3d2e-bce3-54d3-af52-b5f40e85296a
-Date: 2019-07-08 11:46:35-07:00
+UUID: 09e7f988-b55a-5fa7-8d5e-71aa3644ec0c
 
 Public entry 67

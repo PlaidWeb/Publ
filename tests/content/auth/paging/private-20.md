@@ -1,7 +1,7 @@
 Title: private 20
-Auth: friends
+Auth: friends test:20
+Date: 2020-12-30 01:33:19-08:00
 Entry-ID: 292
-UUID: b2d4516f-53f4-5cf7-92ff-81a11743eea8
-Date: 2019-07-08 11:46:35-07:00
+UUID: afd328c0-3ae4-5dcf-80d6-452f2234828c
 
-Friends-only entry 20
+Private entry 20

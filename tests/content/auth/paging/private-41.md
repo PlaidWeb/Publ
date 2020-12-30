@@ -1,7 +1,7 @@
 Title: private 41
-Auth: friends
+Auth: friends test:41
+Date: 2020-12-30 01:33:40-08:00
 Entry-ID: 484
-UUID: 0c1f1da5-9e42-52ff-951d-a3cab1fa31bc
-Date: 2019-07-08 11:46:35-07:00
+UUID: 8d730d42-2c64-51c6-9de0-81cbe880efb0
 
-Friends-only entry 41
+Private entry 41

@@ -1,7 +1,7 @@
 Title: private 13
-Auth: friends
+Auth: friends test:13
+Date: 2020-12-30 01:33:12-08:00
 Entry-ID: 157
-UUID: 239a8903-f26d-5189-830d-0717e2d6d917
-Date: 2019-07-08 11:46:35-07:00
+UUID: b0a3d899-7cdd-56c1-979b-1b06c84373d7
 
-Friends-only entry 13
+Private entry 13

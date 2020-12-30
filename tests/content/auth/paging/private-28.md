@@ -1,7 +1,7 @@
 Title: private 28
-Auth: friends
+Auth: friends test:28
+Date: 2020-12-30 01:33:27-08:00
 Entry-ID: 216
-UUID: 3053d034-069f-52cc-a3da-c2299cb212ed
-Date: 2019-07-08 11:46:35-07:00
+UUID: b040d7e1-1029-5c3c-a91d-a355ad1e4694
 
-Friends-only entry 28
+Private entry 28

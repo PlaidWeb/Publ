@@ -1,7 +1,7 @@
 Title: private 57
-Auth: friends
+Auth: friends test:57
+Date: 2020-12-30 01:33:56-08:00
 Entry-ID: 1388
-UUID: 0c23d05d-91c3-52a0-8e23-07f5ff1bcf92
-Date: 2019-07-08 11:46:35-07:00
+UUID: 9f14a4e6-d4c6-5ebc-a967-72aa4201cb4e
 
-Friends-only entry 57
+Private entry 57

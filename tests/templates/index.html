@@ -18,9 +18,11 @@
 
 <div id="nav" class="sidebar">
 
+    {% set content = view(entry_type_not=['sidebar'],is_attached=False,count=20) %}
+
     <h2>Navigation</h2>
 
-    {% block navigation %}
+    {% block navigation scoped %}
     <ul>
     {% if not view.is_current %}
     <li class="now"><a href="{{view.current.link}}">Current entries</a></li>
@@ -48,7 +50,6 @@
 
 {% block content %}
 <div id="content">
-    {% set content = view(entry_type_not=['sidebar'],is_attached=False,count=20) %}
 
     <div class="nav">
         {% if content.previous %}
@@ -63,7 +64,7 @@
     <div class="entries">
     {% block entries scoped %}
 
-        {% if not user and content.unauthorized %}
+        {% if not user and content.has_unauthorized %}
         <div class="login">
             <p>You are missing one or more friends-only entries. Please <a href="{{url_for('login',redir=request.path[1:])}}">log in</a>.</p>
         </div>

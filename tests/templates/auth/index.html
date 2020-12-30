@@ -4,4 +4,9 @@
 {{super()}}
 
 {%include '/auth/_auth_sidebar.html' %}
+
+{% if content.has_unauthorized %}
+<p>There are unauthorized entries</p>
+{% endif %}
+
 {% endblock %}

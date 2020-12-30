@@ -1,7 +1,7 @@
 Title: private 44
-Auth: friends
+Auth: friends test:44
+Date: 2020-12-30 01:33:43-08:00
 Entry-ID: 259
-UUID: 09663261-5676-59b2-8707-2d76d9ed019f
-Date: 2019-07-08 11:46:35-07:00
+UUID: ac35a46b-4117-5d2a-8cd4-9f7b9b22ba4f
 
-Friends-only entry 44
+Private entry 44

@@ -1,7 +1,7 @@
 Title: private 34
-Auth: friends
+Auth: friends test:34
+Date: 2020-12-30 01:33:33-08:00
 Entry-ID: 1929
-UUID: 0f36ab32-56a5-563a-94a8-7ef00720f5be
-Date: 2019-07-08 11:46:35-07:00
+UUID: 4cb64d3a-5923-5af4-9e45-e7acfd37ec3d
 
-Friends-only entry 34
+Private entry 34

@@ -1,7 +1,7 @@
 Title: private 15
-Auth: friends
+Auth: friends test:15
+Date: 2020-12-30 01:33:14-08:00
 Entry-ID: 1093
-UUID: 90d8d58b-cbcc-53ec-8c20-f300e7f28ea5
-Date: 2019-07-08 11:46:35-07:00
+UUID: b3e035e9-86dd-5cf9-a813-9c14534c9316
 
-Friends-only entry 15
+Private entry 15

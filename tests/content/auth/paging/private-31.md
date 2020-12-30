@@ -1,7 +1,7 @@
 Title: private 31
-Auth: friends
+Auth: friends test:31
+Date: 2020-12-30 01:33:30-08:00
 Entry-ID: 1930
-UUID: 4366027f-933b-5216-85c3-8dc676d82a75
-Date: 2019-07-08 11:46:35-07:00
+UUID: 26b16004-165d-5e89-876a-24ee2cfc71bc
 
-Friends-only entry 31
+Private entry 31

@@ -1,7 +1,7 @@
 Title: private 69
-Auth: friends
+Auth: friends test:69
+Date: 2020-12-30 01:34:08-08:00
 Entry-ID: 1111
-UUID: b0b9763e-ee6f-5208-991b-2084d7a5659a
-Date: 2019-07-08 11:46:35-07:00
+UUID: ca19796d-377d-5375-89c1-240f290359f0
 
-Friends-only entry 69
+Private entry 69

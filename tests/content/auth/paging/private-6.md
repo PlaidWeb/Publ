@@ -1,7 +1,7 @@
 Title: private 6
-Auth: friends
+Auth: friends test:6
+Date: 2020-12-30 01:33:04-08:00
 Entry-ID: 1870
-UUID: 13cae5f4-f7e9-52fa-a434-bb8bce036385
-Date: 2019-07-08 11:46:35-07:00
+UUID: c5cc5c08-07d0-58de-91a2-4e188a6900ac
 
-Friends-only entry 6
+Private entry 6

@@ -1,7 +1,7 @@
 Title: private 64
-Auth: friends
+Auth: friends test:64
+Date: 2020-12-30 01:34:03-08:00
 Entry-ID: 287
-UUID: 0cc6d90b-2c43-51e7-8037-ac092a081e2c
-Date: 2019-07-08 11:46:35-07:00
+UUID: 3fc286ee-57bf-5a72-b212-76610be3723e
 
-Friends-only entry 64
+Private entry 64

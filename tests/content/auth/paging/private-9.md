@@ -1,7 +1,7 @@
 Title: private 9
-Auth: friends
+Auth: friends test:9
+Date: 2020-12-30 01:33:08-08:00
 Entry-ID: 607
-UUID: 73502df6-9130-57de-9b8b-c95ee4105f43
-Date: 2019-07-08 11:46:35-07:00
+UUID: dbd96856-308c-5924-baa4-c25368769fa5
 
-Friends-only entry 9
+Private entry 9

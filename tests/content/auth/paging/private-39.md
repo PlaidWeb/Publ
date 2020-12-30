@@ -1,7 +1,7 @@
 Title: private 39
-Auth: friends
+Auth: friends test:39
+Date: 2020-12-30 01:33:38-08:00
 Entry-ID: 622
-UUID: 7d43e71c-8b91-583d-b40a-4fbcd20ba109
-Date: 2019-07-08 11:46:35-07:00
+UUID: 114ba3b0-2ea5-5f09-82b5-6a11b3f66c17
 
-Friends-only entry 39
+Private entry 39

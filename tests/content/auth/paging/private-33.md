@@ -1,7 +1,7 @@
 Title: private 33
-Auth: friends
+Auth: friends test:33
+Date: 2020-12-30 01:33:32-08:00
 Entry-ID: 1097
-UUID: c12913d7-2052-51fc-9207-7ac5d3a83af3
-Date: 2019-07-08 11:46:35-07:00
+UUID: 742e0be4-e26d-5ca4-8c48-fe3048af2ed3
 
-Friends-only entry 33
+Private entry 33

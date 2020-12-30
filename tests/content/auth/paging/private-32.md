@@ -1,7 +1,7 @@
 Title: private 32
-Auth: friends
+Auth: friends test:32
+Date: 2020-12-30 01:33:31-08:00
 Entry-ID: 1246
-UUID: ff12612c-38ea-5b49-a521-3242ace3b1a8
-Date: 2019-07-08 11:46:35-07:00
+UUID: fb8d50ff-ff93-504c-828c-d43fff8c8bfb
 
-Friends-only entry 32
+Private entry 32

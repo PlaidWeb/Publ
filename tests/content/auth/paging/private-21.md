@@ -1,7 +1,7 @@
 Title: private 21
-Auth: friends
+Auth: friends test:21
+Date: 2020-12-30 01:33:20-08:00
 Entry-ID: 1311
-UUID: c030a71f-5b52-5f74-ba69-3edd8aa33aac
-Date: 2019-07-08 11:46:35-07:00
+UUID: 297ba5e4-fd57-54d1-b7fe-c2dc1ea76d95
 
-Friends-only entry 21
+Private entry 21
