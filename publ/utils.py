@@ -15,6 +15,7 @@ import arrow
 import flask
 import werkzeug.routing
 
+from . import model
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -492,13 +493,23 @@ def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
 class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
 
+    @staticmethod
+    def _get_key(tag):
+        if isinstance(tag, str):
+            return tag.casefold()
+        if isinstance(tag, model.EntryTag):
+            return tag.key
+        if isinstance(tag, model.EntryTagged):
+            return tag.tag.key
+        raise ValueError(f"TagSet got non-tag-type {type(tag)}")
+
     def __init__(self, contents: ListLike[str] = None):
-        storage = {v.casefold(): v for v in contents} if contents else {}
+        storage = {self._get_key(v): v for v in contents} if contents else {}
         self._keys = frozenset(storage.keys())
         self._values = frozenset(storage.values())
 
     def __contains__(self, key) -> bool:
-        return key.casefold() in self._keys
+        return self._get_key(key) in self._keys
 
     def __iter__(self):
         return self._values.__iter__()
@@ -517,19 +528,19 @@ class TagSet(typing.Set[str]):
 
     @staticmethod
     def _fold(items):
-        return {k.casefold() for k in items}
+        return {TagSet._get_key(k) for k in items}
 
     def __and__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if k.casefold() in folded))
+        return TagSet((k for k in self if self._get_key(k) in folded))
 
     def __xor__(self, other):
         folded = self._fold(self) ^ self._fold(other)
-        return TagSet((k for k in self | other if k.casefold() in folded))
+        return TagSet((k for k in self | other if self._get_key(k) in folded))
 
     def __sub__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if k.casefold() not in folded))
+        return TagSet((k for k in self if self._get_key(k) not in folded))
 
     def __len__(self):
         return len(self._values)
@@ -550,6 +561,14 @@ class TagSet(typing.Set[str]):
 
     def __lt__(self, other):
         return self._fold(self) < self._fold(other)
+
+    def keys(self):
+        """ Return the case-folded names """
+        return self._keys
+
+    def values(self):
+        """ return the case-preserved names """
+        return self._values
 
 
 def strip_single_paragraph(text: str):

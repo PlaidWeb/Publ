@@ -1,5 +1,6 @@
 Title: Tagged entry 3
 Tag: hello
+Hidden-Tag: always-hidden
 Tag: foo
 UUID: ec0ad5cf-3a2e-584f-892b-1c3d7a58af01
 Entry-ID: 454

@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 
 class GlobalConfig(DbEntity):
@@ -84,7 +84,7 @@ class Entry(DbEntity):
     sort_title = orm.Optional(str)
 
     aliases = orm.Set("PathAlias")
-    tags = orm.Set("EntryTag")
+    tags = orm.Set("EntryTagged")
 
     auth = orm.Set("EntryAuth")
     auth_log = orm.Set("AuthLog")
@@ -134,11 +134,21 @@ class Entry(DbEntity):
 
 
 class EntryTag(DbEntity):
-    """ Tags for an entry """
+    """ Tags available for entries """
     key = orm.PrimaryKey(str)
     name = orm.Required(str)
 
-    entries = orm.Set(Entry)
+    entries = orm.Set("EntryTagged")
+
+
+class EntryTagged(DbEntity):
+    """ Actual tag membership for entries """
+    entry = orm.Required(Entry)
+    tag = orm.Required(EntryTag)
+    hidden = orm.Required(bool)
+
+    orm.composite_key(entry, tag)
+    orm.composite_key(tag, entry)
 
 
 class Category(DbEntity):
