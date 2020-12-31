@@ -28,7 +28,7 @@
 <ul>
 {% for entry in view(recurse=True,tag_filter=filter).entries %}
 <li><a href="{{entry.link}}">{{entry.title}}</a>: <ul>
-    {% for tag in entry.get_all('Tag') %}
+    {% for tag in entry.tags %}
     <li><a href="{{view.tag_add(tag).link}}">{{ tag }}</a> (<a href="{{view.tag_toggle(tag).link}}">T</a>)</li>
     {% endfor %}
 </ul></li>

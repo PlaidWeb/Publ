@@ -180,7 +180,7 @@ class Entry(caching.Memoizable):
                 raise ValueError(f"Unknown paging type '{paging}'")
 
             if tag:
-                args['tag'] = tag
+                args['tag'] = list(utils.TagSet(utils.as_list(tag)).keys())
 
             return flask.url_for('category', **args, _external=absolute)
 
@@ -193,7 +193,7 @@ class Entry(caching.Memoizable):
 
     @cached_property
     def tags(self) -> typing.List[str]:
-        """ Get the original (non-normalized) tags for the entry """
+        """ Get the original (non-normalized, non-folded) tags for the entry """
         return self.get_all('Tag')
 
     @cached_property
@@ -858,34 +858,46 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     with orm.db_session:
         set_tags = {
-            t.casefold(): t
-            for t in entry.get_all('Tag', [])
-            + entry.get_all('Hidden-Tag', [])
+            t[0].casefold(): t
+            for t in [(k, True) for k in entry.get_all('Hidden-Tag', [])]
+            + [(k, False) for k in entry.get_all('Tag', [])]
         }
         LOGGER.debug("set_tags %s", set_tags)
         remove_tags = []
 
-        for tag in record.tags:
-            LOGGER.debug("  has tag %s,%s", tag.key, tag.name)
-            if tag.key not in set_tags:
-                remove_tags.append(tag)
+        for etag in record.tags:
+            LOGGER.debug("  has tag %s,%s", etag.tag.key, etag.tag.name)
+            if etag.tag.key not in set_tags:
+                remove_tags.append(etag)
         LOGGER.debug("set_tags %s remove_tags %s", set_tags, remove_tags)
 
-        for tag in remove_tags:
-            record.tags.remove(tag)
+        for etag in remove_tags:
+            tag = etag.tag
+            etag.delete()
             if len(tag.entries) == 0:
                 LOGGER.debug("tag %s/%s entry count went to 0", tag.key, tag.name)
                 tag.delete()
 
-        for (key, name) in set_tags.items():
+        for (key, tag) in set_tags.items():
+            name, hidden = tag
+
+            # get the underlying tag object
             tag_record = model.EntryTag.get(key=key)
             if not tag_record:
                 LOGGER.debug("creating tag %s/%s", key, name)
                 tag_record = model.EntryTag(key=key, name=name)
-            elif name != tag_record.name and not name.islower():
-                LOGGER.debug("updating tag name %s/%s -> %s", key, tag_record.name, name)
+            elif name != tag_record.name and not name.islower() and not hidden:
+                LOGGER.debug("updating tag name %s/%s -> %s",
+                             key, tag_record.name, name)
                 tag_record.name = name
-            record.tags.add(tag_record)
+
+            # get the tag placement object
+            etag = model.EntryTagged.get(tag=tag_record, entry=record)
+            if not etag:
+                etag = model.EntryTagged(tag=tag_record, entry=record, hidden=hidden)
+            else:
+                etag.hidden = hidden
+            record.tags.add(etag)
 
         orm.commit()
 

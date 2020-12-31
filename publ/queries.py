@@ -168,19 +168,23 @@ def where_entry_type_not(query, entry_type):
 
 def where_entry_tag(query, tags, operation: FilterCombiner):
     """ Generate a where clause for entries with the given tags """
-    tags = [t.lower() for t in utils.as_list(tags)]
+    tags = [t.key if isinstance(t, model.EntryTag) else t.casefold()
+            for t in utils.as_list(tags)]
 
     if operation == FilterCombiner.ANY:
-        return query.filter(lambda e: orm.exists(t for t in e.tags if t.key in tags))
+        return query.filter(lambda e: orm.exists(t for t in e.tags
+                                                 if t.tag.key in tags))
 
     if operation == FilterCombiner.ALL:
         for tag in tags:
-            query = query.filter(lambda e: orm.exists(t for t in e.tags if t.key == tag))
+            query = query.filter(lambda e: orm.exists(t for t in e.tags
+                                                      if t.tag.key == tag))
         return query
 
     if operation == FilterCombiner.NONE:
         for tag in tags:
-            query = query.filter(lambda e: not orm.exists(t for t in e.tags if t.key == tag))
+            query = query.filter(lambda e: not orm.exists(t for t in e.tags
+                                                          if t.tag.key == tag))
         return query
 
     raise InvalidQueryError("Unsupported FilterCombiner " + str(operation))

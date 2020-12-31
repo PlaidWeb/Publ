@@ -354,9 +354,9 @@ class View(caching.Memoizable):
                             raise ValueError(f"key {k} is of type {type(val)}")
                         break
 
-            taglist = self.spec.get('tag')
+            taglist = kwargs.get('tag', self.spec.get('tag'))
             if taglist:
-                args['tag'] = taglist if isinstance(taglist, str) else list(taglist)
+                args['tag'] = list(utils.TagSet(utils.as_list(taglist)).keys())
 
             return flask.url_for('category',
                                  **args,
