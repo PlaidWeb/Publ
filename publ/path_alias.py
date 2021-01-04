@@ -1,6 +1,7 @@
 # path_alias.py
 """ Handling for URL aliases """
 
+import logging
 import typing
 import urllib.parse
 
@@ -12,6 +13,8 @@ from . import model, user
 # redirection types
 PERMANENT = 301
 TEMPORARY = 302
+
+LOGGER = logging.getLogger(__name__)
 
 
 @orm.db_session
@@ -134,6 +137,7 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
 
     if not record or (record.entry and not record.entry.visible):
         url, permanent = current_app.test_path_regex(path)
+        LOGGER.debug("regex match: %s %s", url, permanent)
         return Response(redirect(url, PERMANENT if permanent else TEMPORARY)) if url else None
 
     alias_type = model.AliasType(record.alias_type)
@@ -142,31 +146,41 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
                 else record.entry.category if record.entry
                 else '')
 
-    template_name = record.template if record.template != 'index' else None
-
-    if record.entry and record.entry.auth:
-        cur_user = user.get_active()
-        if not record.entry.is_authorized(cur_user):
-            return AuthFailed(cur_user, record.entry, category)
-
-    if alias_type == model.AliasType.REDIRECT:
-        args = {'category': category} if category else {}
-
-        if record.template or not record.entry:
-            endpoint = 'category'
-            if template_name:
-                args['template'] = template_name
-            if record.entry:
-                args['id'] = record.entry.id
-        elif record.entry.redirect_url:
-            return Response(redirect(record.entry.redirect_url, PERMANENT))
-        else:
-            endpoint = 'entry'
-            args['entry_id'] = record.entry.id
-
-        return Response(redirect(url_for(endpoint, **args), PERMANENT))
-
     if record.entry:
-        return RenderEntry(record.entry, category, record.template)
+        if record.entry.auth:
+            LOGGER.debug("entry with auth")
+            cur_user = user.get_active()
+            if not record.entry.is_authorized(cur_user):
+                return AuthFailed(cur_user, record.entry, category)
 
-    return RenderCategory(category, record.template)
+        if record.entry.redirect_url:
+            LOGGER.debug("redirect URL: %s", record.entry.redirect_url)
+            return Response(redirect(record.entry.redirect_url, PERMANENT))
+
+    if alias_type == model.AliasType.MOUNT:
+        LOGGER.debug("mount entry=%s category=%s template=%s",
+                     record.entry, category, record.template)
+
+        if record.entry:
+            return RenderEntry(record.entry, category, record.template)
+
+        return RenderCategory(category, record.template)
+
+    LOGGER.debug("redirect entry=%s category=%s template=%s",
+                 record.entry, category, record.template)
+    args = {'category': category} if category else {}
+
+    if record.template or not record.entry:
+        endpoint = 'category'
+        if record.template and record.template != 'index':
+            args['template'] = record.template
+        if record.entry:
+            args['id'] = record.entry.id
+    else:
+        endpoint = 'entry'
+        args['entry_id'] = record.entry.id
+        if record.entry.slug_text:
+            args['slug_text'] = record.entry.slug_text
+
+    LOGGER.debug("endpoint=%s args=%s", endpoint, args)
+    return Response(redirect(url_for(endpoint, **args), PERMANENT))
