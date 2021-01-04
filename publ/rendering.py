@@ -300,7 +300,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         record = model.Entry.select(lambda e: e.category ==
                                     test_path and e.visible).exists()  # type:ignore
         if record:
-            return redirect(url_for('category', category=test_path, **request.args))
+            return redirect(url_for('category', category=test_path, **request.args),
+                            code=301)
 
         # nope, we just don't know what this is
         raise http_error.NotFound(f"No such view '{template}'")
@@ -468,7 +469,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     # if the entry canonically redirects, do that now
     if record.redirect_url:
         LOGGER.debug("Redirecting to %s", record.redirect_url)
-        return redirect(record.redirect_url)
+        return redirect(record.redirect_url, code=301)
 
     # check if the canonical URL matches
     if not _mounted:
