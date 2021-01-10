@@ -1,6 +1,6 @@
-Title: public 70
-Date: 2020-12-30 01:34:09-08:00
-Entry-ID: 1338
+Title: Public 70
+Entry-ID: 20700
+Date: 2021-01-10 12:34
 UUID: 44125a47-c295-5d88-80bf-715f1047e141
 
-Public entry 70
+public 70

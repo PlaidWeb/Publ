@@ -1,7 +1,7 @@
-Title: private 54
-Auth: friends test:54
-Date: 2020-12-30 01:33:53-08:00
-Entry-ID: 242
+Title: Private 54
+Auth: friends
+Entry-ID: 20541
+Date: 2021-01-10 12:34
 UUID: 49904c57-7588-5645-8eff-17c8e4399d97
 
-Private entry 54
+private 54

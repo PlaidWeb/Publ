@@ -1,7 +1,7 @@
-Title: private 46
-Auth: friends test:46
-Date: 2020-12-30 01:33:45-08:00
-Entry-ID: 1345
+Title: Private 46
+Auth: friends
+Entry-ID: 20461
+Date: 2021-01-10 12:34
 UUID: 4108fcec-a37a-5fd9-b93d-61dd077cdb7a
 
-Private entry 46
+private 46
