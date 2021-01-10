@@ -1,7 +1,7 @@
-Title: private 48
-Auth: friends test:48
-Date: 2020-12-30 01:33:47-08:00
-Entry-ID: 995
+Title: Private 48
+Auth: friends
+Entry-ID: 20481
+Date: 2021-01-10 12:34
 UUID: b110c497-279c-50fd-aa89-c0cd06f83756
 
-Private entry 48
+private 48

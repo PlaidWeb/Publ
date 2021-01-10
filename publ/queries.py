@@ -133,7 +133,10 @@ def where_entry_last(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date, e.id) <= (ref.local_date, ref.id))
+    # return query.filter(lambda e: (e.local_date, e.id) <= (ref.local_date, ref.id))
+    # workaround for https://github.com/ponyorm/pony/issues/579
+    return query.filter(lambda e: e.local_date < ref.local_date or
+                        (e.local_date == ref.local_date and e.id <= ref.id))
 
 
 def where_entry_first(query, ref):
@@ -143,7 +146,10 @@ def where_entry_first(query, ref):
     """
     if not ref:
         raise InvalidQueryError("Attempted to reference non-existent entry")
-    return query.filter(lambda e: (e.local_date, e.id) >= (ref.local_date, ref.id))
+    # return query.filter(lambda e: (e.local_date, e.id) >= (ref.local_date, ref.id))
+    # workaround for https://github.com/ponyorm/pony/issues/579
+    return query.filter(lambda e: e.local_date > ref.local_date or
+                        (e.local_date == ref.local_date and e.id >= ref.id))
 
 
 def where_entry_type(query, entry_type):

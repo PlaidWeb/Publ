@@ -1,7 +1,7 @@
-Title: private 8
-Auth: friends test:8
-Date: 2020-12-30 01:33:07-08:00
-Entry-ID: 1583
+Title: Private 8
+Auth: friends
+Entry-ID: 20081
+Date: 2021-01-10 12:34
 UUID: d89bd377-2a90-5bcc-b972-566b17494799
 
-Private entry 8
+private 8
