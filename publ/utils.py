@@ -29,7 +29,7 @@ ListLike = typing.Union[typing.List[T],
 TagAttr = typing.Union[str, bool, None]
 TagAttrs = typing.Dict[str, TagAttr]
 
-TagKey = slugify.Slugify(to_lower=True)
+_TagKey = slugify.Slugify(to_lower=True)
 
 
 class CallableProxy:
@@ -493,32 +493,32 @@ def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
     return tuple(argument)
 
 
+@functools.lru_cache()
+def tag_key(tag):
+    """ Given a tag, return its normalized key """
+    if isinstance(tag, str):
+        return _TagKey(tag)
+    if isinstance(tag, model.EntryTag):
+        return tag.key
+    if isinstance(tag, model.EntryTagged):
+        return tag.tag.key
+    raise ValueError(f"TagSet got non-tag-type {type(tag)}")
+
+
+def tag_cname(tag) -> str:
+    """ Get the canonical name of a tag from a name or key """
+    record = model.EntryTag.get(key=tag_key(tag))
+    if record:
+        return record.name
+    return tag
+
+
 class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
 
-    @staticmethod
-    @functools.lru_cache()
-    def get_key(tag):
-        """ Given a tag, return its normalized key """
-        if isinstance(tag, str):
-            return TagKey(tag)
-        if isinstance(tag, model.EntryTag):
-            return tag.key
-        if isinstance(tag, model.EntryTagged):
-            return tag.tag.key
-        raise ValueError(f"TagSet got non-tag-type {type(tag)}")
-
-    @staticmethod
-    def get_cname(tag) -> str:
-        """ Get the canonical name of a tag from a name or key """
-        record = model.EntryTag.get(key=TagSet.get_key(tag))
-        if record:
-            return record.name
-        return tag
-
     def __init__(self, contents: ListLike[str] = None):
         if contents:
-            storage = {self.get_key(v): self.get_cname(v) for v in contents}
+            storage = {tag_key(v): tag_cname(v) for v in contents}
             self._keys = frozenset(storage.keys())
             self._values = frozenset(storage.values())
         else:
@@ -526,7 +526,7 @@ class TagSet(typing.Set[str]):
             self._values = frozenset()
 
     def __contains__(self, key) -> bool:
-        return self.get_key(key) in self._keys
+        return tag_key(key) in self._keys
 
     def __iter__(self):
         return self._values.__iter__()
@@ -545,19 +545,19 @@ class TagSet(typing.Set[str]):
 
     @staticmethod
     def _fold(items):
-        return {TagSet.get_key(k) for k in items}
+        return {tag_key(k) for k in items}
 
     def __and__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if self.get_key(k) in folded))
+        return TagSet((k for k in self if tag_key(k) in folded))
 
     def __xor__(self, other):
         folded = self._fold(self) ^ self._fold(other)
-        return TagSet((k for k in self | other if self.get_key(k) in folded))
+        return TagSet((k for k in self | other if tag_key(k) in folded))
 
     def __sub__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if self.get_key(k) not in folded))
+        return TagSet((k for k in self if tag_key(k) not in folded))
 
     def __len__(self):
         return len(self._values)

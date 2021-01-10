@@ -150,16 +150,16 @@ def test_tagset_membership(mocker):
         assert item in tags
         assert item.lower() in tags
         assert item.upper() in tags
-        assert utils.TagKey(item) in tags
+        assert utils.tag_key(item) in tags
 
     for item in tags:
-        assert utils.TagKey(item) in {utils.TagKey(t) for t in items}
+        assert utils.tag_key(item) in {utils.tag_key(t) for t in items}
 
     for item in others:
         assert item not in tags
         assert item.lower() not in tags
         assert item.upper() not in tags
-        assert utils.TagKey(item) not in tags
+        assert utils.tag_key(item) not in tags
 
 
 def test_tagset_operators(mocker):

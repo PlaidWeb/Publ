@@ -858,7 +858,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     with orm.db_session:
         set_tags = {
-            utils.TagKey(t[0]): t
+            utils.tag_key(t[0]): t
             for t in [(k, True) for k in entry.get_all('Hidden-Tag', [])]
             + [(k, False) for k in entry.get_all('Tag', [])]
         }
