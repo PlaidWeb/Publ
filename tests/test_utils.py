@@ -7,6 +7,27 @@ import pytest
 from publ import utils
 
 
+class MockEntryTag:
+    """ mock class for EntryTags """
+    # pylint:disable=too-few-public-methods
+
+    def __init__(self, key, name):
+        self.key = key
+        self.name = name
+
+    def __repr__(self):
+        return repr((self.key, self.name))
+
+    def __str__(self):
+        return repr(self)
+
+    @staticmethod
+    def get(key):
+        if isinstance(key, str) and key.islower():
+            return MockEntryTag(key, key.title())
+        return None
+
+
 def test_callable_proxy():
     """ Tests of the CallableProxy class """
 
@@ -104,9 +125,11 @@ def test_callablevalue():
         assert not falsy
 
 
-def test_tagset_membership():
+def test_tagset_membership(mocker):
     """ Membership tests for TagSet """
     from publ.utils import TagSet
+
+    mocker.patch('publ.model.EntryTag', MockEntryTag)
 
     items = ('a', 'S', 'd', 'F')
     others = ('Q', 'w', 'E', 'r')
@@ -127,21 +150,23 @@ def test_tagset_membership():
         assert item in tags
         assert item.lower() in tags
         assert item.upper() in tags
-        assert item.casefold() in tags
+        assert utils.TagKey(item) in tags
 
     for item in tags:
-        assert item.casefold() in {t.casefold() for t in items}
+        assert utils.TagKey(item) in {utils.TagKey(t) for t in items}
 
     for item in others:
         assert item not in tags
         assert item.lower() not in tags
         assert item.upper() not in tags
-        assert item.casefold() not in tags
+        assert utils.TagKey(item) not in tags
 
 
-def test_tagset_operators():
+def test_tagset_operators(mocker):
     """ Test operators  on TagSet """
     from publ.utils import TagSet
+
+    mocker.patch('publ.model.EntryTag', MockEntryTag)
 
     assert TagSet(('a', 's', 'D', 'F')) == TagSet(('A', 'S', 'd', 'f'))
     assert TagSet(('a', 's', 'D', 'F')) == {'A', 'S', 'd', 'f'}
@@ -202,8 +227,10 @@ def test_make_tag():
     assert utils.make_tag('a', {'href': escaped}) == '<a href="&amp;">'
 
 
-def test_listlike():
+def test_listlike(mocker):
     """ test functions involving the ListLike inference class """
+    mocker.patch('publ.model.EntryTag', MockEntryTag)
+
     assert utils.is_list((1, 2, 3))
     assert utils.is_list([])
     assert utils.is_list([1, 2, 3])

@@ -858,7 +858,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     with orm.db_session:
         set_tags = {
-            t[0].casefold(): t
+            utils.TagKey(t[0]): t
             for t in [(k, True) for k in entry.get_all('Hidden-Tag', [])]
             + [(k, False) for k in entry.get_all('Tag', [])]
         }
@@ -886,7 +886,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             if not tag_record:
                 LOGGER.debug("creating tag %s/%s", key, name)
                 tag_record = model.EntryTag(key=key, name=name)
-            elif name != tag_record.name and not name.islower() and not hidden:
+            elif name != tag_record.name and name != key and not hidden:
                 LOGGER.debug("updating tag name %s/%s -> %s",
                              key, tag_record.name, name)
                 tag_record.name = name

@@ -13,6 +13,7 @@ import urllib.parse
 
 import arrow
 import flask
+import slugify
 import werkzeug.routing
 
 from . import model
@@ -27,6 +28,8 @@ ListLike = typing.Union[typing.List[T],
                         typing.Set[T]]
 TagAttr = typing.Union[str, bool, None]
 TagAttrs = typing.Dict[str, TagAttr]
+
+TagKey = slugify.Slugify(to_lower=True)
 
 
 class CallableProxy:
@@ -494,22 +497,36 @@ class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
 
     @staticmethod
-    def _get_key(tag):
+    @functools.lru_cache()
+    def get_key(tag):
+        """ Given a tag, return its normalized key """
         if isinstance(tag, str):
-            return tag.casefold()
+            return TagKey(tag)
         if isinstance(tag, model.EntryTag):
             return tag.key
         if isinstance(tag, model.EntryTagged):
             return tag.tag.key
         raise ValueError(f"TagSet got non-tag-type {type(tag)}")
 
+    @staticmethod
+    def get_cname(tag) -> str:
+        """ Get the canonical name of a tag from a name or key """
+        record = model.EntryTag.get(key=TagSet.get_key(tag))
+        if record:
+            return record.name
+        return tag
+
     def __init__(self, contents: ListLike[str] = None):
-        storage = {self._get_key(v): v for v in contents} if contents else {}
-        self._keys = frozenset(storage.keys())
-        self._values = frozenset(storage.values())
+        if contents:
+            storage = {self.get_key(v): self.get_cname(v) for v in contents}
+            self._keys = frozenset(storage.keys())
+            self._values = frozenset(storage.values())
+        else:
+            self._keys = frozenset()
+            self._values = frozenset()
 
     def __contains__(self, key) -> bool:
-        return self._get_key(key) in self._keys
+        return self.get_key(key) in self._keys
 
     def __iter__(self):
         return self._values.__iter__()
@@ -528,19 +545,19 @@ class TagSet(typing.Set[str]):
 
     @staticmethod
     def _fold(items):
-        return {TagSet._get_key(k) for k in items}
+        return {TagSet.get_key(k) for k in items}
 
     def __and__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if self._get_key(k) in folded))
+        return TagSet((k for k in self if self.get_key(k) in folded))
 
     def __xor__(self, other):
         folded = self._fold(self) ^ self._fold(other)
-        return TagSet((k for k in self | other if self._get_key(k) in folded))
+        return TagSet((k for k in self | other if self.get_key(k) in folded))
 
     def __sub__(self, other):
         folded = self._fold(other)
-        return TagSet((k for k in self if self._get_key(k) not in folded))
+        return TagSet((k for k in self if self.get_key(k) not in folded))
 
     def __len__(self):
         return len(self._values)
