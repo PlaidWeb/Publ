@@ -168,8 +168,7 @@ def where_entry_type_not(query, entry_type):
 
 def where_entry_tag(query, tags, operation: FilterCombiner):
     """ Generate a where clause for entries with the given tags """
-    tags = [t.key if isinstance(t, model.EntryTag) else t.casefold()
-            for t in utils.as_list(tags)]
+    tags = [utils.tag_key(t) for t in utils.as_list(tags)]
 
     if operation == FilterCombiner.ANY:
         return query.filter(lambda e: orm.exists(t for t in e.tags

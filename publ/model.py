@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 
 class GlobalConfig(DbEntity):
