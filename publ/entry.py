@@ -644,7 +644,6 @@ class Entry(caching.Memoizable):
         category = kwargs.get('category', self._record.category)
         return {
             'category': category,
-            'recurse': kwargs.get('recurse', 'category' in kwargs)
         }
 
     def get(self, name, default=None) -> typing.Optional[str]:
