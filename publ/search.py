@@ -20,7 +20,7 @@ class SearchIndex:
             title=whoosh.fields.TEXT,
             content=whoosh.fields.TEXT,
             published=whoosh.fields.DATETIME,
-            tags=whoosh.fields.KEYWORD(lowercase=True, commas=True),
+            tag=whoosh.fields.KEYWORD(lowercase=True, commas=True),
             category=whoosh.fields.TEXT)
 
         if not os.path.exists(config.search_index):
@@ -42,11 +42,14 @@ class SearchIndex:
                 title=record.title,
                 content=entry_file.get_payload(),
                 published=record.utc_date,
-                tags=','.join(entry_file.get_all('tag') or []),
+                tag=','.join(entry_file.get_all('tag') or []),
                 category=record.category)
 
-    def search(self, query: str):
+    def query(self, query: str, limit=20):
         """ Searches with a text query """
         with self.index.searcher() as searcher:
-            results = searcher.search(self.query_parser.parse("content", query))
-            return [entry.Entry.load(model.Entry.get(id=int(hit['entry_id']))) for hit in results]
+            parsed = self.query_parser.parse(query)
+            print(f"QUERY: {query} -> {parsed}")
+            results = searcher.search(parsed)
+            return [entry.Entry.load(model.Entry.get(id=int(hit['entry_id'])))
+                    for hit in results]
