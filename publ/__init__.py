@@ -145,11 +145,6 @@ This configuration value will stop being supported in Publ 0.6.
 
         caching.init_app(self, self.publ_config.cache)
 
-        self.search_index = search.SearchIndex(self.publ_config)
-        self.jinja_env.globals.update(  # pylint: disable=no-member
-            search=self.search_index.query,
-        )
-
         def logout(redir=''):
             """ Log out from the thing """
             if flask.request.method == 'POST':
@@ -299,6 +294,11 @@ This configuration value will stop being supported in Publ 0.6.
 
         with self.app_context():
             model.setup(self.publ_config.database_config)
+
+            self.search_index = search.SearchIndex(self.publ_config)
+            self.jinja_env.globals.update(  # pylint: disable=no-member
+                search=self.search_index.query,
+            )
 
             import click
 

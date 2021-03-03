@@ -10,12 +10,14 @@ import whoosh.index
 import whoosh.qparser
 import whoosh.query
 import whoosh.writing
+from pony import orm
 from werkzeug.utils import cached_property
 
 from . import model, tokens, user, utils
 from .entry import Entry
 
 LOGGER = logging.getLogger(__name__)
+SCHEMA_VERSION = 1
 
 
 class SearchResults:
@@ -24,7 +26,8 @@ class SearchResults:
     def __init__(self, results):
         self._entries = [record
                          for record in [model.Entry.get(id=int(hit['entry_id']))
-                                        for hit in results] if record]
+                                        for hit in results]
+                         if record and record.visible]
 
     @cached_property
     def has_unauthorized(self):
@@ -75,10 +78,22 @@ class SearchIndex:
         if not os.path.exists(config.search_index):
             os.mkdir(config.search_index)
 
-        if not whoosh.index.exists_in(config.search_index):
-            self.index = whoosh.index.create_in(config.search_index, self.schema)
-        else:
-            self.index = whoosh.index.open_dir(config.search_index)
+        with orm.db_session:
+            version = model.GlobalConfig.get(key='search_index_version')
+
+            if (not whoosh.index.exists_in(config.search_index)
+                or not version
+                    or version.int_value != SCHEMA_VERSION):
+                # either the index doesn't exist or it's got the wrong schema;
+                # (re)create it
+                self.index = whoosh.index.create_in(config.search_index, self.schema)
+                if version:
+                    version.int_value = SCHEMA_VERSION
+                else:
+                    version = model.GlobalConfig(key='search_index_version',
+                                                 int_value=SCHEMA_VERSION)
+            else:
+                self.index = whoosh.index.open_dir(config.search_index)
 
         self.query_parser = whoosh.qparser.QueryParser("content", self.index.schema)
 
@@ -88,6 +103,11 @@ class SearchIndex:
         """
 
         if not self.index:
+            return
+
+        if record.status not in (model.PublishStatus.PUBLISHED.value,
+                                 model.PublishStatus.SCHEDULED.value):
+            self.index.delete_by_term("entry_id", str(record.id))
             return
 
         with whoosh.writing.AsyncWriter(self.index) as writer:
