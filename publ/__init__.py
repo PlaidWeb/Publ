@@ -14,7 +14,7 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
 from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, user, utils, view)
+               model, rendering, search, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -193,6 +193,7 @@ This configuration value will stop being supported in Publ 0.6.
 
         self._maint = maintenance.Maintenance(self)
         self.indexer = index.Indexer(self, self.publ_config.index_wait_time)
+        self.search_index = search.SearchIndex(self.publ_config)
 
         if self.publ_config.index_rescan_interval:
             self._maint.register(functools.partial(index.scan_index,

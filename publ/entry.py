@@ -524,10 +524,15 @@ class Entry(caching.Memoizable):
                 counter=counter
             )
 
-        return html_entry.process(
+        text = html_entry.process(
             text,
             args,
             search_path=self.search_path)
+
+        if not args.get('markup', True):
+            text = html_entry.strip_html(text)
+
+        return text
 
     @cached_property
     def attachments(self) -> typing.Callable[..., typing.List]:
@@ -944,6 +949,9 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     elif fixup_needed:
         LOGGER.info("Fixing up entry %s", fullpath)
         result = save_file(fullpath, entry, check_fingerprint)
+
+    # register with the search index
+    flask.current_app.search_index.update(record, entry)
 
     return result
 

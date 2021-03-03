@@ -55,6 +55,9 @@ class _Defaults:
     auth_log_prune_interval = 3600
     auth_log_prune_age = 86400 * 30  # one month
 
+    # Full-text search directory
+    search_index = '_index'
+
 
 class Config(_Defaults):
     """ Stores configuration for a Publ app """

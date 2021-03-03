@@ -22,6 +22,7 @@ pony = "^0.7.14"
 Pygments = "^2.7.3"
 watchdog = "^1.0.2"
 Werkzeug = "^1.0.1"
+Whoosh = "^2.7.4"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.3"
