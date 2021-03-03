@@ -52,6 +52,13 @@
 <div id="content">
 
     <div class="nav">
+    <form method="GET">
+        <input type="text" name="q" value="{{request.args.q}}" placeholder="Query">
+        <input type="submit" value="Search">
+    </form>
+    </div>
+
+    <div class="nav">
         {% if content.previous %}
         <a href="{{content.previous.link}}" class="previous">Previous page</a>
         {% endif %}
@@ -62,6 +69,11 @@
     </div>
 
     <div class="entries">
+    {% if request.args.q %}
+    <p>Showing search results for <strong>{{request.args.q}}</strong></p>
+    {% set content = search(request.args.q, count=20, category=category,recurse=True) %}
+    {% endif %}
+
     {% block entries scoped %}
 
         {% if not user and content.has_unauthorized %}

@@ -1,6 +1,8 @@
 """ Full-text search stuff """
+import email
 import logging
 import os
+import typing
 
 import whoosh
 import whoosh.fields
@@ -8,16 +10,60 @@ import whoosh.index
 import whoosh.qparser
 import whoosh.query
 import whoosh.writing
+from werkzeug.utils import cached_property
 
-from . import entry, model
+from . import model, tokens, user, utils
+from .entry import Entry
 
 LOGGER = logging.getLogger(__name__)
+
+
+class SearchResults:
+    """ Result set from a full-text search """
+
+    def __init__(self, results):
+        self._entries = [record
+                         for record in [model.Entry.get(id=int(hit['entry_id']))
+                                        for hit in results] if record]
+
+    @cached_property
+    def has_unauthorized(self):
+        """ Returns whether there are any unauthorized entries present """
+
+        cur_user = user.get_active()
+
+        for record in self._entries:
+            if not record.is_authorized(cur_user):
+                tokens.request(cur_user)
+                return True
+        return False
+
+    @cached_property
+    def entries(self) -> typing.Callable[..., typing.List[Entry]]:
+        """ Returns the entries in the search results """
+        def _entries(unauthorized=0) -> typing.List[Entry]:
+            return Entry.filter_auth(self._entries, unauthorized=unauthorized)
+
+        return utils.CallableProxy(_entries)
+
+    def __iter__(self):
+        return self.entries().__iter__()
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __bool__(self):
+        return bool(self._entries)
 
 
 class SearchIndex:
     """ Full-text search index for all entries """
 
     def __init__(self, config):
+        if not config.search_index:
+            self.index = None
+            return
+
         self.schema = whoosh.fields.Schema(
             entry_id=whoosh.fields.ID(stored=True, unique=True),
             title=whoosh.fields.TEXT,
@@ -36,8 +82,13 @@ class SearchIndex:
 
         self.query_parser = whoosh.qparser.QueryParser("content", self.index.schema)
 
-    def update(self, record, entry_file):
-        """ Add an entry to the content index """
+    def update(self, record: model.Entry, entry_file: email.message.EmailMessage):
+        """
+        Add an entry to the content index
+        """
+
+        if not self.index:
+            return
 
         with whoosh.writing.AsyncWriter(self.index) as writer:
             writer.update_document(
@@ -48,9 +99,23 @@ class SearchIndex:
                 tag=','.join(entry_file.get_all('tag') or []),
                 category=record.category)
 
-    def query(self, query: str, category=None, recurse=False):
-        """ Searches with a text query """
+    def query(self, query: str,
+              category=None, recurse=False,
+              count=None, page=None):
+        """
+        Searches with a text query
+
+        :param category: The category to search on; None to avoid restriction
+        :param bool recurse: Whether to also match subcategories
+        :param int count: The number of entries per page
+        :param int page: The page number to retrieve
+        """
+        # pylint:disable=too-many-arguments
         LOGGER.debug('query: %s  category: %s  recurse: %s', query, category, recurse)
+
+        if not self.index:
+            return SearchResults([])
+
         with self.index.searcher() as searcher:
             parsed = self.query_parser.parse(query)
 
@@ -68,6 +133,9 @@ class SearchIndex:
                     parsed = whoosh.query.And([parsed, whoosh.query.Term("category", "")])
 
             LOGGER.debug('parse result: %s', parsed)
-            results = searcher.search(parsed)
-            return [entry.Entry.load(model.Entry.get(id=int(hit['entry_id'])))
-                    for hit in results]
+            if page is not None:
+                results = searcher.search_page(parsed, page, pagelen=count)
+            else:
+                results = searcher.search(parsed, limit=count)
+
+            return SearchResults(results)

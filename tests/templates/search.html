@@ -12,7 +12,7 @@
 <h1>Results</h1>
 
 <ul>
-{% for entry in search(request.args.q,category=category,recurse=True) %}
+{% for entry in search(request.args.q,category=category,recurse=True).entries %}
 <li><a href="{{entry.link}}">{{"🔐 " if entry.private else ""}}{{entry.title if entry.authorized else "(Protected entry)"}}</a>
 <blockquote>{{entry.summary}}</blockquote>
 </li>

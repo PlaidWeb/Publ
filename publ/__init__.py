@@ -130,8 +130,6 @@ This configuration value will stop being supported in Publ 0.6.
         self.register_error_handler(
             werkzeug.exceptions.HTTPException, rendering.render_exception)
 
-        self.search_index = search.SearchIndex(self.publ_config)
-
         self.jinja_env.globals.update(  # pylint: disable=no-member
             get_view=view.get_view,
             arrow=arrow,
@@ -141,12 +139,16 @@ This configuration value will stop being supported in Publ 0.6.
             logout=utils.auth_link('logout'),
             token_endpoint=utils.CallableProxy(lambda: utils.secure_link('token')),
             secure_url=utils.secure_link,
-            search=self.search_index.query,
         )
 
         self.jinja_env.filters['strip_html'] = html_entry.strip_html  # pylint: disable=no-member
 
         caching.init_app(self, self.publ_config.cache)
+
+        self.search_index = search.SearchIndex(self.publ_config)
+        self.jinja_env.globals.update(  # pylint: disable=no-member
+            search=self.search_index.query,
+        )
 
         def logout(redir=''):
             """ Log out from the thing """

@@ -56,7 +56,7 @@ class _Defaults:
     auth_log_prune_age = 86400 * 30  # one month
 
     # Full-text search directory
-    search_index = '_index'
+    search_index = None
 
 
 class Config(_Defaults):

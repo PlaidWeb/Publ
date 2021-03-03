@@ -121,23 +121,8 @@ class View(caching.Memoizable):
         """ Gets entries which are authorized for the current viewer """
 
         def _entries(unauthorized=0) -> typing.List[Entry]:
-            result: typing.List[Entry] = []
             count = self.spec.get('count')
-            cur_user = user.get_active()
-            for record in self._entries:
-                if count is not None and len(result) >= count:
-                    break
-
-                auth = record.is_authorized(cur_user)
-                if auth or unauthorized:
-                    result.append(Entry.load(record))
-                    if not auth and unauthorized is not True:
-                        unauthorized -= 1
-
-                if not auth:
-                    tokens.request(cur_user)
-
-            return result
+            return Entry.filter_auth(self._entries, count, unauthorized)
 
         return utils.CallableProxy(_entries)
 
