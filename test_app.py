@@ -27,6 +27,7 @@ config = {
         'CACHE_DEFAULT_TIMEOUT': 600,
         'CACHE_THRESHOLD': 20
     } if os.environ.get('TEST_CACHING') else {
+        'CACHE_TYPE': 'NullCache',
         'CACHE_NO_NULL_WARNING': True
     },
     'auth': {
