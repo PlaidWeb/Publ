@@ -48,7 +48,8 @@ config = {
     'user_list': os.path.join(APP_PATH, 'users.cfg'),
     'layout': {
         'max_width': 768,
-    }
+    },
+    'search_index': '_index'
 }
 
 app = publ.Publ(__name__, config)

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html><head><title>Search</title></head>
+<body>
+<h1>Entry Search</h1>
+
+<form method="GET">
+<input type="text" name="q" value="{{request.args.q}}" placeholder="Search text">
+<input type="submit" value="Go">
+</form>
+
+{% if request.args.q %}
+<h1>Results</h1>
+
+<ul>
+{% for entry in search(request.args.q,category=category,recurse=True).entries %}
+<li><a href="{{entry.link}}">{{"🔐 " if entry.private else ""}}{{entry.title if entry.authorized else "(Protected entry)"}}</a>
+<blockquote>{{entry.summary}}</blockquote>
+</li>
+{% endfor %}
+</ul>
+
+{% endif %}
+</body>
+</html>

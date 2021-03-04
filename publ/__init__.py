@@ -14,7 +14,7 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
 from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, user, utils, view)
+               model, rendering, search, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -294,6 +294,11 @@ This configuration value will stop being supported in Publ 0.6.
 
         with self.app_context():
             model.setup(self.publ_config.database_config)
+
+            self.search_index = search.SearchIndex(self.publ_config)
+            self.jinja_env.globals.update(  # pylint: disable=no-member
+                search=self.search_index.query,
+            )
 
             import click
 

@@ -316,6 +316,10 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """
         # pylint: disable=too-many-locals
 
+        # If we aren't generating markup, there's no reason to do any of this
+        if not self._config.get('markup', True):
+            return ' '
+
         text = ''
 
         image_specs = raw_url
@@ -453,6 +457,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         * ``absolute``: Whether to produce absolute/external, rather than relative,
           links (default: ``False``)
         """
+
+        if not self._config.get('markup', True):
+            return content
 
         link = links.resolve(link, self._search_path,
                              self._config.get('absolute'))

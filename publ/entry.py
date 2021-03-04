@@ -50,9 +50,7 @@ class Entry(caching.Memoizable):
 
         assert create_key == Entry.load.__name__, "Entry must be created with Entry.load()"
 
-        LOGGER.debug('init entry %d', record.id)
         self._record = record   # index record
-
         self._fingerprint = model.FileFingerprint.get(file_path=record.file_path)
         LOGGER.debug('loaded entry %d, fingerprint=%s', record.id,
                      self._fingerprint.fingerprint if self._fingerprint else None)
@@ -366,7 +364,6 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _footnotes(**kwargs) -> str:
-            LOGGER.debug("rendering footnotes; args=%s", kwargs)
             return self._get_footnotes(body, more, kwargs)
 
         if is_markdown:
@@ -375,13 +372,10 @@ class Entry(caching.Memoizable):
 
             if ((body_count and body_count.footnote)
                     or (more_count and more_count.footnote)):
-                LOGGER.debug("We definitely have footnotes")
                 return TrueCallableProxy(_footnotes)
             if body_count is None or more_count is None:
-                LOGGER.debug("We might have footnotes")
                 return CallableProxy(_footnotes)
 
-        LOGGER.debug("There are definitely no footnotes")
         return CallableValue('')
 
     @cached_property
@@ -390,7 +384,6 @@ class Entry(caching.Memoizable):
         body, more, is_markdown = self._entry_content
 
         def _toc(max_depth=None, **kwargs) -> str:
-            LOGGER.debug("rendering table of contents; max_depth=%s kwargs=%s", max_depth, kwargs)
             return self._get_toc(body, more, max_depth, kwargs)
 
         if is_markdown:
@@ -399,14 +392,11 @@ class Entry(caching.Memoizable):
 
             if ((body_count and body_count.toc)
                     or (more_count and more_count.toc)):
-                LOGGER.debug("We definitely have a ToC")
                 return TrueCallableProxy(_toc)
 
             if body_count is None or more_count is None:
-                LOGGER.debug("We might have a ToC")
                 return CallableProxy(_toc)
 
-        LOGGER.debug("There is definitely no TOC")
         return CallableValue('')
 
     @cached_property
@@ -415,8 +405,6 @@ class Entry(caching.Memoizable):
 
         def _get_card(**kwargs) -> str:
             """ Render out the tags for a Twitter/OpenGraph card for this entry. """
-
-            LOGGER.debug("rendering card; args=%s", kwargs)
 
             def og_tag(key, val) -> str:
                 """ produce an OpenGraph tag with the given key and value """
@@ -524,10 +512,15 @@ class Entry(caching.Memoizable):
                 counter=counter
             )
 
-        return html_entry.process(
+        text = html_entry.process(
             text,
             args,
             search_path=self.search_path)
+
+        if not args.get('markup', True):
+            text = html_entry.strip_html(text)
+
+        return text
 
     @cached_property
     def attachments(self) -> typing.Callable[..., typing.List]:
@@ -613,9 +606,7 @@ class Entry(caching.Memoizable):
             raise ValueError("Unknown content section " + section)
 
         if text:
-            LOGGER.debug("Getting counters for %s,%s", section, footnotes)
             counter = markdown.get_counters(text, args)
-            LOGGER.debug("Caching %s:%s -> %s", section, footnotes, counter)
             self._counters[(section, footnotes)] = counter
             return counter
 
@@ -624,7 +615,6 @@ class Entry(caching.Memoizable):
     def _set_counter(self, section, args, counter: markdown.ItemCounter):
         """ Register the counts that we already know """
         footnotes = 'footnotes' in args.get('markdown_extensions', config.markdown_extensions)
-        LOGGER.debug("Registering %s:%s -> %s", section, footnotes, counter)
         self._counters[(section, footnotes)] = counter
 
     def __getattr__(self, name):
@@ -659,6 +649,28 @@ class Entry(caching.Memoizable):
             return other == self._record.id
         # pylint:disable=protected-access
         return isinstance(other, Entry) and (other is self or other._record == self._record)
+
+    @staticmethod
+    def filter_auth(entries, count=None, unauthorized=0):
+        """ Filter a list of entries based on authorization, with a maximum
+        unauthorized entry count """
+
+        result: typing.List[Entry] = []
+        cur_user = user.get_active()
+        for record in entries:
+            if count is not None and len(result) >= count:
+                break
+
+            auth = record.is_authorized(cur_user)
+            if auth or unauthorized:
+                result.append(Entry.load(record))
+                if not auth and unauthorized is not True:
+                    unauthorized -= 1
+
+            if not auth:
+                tokens.request(cur_user)
+
+        return result
 
 
 def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
@@ -861,7 +873,6 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             for t in [(k, True) for k in entry.get_all('Hidden-Tag', [])]
             + [(k, False) for k in entry.get_all('Tag', [])]
         }
-        LOGGER.debug("set_tags %s", set_tags)
         remove_tags = []
 
         for etag in record.tags:
@@ -944,6 +955,9 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     elif fixup_needed:
         LOGGER.info("Fixing up entry %s", fullpath)
         result = save_file(fullpath, entry, check_fingerprint)
+
+    # register with the search index
+    flask.current_app.search_index.update(record, entry)
 
     return result
 
