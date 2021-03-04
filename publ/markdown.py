@@ -619,10 +619,10 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
     if smartquotes:
         text = misaka.smartypants(text)
 
-    if not markup:
-        text = html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
+    if markup:
+        return flask.Markup(text)
 
-    return flask.Markup(text)
+    return html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
 
 
 def toc_to_html(toc: TocBuffer, max_level: int = None) -> str:
