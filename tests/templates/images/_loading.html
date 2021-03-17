@@ -1,0 +1,7 @@
+{% extends get_template('entry',entry) %}
+{# template for testing image-loading args at the template level #}
+
+{% block entrymore scoped %}
+<p>image-loading: {{entry['image-loading']}}</p>
+{{entry.more(image_loading=entry['image-loading'])}}
+{% endblock %}

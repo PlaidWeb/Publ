@@ -58,6 +58,8 @@ class Image(ABC):
         styles: typing.List[str] = []
         attrs = self._get_img_attrs(params, styles)
 
+        attrs['loading'] = params.get('image_loading', 'lazy')
+
         for key in ('img_style', 'style'):
             styles += utils.as_list(params.get(key))
 
@@ -91,9 +93,7 @@ class Image(ABC):
         Returns: an HTML fragment. """
 
         try:
-            attrs = {
-                **self.get_img_attrs(kwargs)
-            }
+            attrs = self.get_img_attrs(kwargs)
 
             if alt_text:
                 attrs['alt'] = alt_text
