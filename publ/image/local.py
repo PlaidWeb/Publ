@@ -312,7 +312,6 @@ class LocalImage(Image):
 
         mode = spec.get('resize', 'fit')
 
-        # rearranged the order as a workaround for https://github.com/PyCQA/pylint/issues/3328
         if mode == 'fill':
             return self._get_rendition_fill_size(spec, width, height, output_scale)
 
@@ -513,9 +512,8 @@ class LocalImage(Image):
         img_1x, img_2x, _ = self._get_renditions(kwargs)
 
         tmpl = f'background-image: url("{img_1x}");'
-        if img_1x != img_2x:
-            image_set = f'image-set(url("{img_1x}") 1x, url("{img_2x}") 2x)'
-            tmpl += f'background-image: {image_set};background-image: -webkit-{image_set};'
+        if img_2x and img_1x != img_2x:
+            tmpl += f'background-image: image-set(url("{img_1x}") 1x, url("{img_2x}") 2x);'
         return tmpl
 
     @staticmethod
