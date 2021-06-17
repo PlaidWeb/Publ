@@ -32,12 +32,14 @@ try:
 
     def guess_mimetype(path: str):
         """ Use libmagic """
+        LOGGER.debug("libmagic - %s", path)
         return magic.from_file(path, mime=True)
 except ImportError:
     import mimetypes
 
     def guess_mimetype(path: str):
         """ Use built-in mimetypes library """
+        LOGGER.debug("mimetypes - %s", path)
         return mimetypes.guess_type(path)[0]
 
 
@@ -45,9 +47,8 @@ class FileAsset(ExternalImage):
     """ An 'image' which is actually a static file asset """
 
     def __init__(self, record, search_path):
-        super().__init__(search_path)
+        super().__init__(search_path=search_path, mime_type=record.content_type)
         self.filename = record.asset_name
-        self.content_type = record.content_type
 
     def _key(self):
         return FileAsset, self.filename
@@ -60,7 +61,7 @@ class RemoteImage(ExternalImage):
     """ An image that points to a remote URL """
 
     def __init__(self, url, search_path):
-        super().__init__(search_path)
+        super().__init__(search_path=search_path)
         self.url = url
 
     def _key(self):
@@ -75,7 +76,8 @@ class StaticImage(ExternalImage):
     """ An image that points to a static resource """
 
     def __init__(self, path, search_path):
-        super().__init__(search_path)
+        super().__init__(search_path,
+                         guess_mimetype(os.path.join(config.static_folder, path)))
         self.path = path
 
     def _key(self):

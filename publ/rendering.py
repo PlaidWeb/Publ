@@ -560,12 +560,15 @@ def render_transparent_chit():
     LOGGER.debug("chit")
 
     if request.if_none_match.contains('chit') or request.if_modified_since:
-        return 'Not modified', 304
+        return '', 304
 
     out_bytes = base64.b64decode(
         "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-    return out_bytes, {'Content-Type': 'image/gif', 'ETag': 'chit',
-                       'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
+    return out_bytes, {
+        'Content-Type': 'image/gif',
+        'ETag': 'chit',
+        'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'
+    }
 
 
 @orm.db_session
@@ -578,4 +581,6 @@ def retrieve_asset(filename):
     if not record.is_asset:
         raise http_error.Forbidden()
 
-    return send_file(record.file_path, conditional=True)
+    return send_file(record.file_path,
+                     mimetype=record.content_type,
+                     conditional=True)

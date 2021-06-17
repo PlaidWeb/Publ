@@ -13,6 +13,10 @@ from .image import Image
 class ExternalImage(Image):
     """ Base class for images which are rendered by external means """
 
+    def __init__(self, search_path, mime_type=None):
+        super().__init__(search_path)
+        self.mime_type = mime_type
+
     @abstractmethod
     def _get_url(self, absolute):
         """ Implemented by subclasses to actually map the URL """
