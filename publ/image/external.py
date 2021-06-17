@@ -6,7 +6,10 @@ import urllib.parse
 from abc import abstractmethod
 
 import flask
+import requests
 
+from .. import utils
+from . import embed
 from .image import Image
 
 
@@ -56,7 +59,8 @@ class ExternalImage(Image):
                     width = width * max_height / height
                 height = max_height
 
-            if width and height and size_mode != 'stretch':
+            if (width and height and size_mode != 'stretch'
+                    and not spec.get('_no_resize_proxy')):
                 fill_crop_x = spec.get('fill_crop_x', 0.5) * 100
                 fill_crop_y = spec.get('fill_crop_y', 0.5) * 100
                 style_parts += [
@@ -78,6 +82,31 @@ class ExternalImage(Image):
                 style_parts.append(f'max-height:{max_height}px')
 
         return attrs
+
+    def get_img_tag(self,
+                    title: str = None,
+                    alt_text: str = None,
+                    _show_thumbnail: bool = True,
+                    **kwargs) -> str:
+        """ Try to get an appropriate tag to display this; if it's an image, use
+        the default <img> tag, otherwise make an appropriate embed """
+
+        tag, attrs, inner_html = embed.get_embed_data(self._get_url(absolute=True), self.mime_type)
+
+        if tag == 'img':
+            # This is an image so let's just fall back to the default image behavior
+            return super().get_img_tag(title, alt_text, _show_thumbnail, **kwargs)
+
+        attrs = {**attrs, **self.get_img_attrs({**kwargs, '_no_resize_proxy': True})}
+        if alt_text:
+            attrs['alt'] = alt_text
+        else:
+            attrs['alt'] = self._filename
+
+        if title:
+            attrs['title'] = title
+
+        return flask.Markup(utils.make_tag(tag, attrs, False) + inner_html + f'</{tag}>')
 
     def _css_background(self, **kwargs) -> str:
         """ Get the CSS background-image for the remote image """
