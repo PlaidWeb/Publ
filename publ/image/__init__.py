@@ -27,6 +27,19 @@ LOGGER = logging.getLogger(__name__)
 # Bump this if any defaults or processing changes
 RENDITION_VERSION = 1
 
+try:
+    import magic
+
+    def guess_mimetype(path: str):
+        """ Use libmagic """
+        return magic.from_file(path, mime=True)
+except ImportError:
+    import mimetypes
+
+    def guess_mimetype(path: str):
+        """ Use built-in mimetypes library """
+        return mimetypes.guess_type(path)[0]
+
 
 class FileAsset(ExternalImage):
     """ An 'image' which is actually a static file asset """
@@ -34,6 +47,7 @@ class FileAsset(ExternalImage):
     def __init__(self, record, search_path):
         super().__init__(search_path)
         self.filename = record.asset_name
+        self.content_type = record.content_type
 
     def _key(self):
         return FileAsset, self.filename
@@ -120,6 +134,7 @@ def _get_asset(file_path):
             'file_path': file_path,
             'checksum': md5.hexdigest(),
             'fingerprint': fingerprint,
+            'content_type': guess_mimetype(file_path)
         }
 
         try:

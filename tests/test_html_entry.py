@@ -56,7 +56,7 @@ def test_image_args():
     app = PublMock()
     with app.test_request_context("https://foo.bar/baz"):
         assert process('<img src="//example.com/image.png{500}">', {}, ()) == \
-            '<img src="//example.com/image.png" width="500">'
+            '<img src="//example.com/image.png" width="500" loading="lazy">'
 
 
 def test_process_strip_html():

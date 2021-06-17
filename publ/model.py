@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 
 
 class GlobalConfig(DbEntity):
@@ -179,6 +179,7 @@ class Image(DbEntity):
     width = orm.Optional(int)
     height = orm.Optional(int)
     transparent = orm.Optional(bool)
+    content_type = orm.Optional(str)
 
     is_asset = orm.Required(bool, default=False)
     asset_name = orm.Optional(str, index=True)

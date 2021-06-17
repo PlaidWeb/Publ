@@ -28,6 +28,7 @@ class Indexer:
 
     def __init__(self, app, wait_time: float):
         self._app = app
+        # pylint:disable=consider-using-with
         self._thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
             thread_name_prefix="Indexer")

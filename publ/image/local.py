@@ -74,6 +74,7 @@ class LocalImage(Image):
         """ Get the rendition threadpool """
         if not LocalImage._thread_pool:
             LOGGER.info("Starting LocalImage threadpool")
+            # pylint:disable=consider-using-with
             LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
                 thread_name_prefix="Renderer",
                 max_workers=config.image_render_threads)

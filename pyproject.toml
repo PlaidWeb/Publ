@@ -23,6 +23,7 @@ Pygments = "^2.7.3"
 watchdog = "^1.0.2"
 Werkzeug = "^1.0.1"
 Whoosh = "^2.7.4"
+python-magic = "^0.4.24"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.3"
