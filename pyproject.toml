@@ -10,7 +10,7 @@ homepage = "https://publ.beesbuzz.biz/"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-authl = "^0.4.2"
+authl = "^0.5.0"
 misaka = "^2.1.1"
 Pillow = "^8.0.1"
 arrow = "^0.17.0"
