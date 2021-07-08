@@ -179,6 +179,15 @@ This configuration value will stop being supported in Publ 0.6.
 
             self.before_request(user.log_user)
 
+            def add_token_endpoint(response):
+                endpoint = utils.secure_link("tokens", _external=True)
+                response.headers.add(
+                    'Link',
+                    f'<{endpoint}>; rel="token_endpoint"')
+                return response
+
+            self.after_request(add_token_endpoint)
+
             # Force the authl instance to load before the first request, after the
             # app has had a chance to set secret_key
             self.before_first_request(lambda: self.authl)
