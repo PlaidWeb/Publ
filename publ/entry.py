@@ -838,7 +838,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
         record = model.Entry(id=entry_id, **values)
 
     # Update the entry ID
-    if str(record.id) != entry['Entry-ID']:
+    if str(record.id) != entry['Entry-ID']:  # pylint:disable=no-member
         del entry['Entry-ID']
         entry['Entry-ID'] = str(record.id)
         fixup_needed = True

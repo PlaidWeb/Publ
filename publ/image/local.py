@@ -72,6 +72,7 @@ class LocalImage(Image):
     @staticmethod
     def thread_pool():
         """ Get the rendition threadpool """
+        # pylint:disable=consider-using-with
         if not LocalImage._thread_pool:
             LOGGER.info("Starting LocalImage threadpool")
             LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(

@@ -517,6 +517,7 @@ class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
 
     def __init__(self, contents: ListLike[str] = None):
+        super().__init__()
         if contents:
             storage = {tag_key(v): tag_cname(v) for v in contents}
             self._keys = frozenset(storage.keys())
