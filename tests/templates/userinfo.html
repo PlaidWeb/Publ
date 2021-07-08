@@ -22,7 +22,11 @@
         </ul></li>
     </ul>
 
-    <p>Auth token test: <code>curl -H 'Authorization: Bearer {{user.token(3600)}}' {{request.url}}</code></p>
+    <p>Auth token tests: <ul>
+        <li>No scope, 1-hour expiration: <code>curl -H 'Authorization: Bearer {{user.token(3600)}}' {{request.url}}</code></li>
+        <li>Read scope, 3-hour expiration: <code>curl -H 'Authorization: Bearer {{user.token(7200,scope='read')}}' {{url_for('tokens',_external=True)}}</code></li>
+
+    </ul></p>
     {% else %}
     No active user
     {% endif %}
