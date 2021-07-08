@@ -1,5 +1,5 @@
 """ Bearer token tests """
-# pylint:disable=missing-docstring
+# pylint:disable=missing-docstring,too-many-statements
 
 import json
 import logging
@@ -106,6 +106,14 @@ def test_ticketauth_flow(requests_mock):
         token = tokens.parse_token(stash['access_token'])
         assert token['me'] == 'https://foo.example/'
 
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["access_token"]}'
+        })
+        assert req.status_code == 200
+        assert req.headers['Content-Type'] == 'application/json'
+        verified = json.loads(req.data)
+        assert verified['me'] == 'https://foo.example/'
+
     # Login flow
     stash.clear()
     with app.test_request_context():
@@ -120,3 +128,11 @@ def test_ticketauth_flow(requests_mock):
         assert stash['me'] == 'https://bar.example/'
         token = tokens.parse_token(stash['access_token'])
         assert token['me'] == 'https://bar.example/'
+
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["access_token"]}'
+        })
+        assert req.status_code == 200
+        assert req.headers['Content-Type'] == 'application/json'
+        verified = json.loads(req.data)
+        assert verified['me'] == 'https://bar.example/'
