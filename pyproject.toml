@@ -21,7 +21,6 @@ Flask-Caching = "^1.9.0"
 pony = "^0.7.14"
 Pygments = "^2.7.3"
 watchdog = "^1.0.2"
-Werkzeug = "^1.0.1"
 Whoosh = "^2.7.4"
 
 [tool.poetry.dev-dependencies]
@@ -33,6 +32,7 @@ pylint = "^2.5.3"
 pytest = "^5.4.3"
 isort = "^4"
 pytest-mock = "^3.2.0"
+requests-mock = "^1.9.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
