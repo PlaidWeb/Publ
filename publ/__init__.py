@@ -14,7 +14,7 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
 from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, search, user, utils, view)
+               model, rendering, search, tokens, user, utils, view)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +69,8 @@ class Publ(flask.Flask):
             to all entries regardless of permissions
         * ``auth_log_prune_interval``: How frequently to prune the authentication log, in seconds
         * ``auth_log_prune_age``: How long to retain authentication log entries, in seconds
+        * ``ticket_lifetime``: How long an IndieAuth ticket lasts, in seconds
+        * ``token_lifetime``: How long an IndieAuth token lasts, in seconds
         """
         # pylint:disable=too-many-branches,too-many-statements
 
@@ -137,7 +139,7 @@ This configuration value will stop being supported in Publ 0.6.
             get_template=rendering.get_template,
             login=utils.auth_link('login'),
             logout=utils.auth_link('logout'),
-            token_endpoint=utils.CallableProxy(lambda: utils.secure_link('token')),
+            token_endpoint=utils.CallableProxy(lambda: utils.secure_link('tokens')),
             secure_url=utils.secure_link,
         )
 
@@ -172,7 +174,19 @@ This configuration value will stop being supported in Publ 0.6.
             ]:
                 self.add_url_rule(route, 'admin', rendering.admin_dashboard)
 
+            self.add_url_rule('/_tokens', 'tokens', tokens.indieauth_endpoint,
+                              methods=['GET', 'POST'])
+
             self.before_request(user.log_user)
+
+            def add_token_endpoint(response):
+                endpoint = utils.secure_link("tokens", _external=True)
+                response.headers.add(
+                    'Link',
+                    f'<{endpoint}>; rel="token_endpoint"')
+                return response
+
+            self.after_request(add_token_endpoint)
 
             # Force the authl instance to load before the first request, after the
             # app has had a chance to set secret_key

@@ -229,6 +229,12 @@ def register(verified: authl.disposition):
         else:
             record = model.KnownUser(user=identity, **values)
 
+        if (verified.profile
+            and 'endpoints' in verified.profile
+                and 'ticket_endpoint' in verified.profile['endpoints']):
+            tokens.send_auth_ticket(identity, flask.request.url_root,
+                                    verified.profile['endpoints']['ticket_endpoint'])
+
 
 @orm.db_session(retry=5)
 def log_user():
