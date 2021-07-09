@@ -11,7 +11,6 @@ import urllib.parse
 
 import arrow
 import authl.disposition
-import authl.handlers.indieauth
 import flask
 from pony import orm
 from werkzeug.utils import cached_property

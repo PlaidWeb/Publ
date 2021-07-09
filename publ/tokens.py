@@ -108,7 +108,7 @@ def indieauth_endpoint():
 
             ticket = parse_token(flask.request.form['ticket'])
             LOGGER.info("Redeeming ticket for %s; scopes=%s", ticket['me'],
-                ticket['scope'])
+                        ticket['scope'])
 
             scopes = set(ticket.get('scope', '').split())
             if 'ticket' not in scopes:
