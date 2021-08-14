@@ -316,8 +316,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """
         # pylint: disable=too-many-locals
 
-        # If we aren't generating markup, there's no reason to do any of this
-        if not self._config.get('markup', True):
+        # If we aren't generating images or markup, there's no reason to do any of this
+        if self._config.get('_suppress_images') or not self._config.get('markup', True):
             return ' '
 
         text = ''

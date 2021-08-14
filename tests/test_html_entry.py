@@ -108,3 +108,7 @@ def test_first_paragraph():
     processor = FirstParagraph()
     processor.feed('<div class="images"><img src="foo"></div>Bare text<p>foo</p>')
     assert processor.get_data() == '<div class="images"><img src="foo"></div>Bare text'
+
+    processor = FirstParagraph()
+    processor.feed('<p><img src="foo"></p><p>Para 1</p>')
+    assert processor.get_data() == '<p><img src="foo"></p><p>Para 1</p>'
