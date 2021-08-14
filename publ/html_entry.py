@@ -227,8 +227,8 @@ class FirstParagraph(utils.HTMLTransform):
 
 
 def first_paragraph(text):
+    """ Extract the first paragraph of text from an HTML document """
     first_para = FirstParagraph()
     first_para.feed(str(text))
     text = first_para.get_data()
-    text = strip_html(text, allowed_tags=('p',))
     return re.sub(r'<p> *</p>', r'', text)
