@@ -413,29 +413,8 @@ class Entry(caching.Memoizable):
             tags = og_tag('og:title', self.title(markup=False))
             tags += og_tag('og:url', self.link(absolute=True))
 
-            card = self._get_card_data(kwargs)
-            for (image, width, height) in card.images[:kwargs.get('count', 1)]:
-                tags += og_tag('og:image', image)
-                if width:
-                    tags += og_tag('og:image:width', width)
-                if height:
-                    tags += og_tag('og:image:height', height)
-            description = self.get('Summary', card.description)
-            if description:
-                tags += og_tag('og:description', description)
-
-            return flask.Markup(tags)
-
-        return CallableProxy(_get_card)
-
-    def _get_card_data(self, kwargs) -> cards.CardData:
-        body, more, is_markdown = self._entry_content
-
-        if body or more:
-            footnote: typing.List[str] = []
-            toc: markdown.TocBuffer = []
-            counter = markdown.ItemCounter()
-            html_text = self._get_markup(body or more,
+            body, more, is_markdown = self._entry_content
+            html_text = self._get_markup(body + '\n\n' + more,
                                          is_markdown,
                                          args={'count': 1,
                                                **kwargs,
@@ -443,32 +422,75 @@ class Entry(caching.Memoizable):
                                                "_suppress_footnotes": True,
                                                "_no_resize_external": True,
                                                "absolute": True},
-                                         footnote_buffer=footnote,
-                                         toc_buffer=toc,
-                                         counter=counter)
+                                         counter=markdown.ItemCounter())
+            card = cards.extract_card(html_text)
 
-            self._set_counter('body' if body else 'more',
-                              kwargs, counter)
-        else:
-            html_text = ''
+            for (image, width, height) in card.images[:kwargs.get('count', 1)]:
+                tags += og_tag('og:image', image)
+                if width:
+                    tags += og_tag('og:image:width', width)
+                if height:
+                    tags += og_tag('og:image:height', height)
 
-        return cards.extract_card(html_text)
+            description = self.summary(markup=False)
+            if description:
+                tags += og_tag('og:description', description)
+
+            return flask.Markup(tags)
+
+        return CallableProxy(_get_card)
 
     @cached_property
     def summary(self) -> typing.Callable[..., str]:
-        """ Get the entry's summary text """
+        """ Get the summary of the entry, falling back to the first paragraph if
+        not present. Accepts the following arguments:
 
-        def _get_summary(**kwargs) -> str:
-            """ Render out just the summary """
+        markup -- If True, convert it from Markdown to HTML; otherwise, strip
+            all markup (default: True)
+        no_smartquotes -- if True, preserve quotes and other characters as originally
+            presented
+        markdown_extensions -- a list of markdown extensions to use
+        always_show -- always show the title even if the current user is not
+            authorized to see the entry
+        """
+        def _summary(markup=True, markdown_extensions=None,
+                     always_show=False, **kwargs) -> str:
+            if not always_show and not self.authorized:
+                return ''
 
             summary = self.get('Summary')
             if summary:
-                return summary
+                smartquotes = kwargs.get('smartquotes', not kwargs.get('no_smartquotes', False))
+                return markdown.render_title(summary, markup, smartquotes,
+                                             markdown_extensions)
 
-            card = self._get_card_data(kwargs)
-            return flask.Markup((card.description or '').strip())
+            # We don't have a declared summary, so derive it from the first text paragraph
+            body, more, is_markdown = self._entry_content
 
-        return CallableProxy(_get_summary)
+            if body or more:
+                html_text = self._get_markup(body or more,
+                                             is_markdown,
+                                             args={'count': 1,
+                                                   **kwargs,
+                                                   "max_scale": 1,
+                                                   "_suppress_footnotes": True,
+                                                   "_no_resize_external": True,
+                                                   "absolute": True},
+                                             counter=markdown.ItemCounter())
+                processor = html_entry.FirstParagraph()
+                processor.feed(html_text)
+
+                html_text = processor.get_data()
+                if markup:
+                    return flask.Markup(html_text)
+
+                return html_entry.strip_html(
+                    html_text,
+                    remove_elements=markdown.PLAINTEXT_REMOVE_ELEMENTS)
+
+            return ''
+
+        return CallableProxy(_summary)
 
     @cached_property
     def last_modified(self) -> arrow.Arrow:
