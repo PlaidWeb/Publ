@@ -6,6 +6,10 @@
 
 {{entry.summary or '(no summary)'}}
 
+==Summary text (plaintext)==
+
+{{entry.summary(markup=False) or '(no summary)'}}
+
 ==Body text==
 
 {{entry.body or '(no body)'}}

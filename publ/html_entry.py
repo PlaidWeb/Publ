@@ -190,3 +190,37 @@ def strip_html(text,
     strip = HTMLStripper(allowed_tags, allowed_attrs, remove_elements)
     strip.feed(str(text))
     return re.sub(r' +', r' ', html.unescape(strip.get_data())).strip()
+
+
+class FirstParagraph(utils.HTMLTransform):
+    """ Get just the first paragraph out of an HTML document """
+
+    def __init__(self):
+        super().__init__()
+
+        self._consume = True
+        self._found = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == 'p':
+            if self._found:
+                self._consume = False
+            self._found = True
+
+        if self._consume:
+            self.append(utils.make_tag(tag, attrs))
+
+    def handle_endtag(self, tag):
+        if self._consume:
+            self.append(f'</{tag}>')
+        if tag.lower() == 'p':
+            self._consume = False
+
+    def handle_startendtag(self, tag, attrs):
+        if self._consume:
+            self.append(utils.make_tag(tag, attrs, True))
+
+    def handle_data(self, data):
+        self._found = True
+        if self._consume:
+            self.append(data)

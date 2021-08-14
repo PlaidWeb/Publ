@@ -88,3 +88,23 @@ def test_strip_html():
         assert strip_html(doc, ('br')) == 'blahboo<br/>'
 
         assert strip_html("this &amp; that") == "this & that"
+
+
+def test_first_paragraph():
+    from publ.html_entry import FirstParagraph
+
+    processor = FirstParagraph()
+    processor.feed('Bare text')
+    assert processor.get_data() == 'Bare text'
+
+    processor = FirstParagraph()
+    processor.feed('<p>Para 1</p><p>Para 2</p>')
+    assert processor.get_data() == '<p>Para 1</p>'
+
+    processor = FirstParagraph()
+    processor.feed('Bare text<p>Para 1</p>')
+    assert processor.get_data() == 'Bare text'
+
+    processor = FirstParagraph()
+    processor.feed('<div class="images"><img src="foo"></div>Bare text<p>foo</p>')
+    assert processor.get_data() == '<div class="images"><img src="foo"></div>Bare text'
