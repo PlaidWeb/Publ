@@ -470,17 +470,15 @@ class Entry(caching.Memoizable):
             if body or more:
                 html_text = self._get_markup(body or more,
                                              is_markdown,
-                                             args={'count': 1,
-                                                   **kwargs,
+                                             args={**kwargs,
+                                                   'markup': markup,
                                                    "max_scale": 1,
+                                                   "_suppress_images": True,
                                                    "_suppress_footnotes": True,
                                                    "_no_resize_external": True,
                                                    "absolute": True},
                                              counter=markdown.ItemCounter())
-                processor = html_entry.FirstParagraph()
-                processor.feed(html_text)
-
-                html_text = processor.get_data()
+                html_text = html_entry.first_paragraph(html_text)
                 if markup:
                     return flask.Markup(html_text)
 

@@ -182,6 +182,7 @@ def where_entry_tag(query, tags, operation: FilterCombiner):
 
     if operation == FilterCombiner.ALL:
         for tag in tags:
+            # pylint:disable=undefined-loop-variable
             query = query.filter(lambda e: orm.exists(t for t in e.tags
                                                       if t.tag.key == tag))
         return query

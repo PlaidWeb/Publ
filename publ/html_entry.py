@@ -205,7 +205,6 @@ class FirstParagraph(utils.HTMLTransform):
         if tag.lower() == 'p':
             if self._found:
                 self._consume = False
-            self._found = True
 
         if self._consume:
             self.append(utils.make_tag(tag, attrs))
@@ -213,7 +212,7 @@ class FirstParagraph(utils.HTMLTransform):
     def handle_endtag(self, tag):
         if self._consume:
             self.append(f'</{tag}>')
-        if tag.lower() == 'p':
+        if tag.lower() == 'p' and self._found:
             self._consume = False
 
     def handle_startendtag(self, tag, attrs):
@@ -221,6 +220,15 @@ class FirstParagraph(utils.HTMLTransform):
             self.append(utils.make_tag(tag, attrs, True))
 
     def handle_data(self, data):
-        self._found = True
+        if data.strip():
+            self._found = True
         if self._consume:
             self.append(data)
+
+
+def first_paragraph(text):
+    """ Extract the first paragraph of text from an HTML document """
+    first_para = FirstParagraph()
+    first_para.feed(str(text))
+    text = first_para.get_data()
+    return re.sub(r'<p> *</p>', r'', text)
