@@ -110,7 +110,7 @@ def _get_builtin(filename: str) -> typing.Optional[str]:
 
     builtin_file = os.path.join(os.path.dirname(__file__), 'default_template', filename)
     if os.path.isfile(builtin_file):
-        with open(builtin_file, 'r') as file:
+        with open(builtin_file, 'r', encoding='utf-8') as file:
             return file.read()
 
     return None

@@ -182,13 +182,14 @@ def where_entry_tag(query, tags, operation: FilterCombiner):
 
     if operation == FilterCombiner.ALL:
         for tag in tags:
-            # pylint:disable=undefined-loop-variable
+            # pylint:disable=undefined-loop-variable,cell-var-from-loop
             query = query.filter(lambda e: orm.exists(t for t in e.tags
                                                       if t.tag.key == tag))
         return query
 
     if operation == FilterCombiner.NONE:
         for tag in tags:
+            # pylint:disable=cell-var-from-loop
             query = query.filter(lambda e: not orm.exists(t for t in e.tags
                                                           if t.tag.key == tag))
         return query
