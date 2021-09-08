@@ -6,7 +6,7 @@ authors = ["fluffy <fluffy@beesbuzz.biz>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/PlaidWeb/Publ"
-homepage = "https://publ.beesbuzz.biz/"
+homepage = "https://publ.plaidweb.site/"
 
 [tool.poetry.dependencies]
 python = "^3.6"
