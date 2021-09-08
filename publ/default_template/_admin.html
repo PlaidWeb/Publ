@@ -208,8 +208,11 @@ td.profile:hover {
 {% if focus_user %}
 <section id="userinfo">
     {% with user=focus_user, profile=focus_user.profile %}
-    <h1>Profile for <a href="{{user.identity}}">{{user.humanize}}</a>
-    {% if user.name != user.humanize %}<span>({{user.name}})</span>{% endif %}</h1>
+    <h1>
+        Profile for <a href="{{user.identity}}">{{user.humanize}}</a>
+        {% if user.name != user.humanize %}<span>({{user.name}})</span>{% endif %}
+        {{list_groups(user.groups)}}
+    </h1>
 
     {% if profile.avatar %}
     <a class="avatar" href="{{profile.avatar}}"><img src="{{profile.avatar}}"></a>
