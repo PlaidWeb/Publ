@@ -87,12 +87,7 @@ class Publ(flask.Flask):
         self.publ_config = config.Config(cfg)
 
         if 'AUTH_FORCE_SSL' in self.publ_config.auth:
-            LOGGER.warning("""The configuration key AUTH_FORCE_SSL has been \
-deprecated in favor of AUTH_FORCE_HTTPS. Please change your configuration \
-accordingly.
-
-This configuration value will stop being supported in Publ 0.6.
-""")
+            raise ValueError('AUTH_FORCE_SSL is deprecated; use AUTH_FORCE_HTTPS instead')
 
         self._regex_map = []
 
