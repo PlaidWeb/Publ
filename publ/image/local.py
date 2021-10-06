@@ -520,17 +520,21 @@ class LocalImage(Image):
     @staticmethod
     def clean_cache(max_age):
         """ Clean the rendition cache of files older than max_age seconds """
-        LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age)
+        cache_dir = os.path.join(config.static_folder,
+                                 config.image_output_subdir)
+        LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age, cache_dir)
 
     @staticmethod
-    def _clean_cache(max_age):
+    def _clean_cache(max_age, cache_dir: str):
         threshold = time.time() - max_age
+        LOGGER.debug("Deleting image renditions older than %d from %s", threshold,
+                     cache_dir)
 
         # delete expired files
-        for root, _, files in os.walk(os.path.join(config.static_folder,
-                                                   config.image_output_subdir)):
+        for root, _, files in os.walk(cache_dir):
             for file in files:
                 path = os.path.join(root, file)
+                LOGGER.debug("checking %s (%d)", path, os.stat(path).st_mtime)
                 if os.path.isfile(path) and os.stat(path).st_mtime < threshold:
                     try:
                         os.unlink(path)
