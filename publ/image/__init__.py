@@ -236,12 +236,10 @@ def get_spec_list(image_specs: str, container_args: utils.ArgDict):
 def clean_cache(max_age: float):
     """ Clean the rendition cache of renditions which haven't been accessed in a while
 
-    Arguments:
-
-    max_age -- the TTL on a rendition, in seconds
+    :param max_age: the TTL on a rendition, in seconds
     """
 
-    LocalImage.clean_cache(max_age)
+    return LocalImage.clean_cache(max_age)
 
 
 def get_async(filename: str):
