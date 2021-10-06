@@ -522,7 +522,7 @@ class LocalImage(Image):
         """ Clean the rendition cache of files older than max_age seconds """
         cache_dir = os.path.join(config.static_folder,
                                  config.image_output_subdir)
-        LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age, cache_dir)
+        return LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age, cache_dir)
 
     @staticmethod
     def _clean_cache(max_age, cache_dir: str):
@@ -533,18 +533,19 @@ class LocalImage(Image):
         # delete expired files
         for root, _, files in os.walk(cache_dir):
             for file in files:
-                path = os.path.join(root, file)
-                LOGGER.debug("checking %s (%d)", path, os.stat(path).st_mtime)
-                if os.path.isfile(path) and os.stat(path).st_mtime < threshold:
-                    try:
+                try:
+                    path = os.path.join(root, file)
+                    mtime = os.stat(path).st_mtime
+                    LOGGER.debug("checking %s (%d)", path, mtime)
+                    if os.path.isfile(path) and mtime < threshold:
                         os.unlink(path)
                         LOGGER.info("Expired stale rendition %s (mtime=%d threshold=%d)",
-                                    path, os.stat(path).st_mtime, threshold)
-                    except FileNotFoundError:
-                        pass
-                if os.path.isdir(path) and next(os.scandir(path), None) is None:
-                    try:
-                        os.removedirs(path)
-                        LOGGER.info("Removed empty cache directory %s", path)
-                    except OSError:
-                        LOGGER.exception("Couldn't remove %s", path)
+                                    path, mtime, threshold)
+                except FileNotFoundError:
+                    pass
+            if next(os.scandir(root), None) is None:
+                try:
+                    os.removedirs(root)
+                    LOGGER.info("Removed empty cache directory %s", root)
+                except OSError:
+                    LOGGER.exception("Couldn't remove %s", root)

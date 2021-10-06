@@ -8,6 +8,7 @@ import flask
 from publ import config
 
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 class MockIndexer():
