@@ -321,10 +321,10 @@ def render_category_path(category: str, template: typing.Optional[str]):
         view=view_obj)
 
     if request.if_none_match.contains(etag):
-        return 'Not modified', 304
+        return 'Not modified', 304, {'ETag': f'"{etag}"'}
 
     return rendered, {'Content-Type': mime_type(tmpl),
-                      'ETag': etag}
+                      'ETag': f'"{etag}"'}
 
 
 @orm.db_session
