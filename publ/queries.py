@@ -274,12 +274,15 @@ def build_query(spec):
     query = model.Entry.select()
 
     # primarily restrict by publication status
-    if spec.get('_deleted', False):
+    if spec.get('_all', False):
+        pass
+    elif spec.get('_deleted', False):
         query = where_entry_deleted(query)
-    elif spec.get('future', False):
-        query = where_entry_visible_future(query)
     else:
-        query = where_entry_visible(query)
+        if spec.get('future', False):
+            query = where_entry_visible_future(query)
+        else:
+            query = where_entry_visible(query)
 
     # restrict by category
     if spec.get('category') is not None:
