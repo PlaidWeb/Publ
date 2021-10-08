@@ -114,7 +114,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
         '_all': all_entries,
     })
 
-    fname_slugify = slugify.UniqueSlugify(safe_chars='()[]', separator=' ')
+    fname_slugify = slugify.UniqueSlugify(separator=' ')
 
     for entry in entries:
         path = os.path.dirname(entry.file_path)
