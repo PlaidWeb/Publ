@@ -3,6 +3,7 @@ import email
 import logging
 import os
 import typing
+import datetime
 
 import whoosh
 import whoosh.fields
@@ -17,7 +18,7 @@ from . import model, tokens, user, utils
 from .entry import Entry
 
 LOGGER = logging.getLogger(__name__)
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class SearchResults:
@@ -73,7 +74,8 @@ class SearchIndex:
             content=whoosh.fields.TEXT,
             published=whoosh.fields.DATETIME,
             tag=whoosh.fields.KEYWORD(lowercase=True, commas=True),
-            category=whoosh.fields.ID)
+            category=whoosh.fields.ID,
+            status=whoosh.fields.NUMERIC)
 
         if not os.path.exists(config.search_index):
             os.mkdir(config.search_index)
@@ -115,13 +117,15 @@ class SearchIndex:
                 entry_id=str(record.id),
                 title=record.title,
                 content=entry_file.get_payload(),
-                published=record.utc_date,
+                published=datetime.datetime.fromtimestamp(record.utc_timestamp),
                 tag=','.join(entry_file.get_all('tag') or []),
-                category=record.category)
+                category=record.category,
+                status=record.status)
 
     def query(self, query: str,
               category=None, recurse=False,
-              count=None, page=None):
+              count=None, page=None,
+              future=False):
         """
         Searches with a text query
 
@@ -129,9 +133,11 @@ class SearchIndex:
         :param bool recurse: Whether to also match subcategories
         :param int count: The number of entries per page
         :param int page: The page number to retrieve
+        :param bool future: Whether to retrieve entries that aren't yet visible
         """
         # pylint:disable=too-many-arguments
-        LOGGER.debug('query: %s  category: %s  recurse: %s', query, category, recurse)
+        LOGGER.debug('query: %s  category: %s  recurse: %s  future: %s',
+            query, category, recurse, future)
 
         if not self.index:
             return SearchResults([])
@@ -151,6 +157,15 @@ class SearchIndex:
                 elif not recurse:
                     # We're in root and not recursing, so we need to match empty
                     parsed = whoosh.query.And([parsed, whoosh.query.Term("category", "")])
+
+            if not future:
+                parsed = whoosh.query.And([
+                    parsed,
+                    whoosh.query.Or([
+                        whoosh.query.Term("status", model.PublishStatus.PUBLISHED.value),
+                        whoosh.query.DateRange("published", None, datetime.datetime.now()),
+                        ])
+                    ])
 
             LOGGER.debug('parse result: %s', parsed)
             if page is not None:

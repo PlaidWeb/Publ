@@ -4,6 +4,12 @@
 <h1>Entry Search</h1>
 
 <form method="GET">
+    <input type="text" name="q" value="{{request.args.q}}" placeholder="Query">
+    <input type="submit" value="Search">
+    <input id="future_search" type="checkbox" name="f" value="1" {% if request.args.f %}checked{% endif %}><label for="future_search">Include future results</label>
+</form>
+
+<form method="GET">
 <input type="text" name="q" value="{{request.args.q}}" placeholder="Search text">
 <input type="submit" value="Go">
 </form>

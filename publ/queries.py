@@ -39,7 +39,7 @@ REVERSE_ORDER_BY = {
 }
 
 
-def where_entry_visible(query, date=None):
+def where_entry_visible(query, timestamp=None):
     """ Generate a where clause for currently-visible entries
 
     Arguments:
@@ -47,10 +47,12 @@ def where_entry_visible(query, date=None):
     date -- The date to generate it relative to (defaults to right now)
     """
 
+    ref_time = arrow.utcnow().float_timestamp if timestamp is None else timestamp
+
     return query.filter(lambda e:
                         e.status == model.PublishStatus.PUBLISHED.value or (
                             e.status == model.PublishStatus.SCHEDULED.value and (
-                                e.utc_date <= (date or arrow.utcnow().datetime))
+                                e.utc_timestamp <= ref_time)
                         ))
 
 
