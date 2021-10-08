@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 
 class GlobalConfig(DbEntity):
@@ -67,7 +67,7 @@ class Entry(DbEntity):
     status = orm.Required(int)
 
     # UNIX epoch, for ordering and visibility
-    utc_timestamp = orm.Required(int)
+    utc_timestamp = orm.Required(int, size=64)
 
     # arbitrary timezone, for pagination
     local_date = orm.Required(datetime.datetime)
