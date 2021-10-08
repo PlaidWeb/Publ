@@ -536,7 +536,7 @@ class TagSet(typing.Set[str]):
         return hash(self._keys)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__, set(self._values))
+        return f'{self.__class__}({set(self._values)})'
 
     def __str__(self):
         return str(set(self._values))

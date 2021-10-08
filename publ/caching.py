@@ -53,8 +53,9 @@ class Memoizable(ABC):
         """
 
     def __repr__(self):
-        return "{c}({k})".format(c=self.__class__.__name__,
-                                 k=self._key()).replace(' ', '_')
+        clss = self.__class__.__name__
+        key = self._key()
+        return f"{clss}({key})".replace(' ', '_')
 
     def __hash__(self):
         return hash(self._key())

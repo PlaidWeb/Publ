@@ -28,7 +28,7 @@ def reindex_command(quietly, fresh):
     while index.in_progress():
         if not quietly:
             qlen = index.queue_size() or ''
-            print("\rIndexing... %s %s        " % (next(spinner), qlen), end='', flush=True)
+            print(f"\rIndexing... {next(spinner)} {qlen}        ", end='', flush=True)
         time.sleep(0.1)
     if not quietly:
         print("Done")

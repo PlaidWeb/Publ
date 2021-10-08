@@ -182,7 +182,7 @@ def render_error(category, error_message, error_codes,
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
 
-    return '%d %s' % (error_code, error_message), error_code, headers
+    return f'{error_code} {error_message}', error_code, headers
 
 
 @orm.db_session

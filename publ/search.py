@@ -1,9 +1,9 @@
 """ Full-text search stuff """
+import datetime
 import email
 import logging
 import os
 import typing
-import datetime
 
 import whoosh
 import whoosh.fields
@@ -137,7 +137,7 @@ class SearchIndex:
         """
         # pylint:disable=too-many-arguments
         LOGGER.debug('query: %s  category: %s  recurse: %s  future: %s',
-            query, category, recurse, future)
+                     query, category, recurse, future)
 
         if not self.index:
             return SearchResults([])
@@ -164,8 +164,8 @@ class SearchIndex:
                     whoosh.query.Or([
                         whoosh.query.Term("status", model.PublishStatus.PUBLISHED.value),
                         whoosh.query.DateRange("published", None, datetime.datetime.now()),
-                        ])
                     ])
+                ])
 
             LOGGER.debug('parse result: %s', parsed)
             if page is not None:
