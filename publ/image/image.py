@@ -179,6 +179,7 @@ class Image(ABC):
             if not text or kwargs['link'] is False:
                 return text
 
+            # pylint:disable=consider-using-f-string
             return '{}{}</a>'.format(
                 utils.make_tag(
                     'a', {

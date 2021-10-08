@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 
 
 class GlobalConfig(DbEntity):
@@ -66,8 +66,8 @@ class Entry(DbEntity):
     category = orm.Optional(str)
     status = orm.Required(int)
 
-    # UTC-normalized, for ordering and visibility
-    utc_date = orm.Required(datetime.datetime)
+    # UNIX epoch, for ordering and visibility
+    utc_timestamp = orm.Required(int)
 
     # arbitrary timezone, for pagination
     local_date = orm.Required(datetime.datetime)
@@ -94,7 +94,7 @@ class Entry(DbEntity):
 
     canonical_path = orm.Optional(str)
 
-    orm.composite_index(category, entry_type, utc_date)
+    orm.composite_index(category, entry_type, utc_timestamp)
     orm.composite_index(category, entry_type, local_date)
     orm.composite_index(category, entry_type, sort_title)
 

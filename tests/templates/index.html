@@ -55,6 +55,7 @@
     <form method="GET">
         <input type="text" name="q" value="{{request.args.q}}" placeholder="Query">
         <input type="submit" value="Search">
+        <input id="future_search" type="checkbox" name="f" value="1" {% if request.args.f %}checked{% endif %}><label for="future_search">Include future results</label>
     </form>
     </div>
 
@@ -71,7 +72,7 @@
     <div class="entries">
     {% if request.args.q %}
     <p>Showing search results for <strong>{{request.args.q}}</strong></p>
-    {% set content = search(request.args.q, count=20, category=category,recurse=True) %}
+    {% set content = search(request.args.q, count=20, category=category,recurse=True,future=request.args.f) %}
     {% endif %}
 
     {% block entries scoped %}

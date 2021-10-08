@@ -119,7 +119,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
     def latest_entry():
         # Cache-busting query based on most recently-visible entry
         cb_query = queries.build_query({})
-        cb_query = cb_query.order_by(orm.desc(model.Entry.utc_date))
+        cb_query = cb_query.order_by(orm.desc(model.Entry.utc_timestamp))
         latest = cb_query.first()
         if latest:
             LOGGER.debug("Most recently-scheduled entry: %s", latest)
@@ -182,7 +182,7 @@ def render_error(category, error_message, error_codes,
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
 
-    return '%d %s' % (error_code, error_message), error_code, headers
+    return f'{error_code} {error_message}', error_code, headers
 
 
 @orm.db_session

@@ -1,5 +1,6 @@
 # markdown.py
 """ markdown formatting functionality """
+# pylint:disable=consider-using-f-string
 
 import html
 import logging
@@ -97,7 +98,7 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
         for i, line in source:
             if i == 1:
                 line_number += 1
-                line_id = "{}L{}".format(self.line_id_prefix, line_number)
+                line_id = f"{self.line_id_prefix}L{line_number}"
 
                 yield 1, (utils.make_tag('span', {'class': 'line',
                                                   'id': line_id})
@@ -161,10 +162,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         return num + self._footnote_ofs
 
     def _footnote_id(self, num, anchor):
-        return '{anchor}_e{eid}_fn{num}'.format(
-            anchor=anchor,
-            eid=self._entry_id,
-            num=self._footnote_num(num))
+        return f'{anchor}_e{self._entry_id}_fn{self._footnote_num(num)}'
 
     def _footnote_url(self, num, anchor):
         return urllib.parse.urljoin(self._config.get('footnotes_link', ''),
@@ -177,6 +175,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         * ``footnotes_class``: The class to apply to a footnote marker
         * ``footnotes_link``: The base URL for footnote links
         """
+
         if self._config.get('_suppress_footnotes'):
             return '\u200b'  # zero-width space to prevent Misaka fallback
 
@@ -200,6 +199,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         * ``footnotes_return``: The return symbol on an expanded footnote
           (default: ``'↩'``)
         """
+
         LOGGER.debug("footnote_def %d: %s", num, content)
 
         self._counter.footnote_def(content, num)

@@ -843,7 +843,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             fixup_needed = True
 
     values['display_date'] = entry_date.isoformat()
-    values['utc_date'] = entry_date.to('utc').datetime
+    values['utc_timestamp'] = entry_date.to('utc').int_timestamp
     values['local_date'] = entry_date.naive
 
     LOGGER.debug("getting entry %s with id %d", fullpath, entry_id)
