@@ -12,6 +12,7 @@ import urllib.parse
 import arrow
 import authl.disposition
 import flask
+import werkzeug.exceptions as http_error
 from pony import orm
 from werkzeug.utils import cached_property
 
@@ -172,11 +173,18 @@ class User(caching.Memoizable):
 @utils.stash
 def get_active() -> typing.Optional[User]:
     """ Get the active user """
+    if 'token_error' in flask.g:
+        # We already got an error trying to parse an access token
+        return None
+
     if 'Authorization' in flask.request.headers:
         parts = flask.request.headers['Authorization'].split()
         if parts[0].lower() == 'bearer':
             token = tokens.parse_token(parts[1])
             return User(token['me'], 'token', token.get('scope'))
+
+        flask.g.token_error = 'Malformed access token'
+        raise http_error.BadRequest('Malformed access token')
 
     if flask.session.get('me'):
         return User(flask.session['me'], 'session')

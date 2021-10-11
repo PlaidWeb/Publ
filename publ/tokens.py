@@ -35,8 +35,8 @@ def parse_token(token: str) -> typing.Dict[str, str]:
         ident, expires = signer().loads(token)
     except itsdangerous.BadData as error:
         LOGGER.error("Got token parse error: %s", error)
-        flask.g.token_error = error.message
-        raise http_error.Unauthorized(error.message)
+        flask.g.token_error = 'Invalid token'
+        raise http_error.Unauthorized('Invalid token') from error
 
     if expires < time.time():
         LOGGER.info("Got expired token for %s", ident['me'])
