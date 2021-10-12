@@ -51,9 +51,9 @@ def reindex_command(quietly, fresh):
 @publ_cli.command('token', short_help="Generate a bearer token")
 @click.argument('identity')
 @click.option('--scope', '-s', help="The token's permission scope")
-@click.option('--lifetime', '-l', help="The token's lifetime (in seconds)")
+@click.option('--lifetime', '-l', help="The token's lifetime (in seconds)", default=3600)
 @with_appcontext
-def token_command(identity, scope, lifetime=3600):
+def token_command(identity, scope, lifetime):
     """ Generates a bearer token for use with external applications. """
     from . import tokens
     print(tokens.get_token(identity, int(lifetime), scope))
@@ -114,7 +114,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
         '_all': all_entries,
     })
 
-    fname_slugify = slugify.UniqueSlugify(separator=' ')
+    fname_slugify = slugify.UniqueSlugify(max_length=100, safe_chars='-.', separator=' ')
 
     for entry in entries:
         path = os.path.dirname(entry.file_path)

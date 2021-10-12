@@ -50,7 +50,7 @@ config = {
     'layout': {
         'max_width': 768,
     },
-    'search_index': '_index'
+    'search_index': '_index',
 }
 
 app = publ.Publ(__name__, config)
