@@ -92,7 +92,8 @@ class User(caching.Memoizable):
     @cached_property
     def humanize(self) -> str:
         """ A humanized version of the identity string """
-        parsed = urllib.parse.urlparse(self._identity)
+        url = self.profile.get('profile_url', self._identity)
+        parsed = urllib.parse.urlparse(url)
         return ''.join(p for p in (
             f'{parsed.scheme}:' if parsed.scheme not in ('http', 'https') else '',
             parsed.netloc,

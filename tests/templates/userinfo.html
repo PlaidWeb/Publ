@@ -8,7 +8,7 @@
 <body>
     {% if user %}
     <ul>
-        <li>identity: <a href="{{user.identity}}">{{user.humanize}}</a></li>
+        <li>identity: <a href="{{user.identity}}">{{user.humanize}}</a> ({{user.identity}})</li>
         <li>name: {{user.name}}</li>
         <li>auth type: {{user.auth_type}}</li>
         <li>scope: {{user.scope}}</li>
