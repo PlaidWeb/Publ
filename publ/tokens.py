@@ -17,7 +17,8 @@ LOGGER = logging.getLogger(__name__)
 
 def signer():
     """ Gets the signer/validator for the tokens """
-    return itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
+    from .flask_wrapper import current_app
+    return itsdangerous.URLSafeSerializer(current_app.secret_key)
 
 
 def get_token(id_url: str, lifetime: int, scope: str = None) -> str:
@@ -35,12 +36,12 @@ def parse_token(token: str) -> typing.Dict[str, str]:
         ident, expires = signer().loads(token)
     except itsdangerous.BadData as error:
         LOGGER.error("Got token parse error: %s", error)
-        flask.g.token_error = 'Invalid token'
+        flask.g.token_error = 'Invalid token'  # pylint:disable=assigning-non-slot
         raise http_error.Unauthorized('Invalid token') from error
 
     if expires < time.time():
         LOGGER.info("Got expired token for %s", ident['me'])
-        flask.g.token_error = "Token expired"
+        flask.g.token_error = "Token expired"  # pylint:disable=assigning-non-slot
         raise http_error.Unauthorized("Token expired")
 
     return ident
@@ -55,7 +56,7 @@ def request(user):
     """
 
     if not user:
-        flask.g.needs_auth = True
+        flask.g.needs_auth = True  # pylint:disable=assigning-non-slot
 
 
 def send_auth_ticket(subject: str,
@@ -63,6 +64,7 @@ def send_auth_ticket(subject: str,
                      endpoint: str,
                      scope: str = None):
     """ Initiate the TicketAuth flow """
+    from .flask_wrapper import current_app
 
     def _submit():
         scopes = set(scope.split() if scope else [])
@@ -78,7 +80,7 @@ def send_auth_ticket(subject: str,
                     endpoint, subject, req.status_code, req.text)
 
     # Use the indexer's threadpool to issue the ticket in the background
-    flask.current_app.indexer.submit(_submit)
+    current_app.indexer.submit(_submit)
 
 
 def indieauth_endpoint():

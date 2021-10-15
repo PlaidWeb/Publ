@@ -5,7 +5,7 @@ import logging
 import typing
 import urllib.parse
 
-from flask import current_app, redirect, url_for
+from flask import redirect, url_for
 from pony import orm
 
 from . import model, user
@@ -132,6 +132,7 @@ class AuthFailed(Disposition):
 
 def get_alias(path: str) -> typing.Optional[Disposition]:
     """ Get a path's alias mapping """
+    from .flask_wrapper import current_app
 
     record = model.PathAlias.get(path=path)
 

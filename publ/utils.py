@@ -466,7 +466,7 @@ def stash(func: typing.Optional[typing.Callable] = None):
     def decorator(inner: typing.Callable):
         def wrapped_func(*args, **kwargs):
             if 'store' not in flask.g:
-                flask.g.store = {}
+                flask.g.store = {}  # pylint:disable=assigning-non-slot
             if inner not in flask.g.store:
                 flask.g.store[inner] = {}
             store = flask.g.store[inner]

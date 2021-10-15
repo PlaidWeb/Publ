@@ -184,7 +184,7 @@ def get_active() -> typing.Optional[User]:
             token = tokens.parse_token(parts[1])
             return User(token['me'], 'token', token.get('scope'))
 
-        flask.g.token_error = 'Malformed access token'
+        flask.g['token_error'] = 'Malformed access token'
         raise http_error.BadRequest('Malformed access token')
 
     if flask.session.get('me'):

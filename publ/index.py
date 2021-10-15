@@ -10,7 +10,6 @@ import typing
 
 import watchdog.events
 import watchdog.observers
-from flask import current_app
 from pony import orm
 
 from . import category, entry, model, utils
@@ -162,6 +161,7 @@ class Indexer:
 def last_indexed() -> typing.Optional[str]:
     """ information about the most recently indexed file, for cache-busting
     purposes """
+    from .flask_wrapper import current_app
     ref = current_app.indexer.last_indexed
     if ref:
         return get_last_fingerprint(ref)
@@ -170,11 +170,13 @@ def last_indexed() -> typing.Optional[str]:
 
 def queue_size() -> typing.Optional[int]:
     """ Return the approximate length of the work queue """
+    from .flask_wrapper import current_app
     return current_app.indexer.queue_size
 
 
 def in_progress() -> bool:
     """ Return if there's an index in progress """
+    from .flask_wrapper import current_app
     return current_app.indexer.in_progress
 
 
@@ -255,6 +257,7 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
 
 def background_scan(content_dir):
     """ Start background scanning a directory for changes """
+    from .flask_wrapper import current_app
     observer = watchdog.observers.Observer()
     observer.schedule(IndexWatchdog(current_app.indexer, content_dir),
                       content_dir, recursive=True)
@@ -296,6 +299,7 @@ def scan_index(content_dir, wait_start=True):
     """ Scan all files in a content directory """
     LOGGER.debug("Reindexing content from %s", content_dir)
 
+    from .flask_wrapper import current_app
     indexer = current_app.indexer
 
     def scan_directory(root, files):

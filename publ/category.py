@@ -222,7 +222,7 @@ class Category(caching.Memoizable):
         Category.load('path'), Category.load('path/to'), and Category.load('path/to/long').
         """
         ret = []
-        here = self
+        here: typing.Optional[Category] = self
         while here:
             ret.append(here)
             here = here.parent
