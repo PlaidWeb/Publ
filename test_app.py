@@ -63,3 +63,9 @@ def favicon(ext):
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
     img, _ = logo.get_rendition(format=ext, width=128, height=128, resize='fill')
     return flask.redirect(img)
+
+@app.path_alias_regex(r'(.*)/date/([0-9]+)')
+def date_view(match):
+    """ Simple test of regex path aliases, maps e.g. /foo/date/2020 to /foo/?date=2020 """
+    return flask.url_for('category', category=match.group(1),
+        date=match.group(2)), True
