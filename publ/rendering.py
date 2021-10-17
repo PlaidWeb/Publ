@@ -128,7 +128,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
 
     try:
         cur_user = user.get_active()
-        text, etag, flask.g.needs_auth = do_render( #pylint:disable=assigning-non-slot
+        text, etag, flask.g.needs_auth = do_render(  # pylint:disable=assigning-non-slot
             template,
             user=cur_user,
             _user_auth=cur_user.auth_groups if cur_user else None,
@@ -200,7 +200,7 @@ def render_exception(error):
                                               **request.view_args,
                                               **request.args))
 
-        flask.g.needs_token = True #pylint:disable=assigning-non-slot
+        flask.g.needs_token = True  # pylint:disable=assigning-non-slot
         return app.authl.render_login_form(destination='/' + utils.redir_path(),
                                            error=flask.g.get('token_error')), 401
 

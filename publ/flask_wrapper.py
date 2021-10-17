@@ -11,7 +11,7 @@ import flask
 import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
-#pylint:disable=cyclic-import
+# pylint:disable=cyclic-import
 from . import (caching, cli, config, html_entry, image, index, maintenance,
                model, rendering, search, tokens, user, utils, view)
 
