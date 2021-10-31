@@ -43,6 +43,24 @@ database as a content index, the actual choice of database doesn't matter all
 that much. A typical deployment will use SQLite, but MySQL, Postgres, Oracle,
 and Cockroach are also supported.
 
+## Developing Publ
+
+In order to develop Publ itself, you'll need to install its dependencies; see
+the [getting started
+guide](http://publ.plaidweb.site/manual/328-Getting-started) for more
+information. In particular, make sure you have compatible versions of
+[Python](https://python.org/) and [Poetry](https://python-poetry.org/)
+installed, and, if on Windows, you'll probably need to install the [Visual C++
+build tools](https://visualstudio.microsoft.com/downloads/).
+
+As far as developing Publ itself goes, cloning this repository and running
+`./runTests.sh` (Linux/macOS/etc.) or `wintests.cmd` (Windows) should get you up
+and running. The runtime manual test suite site lives in `tests/` (with the
+actual site content in `content/`, `templates/` and `static/`).
+
+For developing CLI functionality, you'll have to override the `FLASK_APP`
+environment variable to be `test_app.py`.
+
 ## Additional resources
 
 The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of
