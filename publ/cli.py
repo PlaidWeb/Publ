@@ -143,10 +143,13 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             slug=entry.slug_text,
             type=entry.entry_type).strip()
         dest_basename = re.sub(r' +', ' ', dest_basename)
-        dest_basename = fname_slugify(dest_basename)
 
         if dest_basename != basename:
-            dest_path = os.path.join(path, dest_basename + ext)
+            while True:
+                # UniqueSlugify will bump the suffix until it doesn't collide
+                dest_path = os.path.join(path, fname_slugify(dest_basename) + ext)
+                if not os.path.exists(dest_path):
+                    break
 
             if verbose:
                 print(f'{entry.file_path} -> {dest_path}')
