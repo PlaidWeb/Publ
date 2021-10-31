@@ -128,7 +128,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
 
     try:
         cur_user = user.get_active()
-        text, etag, flask.g.needs_auth = do_render(
+        text, etag, flask.g.needs_auth = do_render(  # pylint:disable=assigning-non-slot
             template,
             user=cur_user,
             _user_auth=cur_user.auth_groups if cur_user else None,
@@ -192,7 +192,7 @@ def render_exception(error):
     LOGGER.debug("render_exception %s %s", type(error), error)
 
     if isinstance(error, http_error.Unauthorized):
-        from flask import current_app as app
+        from .flask_wrapper import current_app as app
 
         force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
         if force_ssl and request.scheme != 'https':
@@ -200,7 +200,7 @@ def render_exception(error):
                                               **request.view_args,
                                               **request.args))
 
-        flask.g.needs_token = True
+        flask.g.needs_token = True  # pylint:disable=assigning-non-slot
         return app.authl.render_login_form(destination='/' + utils.redir_path(),
                                            error=flask.g.get('token_error')), 401
 

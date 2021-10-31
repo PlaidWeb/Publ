@@ -662,7 +662,8 @@ class Entry(caching.Memoizable):
 
     def get_all(self, name) -> typing.List[str]:
         """ Get all related headers on an entry, as an iterable list """
-        return self._message.get_all(name) or []
+        values = self._message.get_all(name)
+        return [str(item) for item in values] if values else []
 
     def __eq__(self, other) -> bool:
         if isinstance(other, int):
@@ -782,6 +783,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     """
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+    from .flask_wrapper import current_app
 
     try:
         check_fingerprint = utils.file_fingerprint(fullpath)
@@ -977,7 +979,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
         result = save_file(fullpath, entry, check_fingerprint)
 
     # register with the search index
-    flask.current_app.search_index.update(record, entry)
+    current_app.search_index.update(record, entry)
 
     return result
 

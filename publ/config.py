@@ -7,7 +7,6 @@ import typing
 
 import werkzeug.local
 from dateutil import tz
-from flask import current_app
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,4 +78,9 @@ class Config(_Defaults):
                 LOGGER.warning("Unknown configuration key %s", key)
 
 
-config = werkzeug.local.LocalProxy(lambda: current_app.publ_config)  # pylint:disable=invalid-name
+def _get_current():
+    from .flask_wrapper import current_app
+    return current_app.publ_config
+
+
+config = typing.cast(Config, werkzeug.local.LocalProxy(_get_current))  # pylint:disable=invalid-name

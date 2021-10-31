@@ -105,13 +105,13 @@ class View(caching.Memoizable):
         return str(self.link())
 
     @cached_property
-    def first(self) -> Entry:
+    def first(self) -> typing.Optional[Entry]:
         """ Gets the first entry in the view """
         entries = self.entries()
         return entries[0] if entries else None
 
     @cached_property
-    def last(self) -> Entry:
+    def last(self) -> typing.Optional[Entry]:
         """ Gets the last entry in the view """
         entries = self.entries()
         return entries[-1] if entries else None
@@ -194,13 +194,13 @@ class View(caching.Memoizable):
     @cached_property
     def count(self) -> int:
         """ Returns the number of entries in the view """
-        return len(self.entries)
+        return len(self.entries())
 
     @cached_property
     def last_modified(self) -> typing.Optional[Entry]:
         """ Gets the most recent modification time for all entries in the view """
         if self.entries:
-            latest = max(self.entries, key=lambda x: x.last_modified)
+            latest = max(self.entries(), key=lambda x: x.last_modified)
             return arrow.get(latest.last_modified)
         return arrow.get()
 
@@ -241,7 +241,7 @@ class View(caching.Memoizable):
             return self.first
         if self._order_by == 'oldest':
             return self.last
-        return max(self.entries, key=lambda x: (x.date, x.id))
+        return max(self.entries(), key=lambda x: (x.date, x.id))
 
     @cached_property
     def oldest(self) -> typing.Optional[Entry]:
@@ -250,7 +250,7 @@ class View(caching.Memoizable):
             return self.last
         if self._order_by == 'oldest':
             return self.first
-        return min(self.entries, key=lambda x: (x.date, -x.id))
+        return min(self.entries(), key=lambda x: (x.date, -x.id))
 
     @cached_property
     def paging(self) -> str:
@@ -263,13 +263,19 @@ class View(caching.Memoizable):
     @cached_property
     def pages(self) -> typing.List['View']:
         """ Gets a list of all pages for this view """
-        cur = self
         pages = []
-        while cur.previous:
+
+        cur: typing.Optional[View] = self.previous
+        while cur is not None:
+            pages.append(cur)
             cur = cur.previous
-        while cur:
+        pages.reverse()
+
+        cur = self
+        while cur is not None:
             pages.append(cur)
             cur = cur.next
+
         return pages
 
     @cached_property
@@ -312,7 +318,7 @@ class View(caching.Memoizable):
                 template = formats.get(
                     'span', '{oldest} — {newest} ({count})')
 
-            return template.format(count=len(self.entries),
+            return template.format(count=len(self.entries()),
                                    oldest=oldest,
                                    newest=newest)
         return utils.CallableProxy(_view_name)
