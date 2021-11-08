@@ -112,3 +112,11 @@ def test_first_paragraph():
     processor = FirstParagraph()
     processor.feed('<p><img src="foo"></p><p>Para 1</p>')
     assert processor.get_data() == '<p><img src="foo"></p><p>Para 1</p>'
+
+    processor = FirstParagraph()
+    processor.feed('<h1>Head<i>ing</i></h1>Bare text')
+    assert processor.get_data() == '<h1>Head<i>ing</i></h1>'
+
+    processor = FirstParagraph()
+    processor.feed('<h1><b>Heading with bad nesting</h2>Bare text')
+    assert processor.get_data() == '<h1><b>Heading with bad nesting</h2>'

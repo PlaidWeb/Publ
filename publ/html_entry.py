@@ -201,18 +201,25 @@ class FirstParagraph(utils.HTMLTransform):
         self._consume = True
         self._found = False
 
+        self._tag_stack = []
+
     def handle_starttag(self, tag, attrs):
         if tag.lower() == 'p':
             if self._found:
                 self._consume = False
 
+        self._tag_stack.append(tag)
+
         if self._consume:
             self.append(utils.make_tag(tag, attrs))
 
     def handle_endtag(self, tag):
+        while self._tag_stack and self._tag_stack.pop() != tag:
+            pass
+
         if self._consume:
             self.append(f'</{tag}>')
-        if tag.lower() == 'p' and self._found:
+        if (not self._tag_stack or tag.lower() == 'p') and self._found:
             self._consume = False
 
     def handle_startendtag(self, tag, attrs):
