@@ -471,7 +471,6 @@ class Entry(caching.Memoizable):
                 html_text = self._get_markup(body or more,
                                              is_markdown,
                                              args={**kwargs,
-                                                   'markup': markup,
                                                    "max_scale": 1,
                                                    "_suppress_images": True,
                                                    "_suppress_footnotes": True,
