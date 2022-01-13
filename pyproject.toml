@@ -9,10 +9,9 @@ repository = "https://github.com/PlaidWeb/Publ"
 homepage = "https://publ.plaidweb.site/"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 authl = "^0.6.0"
 misaka = "^2.1.1"
-Pillow = "^8.0.1"
 arrow = "^0.17.0"
 atomicwrites = "^1.4.0"
 awesome-slugify = "^1.6.5"
@@ -22,6 +21,7 @@ pony = "^0.7.14"
 Pygments = "^2.7.3"
 watchdog = "^1.0.2"
 Whoosh = "^2.7.4"
+Pillow = "^9.0.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.3"
