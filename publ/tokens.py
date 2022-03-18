@@ -83,23 +83,24 @@ def send_auth_ticket(subject: str,
     current_app.indexer.submit(_submit)
 
 
-def indieauth_endpoint():
-    """ IndieAuth token endpoint """
+def ticket_request(me_url: str):
+    """ Initiate a ticket request """
     import authl.handlers.indieauth
 
-    if 'me' in flask.request.args:
-        # A ticket request is being made
-        me_url = flask.request.args['me']
-        try:
-            endpoint, _ = authl.handlers.indieauth.find_endpoint(me_url,
-                                                                 rel='ticket_endpoint')
-        except RuntimeError:
-            endpoint = None
-        if not endpoint:
-            raise http_error.BadRequest("Could not get ticket endpoint")
-        LOGGER.info("endpoint: %s", endpoint)
-        send_auth_ticket(me_url, flask.request.url_root, endpoint)
-        return "Ticket sent", 202
+    try:
+        endpoint, _ = authl.handlers.indieauth.find_endpoint(me_url,
+                                                             rel='ticket_endpoint')
+    except RuntimeError:
+        endpoint = None
+    if not endpoint:
+        raise http_error.BadRequest("Could not get ticket endpoint")
+    LOGGER.info("endpoint: %s", endpoint)
+    send_auth_ticket(me_url, flask.request.url_root, endpoint)
+    return "Ticket sent", 202
+
+
+def indieauth_endpoint():
+    """ IndieAuth token endpoint """
 
     if 'grant_type' in flask.request.form:
         # token grant
@@ -137,6 +138,10 @@ def indieauth_endpoint():
         raise http_error.BadRequest("Unknown grant type")
 
     if 'action' in flask.request.form:
+        # provisional ticket request flow, per https://github.com/indieweb/indieauth/issues/87
+        if flask.request.form['action'] == 'ticket' and 'subject' in flask.request.form:
+            return ticket_request(flask.request.form['subject'])
+
         raise http_error.BadRequest()
 
     if 'Authorization' in flask.request.headers:
@@ -146,5 +151,9 @@ def indieauth_endpoint():
             token = parse_token(parts[1])
             return json.dumps(token), {'Content-Type': 'application/json'}
         raise http_error.Unauthorized("Invalid authorization header")
+
+    if 'me' in flask.request.args:
+        # ad-hoc ticket request
+        return ticket_request(flask.request.args['me'])
 
     raise http_error.BadRequest()
