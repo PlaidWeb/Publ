@@ -89,12 +89,36 @@ def test_ticketauth_flow(requests_mock):
         ''')
     requests_mock.post('https://foo.example/tickets', text=ticket_endpoint)
 
-    # Request flow
+    # Ad-hoc request flow
     with app.test_request_context('/bogus'):
         request_url = flask.url_for('tokens', me='https://foo.example/')
-        print(request_url)
     with app.test_client() as client:
         req = client.get(request_url)
+        LOGGER.info("Got ticket redemption response %d: %s",
+                    req.status_code, req.data)
+        assert req.status_code == 202
+        assert req.data == b'Ticket sent'
+
+        assert foo_tickets.called
+        assert 'access_token' in stash and stash['token_type'].lower() == 'bearer'
+        assert stash['me'] == 'https://foo.example/'
+        token = tokens.parse_token(stash['access_token'])
+        assert token['me'] == 'https://foo.example/'
+
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["access_token"]}'
+        })
+        assert req.status_code == 200
+        assert req.headers['Content-Type'] == 'application/json'
+        verified = json.loads(req.data)
+        assert verified['me'] == 'https://foo.example/'
+
+    # Provisional request flow
+    with app.test_request_context('/bogus'):
+        request_url = flask.url_for('tokens')
+    with app.test_client() as client:
+        req = client.post(request_url, data={'action': 'ticket',
+                                             'subject': 'https://foo.example/'})
         LOGGER.info("Got ticket redemption response %d: %s",
                     req.status_code, req.data)
         assert req.status_code == 202
