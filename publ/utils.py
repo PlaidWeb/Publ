@@ -29,7 +29,7 @@ ListLike = typing.Union[typing.List[T],
 TagAttr = typing.Union[str, bool, None]
 TagAttrs = typing.Dict[str, TagAttr]
 
-_TagKey = slugify.Slugify(to_lower=True)
+_TagKey = slugify.Slugify(to_lower=True)  # type:ignore
 
 
 class CallableProxy:
@@ -367,7 +367,7 @@ def prefix_normalize(kwargs: ArgDict) -> ArgDict:
 
 def is_list(item: typing.Any) -> bool:
     """ Return if this is a list-type thing """
-    return getattr(item, '__iter__', None) and not isinstance(item, str)
+    return bool(getattr(item, '__iter__', None)) and not isinstance(item, str)
 
 
 def as_list(item: typing.Any) -> ListLike:

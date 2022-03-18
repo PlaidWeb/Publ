@@ -253,6 +253,7 @@ def test_listlike(mocker):
 def test_parse_date():
     """ tests for the date parser """
     import arrow
+
     from . import PublMock
 
     app = PublMock()

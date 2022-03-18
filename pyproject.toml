@@ -24,15 +24,19 @@ Whoosh = "^2.7.4"
 Pillow = "^9.0.0"
 
 [tool.poetry.dev-dependencies]
-autopep8 = "^1.5.3"
-coverage = "^5.2"
-flake8 = "^3.8.3"
-mypy = "^0.782"
-pylint = "^2.5.3"
-pytest = "^5.4.3"
-isort = "^4"
+autopep8 = "*"
+coverage = "*"
+flake8 = "*"
+mypy = "*"
+pylint = "*"
+pytest = "*"
+isort = "^5"
 pytest-mock = "^3.2.0"
 requests-mock = "^1.9.3"
+types-python-dateutil = "^2.8.10"
+types-requests = "^2.27.13"
+types-python-slugify = "^5.0.3"
+types-atomicwrites = "^1.4.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
