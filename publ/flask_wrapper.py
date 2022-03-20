@@ -313,7 +313,8 @@ class Publ(flask.Flask):
             ctx = click.get_current_context(silent=True)
             if not ctx or ctx.info_name == 'run':
                 index.scan_index(self.publ_config.content_folder)
-                index.background_scan(self.publ_config.content_folder)
+                if self.publ_config.index_enable_watchdog:
+                    index.background_scan(self.publ_config.content_folder)
 
 
 current_app = typing.cast(Publ, flask.current_app)  # pylint:disable=invalid-name

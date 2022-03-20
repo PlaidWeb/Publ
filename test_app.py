@@ -51,6 +51,7 @@ config = {
         'max_width': 768,
     },
     'search_index': '_index',
+    'index_enable_watchdog': False,
 }
 
 app = publ.Publ(__name__, config)
