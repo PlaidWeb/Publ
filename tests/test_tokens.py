@@ -61,15 +61,13 @@ def test_ticketauth_flow(requests_mock):
 
     stash = {}
 
-    with app.test_request_context('/'):
-        token_endpoint = flask.url_for('tokens')
-
     def ticket_endpoint(request, _):
         import urllib.parse
         args = urllib.parse.parse_qs(request.text)
         assert 'subject' in args
         assert 'ticket' in args
         assert 'resource' in args
+        stash['ticket'] = args['ticket']
 
         with app.test_client() as client:
             req = client.post(token_endpoint, data={
@@ -79,7 +77,10 @@ def test_ticketauth_flow(requests_mock):
             token = json.loads(req.data)
             assert 'access_token' in token
             assert token['token_type'].lower() == 'bearer'
-            stash.update(token)
+            stash['response'] = token
+
+    with app.test_request_context('/'):
+        token_endpoint = flask.url_for('tokens')
 
     foo_tickets = requests_mock.get('https://foo.example/', text='''
         <link rel="ticket_endpoint" href="https://foo.example/tickets">
@@ -89,10 +90,9 @@ def test_ticketauth_flow(requests_mock):
         ''')
     requests_mock.post('https://foo.example/tickets', text=ticket_endpoint)
 
-    # Request flow
+    # Ad-hoc request flow
     with app.test_request_context('/bogus'):
         request_url = flask.url_for('tokens', me='https://foo.example/')
-        print(request_url)
     with app.test_client() as client:
         req = client.get(request_url)
         LOGGER.info("Got ticket redemption response %d: %s",
@@ -101,13 +101,38 @@ def test_ticketauth_flow(requests_mock):
         assert req.data == b'Ticket sent'
 
         assert foo_tickets.called
-        assert 'access_token' in stash and stash['token_type'].lower() == 'bearer'
-        assert stash['me'] == 'https://foo.example/'
-        token = tokens.parse_token(stash['access_token'])
+        assert stash['response']['token_type'].lower() == 'bearer'
+        assert stash['response']['me'] == 'https://foo.example/'
+        token = tokens.parse_token(stash['response']['access_token'])
         assert token['me'] == 'https://foo.example/'
 
         req = client.get(token_endpoint, headers={
-            'Authorization': f'Bearer {stash["access_token"]}'
+            'Authorization': f'Bearer {stash["response"]["access_token"]}'
+        })
+        assert req.status_code == 200
+        assert req.headers['Content-Type'] == 'application/json'
+        verified = json.loads(req.data)
+        assert verified['me'] == 'https://foo.example/'
+
+    # Provisional request flow
+    with app.test_request_context('/bogus'):
+        request_url = flask.url_for('tokens')
+    with app.test_client() as client:
+        req = client.post(request_url, data={'action': 'ticket',
+                                             'subject': 'https://foo.example/'})
+        LOGGER.info("Got ticket redemption response %d: %s",
+                    req.status_code, req.data)
+        assert req.status_code == 202
+        assert req.data == b'Ticket sent'
+
+        assert foo_tickets.called
+        assert stash['response']['token_type'].lower() == 'bearer'
+        assert stash['response']['me'] == 'https://foo.example/'
+        token = tokens.parse_token(stash['response']['access_token'])
+        assert token['me'] == 'https://foo.example/'
+
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["response"]["access_token"]}'
         })
         assert req.status_code == 200
         assert req.headers['Content-Type'] == 'application/json'
@@ -124,15 +149,55 @@ def test_ticketauth_flow(requests_mock):
                 'ticket_endpoint': 'https://foo.example/tickets'
             }}))
         assert not bar_tickets.called  # endpoint is already discovered
-        assert 'access_token' in stash and stash['token_type'].lower() == 'bearer'
-        assert stash['me'] == 'https://bar.example/'
-        token = tokens.parse_token(stash['access_token'])
+        assert stash['response']['token_type'].lower() == 'bearer'
+        assert stash['response']['me'] == 'https://bar.example/'
+        token = tokens.parse_token(stash['response']['access_token'])
         assert token['me'] == 'https://bar.example/'
 
         req = client.get(token_endpoint, headers={
-            'Authorization': f'Bearer {stash["access_token"]}'
+            'Authorization': f'Bearer {stash["response"]["access_token"]}'
         })
         assert req.status_code == 200
         assert req.headers['Content-Type'] == 'application/json'
         verified = json.loads(req.data)
         assert verified['me'] == 'https://bar.example/'
+
+    # Attempt to redeem a token as if it were a ticket
+    with app.test_request_context():
+        req = client.post(token_endpoint, data={
+            'grant_type': 'ticket',
+            'ticket': stash['response']['access_token']})
+        assert req.status_code == 401
+
+    # Redeem the refresh_token
+    with app.test_client() as client:
+        req = client.post(token_endpoint, data={
+            'grant_type': 'refresh_token',
+            'refresh_token': stash['response']['refresh_token']
+        })
+        assert req.status_code == 200
+        assert req.headers['Content-Type'] == 'application/json'
+        refreshed = json.loads(req.data)
+        assert refreshed['me'] == 'https://bar.example/'
+
+    # Verify that redemption of a plain token fails
+    with app.test_client() as client:
+        req = client.post(token_endpoint, data={
+            'grant_type': 'refresh_token',
+            'refresh_token': stash['response']['access_token']
+        })
+        assert req.status_code == 401
+
+    # Verify that a ticket can't be used as a bearer token
+    with app.test_client() as client:
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["ticket"]}'
+        })
+        assert req.status_code == 401
+
+    # Verify that a refresh_token can't be used as a bearer token
+    with app.test_client() as client:
+        req = client.get(token_endpoint, headers={
+            'Authorization': f'Bearer {stash["response"]["refresh_token"]}'
+        })
+        assert req.status_code == 401

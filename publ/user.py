@@ -179,13 +179,12 @@ def get_active() -> typing.Optional[User]:
         return None
 
     if 'Authorization' in flask.request.headers:
-        parts = flask.request.headers['Authorization'].split()
-        if parts[0].lower() == 'bearer':
-            token = tokens.parse_token(parts[1])
+        token = tokens.parse_authorization_header(flask.request.headers['Authorization'])
+        try:
             return User(token['me'], 'token', token.get('scope'))
-
-        flask.g['token_error'] = 'Malformed access token'
-        raise http_error.BadRequest('Malformed access token')
+        except http_error.HTTPException as error:
+            flask.g['token_error'] = error.description
+            raise
 
     if flask.session.get('me'):
         return User(flask.session['me'], 'session')

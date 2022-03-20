@@ -55,6 +55,7 @@ class _Defaults:
     auth_log_prune_age = 86400 * 30  # one month
     ticket_lifetime = 60
     token_lifetime = 86400 * 30
+    refresh_token_lifetime = 86400 * 90
 
     # Full-text search directory
     search_index = None
