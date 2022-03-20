@@ -19,6 +19,7 @@ class _Defaults:
     }
     index_rescan_interval = 7200
     index_wait_time = 1
+    index_enable_watchdog = True
 
     # Site content locations
     content_folder = 'content'
