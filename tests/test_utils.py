@@ -6,6 +6,8 @@ import pytest
 
 from publ import utils
 
+from . import PublMock
+
 
 class MockEntryTag:
     """ mock class for EntryTags """
@@ -254,8 +256,6 @@ def test_parse_date():
     """ tests for the date parser """
     import arrow
 
-    from . import PublMock
-
     app = PublMock()
 
     with app.app_context():
@@ -345,3 +345,41 @@ def test_prefix_normalize():
         'anywhere': '4',
         'prefix': 'prefix_'
     }
+
+
+def test_auth_link():
+    """ test the authorization link functionality """
+    app = PublMock({})
+
+    @app.route('/_login/<path:redir>')
+    def login(redir=''):
+        # pylint:disable=unused-argument
+        pass
+
+    with app.test_request_context("https://example.com/"):
+        assert utils.auth_link("login")("/foo") == "/_login/foo"
+        assert utils.auth_link("login")("/bar",
+                                        absolute=True) == "https://example.com/_login/bar"
+    with app.test_request_context("http://example.com/"):
+        assert utils.auth_link("login")("/foo") == "/_login/foo"
+        assert utils.auth_link("login")("/bar",
+                                        absolute=True) == "http://example.com/_login/bar"
+
+
+def test_auth_link_https():
+    """ test the authorization link functionality """
+    app = PublMock({'auth': {'AUTH_FORCE_HTTPS': True}})
+
+    @app.route('/_login/<path:redir>')
+    def login(redir=''):
+        # pylint:disable=unused-argument
+        pass
+
+    with app.test_request_context("https://example.com/"):
+        assert utils.auth_link("login")("/foo") == "/_login/foo"
+        assert utils.auth_link("login")("/bar",
+                                        absolute=True) == "https://example.com/_login/bar"
+    with app.test_request_context("http://example.com/"):
+        assert utils.auth_link("login")("/foo") == "https://example.com/_login/foo"
+        assert utils.auth_link("login")("/bar",
+                                        absolute=True) == "https://example.com/_login/bar"

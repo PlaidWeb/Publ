@@ -438,11 +438,11 @@ def auth_link(endpoint: str, auto_redir=True) -> typing.Callable[..., str]:
     """ Generates a function that maps an optional redir parameter to the
     specified endpoint. If redir is unspecified it defaults to the current
     request's full_path. """
-    def endpoint_link(redir=None, **kwargs):
+    def endpoint_link(redir=None, absolute=False, **kwargs):
         LOGGER.debug("Getting %s for redir=%s kwargs=%s", endpoint, redir, kwargs)
         redir = redir_path(redir) if redir or auto_redir else None
 
-        return secure_link(endpoint, redir=redir, **kwargs)
+        return secure_link(endpoint, redir=redir, _external=absolute, **kwargs)
 
     return CallableProxy(endpoint_link)
 
