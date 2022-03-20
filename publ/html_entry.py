@@ -204,6 +204,9 @@ class FirstParagraph(utils.HTMLTransform):
         self._tag_stack = []
 
     def handle_starttag(self, tag, attrs):
+        if tag.lower() == 'table':
+            self._consume = False
+
         if tag.lower() == 'p':
             if self._found:
                 self._consume = False
@@ -219,6 +222,10 @@ class FirstParagraph(utils.HTMLTransform):
 
         if self._consume:
             self.append(f'</{tag}>')
+
+        if tag.lower() == 'table' and not self._found:
+            self._consume = True
+
         if (not self._tag_stack or tag.lower() == 'p') and self._found:
             self._consume = False
 
@@ -227,9 +234,8 @@ class FirstParagraph(utils.HTMLTransform):
             self.append(utils.make_tag(tag, attrs, True))
 
     def handle_data(self, data):
-        if data.strip():
+        if self._consume and data.strip():
             self._found = True
-        if self._consume:
             self.append(data)
 
 

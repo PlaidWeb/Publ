@@ -31,7 +31,7 @@ TOC_ALLOWED_TAGS = ('sup', 'sub',
                     'del', 'add', 'mark')
 
 # Remove these tags from plaintext-style conversions
-PLAINTEXT_REMOVE_ELEMENTS = ('del', 's')
+PLAINTEXT_REMOVE_ELEMENTS = ('del', 's', 'table')
 
 
 class ItemCounter(misaka.BaseRenderer):
