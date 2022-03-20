@@ -106,7 +106,7 @@ def redeem_grant(grant_type: str, auth_token: str):
     return json.dumps(response), {'Content-Type': 'application/json'}
 
 
-def ticket_request(me_url: str):
+def ticket_request(me_url: str, scope: str):
     """ Initiate a ticket request """
     import authl.handlers.indieauth
 
@@ -118,7 +118,7 @@ def ticket_request(me_url: str):
     if not endpoint:
         raise http_error.BadRequest("Could not get ticket endpoint")
     LOGGER.info("endpoint: %s", endpoint)
-    send_auth_ticket(me_url, flask.request.url_root, endpoint)
+    send_auth_ticket(me_url, flask.request.url_root, endpoint, scope)
     return "Ticket sent", 202
 
 
@@ -157,7 +157,8 @@ def indieauth_endpoint():
     if 'action' in flask.request.form:
         # provisional ticket request flow, per https://github.com/indieweb/indieauth/issues/87
         if flask.request.form['action'] == 'ticket' and 'subject' in flask.request.form:
-            return ticket_request(flask.request.form['subject'])
+            return ticket_request(flask.request.form['subject'],
+                                  flask.request.form.get('scope', ''))
 
         raise http_error.BadRequest()
 
@@ -168,6 +169,7 @@ def indieauth_endpoint():
 
     if 'me' in flask.request.args:
         # ad-hoc ticket request
-        return ticket_request(flask.request.args['me'])
+        return ticket_request(flask.request.args['me'],
+                              flask.request.args.get('scope', ''))
 
     raise http_error.BadRequest()
