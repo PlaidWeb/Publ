@@ -117,20 +117,20 @@ def test_ticketauth_flow(requests_mock):
 
     token_user = user.User(verified['me'])
     assert token_user.profile['name'] == 'boop'
-    foo_tickets.reset()
 
     # Provisional request flow
     with app.test_request_context('/bogus'):
         request_url = flask.url_for('tokens')
     with app.test_client() as client:
         req = client.post(request_url, data={'action': 'ticket',
-                                             'subject': 'https://foo.example/'})
+                                             'subject': 'https://foo.example'})
         LOGGER.info("Got ticket redemption response %d: %s",
                     req.status_code, req.data)
         assert req.status_code == 202
         assert req.data == b'Ticket sent'
 
-        assert not foo_tickets.called  # should be cached from previous test
+        # should be cached from previous test
+        assert foo_tickets.call_count == 1
         assert stash['response']['token_type'].lower() == 'bearer'
         assert stash['response']['me'] == 'https://foo.example/'
         token = tokens.parse_token(stash['response']['access_token'])
@@ -206,3 +206,72 @@ def test_ticketauth_flow(requests_mock):
             'Authorization': f'Bearer {stash["response"]["refresh_token"]}'
         })
         assert req.status_code == 401
+
+
+def test_ticketauth_canonical(requests_mock):
+    """
+        Ensure that rel="canonical" is being correctly respected on TicketAuth grants,
+        and that identity URLs are being properly canonicalized
+    """
+    app = PublMock()
+    app.add_url_rule('/_tokens', 'tokens', tokens.indieauth_endpoint,
+                     methods=['GET', 'POST'])
+
+    stash = {}
+
+    def ticket_endpoint(request, _):
+        import urllib.parse
+        args = urllib.parse.parse_qs(request.text)
+        assert 'subject' in args
+        assert 'ticket' in args
+        assert 'resource' in args
+        stash['ticket'] = args['ticket']
+
+        with app.test_client() as client:
+            req = client.post(token_endpoint, data={
+                'grant_type': 'ticket',
+                'ticket': args['ticket']
+            })
+            token = json.loads(req.data)
+            assert 'access_token' in token
+            assert token['token_type'].lower() == 'bearer'
+            stash['response'] = token
+
+    with app.test_request_context('/'):
+        token_endpoint = flask.url_for('tokens')
+
+    for scheme in ('http', 'https'):
+        requests_mock.get(f'{scheme}://canonical.ticketauth', text='''
+            <link rel="ticket_endpoint" href="https://foo.example/tickets">
+            <link rel="canonical" href="https://canonical.ticketAuth">
+            <p class="h-card"><span class="p-name">pachelbel</span></p>
+            ''')
+    requests_mock.post('https://foo.example/tickets', text=ticket_endpoint)
+
+    def test_url(identity, match):
+        with app.test_request_context('/bogus'):
+            request_url = flask.url_for('tokens')
+        with app.test_client() as client:
+            req = client.post(request_url, data={'action': 'ticket',
+                                                 'subject': identity})
+            LOGGER.info("Got ticket redemption response %d: %s",
+                        req.status_code, req.data)
+            assert req.status_code == 202
+            assert req.data == b'Ticket sent'
+
+            assert stash['response']['token_type'].lower() == 'bearer'
+            assert stash['response']['me'] == match
+            token = tokens.parse_token(stash['response']['access_token'])
+            assert token['me'] == match
+
+            req = client.get(token_endpoint, headers={
+                'Authorization': f'Bearer {stash["response"]["access_token"]}'
+            })
+            assert req.status_code == 200
+            assert req.headers['Content-Type'] == 'application/json'
+            verified = json.loads(req.data)
+            assert verified['me'] == match
+
+    for url in ('http://canonical.ticketauth', 'https://canonical.ticketauth',
+                'http://Canonical.TicketAuth'):
+        test_url(url, 'https://canonical.ticketauth/')
