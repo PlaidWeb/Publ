@@ -383,3 +383,15 @@ def test_auth_link_https():
         assert utils.auth_link("login")("/foo") == "https://example.com/_login/foo"
         assert utils.auth_link("login")("/bar",
                                         absolute=True) == "https://example.com/_login/bar"
+
+
+def test_canonicize_url():
+    """ Test the canonicization of URLs for string-equivalence """
+    for lhs, rhs in (('https://foo.bar', 'https://foo.bar/'),
+                     ('https://Foo.Bar', 'https://foo.BAR')):
+        assert utils.canonicize_url(lhs) == utils.canonicize_url(rhs)
+
+    for lhs, rhs in (('http://foo.bar', 'https://foo.bar/'),
+                     ('https://foo.bar/a', 'https://foo.bar/b'),
+                     ('https://foo.bar/a', 'https://foo.bar/a/')):
+        assert utils.canonicize_url(lhs) != utils.canonicize_url(rhs)

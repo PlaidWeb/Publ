@@ -1,9 +1,11 @@
 """ IndieAuth token endpoint """
 
+import functools
 import json
 import logging
 import time
 import typing
+import urllib.parse
 
 import arrow
 import flask
@@ -12,7 +14,7 @@ import requests
 import werkzeug.exceptions as http_error
 from pony import orm
 
-from . import model
+from . import model, utils
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ def signer(context: str):
 
 def get_token(id_url: str, lifetime: int, scope: str = None, context: str = '') -> str:
     """ Gets a signed token for the given identity"""
-    token = {'me': id_url}
+    token = {'me': utils.canonicize_url(id_url)}
     if scope:
         token['scope'] = scope
 
@@ -134,13 +136,45 @@ def redeem_grant(grant_type: str, auth_token: str):
     return json.dumps(response), {'Content-Type': 'application/json'}
 
 
+@functools.lru_cache()
+def get_ticket_endpoint(me_url: str):
+    """ Get the IndieAuth Ticket Auth endpoint and the canonical identity URL """
+    LOGGER.debug("get_ticket_endpoint %s", me_url)
+    import authl.handlers.indieauth
+    from bs4 import BeautifulSoup
+
+    req = authl.utils.request_url(me_url)
+    content = BeautifulSoup(req.text, 'html.parser')
+
+    if req.links and 'canonical' in req.links:
+        canonical_url = req.links['canonical']['url']
+    else:
+        link = content.find('link', rel='canonical')
+        if link:
+            canonical_url = urllib.parse.urljoin(me_url, link.get('href'))
+        else:
+            canonical_url = me_url
+
+    if utils.canonicize_url(canonical_url) != utils.canonicize_url(me_url):
+        # We have a rel="canonical" which mismatches the provided identity URL
+        LOGGER.debug("%s -> canonical=%s", me_url, canonical_url)
+        endpoint, me_url = authl.handlers.indieauth.find_endpoint(canonical_url,
+                                                                  rel='ticket_endpoint')
+    else:
+        # Use our fetch to seed Authl's endpoint fetch and get that instead
+        endpoints, me_url = authl.handlers.indieauth.find_endpoints(me_url,
+                                                                    req.links, content)
+        endpoint = endpoints.get('ticket_endpoint')
+
+    LOGGER.debug("%s %s", me_url, endpoint)
+    return endpoint, me_url
+
+
 def ticket_request(me_url: str, scope: str):
     """ Initiate a ticket request """
-    import authl.handlers.indieauth
 
     try:
-        endpoint, _ = authl.handlers.indieauth.find_endpoint(me_url,
-                                                             rel='ticket_endpoint')
+        endpoint, me_url = get_ticket_endpoint(utils.canonicize_url(me_url))
     except RuntimeError:
         endpoint = None
     if not endpoint:

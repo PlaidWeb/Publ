@@ -223,7 +223,7 @@ def register(verified: authl.disposition):
     """ Registers a user from the on_verified Authl hook """
     if isinstance(verified, authl.disposition.Verified):
         LOGGER.info("Got login from user %s with profile %s", verified.identity, verified.profile)
-        identity = verified.identity
+        identity = utils.canonicize_url(verified.identity)
         now = arrow.utcnow().datetime
         values = {
             'last_login': now,

@@ -629,3 +629,14 @@ def parse_arglist(args: str, pos_limit: int = None) -> typing.Tuple[list, ArgDic
 
     LOGGER.debug("pos_args=%s kw_args=%s", pos_args, kwargs)
     return pos_args, kwargs
+
+
+def canonicize_url(url: str) -> str:
+    """ Canonicize a URL to make them string-comparable """
+    assert url is not None
+
+    parsed = urllib.parse.urlparse(url)._asdict()
+    parsed['netloc'] = parsed['netloc'].casefold()
+    if not parsed.get('path'):
+        parsed['path'] = '/'
+    return urllib.parse.urlunparse(urllib.parse.ParseResult(**parsed))
