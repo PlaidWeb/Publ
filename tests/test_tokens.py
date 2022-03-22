@@ -101,7 +101,7 @@ def test_ticketauth_flow(requests_mock):
         assert req.status_code == 202
         assert req.data == b'Ticket sent'
 
-        assert foo_tickets.called
+        assert foo_tickets.call_count == 1
         assert stash['response']['token_type'].lower() == 'bearer'
         assert stash['response']['me'] == 'https://foo.example/'
         token = tokens.parse_token(stash['response']['access_token'])
