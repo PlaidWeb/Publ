@@ -223,7 +223,12 @@ td.profile:hover {
         {% if user.last_login %}
         <li>Logged in: {{date(user.last_login)}}</li>
         {% endif %}
+        {% if user.last_seen %}
         <li>Last seen: {{date(user.last_seen)}}</li>
+        {% endif %}
+        {% if user.last_token %}
+        <li>Last token grant: {{date(user.last_token)}}</li>
+        {% endif %}
         {% if profile.email %}<li>Email: <a href="mailto:{{profile.email}}">{{profile.email}}</a></li>{% endif %}
         {% if profile.homepage and profile.homepage != user.identity %}
         <li>Homepage: <a href="{{profile.homepage}}">{{profile.homepage}}</a></li>
