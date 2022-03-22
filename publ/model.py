@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 
 class GlobalConfig(DbEntity):
@@ -199,6 +199,7 @@ class KnownUser(DbEntity):
     user = orm.PrimaryKey(str)
     last_login = orm.Optional(datetime.datetime)
     last_seen = orm.Required(datetime.datetime, index=True)
+    last_token = orm.Optional(datetime.datetime)
     profile = orm.Optional(orm.Json)
 
 

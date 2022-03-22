@@ -84,6 +84,7 @@ def test_ticketauth_flow(requests_mock):
 
     foo_tickets = requests_mock.get('https://foo.example/', text='''
         <link rel="ticket_endpoint" href="https://foo.example/tickets">
+        <p class="h-card"><span class="p-name">boop</span></p>
         ''')
     bar_tickets = requests_mock.get('https://bar.example/', text='''
         <link rel="ticket_endpoint" href="https://foo.example/tickets">
@@ -100,7 +101,7 @@ def test_ticketauth_flow(requests_mock):
         assert req.status_code == 202
         assert req.data == b'Ticket sent'
 
-        assert foo_tickets.called
+        assert foo_tickets.call_count == 1
         assert stash['response']['token_type'].lower() == 'bearer'
         assert stash['response']['me'] == 'https://foo.example/'
         token = tokens.parse_token(stash['response']['access_token'])
@@ -114,6 +115,10 @@ def test_ticketauth_flow(requests_mock):
         verified = json.loads(req.data)
         assert verified['me'] == 'https://foo.example/'
 
+    token_user = user.User(verified['me'])
+    assert token_user.profile['name'] == 'boop'
+    foo_tickets.reset()
+
     # Provisional request flow
     with app.test_request_context('/bogus'):
         request_url = flask.url_for('tokens')
@@ -125,7 +130,7 @@ def test_ticketauth_flow(requests_mock):
         assert req.status_code == 202
         assert req.data == b'Ticket sent'
 
-        assert foo_tickets.called
+        assert not foo_tickets.called  # should be cached from previous test
         assert stash['response']['token_type'].lower() == 'bearer'
         assert stash['response']['me'] == 'https://foo.example/'
         token = tokens.parse_token(stash['response']['access_token'])
@@ -148,7 +153,7 @@ def test_ticketauth_flow(requests_mock):
             {'endpoints': {
                 'ticket_endpoint': 'https://foo.example/tickets'
             }}))
-        assert not bar_tickets.called  # endpoint is already discovered
+        assert bar_tickets.called  # page still needs to be retrieved to get the profile
         assert stash['response']['token_type'].lower() == 'bearer'
         assert stash['response']['me'] == 'https://bar.example/'
         token = tokens.parse_token(stash['response']['access_token'])

@@ -5,11 +5,14 @@ import logging
 import time
 import typing
 
+import arrow
 import flask
 import itsdangerous
 import requests
 import werkzeug.exceptions as http_error
+from pony import orm
 
+from . import model
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -81,6 +84,28 @@ def send_auth_ticket(subject: str,
     current_app.indexer.submit(_submit)
 
 
+@orm.db_session()
+def log_grant(identity: str):
+    """ Update the user table with the granted token """
+    import authl.handlers.indieauth
+
+    values = {
+        'last_token': arrow.utcnow().datetime,
+    }
+
+    profile = authl.handlers.indieauth.get_profile(identity)
+    if profile:
+        values['profile'] = profile
+
+    record = model.KnownUser.get(user=identity)
+    if record:
+        record.set(**values)
+    else:
+        record = model.KnownUser(user=identity,
+                                 **values,
+                                 last_seen=arrow.utcnow().datetime)
+
+
 def redeem_grant(grant_type: str, auth_token: str):
     """ Redeem a grant from a provided redemption ticket """
     grant = parse_token(auth_token, grant_type)
@@ -90,6 +115,7 @@ def redeem_grant(grant_type: str, auth_token: str):
     scope = grant.get('scope', '')
 
     token = get_token(grant['me'], config.token_lifetime, scope)
+
     response = {
         'access_token': token,
         'token_type': 'Bearer',
@@ -102,6 +128,8 @@ def redeem_grant(grant_type: str, auth_token: str):
     }
     if scope:
         response['scope'] = scope
+
+    log_grant(grant['me'])
 
     return json.dumps(response), {'Content-Type': 'application/json'}
 
