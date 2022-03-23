@@ -126,7 +126,7 @@ class User(caching.Memoizable):
     @cached_property
     def is_admin(self) -> bool:
         """ Returns whether this user has administrator permissions """
-        return bool(config.admin_group and config.admin_group in self.groups)
+        return bool(config.admin_group and config.admin_group in self.auth_groups)
 
     @cached_property
     def auth_type(self):

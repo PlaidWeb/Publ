@@ -636,11 +636,15 @@ class Entry(caching.Memoizable):
         footnotes = 'footnotes' in args.get('markdown_extensions', config.markdown_extensions)
         self._counters[(section, footnotes)] = counter
 
+    def _authorized_attr(self, name):
+        """ Return whether an attribute is authorized to be read """
+        return name.lower() in ('uuid', 'id', 'date', 'last-modified') or self.authorized
+
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
 
         # Only allow a few vital things for unauthorized access
-        if name.lower() not in ('uuid', 'id', 'date', 'last-modified') and not self.authorized:
+        if not self._authorized_attr(name):
             return None
 
         # Don't pass certain things through the database
@@ -655,14 +659,18 @@ class Entry(caching.Memoizable):
             'category': category,
         }
 
-    def get(self, name, default=None) -> typing.Optional[str]:
+    def get(self, name, default=None, always_show=False) -> typing.Optional[str]:
         """ Get a single header on an entry """
-        return self._message.get(name, default)
+        if always_show or self._authorized_attr(name):
+            return self._message.get(name, default)
+        return None
 
-    def get_all(self, name) -> typing.List[str]:
+    def get_all(self, name, always_show=False) -> typing.List[str]:
         """ Get all related headers on an entry, as an iterable list """
-        values = self._message.get_all(name)
-        return [str(item) for item in values] if values else []
+        if always_show or self._authorized_attr(name):
+            values = self._message.get_all(name)
+            return [str(item) for item in values] if values else []
+        return []
 
     def __eq__(self, other) -> bool:
         if isinstance(other, int):
