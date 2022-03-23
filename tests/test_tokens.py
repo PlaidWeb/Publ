@@ -272,6 +272,9 @@ def test_ticketauth_canonical(requests_mock):
             verified = json.loads(req.data)
             assert verified['me'] == match
 
+            token_user = user.User(verified['me'])
+            assert token_user.profile['name'] == 'pachelbel'
+
     for url in ('http://canonical.ticketauth', 'https://canonical.ticketauth',
                 'http://Canonical.TicketAuth'):
         test_url(url, 'https://canonical.ticketauth/')
