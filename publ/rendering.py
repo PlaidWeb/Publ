@@ -298,7 +298,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
         test_path = '/'.join((category, template)) if category else template
         LOGGER.debug("Checking for malformed category %s", test_path)
         record = model.Entry.select(lambda e: e.category ==
-                                    test_path and e.visible).exists()  # type:ignore
+                                    test_path and e.visible).exists()
         if record:
             return redirect(url_for('category', category=test_path, **request.args),
                             code=301)
@@ -482,7 +482,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
 
     # does the entry-id header mismatch? If so the old one is invalid
     try:
-        current_id: typing.Optional[int] = int(entry_obj.get('Entry-ID'))  # type:ignore
+        current_id: typing.Optional[int] = int(entry_obj.get('Entry-ID'))
     except (KeyError, TypeError, ValueError) as err:
         LOGGER.debug("Error checking entry ID: %s", err)
         current_id = record.id

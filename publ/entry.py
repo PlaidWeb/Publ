@@ -34,7 +34,7 @@ class Entry(caching.Memoizable):
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
-    __hash__ = caching.Memoizable.__hash__  # type:ignore
+    __hash__ = caching.Memoizable.__hash__
 
     @staticmethod
     @utils.stash
@@ -917,9 +917,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
                 LOGGER.debug("tag %s/%s entry count went to 0", tag.key, tag.name)
                 tag.delete()
 
-        for (key, tag) in set_tags.items():
-            name, hidden = tag
-
+        for (key, (name, hidden)) in set_tags.items():
             # get the underlying tag object
             tag_record = model.EntryTag.get(key=key)
             if not tag_record:
@@ -1008,7 +1006,7 @@ def remove_by_path(fullpath: str, entry_id: int):
     """ Remove entries for a path that don't match the expected ID """
 
     orm.delete(pa for pa in model.PathAlias  # type:ignore
-               if pa.entry.file_path == fullpath
+               if pa.entry and pa.entry.file_path == fullpath
                and pa.entry.id != entry_id)
     orm.delete(e for e in model.Entry  # type:ignore
                if e.file_path == fullpath

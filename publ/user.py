@@ -111,7 +111,10 @@ class User(caching.Memoizable):
     @property
     def profile(self) -> dict:
         """ Get the user's profile """
-        return self._info[0]
+        profile = self._info[0]
+        if isinstance(profile, dict):
+            return profile
+        return {}
 
     @cached_property
     def groups(self) -> typing.Set[str]:
@@ -139,7 +142,7 @@ class User(caching.Memoizable):
         return self._scope
 
     @cached_property
-    def _info(self) -> typing.Tuple[dict,
+    def _info(self) -> typing.Tuple[typing.Optional[orm.Json],
                                     typing.Optional[datetime.datetime],
                                     typing.Optional[datetime.datetime]]:
         """ Gets the user info from the database
@@ -149,10 +152,10 @@ class User(caching.Memoizable):
         with orm.db_session():
             record = model.KnownUser.get(user=self._identity)
             if record:
-                return (record.profile.copy(),
+                return (record.profile,
                         record.last_login,
                         record.last_seen)
-        return {}, None, None
+        return None, None, None
 
     @property
     def last_login(self) -> typing.Optional[arrow.Arrow]:

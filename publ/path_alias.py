@@ -143,8 +143,8 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
 
     alias_type = model.AliasType(record.alias_type)
 
-    category = (record.category.category if record.category
-                else record.entry.category if record.entry
+    category = (record.category.category or '' if record.category
+                else record.entry.category or '' if record.entry
                 else '')
 
     if record.entry:
@@ -169,7 +169,7 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
 
     LOGGER.debug("redirect entry=%s category=%s template=%s",
                  record.entry, category, record.template)
-    args = {'category': category} if category else {}
+    args: typing.Dict[str, typing.Any] = {'category': category} if category else {}
 
     if record.template or not record.entry:
         endpoint = 'category'

@@ -598,8 +598,7 @@ class TitleRenderer(HtmlRenderer):
             return '* ' + content
         raise ValueError("Not sure how we got here")
 
-    @staticmethod
-    def header(content, level):
+    def header(self, content, level):
         """ Passthrough """
         # pylint: disable=unused-argument
         return content

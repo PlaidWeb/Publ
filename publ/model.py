@@ -1,17 +1,19 @@
 # model.py
 """ Database schema for the content index """
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,unsubscriptable-object
+
+from __future__ import annotations
 
 import datetime
 import logging
 from enum import Enum
 
 from pony import orm
+from typing_extensions import TypeAlias
 
-db = orm.Database()  # pylint: disable=invalid-name
-
-DbEntity: orm.core.Entity = db.Entity
+db = orm.Database()  # pylint:disable=invalid-name
+DbEntity: TypeAlias = db.Entity  # type:ignore
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,6 +64,7 @@ class FileFingerprint(DbEntity):
 
 class Entry(DbEntity):
     """ Indexed entry """
+    id: int
     file_path = orm.Required(str, unique=True)
     category = orm.Optional(str)
     status = orm.Required(int)
@@ -83,14 +86,14 @@ class Entry(DbEntity):
     title = orm.Optional(str)
     sort_title = orm.Optional(str)
 
-    aliases = orm.Set("PathAlias")
-    tags = orm.Set("EntryTagged")
+    aliases: orm.Set[PathAlias] = orm.Set("PathAlias")
+    tags: orm.Set[EntryTagged] = orm.Set("EntryTagged")
 
-    auth = orm.Set("EntryAuth")
-    auth_log = orm.Set("AuthLog")
+    auth: orm.Set[EntryAuth] = orm.Set("EntryAuth")
+    auth_log: orm.Set[AuthLog] = orm.Set("AuthLog")
 
-    attachments = orm.Set("Entry", reverse="attached")
-    attached = orm.Set("Entry", reverse="attachments")
+    attachments: orm.Set[Entry] = orm.Set("Entry", reverse="attached")
+    attached: orm.Set[Entry] = orm.Set("Entry", reverse="attachments")
 
     canonical_path = orm.Optional(str)
 
@@ -138,7 +141,7 @@ class EntryTag(DbEntity):
     key = orm.PrimaryKey(str)
     name = orm.Required(str)
 
-    entries = orm.Set("EntryTagged")
+    entries: orm.Set[EntryTagged] = orm.Set("EntryTagged")
 
 
 class EntryTagged(DbEntity):
@@ -158,7 +161,7 @@ class Category(DbEntity):
     file_path = orm.Required(str)
     sort_name = orm.Optional(str)
 
-    aliases = orm.Set("PathAlias")
+    aliases: orm.Set[PathAlias] = orm.Set("PathAlias")
 
 
 class PathAlias(DbEntity):
