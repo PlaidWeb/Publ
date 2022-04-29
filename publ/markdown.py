@@ -88,7 +88,7 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
         self.line_id_prefix = line_id_prefix
         self.link_base = link_base
 
-    def wrap(self, source, outfile=None):
+    def wrap(self, source):
         """ called by pygments """
         # pylint:disable=unused-argument
         return self._wrap_pre(self._wrap_code(source))
