@@ -5,12 +5,16 @@ import logging
 import os
 import typing
 
-import whoosh
-import whoosh.fields
-import whoosh.index
-import whoosh.qparser
-import whoosh.query
-import whoosh.writing
+try:
+    import whoosh
+    import whoosh.fields
+    import whoosh.index
+    import whoosh.qparser
+    import whoosh.query
+    import whoosh.writing
+except ImportError:
+    whoosh = None
+
 from pony import orm
 from werkzeug.utils import cached_property
 
@@ -67,6 +71,12 @@ class SearchIndex:
         if not config.search_index:
             self.index = None
             return
+
+        if not whoosh:
+            self.index = None
+            raise RuntimeError(
+                "Search index configured but required libraries are not installed. " +
+                "See https://publ.plaidweb.site/manual/865-Python-API#search_index")
 
         self.schema = whoosh.fields.Schema(
             entry_id=whoosh.fields.ID(stored=True, unique=True),

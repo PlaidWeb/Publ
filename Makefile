@@ -2,7 +2,7 @@ all: setup version format mypy cov pylint flake8
 
 .PHONY: setup
 setup:
-	poetry install
+	poetry install -E search
 
 .PHONY: format
 format:

@@ -20,8 +20,11 @@ Flask-Caching = "^1.9.0"
 pony = "^0.7.14"
 Pygments = "^2.12.0"
 watchdog = "^1.0.2"
-Whoosh = "^2.7.4"
+Whoosh = { version = "^2.7.4", optional = true }
 Pillow = "^9.0.0"
+
+[tool.poetry.extras]
+search = ["Whoosh"]
 
 [tool.poetry.dev-dependencies]
 autopep8 = "*"
