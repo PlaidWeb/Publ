@@ -6,7 +6,6 @@ import re
 import typing
 
 import arrow
-import authl.flask
 import flask
 import werkzeug.exceptions
 from werkzeug.utils import cached_property
@@ -184,7 +183,7 @@ class Publ(flask.Flask):
 
             # Force the authl instance to load before the first request, after the
             # app has had a chance to set secret_key
-            self.before_first_request(lambda: self.authl)
+            self.before_first_request(lambda: self.authl_instance)
         else:
             # Auth isn't configured, so make some placeholder routes so that
             # url_for doesn't fail and reasonable errors get raised
@@ -232,9 +231,16 @@ class Publ(flask.Flask):
         cli.setup(self)
 
     @cached_property
-    def authl(self):
+    def authl_instance(self):
         """ Get the authl instance """
         if self.publ_config.auth:
+            try:
+                import authl.flask
+            except ImportError as err:
+                raise RuntimeError(
+                    "Authentication system requested, but the dependencies are not installed. " +
+                    "See https://publ.plaidweb.site/manual/865-Python-API#auth") from err
+
             auth_force_https = self.publ_config.auth.get(
                 'AUTH_FORCE_HTTPS',
                 self.publ_config.auth.get('AUTH_FORCE_SSL'))

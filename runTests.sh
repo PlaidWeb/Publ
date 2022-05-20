@@ -14,7 +14,7 @@
 # TEST_CACHING: set to a Flask-Caching module name, e.g. 'simple' or 'memcached'
 
 if [ "$1" != "fast" ] ; then
-    poetry install -E search || exit 1
+    poetry install -E auth -E search || exit 1
 fi
 
 FLASK_DEBUG=1 FLASK_ENV=development FLASK_APP=test_app.py poetry run flask run
