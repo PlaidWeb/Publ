@@ -191,6 +191,7 @@ notsmiley.png{quality=1} "quality 1"
 | Landscape_4.jpg{format='png',quantize=2} "png8 2"
 | Landscape_4.jpg{format='png',quantize=256} "png8 256"
 | Landscape_4.jpg{format='gif'} "gif8"
+| Landscape_4.jpg{quantize=16} "jpeg 16"
 )
 
 ```markdown
@@ -202,6 +203,7 @@ notsmiley.png{quality=1} "quality 1"
 | Landscape_4.jpg{format='png',quantize=4} "png8 4"
 | Landscape_4.jpg{format='png',quantize=2} "png8 2"
 | Landscape_4.jpg{format='gif'} "gif8"
+| Landscape_4.jpg{quantize=16} "jpeg 16"
 )
 ```
 

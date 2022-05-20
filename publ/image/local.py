@@ -27,6 +27,21 @@ PipelineEntry = typing.Tuple[typing.Optional[str],
                              typing.Optional[typing.Callable]]
 ProcessingPipeline = typing.List[PipelineEntry]
 
+# formats which support transparency
+TRANSPARENCY_FORMATS = {'.gif', '.png', '.webp'}
+
+# formats which support image quality
+QUALITY_FORMATS = {'.jpg', '.jpeg', '.webp'}
+
+# formats which support palettes
+PALETTE_FORMATS = {'.gif', '.png', '.webp'}
+
+# formats which support lossless compression
+LOSSLESS_FORMATS = {'.webp'}
+
+# formats which support image optimization
+OPTIMIZE_FORMATS = {'.jpg', '.jpeg', '.png'}
+
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
@@ -144,8 +159,8 @@ class LocalImage(Image):
         pipeline.append((None, fix_orientation))
 
         stash = {}
-        out_args = {}
-        if ext in ('.png', '.jpg', '.jpeg'):
+        out_args: typing.Dict[str, typing.Any] = {}
+        if ext in OPTIMIZE_FORMATS:
             out_args['optimize'] = True
 
         # convert to RGBA
@@ -160,12 +175,12 @@ class LocalImage(Image):
         label: typing.Optional[str]
 
         # Set RGBA flattening options
-        if (self._record.transparent and ext not in ('.png', '.gif')) or 'background' in kwargs:
+        if (self._record.transparent and ext not in TRANSPARENCY_FORMATS) or 'background' in kwargs:
             bg_color = kwargs.get('background')
             if isinstance(bg_color, (tuple, list)):
                 label = 'b' + '-'.join([str(a) for a in bg_color])
             elif bg_color:
-                label = 'b' + str(bg_color)
+                label = f'b{bg_color}'
             else:
                 label = None
             pipeline.append((label, lambda image: self.flatten(image, bg_color)))
@@ -175,18 +190,23 @@ class LocalImage(Image):
             pipeline.append(cropscale)
 
         # Set image quantization options
-        if ext in ('.gif', '.png'):
+        if ext in PALETTE_FORMATS:
             quantize = kwargs.get('quantize')
 
             def to_paletted(image):
                 if ext == '.gif' or stash.get('paletted') or quantize:
                     return image.quantize(colors=quantize or 256)
                 return image
-            pipeline.append((f'q{quantize}' if quantize else None, to_paletted))
+            pipeline.append((f'p{quantize}' if quantize else None, to_paletted))
 
-        # Set JPEG quality
-        if ext in ('.jpg', '.jpeg') and kwargs.get('quality'):
-            pipeline.append(('q' + str(kwargs['quality']), None))
+        # Set compression quality
+        if ext in LOSSLESS_FORMATS and kwargs.get('lossless'):
+            pipeline.append(('l', None))
+            out_args['lossless'] = True
+            if ext in QUALITY_FORMATS:
+                out_args['quality'] = 100
+        elif ext in QUALITY_FORMATS and kwargs.get('quality'):
+            pipeline.append((f'q{kwargs["quality"]}', None))
             out_args['quality'] = kwargs['quality']
 
         return pipeline, out_args, size
