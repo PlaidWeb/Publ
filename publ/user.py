@@ -10,7 +10,6 @@ import typing
 import urllib.parse
 
 import arrow
-import authl.disposition
 import flask
 import werkzeug.exceptions as http_error
 from pony import orm
@@ -219,8 +218,9 @@ def _get_group_set(groups):
 
 
 @orm.db_session(retry=5)
-def register(verified: authl.disposition):
+def register(verified):
     """ Registers a user from the on_verified Authl hook """
+    import authl.disposition
     if isinstance(verified, authl.disposition.Verified):
         LOGGER.info("Got login from user %s with profile %s", verified.identity, verified.profile)
         identity = utils.canonicize_url(verified.identity)
