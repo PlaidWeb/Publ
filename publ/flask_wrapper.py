@@ -236,10 +236,10 @@ class Publ(flask.Flask):
         if self.publ_config.auth:
             try:
                 import authl.flask
-            except ImportError as err:
-                raise RuntimeError(
-                    "Authentication system requested, but the dependencies are not installed. " +
-                    "See https://publ.plaidweb.site/manual/865-Python-API#auth") from err
+            except ImportError:
+                LOGGER.error(
+                    "Authentication system requested, but the dependencies are not installed. "
+                    "See https://publ.plaidweb.site/manual/865-Python-API#auth")
 
             auth_force_https = self.publ_config.auth.get(
                 'AUTH_FORCE_HTTPS',

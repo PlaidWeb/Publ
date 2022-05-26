@@ -74,8 +74,8 @@ class SearchIndex:
 
         if not whoosh:
             self.index = None
-            raise RuntimeError(
-                "Search index configured but required libraries are not installed. " +
+            LOGGER.error(
+                "Search index configured but required libraries are not installed. "
                 "See https://publ.plaidweb.site/manual/865-Python-API#search_index")
 
         self.schema = whoosh.fields.Schema(
