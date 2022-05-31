@@ -183,7 +183,7 @@ class Publ(flask.Flask):
 
             # Force the authl instance to load before the first request, after the
             # app has had a chance to set secret_key
-            self.before_first_request(lambda: self.authl_instance)
+            self.before_first_request(lambda: self.auth)
         else:
             # Auth isn't configured, so make some placeholder routes so that
             # url_for doesn't fail and reasonable errors get raised
@@ -231,7 +231,7 @@ class Publ(flask.Flask):
         cli.setup(self)
 
     @cached_property
-    def authl_instance(self):
+    def auth(self):
         """ Get the authl instance """
         if self.publ_config.auth:
             try:

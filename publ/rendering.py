@@ -201,8 +201,10 @@ def render_exception(error):
                                               **request.args))
 
         flask.g.needs_token = True  # pylint:disable=assigning-non-slot
-        return app.authl.render_login_form(destination='/' + utils.redir_path(),
-                                           error=flask.g.get('token_error')), 401
+        if app.auth:
+            return app.auth.render_login_form(
+                destination='/' + utils.redir_path(),
+                error=flask.g.get('token_error')), 401
 
     result = handle_path_alias()
     if result:

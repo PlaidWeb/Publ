@@ -4,7 +4,16 @@
 import logging
 import os
 
-import authl.flask
+try:
+    import authl.flask
+except ImportError:
+    authl = None
+
+try:
+    import whoosh
+except ImportError:
+    whoosh = None
+
 import flask
 
 import publ
@@ -33,8 +42,8 @@ config = {
     'auth': {
         'TEST_ENABLED': True,
 
-        'INDIEAUTH_CLIENT_ID': authl.flask.client_id,
-        'INDIELOGIN_CLIENT_ID': authl.flask.client_id,
+        'INDIEAUTH_CLIENT_ID': authl.flask.client_id if authl else None,
+        'INDIELOGIN_CLIENT_ID': authl.flask.client_id if authl else None,
 
         'FEDIVERSE_NAME': 'Publ test suite',
 
@@ -45,12 +54,12 @@ config = {
         'EMAIL_FROM': 'nobody@example.com',
         'EMAIL_SUBJECT': 'Log in to authl test',
         'EMAIL_CHECK_MESSAGE': 'Use the link printed to the test console',
-    },
+    } if authl else {},
     'user_list': os.path.join(APP_PATH, 'users.cfg'),
     'layout': {
         'max_width': 768,
     },
-    'search_index': '_index',
+    'search_index': '_index' if whoosh else None,
     'index_enable_watchdog': False,
 }
 
