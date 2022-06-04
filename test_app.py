@@ -43,7 +43,6 @@ config = {
         'TEST_ENABLED': True,
 
         'INDIEAUTH_CLIENT_ID': authl.flask.client_id if authl else None,
-        'INDIELOGIN_CLIENT_ID': authl.flask.client_id if authl else None,
 
         'FEDIVERSE_NAME': 'Publ test suite',
 
