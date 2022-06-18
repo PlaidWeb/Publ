@@ -13,7 +13,9 @@ import time
 import typing
 
 import flask
+import itsdangerous
 import PIL.Image
+import werkzeug.exceptions as http_error
 from pony import orm
 
 from .. import model, utils
@@ -242,24 +244,40 @@ def clean_cache(max_age: float):
     return LocalImage.clean_cache(max_age)
 
 
-def get_async(filename: str):
-    """ Asynchronously fetch an image """
+def get_async(render_spec: str):
+    """ Quasi-asynchronously fetch an image that needs to be rendered """
 
-    if os.path.isfile(os.path.join(config.static_folder, filename)):
-        return flask.redirect(flask.url_for('static', filename=filename))
+    try:
+        # Get the image request parameters
+        file_path, output_scale, args = itsdangerous.URLSafeSerializer(
+            flask.current_app.secret_key).loads(render_spec)
+    except itsdangerous.BadData as error:
+        raise http_error.BadRequest(f"Invalid image request: {error}")
+
+    asset = _get_asset(file_path)
+    if not asset:
+        raise http_error.NotFound(f"File not found: {file_path}")
+    renderer = LocalImage(asset, [])
+    output_path, _, pending = renderer.render_async(output_scale, **args)
+
+    LOGGER.debug("Request for %s (%d) %s -> %s pending=%s", file_path, output_scale, args,
+                 output_path, pending)
+
+    if not pending:
+        return flask.redirect(output_path)
 
     retry_count = int(flask.request.args.get('retry_count', 0))
     if retry_count < 10:
         time.sleep(0.25)  # ghastly hack to get the client to backoff a bit
         return flask.redirect(flask.url_for('async',
-                                            filename=filename,
+                                            render_spec=render_spec,
                                             cb=random.randint(0, 2**48),
                                             retry_count=retry_count + 1))
 
     # the image isn't available yet; generate a placeholder and let the
     # client attempt to re-fetch periodically, maybe
     vals = [int(b) for b in hashlib.md5(
-        filename.encode('utf-8')).digest()[0:12]]
+        output_path.encode('utf-8')).digest()[0:12]]
     placeholder = PIL.Image.new('RGB', (2, 2))
     placeholder.putdata(list(zip(vals[0::3], vals[1::3], vals[2::3])))
     outbytes = io.BytesIO()

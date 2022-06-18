@@ -9,6 +9,7 @@ import time
 import typing
 
 import flask
+import itsdangerous
 import PIL.Image
 import slugify
 from atomicwrites import atomic_write
@@ -109,7 +110,7 @@ class LocalImage(Image):
     def _filename(self):
         return os.path.basename(self._record.file_path)
 
-    def _get_rendition(self, output_scale=1, **kwargs):
+    def _get_rendition(self, output_scale=1, render=False, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
@@ -133,10 +134,13 @@ class LocalImage(Image):
             LOGGER.debug("rendition %s already exists", out_fullpath)
             os.utime(out_fullpath)
             pending = False
-        else:
+        elif render:
             LOGGER.debug("scheduling %s for render", out_fullpath)
             LocalImage.thread_pool().submit(
                 self._render, out_fullpath, [op for _, op in pipeline if op], out_args)
+            pending = True
+        else:
+            LOGGER.debug("rendition %s does not exist, waiting for a real request", out_fullpath)
             pending = True
 
         return out_rel_path, size, pending
@@ -301,13 +305,20 @@ class LocalImage(Image):
         quality -- the JPEG quality to save the image as
         quantize -- how large a palette to use for GIF or PNG images
         """
-        out_rel_path, size, pending = self._get_rendition(output_scale, **kwargs)
+        out_rel_path, size, pending = self._get_rendition(output_scale, False, **kwargs)
 
         if pending:
+            signer = itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
             return flask.url_for('async',
-                                 filename=out_rel_path,
+                                 render_spec=signer.dumps(
+                                     (self._record.file_path, output_scale, kwargs)),
                                  _external=kwargs.get('absolute')), size
         return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+
+    def render_async(self, output_scale, **kwargs):
+        """ Initiate the rendering of an image """
+        out_rel_path, size, pending = self._get_rendition(output_scale, True, **kwargs)
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size, pending
 
     @cached_property
     def _image(self):
