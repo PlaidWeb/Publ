@@ -94,9 +94,12 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
         return self._wrap_code(source)
 
     def _wrap_div(self, inner):
+        """ Don't wrap the inner code in a <div> """
+        # pylint:disable=no-self-use
         yield from inner
 
     def _wrap_code(self, source):
+        """ Format the lines as table row-likes """
         line_number = 0
         for i, line in source:
             if i == 1:
