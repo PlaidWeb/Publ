@@ -43,6 +43,19 @@ LOSSLESS_FORMATS = {'.webp'}
 # formats which support image optimization
 OPTIMIZE_FORMATS = {'.jpg', '.jpeg', '.png'}
 
+# arguments that affect the final rendition
+RENDITION_ARG_FILTER = {
+    'scale', 'scale_min_width', 'scale_min_height',
+    'crop',
+    'width', 'height',
+    'max_width', 'max_height',
+    'resize',
+    'fill_crop_x', 'fill_crop_y',
+    'format',
+    'background',
+    'quality',
+    'quantize',
+}
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
@@ -309,9 +322,11 @@ class LocalImage(Image):
 
         if pending:
             signer = itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
-            return flask.url_for('async',
-                                 render_spec=signer.dumps(
-                                     (self._record.file_path, output_scale, kwargs)),
+            return flask.url_for(
+                'async',
+                render_spec=signer.dumps(
+                                     (self._record.file_path, output_scale, 
+                                     {k:v for k,v in kwargs.items() if k in RENDITION_ARG_FILTER})),
                                  _external=kwargs.get('absolute')), size
         return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
@@ -504,6 +519,8 @@ class LocalImage(Image):
     def flatten(image, bgcolor=None):
         """ Flatten an image, with an optional background color """
         if bgcolor:
+            if isinstance(bgcolor, list):
+                bgcolor = tuple(bgcolor)
             background = PIL.Image.new('RGB', image.size, bgcolor)
             background.paste(image, mask=image.split()[3])
             image = background
