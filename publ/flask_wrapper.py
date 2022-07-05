@@ -113,7 +113,7 @@ class Publ(flask.Flask):
         self.add_url_rule('/<path:path>.PUBL_PATHALIAS',
                           'path_alias', rendering.render_path_alias)
 
-        self.add_url_rule('/_async/<path:filename>',
+        self.add_url_rule('/_async/<path:render_spec>',
                           'async', image.get_async)
 
         self.add_url_rule('/_', 'chit', rendering.render_transparent_chit)

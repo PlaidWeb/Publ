@@ -9,6 +9,7 @@ import time
 import typing
 
 import flask
+import itsdangerous
 import PIL.Image
 import slugify
 from atomicwrites import atomic_write
@@ -42,6 +43,19 @@ LOSSLESS_FORMATS = {'.webp'}
 # formats which support image optimization
 OPTIMIZE_FORMATS = {'.jpg', '.jpeg', '.png'}
 
+# arguments that affect the final rendition
+RENDITION_ARG_FILTER = {
+    'scale', 'scale_min_width', 'scale_min_height',
+    'crop',
+    'width', 'height',
+    'max_width', 'max_height',
+    'resize',
+    'fill_crop_x', 'fill_crop_y',
+    'format',
+    'background',
+    'quality',
+    'quantize',
+}
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
@@ -109,7 +123,7 @@ class LocalImage(Image):
     def _filename(self):
         return os.path.basename(self._record.file_path)
 
-    def _get_rendition(self, output_scale=1, **kwargs):
+    def _get_rendition(self, output_scale=1, render=False, **kwargs):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
@@ -133,10 +147,13 @@ class LocalImage(Image):
             LOGGER.debug("rendition %s already exists", out_fullpath)
             os.utime(out_fullpath)
             pending = False
-        else:
+        elif render:
             LOGGER.debug("scheduling %s for render", out_fullpath)
             LocalImage.thread_pool().submit(
                 self._render, out_fullpath, [op for _, op in pipeline if op], out_args)
+            pending = True
+        else:
+            LOGGER.debug("rendition %s does not exist, waiting for a real request", out_fullpath)
             pending = True
 
         return out_rel_path, size, pending
@@ -301,13 +318,22 @@ class LocalImage(Image):
         quality -- the JPEG quality to save the image as
         quantize -- how large a palette to use for GIF or PNG images
         """
-        out_rel_path, size, pending = self._get_rendition(output_scale, **kwargs)
+        out_rel_path, size, pending = self._get_rendition(output_scale, False, **kwargs)
 
         if pending:
-            return flask.url_for('async',
-                                 filename=out_rel_path,
+            signer = itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
+            return flask.url_for(
+                'async',
+                render_spec=signer.dumps(
+                                     (self._record.file_path, output_scale, 
+                                     {k:v for k,v in kwargs.items() if k in RENDITION_ARG_FILTER})),
                                  _external=kwargs.get('absolute')), size
         return utils.static_url(out_rel_path, kwargs.get('absolute')), size
+
+    def render_async(self, output_scale, **kwargs):
+        """ Initiate the rendering of an image """
+        out_rel_path, size, pending = self._get_rendition(output_scale, True, **kwargs)
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size, pending
 
     @cached_property
     def _image(self):
@@ -493,6 +519,8 @@ class LocalImage(Image):
     def flatten(image, bgcolor=None):
         """ Flatten an image, with an optional background color """
         if bgcolor:
+            if isinstance(bgcolor, list):
+                bgcolor = tuple(bgcolor)
             background = PIL.Image.new('RGB', image.size, bgcolor)
             background.paste(image, mask=image.split()[3])
             image = background

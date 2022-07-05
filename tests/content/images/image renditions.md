@@ -46,9 +46,9 @@ Image using static path
 
 Force absolute URLs
 
-![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg)
+![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})
 
-`![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg)`
+`![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})`
 
 
 ## Local images
