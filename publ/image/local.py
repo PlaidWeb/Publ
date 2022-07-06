@@ -57,6 +57,7 @@ RENDITION_ARG_FILTER = {
     'quantize',
 }
 
+
 def fix_orientation(image: PIL.Image) -> PIL.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
 
@@ -325,9 +326,9 @@ class LocalImage(Image):
             return flask.url_for(
                 'async',
                 render_spec=signer.dumps(
-                                     (self._record.file_path, output_scale, 
-                                     {k:v for k,v in kwargs.items() if k in RENDITION_ARG_FILTER})),
-                                 _external=kwargs.get('absolute')), size
+                    (self._record.file_path, output_scale,
+                     {k: v for k, v in kwargs.items() if k in RENDITION_ARG_FILTER})),
+                _external=kwargs.get('absolute')), size
         return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
     def render_async(self, output_scale, **kwargs):

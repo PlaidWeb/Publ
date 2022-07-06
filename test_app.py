@@ -59,7 +59,7 @@ config = {
         'max_width': 768,
     },
     'search_index': '_index' if whoosh else None,
-    'index_enable_watchdog': False,
+    'index_enable_watchdog': True,
 }
 
 app = publ.Publ(__name__, config)

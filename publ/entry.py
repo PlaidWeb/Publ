@@ -1,5 +1,6 @@
 """ Functions for handling content items """
 
+import datetime
 import email
 import hashlib
 import logging
@@ -831,8 +832,10 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     if 'Date' in entry:
         try:
             entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
-        except arrow.parser.ParserError:
+        except Exception as error:  # pylint:disable=broad-except
+            LOGGER.info("Could not parse date %s (%s); setting to now", entry_date, error)
             entry_date = None
+
     if entry_date is None:
         del entry['Date']
         entry_date = arrow.get(
@@ -845,15 +848,22 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
         try:
             last_modified = arrow.get(
                 last_modified_str, tzinfo=config.timezone)
-        except arrow.parser.ParserError:
+        except Exception as error:  # pylint:disable=broad-except
+            LOGGER.info("Could not parse last-modified %s (%s); setting to now",
+                        last_modified_str, error)
             last_modified = arrow.get()
             del entry['Last-Modified']
             entry['Last-Modified'] = last_modified.format()
             fixup_needed = True
 
-    values['display_date'] = entry_date.isoformat()
-    values['utc_timestamp'] = entry_date.to('utc').int_timestamp
-    values['local_date'] = entry_date.naive
+    for ref_date in (entry_date, arrow.get(datetime.datetime.max)):
+        try:
+            values['display_date'] = ref_date.isoformat()
+            values['utc_timestamp'] = ref_date.to('utc').int_timestamp
+            values['local_date'] = ref_date.naive
+            break
+        except Exception as error:  # pylint:disable=broad-except
+            LOGGER.warning("%s: Error setting entry date: %s", fullpath, error)
 
     LOGGER.debug("getting entry %s with id %d", fullpath, entry_id)
 
