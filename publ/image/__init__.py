@@ -254,11 +254,14 @@ def get_async(render_spec: str):
     except itsdangerous.BadData as error:
         raise http_error.BadRequest(f"Invalid image request: {error}")
 
-    asset = _get_asset(file_path)
-    if not asset:
-        raise http_error.NotFound(f"File not found: {file_path}")
-    renderer = LocalImage(asset, [])
-    output_path, _, pending = renderer.render_async(output_scale, **args)
+    try:
+        asset = _get_asset(file_path)
+        if not asset:
+            raise http_error.NotFound(f"File not found: {file_path}")
+        renderer = LocalImage(asset, [])
+        output_path, _, pending = renderer.render_async(output_scale, **args)
+    except FileNotFoundError as err:
+        raise http_error.NotFound(f"File not found: {file_path}") from err
 
     LOGGER.debug("Request for %s (%d) %s -> %s pending=%s", file_path, output_scale, args,
                  output_path, pending)
