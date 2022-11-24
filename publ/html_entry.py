@@ -5,6 +5,7 @@ import html
 import logging
 import re
 import typing
+from typing import Optional
 
 import flask
 
@@ -145,9 +146,9 @@ class HTMLStripper(utils.HTMLTransform):
     """ Strip all HTML tags from a document, except those which are allowed """
 
     def __init__(self,
-                 allowed_tags: typing.Iterable[str] = None,
-                 allowed_attrs: typing.Iterable[str] = None,
-                 remove_elements: typing.Iterable[str] = None):
+                 allowed_tags: Optional[typing.Iterable[str]] = None,
+                 allowed_attrs: Optional[typing.Iterable[str]] = None,
+                 remove_elements: Optional[typing.Iterable[str]] = None):
         super().__init__()
         self._allowed_tags = set(utils.as_list(allowed_tags))
         self._allowed_attrs = set(utils.as_list(allowed_attrs))
@@ -183,9 +184,9 @@ class HTMLStripper(utils.HTMLTransform):
 
 
 def strip_html(text,
-               allowed_tags: typing.Iterable[str] = None,
-               allowed_attrs: typing.Iterable[str] = None,
-               remove_elements: typing.Iterable[str] = None) -> str:
+               allowed_tags: Optional[typing.Iterable[str]] = None,
+               allowed_attrs: Optional[typing.Iterable[str]] = None,
+               remove_elements: Optional[typing.Iterable[str]] = None) -> str:
     """ Strip all HTML formatting off of a chunk of text """
     strip = HTMLStripper(allowed_tags, allowed_attrs, remove_elements)
     strip.feed(str(text))

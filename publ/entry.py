@@ -46,7 +46,7 @@ class Entry(caching.Memoizable):
         """
         return Entry(Entry.load.__name__, record)
 
-    def __init__(self, create_key, record):
+    def __init__(self, create_key, record) -> None:
         """ Instantiate the Entry wrapper """
 
         assert create_key == Entry.load.__name__, "Entry must be created with Entry.load()"
@@ -680,7 +680,7 @@ class Entry(caching.Memoizable):
         return isinstance(other, Entry) and (other is self or other._record == self._record)
 
     @staticmethod
-    def filter_auth(entries, count=None, unauthorized=0):
+    def filter_auth(entries, count=None, unauthorized=0) -> typing.List['Entry']:
         """ Filter a list of entries based on authorization, with a maximum
         unauthorized entry count """
 

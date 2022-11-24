@@ -8,6 +8,7 @@ import datetime
 import logging
 import typing
 import urllib.parse
+from typing import Optional
 
 import arrow
 import flask
@@ -165,7 +166,7 @@ class User(caching.Memoizable):
         date = self._info[2]
         return arrow.get(date).to(config.timezone) if date else None
 
-    def token(self, lifetime: int, scope: str = None) -> str:
+    def token(self, lifetime: int, scope: Optional[str] = None) -> str:
         """ Get a bearer token for this user """
         return tokens.get_token(self.identity, lifetime, scope)
 

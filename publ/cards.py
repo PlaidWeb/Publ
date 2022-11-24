@@ -13,7 +13,7 @@ class CardData():
     """ Extracted card data """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.images: typing.List[
             typing.Tuple[
                 str,

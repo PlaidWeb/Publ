@@ -6,6 +6,7 @@ import logging
 import time
 import typing
 import urllib.parse
+from typing import Optional
 
 import arrow
 import flask
@@ -26,7 +27,7 @@ def signer(context: str):
     return itsdangerous.URLSafeSerializer(str(current_app.secret_key) + context)
 
 
-def get_token(id_url: str, lifetime: int, scope: str = None, context: str = '') -> str:
+def get_token(id_url: str, lifetime: int, scope: Optional[str] = None, context: str = '') -> str:
     """ Gets a signed token for the given identity"""
     token = {'me': utils.canonicize_url(id_url)}
     if scope:
@@ -67,7 +68,7 @@ def request(user):
 def send_auth_ticket(subject: str,
                      resource: str,
                      endpoint: str,
-                     scope: str = None):
+                     scope: Optional[str] = None):
     """ Initiate the TicketAuth flow """
     from .flask_wrapper import current_app
 

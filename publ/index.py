@@ -255,7 +255,7 @@ class IndexWatchdog(watchdog.events.PatternMatchingEventHandler):
             self.update_file(event.src_path)
 
 
-def background_scan(content_dir):
+def background_scan(content_dir) -> None:
     """ Start background scanning a directory for changes """
     from .flask_wrapper import current_app
     observer = watchdog.observers.Observer()
@@ -265,7 +265,7 @@ def background_scan(content_dir):
     observer.start()
 
 
-def prune_missing(table):
+def prune_missing(table) -> None:
     """ Prune any files which are missing from the specified table """
     LOGGER.debug("Pruning missing %s files", table.__name__)
     removed_paths: typing.List[str] = []
@@ -295,7 +295,7 @@ def prune_missing(table):
         kill(item)
 
 
-def scan_index(content_dir, wait_start=True):
+def scan_index(content_dir, wait_start=True) -> None:
     """ Scan all files in a content directory """
     LOGGER.debug("Reindexing content from %s", content_dir)
 

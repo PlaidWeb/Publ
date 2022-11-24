@@ -7,6 +7,7 @@ import logging
 import re
 import typing
 import urllib.parse
+from typing import Optional
 
 import flask
 import misaka
@@ -630,7 +631,7 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
     return html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
 
 
-def toc_to_html(toc: TocBuffer, max_level: int = None) -> str:
+def toc_to_html(toc: TocBuffer, max_level: Optional[int] = None) -> str:
     """ Convert a TocBuffer to an appropriate <ol> """
 
     if not toc:

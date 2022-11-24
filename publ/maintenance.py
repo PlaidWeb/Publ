@@ -7,7 +7,7 @@ import typing
 class Maintenance:
     """ Container for periodic maintenance tasks """
 
-    def __init__(self, app):
+    def __init__(self, app: typing.Any):
         self.app = app
         self.tasks: typing.Dict[typing.Callable[[], None],
                                 typing.Dict[str, float]] = {}

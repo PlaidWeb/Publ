@@ -5,6 +5,7 @@ import base64
 import logging
 import os
 import typing
+from typing import Optional
 
 import flask
 import werkzeug.exceptions as http_error
@@ -57,7 +58,7 @@ def get_template(template: str, relation) -> typing.Optional[str]:
     return tmpl.filename if tmpl else None
 
 
-def handle_path_alias(path: str = None):
+def handle_path_alias(path: Optional[str] = None):
     """ Check to see if the current request is a redirection """
     alias = path_alias.get_alias(path or request.path)
 
@@ -302,7 +303,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         record = model.Entry.select(lambda e: e.category ==
                                     test_path and e.visible).exists()  # type:ignore
         if record:
-            return redirect(url_for('category', category=test_path, **request.args),
+            args = {category: test_path, **request.args}
+            return redirect(url_for('category', values=args),
                             code=301)
 
         # nope, we just don't know what this is
@@ -329,7 +331,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
                       'ETag': f'"{etag}"'}
 
 
-@orm.db_session
+@ orm.db_session
 def render_login_form(redir=None, **kwargs):
     """ Renders the login form using the mapped login template """
 

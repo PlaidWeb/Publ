@@ -199,8 +199,9 @@ class View(caching.Memoizable):
     @cached_property
     def last_modified(self) -> typing.Optional[Entry]:
         """ Gets the most recent modification time for all entries in the view """
-        if self.entries:
-            latest = max(self.entries(), key=lambda x: x.last_modified)
+        entries = self.entries()
+        if entries:
+            latest = max(entries, key=lambda x: x.last_modified)
             return arrow.get(latest.last_modified)
         return arrow.get()
 

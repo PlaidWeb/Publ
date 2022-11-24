@@ -277,8 +277,11 @@ def get_async(render_spec: str):
                                             cb=random.randint(0, 2**48),
                                             retry_count=retry_count + 1))
 
-    # the image isn't available yet; generate a placeholder and let the
-    # client attempt to re-fetch periodically, maybe
+    return make_placeholder(output_path)
+
+
+def make_placeholder(output_path: str):
+    """ Generate a placeholder image for the given file path """
     vals = [int(b) for b in hashlib.md5(
         output_path.encode('utf-8')).digest()[0:12]]
     placeholder = PIL.Image.new('RGB', (2, 2))

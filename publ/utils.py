@@ -10,6 +10,7 @@ import os
 import re
 import typing
 import urllib.parse
+from typing import Optional
 
 import arrow
 import flask
@@ -53,7 +54,7 @@ class CallableProxy:
         from . import user  # pylint:disable=cyclic-import
         return self._cached_default(flask.request.url, user.get_active())
 
-    def __call__(self, *args, **kwargs) -> T:
+    def __call__(self, *args, **kwargs):
         # use the new kwargs to override the defaults
         return self._func(*args, **kwargs)
 
@@ -401,7 +402,7 @@ class TemplateConverter(werkzeug.routing.UnicodeConverter):
         return super().to_python(value)
 
 
-def redir_path(path: str = None) -> str:
+def redir_path(path: typing.Optional[str] = None) -> str:
     """ Convert a URI path to a path fragment, suitable for url_for
 
     :param str path: The path to redirect to; uses the current request.full_path
@@ -516,7 +517,7 @@ def tag_cname(tag) -> str:
 class TagSet(typing.Set[str]):
     """ A frozenset-equivalent class that is case-insensitive """
 
-    def __init__(self, contents: ListLike[str] = None):
+    def __init__(self, contents: typing.Optional[ListLike[str]] = None):
         super().__init__()
         if contents:
             storage = {tag_key(v): tag_cname(v) for v in contents}
@@ -598,7 +599,7 @@ def strip_single_paragraph(text: str):
     return stripped
 
 
-def parse_spec(text: str, pos_limit: int = None) -> typing.Tuple[str, list, ArgDict]:
+def parse_spec(text: str, pos_limit: Optional[int] = None) -> typing.Tuple[str, list, ArgDict]:
     """ Given a string like ``foo{10,bar=baz}``, parse out the argument lists.
 
     :param str text: The text to parse
@@ -613,7 +614,7 @@ def parse_spec(text: str, pos_limit: int = None) -> typing.Tuple[str, list, ArgD
     return text, [], {}
 
 
-def parse_arglist(args: str, pos_limit: int = None) -> typing.Tuple[list, ArgDict]:
+def parse_arglist(args: str, pos_limit: Optional[int] = None) -> typing.Tuple[list, ArgDict]:
     """ Parse an argument list into pos_args, kw_args"""
     tree = ast.parse(f'f({args})')
     expr = typing.cast(ast.Expr, tree.body[0])

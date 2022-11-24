@@ -3,6 +3,7 @@
 import html
 import typing
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import flask
 
@@ -84,8 +85,8 @@ class Image(ABC):
         return attrs
 
     def get_img_tag(self,
-                    title: str = None,
-                    alt_text: str = None,
+                    title: Optional[str] = None,
+                    alt_text: Optional[str] = None,
                     _show_thumbnail: bool = True,
                     **kwargs) -> str:
         """ Build a <img> tag for the image with the specified options.
