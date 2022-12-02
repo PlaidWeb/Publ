@@ -303,9 +303,9 @@ def render_category_path(category: str, template: typing.Optional[str]):
         record = model.Entry.select(lambda e: e.category ==
                                     test_path and e.visible).exists()  # type:ignore
         if record:
-            args = {category: test_path, **request.args}
-            return redirect(url_for('category', values=args),
-                            code=301)
+            LOGGER.debug("Redirecting to category %s; request.args=%s", test_path, request.args)
+            return redirect(url_for('category', category=test_path,
+                                    **request.args.to_dict(False)), code=301)  # type:ignore
 
         # nope, we just don't know what this is
         raise http_error.NotFound(f"No such view '{template}'")
