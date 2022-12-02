@@ -303,8 +303,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         record = model.Entry.select(lambda e: e.category ==
                                     test_path and e.visible).exists()  # type:ignore
         if record:
-            args = {category: test_path, **request.args}
-            return redirect(url_for('category', values=args),
+            LOGGER.debug("Redirecting to category; request.args=%s", request.args)
+            return redirect(url_for('category', category=test_path, **request.args),
                             code=301)
 
         # nope, we just don't know what this is
