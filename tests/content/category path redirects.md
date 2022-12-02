@@ -6,6 +6,7 @@ UUID: 74995fc6-d611-5ed9-b77d-82a31d50cd7a
 * [fully-formed category](/categories/)
 * [missing terminal /](/categories)
 * [missing terminal / with args](/categories?foo=bar)
+* [missing terminal / with multi-args](/categories?foo=bar&foo=baz)
 * [category with template](/categories/index)
 * [category with subcat](/categories/subcat1)
 * [category with missing template](/categories/xyzzy)
