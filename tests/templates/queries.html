@@ -30,13 +30,6 @@
 {% endfor %}
 </ul>
 
-<h2>id=None</h2>
-<ul>
-{% for item in get_view(id=None).entries %}
-<li>{{item.title}} ({{item.entry_type}})</li>
-{% endfor %}
-</ul>
-
 <h2>date=None</h2>
 <ul>
 {% for item in get_view(date=None).entries %}

@@ -78,22 +78,26 @@ class View(caching.Memoizable):
                 spec[pagination] = input_spec[pagination]
                 break
 
-        self._order_by = spec.get('order', 'newest')
+        self.spec = spec.copy()
 
-        self.spec = spec
+        self._order_by = spec.pop('order', 'newest').lower()
 
         if 'start' in spec and paginated:
             if self._order_by == 'oldest':
-                self.spec['first'] = self.spec['start']
+                spec['first'] = spec['start']
             elif self._order_by == 'newest':
-                self.spec['last'] = self.spec['start']
+                spec['last'] = spec['start']
+        spec.pop('start', None)
+
+
+        count = spec.pop('count', None)
 
         self._entries = queries.build_query(
             spec).order_by(*queries.ORDER_BY[self._order_by])
 
         if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
-        elif 'count' in self.spec:
+        elif count is not None:
             self.type = 'count'
         else:
             self.type = ''

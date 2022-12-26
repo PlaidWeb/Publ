@@ -269,64 +269,65 @@ def build_query(spec):
         before -- get entries from before this one
         after -- get entries from after this one
     """
-    # pylint:disable=too-many-branches
 
     query = model.Entry.select()
 
-    # primarily restrict by publication status
-    if spec.get('_all', False):
+    # Things that have interdependencies between multiple keys
+    state = {}
+    state_keys = {
+        '_all',
+        '_deleted',
+        'future',
+        'recurse',
+        'category',
+        'tag',
+        'tag_filter',
+    }
+
+    # single-parameter filters
+    filters = {
+        'category_not': where_entry_category_not,
+        'entry_type': where_entry_type,
+        'entry_type_not': where_entry_type_not,
+        'date': where_entry_date,
+        'last': lambda query, ref: where_entry_last(query, get_entry(ref)),
+        'first': lambda query, ref: where_entry_first(query, get_entry(ref)),
+        'before': lambda query, ref: where_before_entry(query, get_entry(ref)),
+        'after': lambda query, ref: where_after_entry(query, get_entry(ref)),
+        'attachments': lambda query, ref: where_entry_attachments(query, get_entry(ref)),
+        'attached': lambda query, ref: where_entry_attached(query, get_entry(ref)),
+        'has_attachments': where_entry_has_attachments,
+        'is_attached': where_entry_is_attached
+    }
+
+    try:
+        for key, val in spec.items():
+            if key in state_keys:
+                state[key] = val
+            else:
+                # Make sure it's a valid filter function even if it isn't being used
+                filter_func = filters[key]
+                if val is not None:
+                    query = filter_func(query, val)
+    except KeyError as err:
+        raise ValueError(f'Unknown query parameter {err}') from err
+
+    # Apply the filters from the stateful arguments
+    if state.get('_all', False):
         pass
-    elif spec.get('_deleted', False):
+    elif state.get('_deleted', False):
         query = where_entry_deleted(query)
     else:
-        if spec.get('future', False):
+        if state.get('future', False):
             query = where_entry_visible_future(query)
         else:
             query = where_entry_visible(query)
 
-    # restrict by category
-    if spec.get('category') is not None:
-        recurse = spec.get('recurse', False)
-        query = where_entry_category(query, spec.get('category', ''), recurse)
-
-    if spec.get('category_not') is not None:
-        query = where_entry_category_not(query, spec.get('category_not'))
-
-    if spec.get('entry_type') is not None:
-        query = where_entry_type(query, spec['entry_type'])
-
-    if spec.get('entry_type_not') is not None:
-        query = where_entry_type_not(query, spec['entry_type_not'])
-
-    if spec.get('tag') is not None:
-        query = where_entry_tag(query, spec['tag'],
-                                FilterCombiner[spec.get('tag_filter', 'ANY').upper()])
-
-    if spec.get('date') is not None:
-        query = where_entry_date(query, spec['date'])
-
-    if spec.get('last') is not None:
-        query = where_entry_last(query, get_entry(spec['last']))
-
-    if spec.get('first') is not None:
-        query = where_entry_first(query, get_entry(spec['first']))
-
-    if spec.get('before') is not None:
-        query = where_before_entry(query, get_entry(spec['before']))
-
-    if spec.get('after') is not None:
-        query = where_after_entry(query, get_entry(spec['after']))
-
-    if spec.get('attachments') is not None:
-        query = where_entry_attachments(query, get_entry(spec['attachments']))
-
-    if spec.get('attached') is not None:
-        query = where_entry_attached(query, get_entry(spec['attached']))
-
-    if spec.get('has_attachments') is not None:
-        query = where_entry_has_attachments(query, spec['has_attachments'])
-
-    if spec.get('is_attached') is not None:
-        query = where_entry_is_attached(query, spec['is_attached'])
+    if state.get('category') is not None:
+        query = where_entry_category(query, state.get('category', ''),
+                                     state.get('recurse', False))
+    if state.get('tag') is not None:
+        query = where_entry_tag(query, state['tag'],
+                                FilterCombiner[state.get('tag_filter', 'ANY').upper()])
 
     return query.distinct()
