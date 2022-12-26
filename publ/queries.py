@@ -310,7 +310,7 @@ def build_query(spec):
                 if val is not None:
                     query = filter_func(query, val)
     except KeyError as err:
-        raise ValueError(f'Unknown query parameter {err}') from err
+        raise TypeError(f"Got an unknown query parameter '{err}'") from err
 
     # Apply the filters from the stateful arguments
     if state.get('_all', False):
