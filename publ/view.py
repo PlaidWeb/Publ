@@ -89,7 +89,6 @@ class View(caching.Memoizable):
                 spec['last'] = spec['start']
         spec.pop('start', None)
 
-
         count = spec.pop('count', None)
 
         self._entries = queries.build_query(
@@ -417,7 +416,11 @@ class View(caching.Memoizable):
         date, interval, date_format = utils.parse_date(self.spec['date'])
         start_date, end_date = date.span(interval)
 
-        base_query = queries.build_query(base)
+        base_query = queries.build_query({
+            k: v
+            for k, v in base.items()
+            if k not in ('order', 'count')})
+
         oldest_neighbor = base_query.filter(lambda e: e.local_date < start_date.datetime)\
             .order_by(*queries.ORDER_BY['newest']).first()
         newest_neighbor = base_query.filter(lambda e: e.local_date > end_date.datetime)\
@@ -429,13 +432,11 @@ class View(caching.Memoizable):
         if newest_neighbor:
             newer_date = newest_neighbor.display_date
             newer_view = View.load({**base,
-                                    'order': self._order_by,
                                     'date': arrow.get(newer_date).format(date_format)})
 
         if oldest_neighbor:
             older_date = oldest_neighbor.display_date
             older_view = View.load({**base,
-                                    'order': self._order_by,
                                     'date': arrow.get(older_date).format(date_format)})
 
         return older_view, newer_view

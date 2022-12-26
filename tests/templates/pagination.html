@@ -1,0 +1,24 @@
+<h1>Pagination testing</h1>
+
+{% macro display(v) %}
+<ul>
+{% if v.previous %}<li>previous: <a href="{{v.previous.link(template=template)}}">{{v.previous.range}}</a></li>{% endif %}
+{% if v.next %}<li>next: <a href="{{v.next.link(template=template)}}">{{v.next.range}}</a></li>{% endif %}
+{% if v.older %}<li>older: <a href="{{v.older.link(template=template)}}">{{v.older.range}}</a></li>{% endif %}
+{% if v.newer %}<li>newer: <a href="{{v.newer.link(template=template)}}">{{v.newer.range}}</a></li>{% endif %}
+<li>entries:
+    <ul>
+        {% for entry in v %}<li><a href="{{entry.link}}">{{entry.title}}</a></li>{% endfor %}
+    </ul>
+</li>
+</ul>
+{% endmacro %}
+
+<h2><code>view(count=10)</code></h2>
+{{display(view(count=10))}}
+
+<h2><code>view(order='newest')</code></h2>
+{{display(view(order='newest'))}}
+
+<h2><code>view(order='oldest')</code></h2>
+{{display(view(order='oldest'))}}
