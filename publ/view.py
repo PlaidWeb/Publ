@@ -176,7 +176,7 @@ class View(caching.Memoizable):
     @cached_property
     def deleted(self) -> typing.List[Entry]:
         """ Gets the deleted entries from the view """
-        query = queries.build_query({**self.spec,
+        query = queries.build_query({**self.query_spec,
                                      'future': False,
                                      '_deleted': True})
         if self.spec.get('count'):
@@ -409,6 +409,16 @@ class View(caching.Memoizable):
         # we're not paginating
         return None, None
 
+    @property
+    def query_spec(self):
+        """ Get the view spec in a queryable form """
+        return self.filter_query_spec(self.spec)
+
+    @staticmethod
+    def filter_query_spec(spec: ViewSpec):
+        """ Filter out query parameters that are view-specific """
+        return {k:v for k,v in spec.items() if k not in ('order', 'count')}
+
     def _get_date_pagination(self,
                              base: ViewSpec
                              ) -> typing.Tuple[typing.Optional['View'], typing.Optional['View']]:
@@ -416,10 +426,7 @@ class View(caching.Memoizable):
         date, interval, date_format = utils.parse_date(self.spec['date'])
         start_date, end_date = date.span(interval)
 
-        base_query = queries.build_query({
-            k: v
-            for k, v in base.items()
-            if k not in ('order', 'count')})
+        base_query = queries.build_query(self.filter_query_spec(base))
 
         oldest_neighbor = base_query.filter(lambda e: e.local_date < start_date.datetime)\
             .order_by(*queries.ORDER_BY['newest']).first()
