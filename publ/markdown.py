@@ -96,7 +96,6 @@ class HtmlCodeFormatter(pygments.formatters.HtmlFormatter):  # pylint:disable=no
 
     def _wrap_div(self, inner):
         """ Don't wrap the inner code in a <div> """
-        # pylint:disable=no-self-use
         yield from inner
 
     def _wrap_code(self, source):
@@ -641,10 +640,9 @@ def toc_to_html(toc: TocBuffer, max_level: Optional[int] = None) -> str:
     out = ''
 
     # preprocess: find the lowest heading level
-    min_level = min([level for level, _ in toc])
-    toc = [(level - min_level + 1, text) for level, text in toc]
+    min_level = min((level for level, _ in toc))
 
-    for level, text in toc:
+    for level, text in ((level - min_level + 1, text) for level, text in toc):
         if max_level is None or level <= max_level:
             if level > cur_level:
                 # open sublists

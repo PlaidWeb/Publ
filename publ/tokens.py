@@ -79,7 +79,7 @@ def send_auth_ticket(subject: str,
             'ticket': ticket,
             'resource': resource,
             'subject': subject
-        })
+        }, timeout=30)
         LOGGER.info("Auth ticket sent to %s for %s: %d %s",
                     endpoint, subject, req.status_code, req.text)
 
