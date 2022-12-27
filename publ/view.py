@@ -417,7 +417,7 @@ class View(caching.Memoizable):
     @staticmethod
     def filter_query_spec(spec: ViewSpec):
         """ Filter out query parameters that are view-specific """
-        return {k:v for k,v in spec.items() if k not in ('order', 'count')}
+        return {k: v for k, v in spec.items() if k not in ('order', 'count')}
 
     def _get_date_pagination(self,
                              base: ViewSpec
