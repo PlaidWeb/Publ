@@ -17,7 +17,7 @@ from werkzeug.utils import cached_property
 
 from .. import utils
 from ..config import config
-from .image import Image
+from .image import RENDITION_ARG_FILTER, Image
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,18 +44,6 @@ LOSSLESS_FORMATS = {'.webp'}
 OPTIMIZE_FORMATS = {'.jpg', '.jpeg', '.png'}
 
 # arguments that affect the final rendition
-RENDITION_ARG_FILTER = {
-    'scale', 'scale_min_width', 'scale_min_height',
-    'crop',
-    'width', 'height',
-    'max_width', 'max_height',
-    'resize',
-    'fill_crop_x', 'fill_crop_y',
-    'format',
-    'background',
-    'quality',
-    'quantize',
-}
 
 
 def fix_orientation(image: PIL.Image) -> PIL.Image:

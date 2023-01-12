@@ -12,6 +12,21 @@ from .. import utils
 ImgSize = typing.Tuple[int, int]
 RenditionAttrs = typing.Dict[str, typing.Any]
 
+# arguments that affect the final rendition
+RENDITION_ARG_FILTER = {
+    'scale', 'scale_min_width', 'scale_min_height',
+    'crop',
+    'width', 'height',
+    'max_width', 'max_height',
+    'resize',
+    'fill_crop_x', 'fill_crop_y',
+    'format',
+    'background',
+    'quality',
+    'quantize',
+    'lossless',
+}
+
 
 class Image(ABC):
     """ Base class for image handlers """
@@ -203,7 +218,7 @@ class Image(ABC):
         if 'absolute' in kwargs:
             fullsize_args['absolute'] = kwargs['absolute']
 
-        for key in ('width', 'height', 'quality', 'format', 'background', 'crop'):
+        for key in RENDITION_ARG_FILTER:
             fsk = 'fullsize_' + key
             if fsk in kwargs:
                 fullsize_args[key] = kwargs[fsk]
