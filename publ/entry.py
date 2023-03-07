@@ -900,7 +900,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     orm.delete(p for p in model.EntryAuth if p.entry == record)  # type:ignore
     orm.commit()
     for order, user_group in enumerate(entry.get('Auth', '').split()):
-        allowed = (user_group[0] != '!')
+        allowed = user_group[0] != '!'
         if not allowed:
             user_group = user_group[1:]
         model.EntryAuth(order=order, entry=record, user_group=user_group, allowed=allowed)

@@ -83,7 +83,7 @@ def test_strip_html():
 
         assert strip_html(doc, ('a'), ('href')) == '<a href="zxcv">blahboo</a>'
 
-        assert strip_html(doc, remove_elements=('sup')) == 'blah'
+        assert strip_html(doc, remove_elements=('sup',)) == 'blah'
 
         assert strip_html(doc, ('br')) == 'blahboo<br/>'
 
