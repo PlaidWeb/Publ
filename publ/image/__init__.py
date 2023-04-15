@@ -134,7 +134,7 @@ def _get_asset(file_path):
             values.update({
                 'width': image.width,
                 'height': image.height,
-                'transparent': image.mode in ('RGBA', 'P'),
+                'transparent': image.mode in ('RGBA', 'LA', 'P', 'PA', 'RGBa', 'La'),
                 'is_asset': False,
             })
         else:
