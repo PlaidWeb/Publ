@@ -7,7 +7,7 @@ import logging
 import os
 import typing
 
-import flask
+import markupsafe
 from flask import url_for
 from pony import orm
 from werkzeug.utils import cached_property
@@ -198,10 +198,10 @@ class Category(caching.Memoizable):
         """ Get the textual description of the category """
         def _description(**kwargs) -> str:
             if self._meta:
-                return flask.Markup(markdown.to_html(self._meta.get_payload(),
-                                                     args=kwargs,
-                                                     search_path=self.search_path,
-                                                     counter=markdown.ItemCounter()))
+                return markupsafe.Markup(markdown.to_html(self._meta.get_payload(),
+                                                          args=kwargs,
+                                                          search_path=self.search_path,
+                                                          counter=markdown.ItemCounter()))
             return ''
 
         if self._meta and self._meta.get_payload():

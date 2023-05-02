@@ -7,7 +7,7 @@ import re
 import typing
 from typing import Optional
 
-import flask
+import markupsafe
 
 from . import image, links, utils
 from .config import config
@@ -139,7 +139,7 @@ def process(text, args, search_path):
     if not args.get('markup', True):
         text = strip_html(text)
 
-    return flask.Markup(text)
+    return markupsafe.Markup(text)
 
 
 class HTMLStripper(utils.HTMLTransform):

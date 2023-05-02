@@ -10,6 +10,7 @@ import uuid
 
 import arrow
 import flask
+import markupsafe
 import slugify
 from pony import orm
 from werkzeug.utils import cached_property
@@ -437,7 +438,7 @@ class Entry(caching.Memoizable):
             if description:
                 tags += og_tag('og:description', description)
 
-            return flask.Markup(tags)
+            return markupsafe.Markup(tags)
 
         return CallableProxy(_get_card)
 
@@ -480,7 +481,7 @@ class Entry(caching.Memoizable):
                                              counter=markdown.ItemCounter())
                 html_text = html_entry.first_paragraph(html_text)
                 if markup:
-                    return flask.Markup(html_text)
+                    return markupsafe.Markup(html_text)
 
                 return html_entry.strip_html(
                     html_text,
@@ -589,7 +590,7 @@ class Entry(caching.Memoizable):
                              counter=counter)
 
         if footnotes:
-            return flask.Markup(f"<ol>{''.join(footnotes)}</ol>")
+            return markupsafe.Markup(f"<ol>{''.join(footnotes)}</ol>")
         return ''
 
     def _get_toc(self, body, more, max_depth, args) -> str:
@@ -604,7 +605,7 @@ class Entry(caching.Memoizable):
             self._get_markup(more, True, args=args, toc_buffer=tocs, counter=counter)
 
         if tocs:
-            return flask.Markup(markdown.toc_to_html(tocs, max_depth))
+            return markupsafe.Markup(markdown.toc_to_html(tocs, max_depth))
         return ''
 
     def _get_counter(self, section, args) -> markdown.ItemCounter:

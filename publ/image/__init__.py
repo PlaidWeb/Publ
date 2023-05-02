@@ -292,5 +292,5 @@ def make_placeholder(output_path: str):
 
     response = flask.make_response(
         flask.send_file(outbytes, mimetype='image/png'))
-    response.headers['Refresh'] = 5
+    response.headers['Refresh'] = '5'
     return response

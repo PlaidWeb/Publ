@@ -10,6 +10,7 @@ import urllib.parse
 from typing import Optional
 
 import flask
+import markupsafe
 import misaka
 import pygments
 import pygments.formatters
@@ -357,7 +358,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                         'href': container_args['more_link'],
                         'class': container_args.get('more_class', False)
                     }))
-            text += flask.Markup(more_text)
+            text += markupsafe.Markup(more_text)
 
         if text and (container_args.get('div_class') or
                      container_args.get('div_style')):
@@ -496,9 +497,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
             path, image_args, title = image.parse_image_spec(spec)
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception("Got error on spec %s: %s", spec, err)
-            return flask.Markup('<span class="error">Couldn\'t parse image spec: ' +
-                                '<code>{}</code> {}</span>'.format(flask.escape(spec),
-                                                                   flask.escape(str(err))))
+            return markupsafe.Markup('<span class="error">Couldn\'t parse image spec: ' +
+                                     '<code>{}</code> {}</span>'.format(flask.escape(spec),
+                                                                        flask.escape(str(err))))
 
         composite_args = {**container_args, **image_args}
 
@@ -511,7 +512,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                                    _mark_rewritten=True)
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception("Got error on image %s: %s", path, err)
-            return flask.Markup('<span class="error">Error loading image {}: {}</span>'.format(
+            return markupsafe.Markup('<span class="error">Error loading image {}: {}</span>'.format(
                 flask.escape(spec), flask.escape(str(err))))
 
 
@@ -566,7 +567,7 @@ def to_html(text, args, search_path,
         footnotes[:] = (html_entry.process(text, args, search_path)
                         for text in footnotes)
 
-    return flask.Markup(text)
+    return markupsafe.Markup(text)
 
 
 def get_counters(text, args):
@@ -625,7 +626,7 @@ def render_title(text, markup=True, smartquotes=True, markdown_extensions=None):
         text = misaka.smartypants(text)
 
     if markup:
-        return flask.Markup(text)
+        return markupsafe.Markup(text)
 
     return html_entry.strip_html(text, remove_elements=PLAINTEXT_REMOVE_ELEMENTS)
 

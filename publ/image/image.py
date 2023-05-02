@@ -5,7 +5,7 @@ import typing
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import flask
+import markupsafe
 
 from .. import utils
 
@@ -125,7 +125,7 @@ class Image(ABC):
             else:
                 thumb = ''
 
-            return flask.Markup(
+            return markupsafe.Markup(
                 self._wrap_link_target(
                     kwargs,
                     thumb,
@@ -136,7 +136,7 @@ class Image(ABC):
             if ' ' in error.filename:
                 text += ' (Did you forget a <code>|</code>?)'
             text += '</span>'
-            return flask.Markup(text)
+            return markupsafe.Markup(text)
 
     def _get_shape_style(self, kwargs):
         shape = kwargs.get('shape')
