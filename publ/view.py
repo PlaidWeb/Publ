@@ -12,6 +12,7 @@ from . import caching, queries, tokens, user, utils
 from .entry import Entry
 
 ViewSpec = typing.Dict[str, typing.Any]  # pylint:disable=invalid-name
+PaginationType = typing.Union[utils.TimeSpan, typing.Literal['count'], None]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -94,12 +95,11 @@ class View(caching.Memoizable):
         self._entries = queries.build_query(
             spec).order_by(*queries.ORDER_BY[self._order_by])
 
+        self.type: PaginationType = None
         if self.spec.get('date') is not None:
             _, self.type, _ = utils.parse_date(self.spec['date'])
         elif count is not None:
             self.type = 'count'
-        else:
-            self.type = ''
 
     def _key(self):
         return repr(self.spec)
@@ -200,7 +200,7 @@ class View(caching.Memoizable):
         return len(self.entries())
 
     @cached_property
-    def last_modified(self) -> typing.Optional[Entry]:
+    def last_modified(self) -> arrow.Arrow:
         """ Gets the most recent modification time for all entries in the view """
         entries = self.entries()
         if entries:

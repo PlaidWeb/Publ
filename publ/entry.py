@@ -494,8 +494,8 @@ class Entry(caching.Memoizable):
     @cached_property
     def last_modified(self) -> arrow.Arrow:
         """ Get the date of last file modification """
-        if self.get('Last-Modified'):
-            return arrow.get(self.get('Last-Modified'))
+        if 'Last-Modified' in self._message:
+            return arrow.get(self._message['Last-Modified'])
         return self.date
 
     @property
@@ -641,6 +641,16 @@ class Entry(caching.Memoizable):
     def _authorized_attr(self, name):
         """ Return whether an attribute is authorized to be read """
         return name.lower() in ('uuid', 'id', 'date', 'last-modified') or self.authorized
+
+    def __contains__(self, name):
+        """ Proxy undefined properties to the backing objects """
+        if not self._authorized_attr(name):
+            return False
+
+        if name.lower() not in ('auth') and hasattr(self._record, name):
+            return True
+
+        return name in self._message
 
     def __getattr__(self, name):
         """ Proxy undefined properties to the backing objects """
