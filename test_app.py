@@ -60,11 +60,10 @@ config = {
     },
     'search_index': '_index' if whoosh else None,
     'index_enable_watchdog': True,
+    'secret_key': "We are insecure",
 }
 
 app = publ.Publ(__name__, config)
-app.secret_key = "We are insecure"
-
 
 @app.route('/favicon.<ext>')
 def favicon(ext):

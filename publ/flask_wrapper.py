@@ -153,7 +153,7 @@ class Publ(flask.Flask):
             tmpl = rendering.map_template('/', 'logout')
             return rendering.render_publ_template(tmpl)[0]
 
-        if self.publ_config.auth:
+        if self.auth:
             for route in [
                     '/_logout',
                     '/_logout/',
@@ -180,15 +180,11 @@ class Publ(flask.Flask):
                 return response
 
             self.after_request(add_token_endpoint)
-
-            # Force the authl instance to load before the first request, after the
-            # app has had a chance to set secret_key
-            self.before_first_request(lambda: self.auth)
         else:
             # Auth isn't configured, so make some placeholder routes so that
             # url_for doesn't fail and reasonable errors get raised
             def no_auth(redir=''):
-                raise werkzeug.exceptions.NotFound()
+                raise werkzeug.exceptions.NotFound("This application is not configured with authentication.")
 
             for base in ('_login', '_logout'):
                 for route in (
@@ -218,15 +214,9 @@ class Publ(flask.Flask):
 
         self.before_request(self._maint.run)
 
-        if self.debug:
-            # We're in debug mode so we don't want to scan until everything's up
-            # and running
-            self.before_first_request(self._startup)
-        else:
-            # In production, register the exception handler and scan the index
-            # immediately
+        if not self.debug:
             self.register_error_handler(Exception, rendering.render_exception)
-            self._startup()
+        self._startup()
 
         cli.setup(self)
 
@@ -240,6 +230,12 @@ class Publ(flask.Flask):
                 LOGGER.error(
                     "Authentication system requested, but the dependencies are not installed. "
                     "See https://publ.plaidweb.site/manual/865-Python-API#auth")
+
+            if not self.publ_config.secret_key:
+                LOGGER.error(
+                    "No application secret_key is set; authentication will not be configured")
+                return None
+            self.secret_key = self.publ_config.secret_key
 
             auth_force_https = self.publ_config.auth.get(
                 'AUTH_FORCE_HTTPS',
