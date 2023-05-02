@@ -23,12 +23,14 @@ def test_get_permissions():
         assert not authed.title()
         assert authed.title(always_show=True) == 'Friends + specific user'
 
+        assert 'title' not in authed
         assert not authed.get('title')
         assert not authed.get_all('title')
 
         assert authed.get('title', always_show=True) == 'Friends + specific user'
         assert authed.get_all('title', always_show=True) == ['Friends + specific user']
 
+        assert 'uuid' in authed
         assert authed.uuid == 'e63eff37-042b-58bf-8330-ace5a5db6ab7'
         assert authed.get('uuid') == 'e63eff37-042b-58bf-8330-ace5a5db6ab7'
         assert authed.get_all('uuid') == ['e63eff37-042b-58bf-8330-ace5a5db6ab7']
@@ -43,6 +45,7 @@ def test_get_permissions():
         assert authed.authorized
         assert authed.permalink() == '/auth/107-Friends-specific-user'
 
+        assert 'title' in authed
         assert authed.title() == 'Friends + specific user'
         assert authed.get('title') == 'Friends + specific user'
         assert authed.get_all('title') == ['Friends + specific user']
@@ -57,6 +60,7 @@ def test_get_permissions():
         assert authed.authorized
         assert authed.permalink() == '/auth/107-Friends-specific-user'
 
+        assert 'title' in authed
         assert authed.title() == 'Friends + specific user'
         assert authed.get('title') == 'Friends + specific user'
         assert authed.get_all('title') == ['Friends + specific user']

@@ -161,7 +161,7 @@ class User(caching.Memoizable):
         return arrow.get(date).to(config.timezone) if date else None
 
     @property
-    def last_seen(self) -> arrow.Arrow:
+    def last_seen(self) -> typing.Optional[arrow.Arrow]:
         """ Get the latest known active time for the user """
         date = self._info[2]
         return arrow.get(date).to(config.timezone) if date else None

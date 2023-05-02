@@ -30,6 +30,8 @@ ListLike = typing.Union[typing.List[T],
 TagAttr = typing.Union[str, bool, None]
 TagAttrs = typing.Dict[str, TagAttr]
 
+TimeSpan = typing.Literal['day', 'week', 'month', 'year']
+
 _TagKey = slugify.Slugify(to_lower=True)  # type:ignore
 
 
@@ -118,7 +120,7 @@ YEAR_FORMAT = 'YYYY'
 WEEK_FORMAT = 'YYYYMMDD_w'
 
 
-def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, str, str]:
+def parse_date(datestr: str) -> typing.Tuple[arrow.Arrow, TimeSpan, str]:
     """ Parse a date expression into a tuple of:
     ``(start_date, span_type, span_format)``
 
