@@ -2,6 +2,7 @@
 # pylint:disable=missing-function-docstring
 
 import flask
+import markupsafe
 import pytest
 
 from publ import utils
@@ -225,7 +226,7 @@ def test_make_tag():
         proxy = utils.CallableValue("<hello>")
         assert utils.make_tag('a', {'href': proxy}) == '<a href="&lt;hello&gt;">'
 
-    escaped = flask.Markup("&amp;")
+    escaped = markupsafe.Markup("&amp;")
     assert utils.make_tag('a', {'href': escaped}) == '<a href="&amp;">'
 
 

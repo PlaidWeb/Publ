@@ -184,7 +184,8 @@ class Publ(flask.Flask):
             # Auth isn't configured, so make some placeholder routes so that
             # url_for doesn't fail and reasonable errors get raised
             def no_auth(redir=''):
-                raise werkzeug.exceptions.NotFound("This application is not configured with authentication.")
+                raise werkzeug.exceptions.NotFound(
+                    "This application is not configured with authentication.")
 
             for base in ('_login', '_logout'):
                 for route in (

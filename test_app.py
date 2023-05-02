@@ -65,6 +65,7 @@ config = {
 
 app = publ.Publ(__name__, config)
 
+
 @app.route('/favicon.<ext>')
 def favicon(ext):
     """ render a favicon """
