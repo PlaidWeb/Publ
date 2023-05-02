@@ -61,6 +61,9 @@ class _Defaults:
     # Full-text search directory
     search_index = None
 
+    # security secret key
+    secret_key = None
+
 
 class Config(_Defaults):
     """ Stores configuration for a Publ app """
