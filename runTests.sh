@@ -17,4 +17,4 @@ if [ "$1" != "fast" ] ; then
     poetry install -E auth -E search || exit 1
 fi
 
-FLASK_DEBUG=1 FLASK_ENV=development FLASK_APP=test_app.py poetry run flask run
+FLASK_DEBUG=1 FLASK_ENV=development FLASK_APP=test_app.py poetry run flask run "$@"

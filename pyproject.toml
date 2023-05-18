@@ -19,8 +19,8 @@ Flask = "^2.3.2"
 Flask-Caching = "^2.0.2"
 pony = "^0.7.16"
 Pygments = "^2.15.1"
-watchdog = "^3.0.0"
 Whoosh = { version = "^2.7.4", optional = true }
+watchdog = "*"
 pillow = "^9.5.0"
 
 [tool.poetry.extras]
