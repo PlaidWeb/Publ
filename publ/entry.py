@@ -1015,6 +1015,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 @orm.db_session
 def expire_record(record):
     """ Expire a record for a missing entry """
+    from .flask_wrapper import current_app
 
     # This entry no longer exists so delete anything that relies on it
     orm.delete(pa for pa in model.PathAlias if pa.entry == record)
@@ -1031,11 +1032,12 @@ def expire_record(record):
 @orm.db_session
 def remove_by_path(fullpath: str, entry_id: int):
     """ Remove entries for a path that don't match the expected ID """
+    from .flask_wrapper import current_app
 
     # remove fulltext search entries
-    for fte in orm.select(e for e in model.Entry
-        if e.file_path == fullpath
-        and e.id != entry_id):
+    for fte in orm.select(e for e in model.Entry  # type:ignore
+                          if e.file_path == fullpath
+                          and e.id != entry_id):
         current_app.search_index.remove(fte.id)
 
     orm.delete(pa for pa in model.PathAlias  # type:ignore
@@ -1045,5 +1047,3 @@ def remove_by_path(fullpath: str, entry_id: int):
                if e.file_path == fullpath
                and e.id != entry_id)
     orm.commit()
-
-

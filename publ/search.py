@@ -111,6 +111,7 @@ class SearchIndex:
 
     @property
     def active(self):
+        """ Return whether the search index is active """
         return self.index is not None
 
     def update(self, record: model.Entry,

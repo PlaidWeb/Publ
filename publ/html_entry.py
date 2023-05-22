@@ -19,6 +19,7 @@ HTML_PLAINTEXT_ELEMENTS = (
     'kbd', 'label', 'q', 'samp', 'span', 'strong', 'sub', 'sup', 'time', 'tt',
     'var', 'mark', 'p')
 
+
 class HTMLEntry(utils.HTMLTransform):
     """ An HTML manipulator to fixup src and href attributes """
 
@@ -204,9 +205,9 @@ class FirstParagraph(utils.HTMLTransform):
         super().__init__()
         self._strip_tag = strip_tag
 
-        self._found = False # has text been consumed?
-        self._done = False # have we finished a paragraph?
-        self._tag_stack = [] # tuple of tag, consume data, close tag
+        self._found = False  # has text been consumed?
+        self._done = False  # have we finished a paragraph?
+        self._tag_stack = []  # tuple of tag, consume data, close tag
 
     @property
     def consuming(self):
@@ -255,6 +256,7 @@ class FirstParagraph(utils.HTMLTransform):
                 self._found = True
             self.append(data)
 
+
 def first_paragraph(text, markup=True, strip_tag=False):
     """ Extract the first paragraph of text from an HTML document """
     first_para = FirstParagraph(strip_tag=strip_tag)
@@ -262,5 +264,4 @@ def first_paragraph(text, markup=True, strip_tag=False):
     text = first_para.get_data()
     if markup:
         return markupsafe.Markup(text)
-    else:
-        return strip_html(text)
+    return strip_html(text)
