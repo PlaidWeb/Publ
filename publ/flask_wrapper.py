@@ -136,7 +136,8 @@ class Publ(flask.Flask):
             secure_url=utils.secure_link,
         )
 
-        self.jinja_env.filters['strip_html'] = html_entry.strip_html  # pylint: disable=no-member
+        self.jinja_env.filters['strip_html'] = html_entry.strip_html
+        self.jinja_env.filters['first_paragraph'] = html_entry.first_paragraph
 
         caching.init_app(self, self.publ_config.cache)
 

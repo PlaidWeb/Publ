@@ -29,7 +29,7 @@ TocBuffer = typing.List[TocEntry]
 TOC_ALLOWED_TAGS = ('sup', 'sub',
                     'em', 'strong',
                     'b', 'i',
-                    'code',
+                    'code', 'tt',
                     'del', 'add', 'mark')
 
 # Remove these tags from plaintext-style conversions

@@ -107,16 +107,26 @@ def test_first_paragraph():
 
     processor = FirstParagraph()
     processor.feed('<div class="images"><img src="foo"></div>Bare text<p>foo</p>')
-    assert processor.get_data() == '<div class="images"><img src="foo"></div>Bare text'
+    assert processor.get_data() == 'Bare text'
 
     processor = FirstParagraph()
     processor.feed('<p><img src="foo"></p><p>Para 1</p>')
-    assert processor.get_data() == '<p><img src="foo"></p><p>Para 1</p>'
+    assert processor.get_data() == '<p></p><p>Para 1</p>'
 
     processor = FirstParagraph()
     processor.feed('<h1>Head<i>ing</i></h1>Bare text')
-    assert processor.get_data() == '<h1>Head<i>ing</i></h1>'
+    assert processor.get_data() == 'Bare text'
 
     processor = FirstParagraph()
     processor.feed('<h1><b>Heading with bad nesting</h2>Bare text')
-    assert processor.get_data() == '<h1><b>Heading with bad nesting</h2>'
+    assert processor.get_data() == 'Bare text'
+
+
+def test_first_paragraph_filter():
+    from publ.html_entry import first_paragraph
+
+    assert first_paragraph("<p>this is a thing</p>") == "<p>this is a thing</p>"
+    assert first_paragraph("<p>this is <em>a</em> thing</p>",
+                           strip_tag=True) == "this is <em>a</em> thing"
+    assert first_paragraph("this is <em>a</em> thing",
+                           markup=False) == "this is a thing"

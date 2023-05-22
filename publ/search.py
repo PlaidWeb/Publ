@@ -109,7 +109,13 @@ class SearchIndex:
 
         self.query_parser = whoosh.qparser.QueryParser("content", self.index.schema)
 
-    def update(self, record: model.Entry, entry_file: email.message.EmailMessage):
+    @property
+    def active(self):
+        """ Return whether the search index is active """
+        return self.index is not None
+
+    def update(self, record: model.Entry,
+               entry_file: typing.Optional[email.message.EmailMessage]):
         """
         Add an entry to the content index
         """
@@ -126,11 +132,17 @@ class SearchIndex:
             writer.update_document(
                 entry_id=str(record.id),
                 title=record.title,
-                content=entry_file.get_payload(),
+                content=entry_file.get_payload() if entry_file else '',
                 published=datetime.datetime.fromtimestamp(record.utc_timestamp),
-                tag=','.join(entry_file.get_all('tag') or []),
+                tag=','.join(entry_file.get_all('tag') or []) if entry_file else '',
                 category=record.category,
                 status=record.status)
+
+    def remove(self, entry_id: int):
+        """ Remove an entry by ID """
+        if not self.index:
+            return
+        self.index.delete_by_term("entry_id", str(entry_id))
 
     def query(self, query: str,
               category=None, recurse=False,
