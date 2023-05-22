@@ -1021,12 +1021,22 @@ def expire_record(record):
 
     # mark the entry as GONE to remove it from indexes
     record.status = model.PublishStatus.GONE.value
+
+    # remove it from full-text search
+    current_app.search_index.remove(record.id)
+
     orm.commit()
 
 
 @orm.db_session
 def remove_by_path(fullpath: str, entry_id: int):
     """ Remove entries for a path that don't match the expected ID """
+
+    # remove fulltext search entries
+    for fte in orm.select(e for e in model.Entry
+        if e.file_path == fullpath
+        and e.id != entry_id):
+        current_app.search_index.remove(fte.id)
 
     orm.delete(pa for pa in model.PathAlias  # type:ignore
                if pa.entry.file_path == fullpath
@@ -1035,3 +1045,5 @@ def remove_by_path(fullpath: str, entry_id: int):
                if e.file_path == fullpath
                and e.id != entry_id)
     orm.commit()
+
+

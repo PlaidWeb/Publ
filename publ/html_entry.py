@@ -14,6 +14,10 @@ from .config import config
 
 LOGGER = logging.getLogger(__name__)
 
+HTML_PLAINTEXT_ELEMENTS = (
+    'a', 'abbr', 'acronym', 'b', 'bdo', 'cite', 'code', 'dfn', 'em', 'i',
+    'kbd', 'label', 'q', 'samp', 'span', 'strong', 'sub', 'sup', 'time', 'tt',
+    'var', 'mark', 'p')
 
 class HTMLEntry(utils.HTMLTransform):
     """ An HTML manipulator to fixup src and href attributes """
@@ -196,53 +200,67 @@ def strip_html(text,
 class FirstParagraph(utils.HTMLTransform):
     """ Get just the first paragraph out of an HTML document """
 
-    def __init__(self):
+    def __init__(self, strip_tag=False):
         super().__init__()
+        self._strip_tag = strip_tag
 
-        self._consume = True
-        self._found = False
+        self._found = False # has text been consumed?
+        self._done = False # have we finished a paragraph?
+        self._tag_stack = [] # tuple of tag, consume data, close tag
 
-        self._tag_stack = []
+    @property
+    def consuming(self):
+        """ Returns whether we're currently consuming data """
+        if self._done:
+            return False
+        if self._tag_stack:
+            return self._tag_stack[-1][1]
+        return True
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() == 'table':
-            self._consume = False
-
         if tag.lower() == 'p':
-            if self._found:
-                self._consume = False
+            # we're done if we've already encountered text outside of a paragraph
+            self._done = self._found
+            consume = not self._done
+        else:
+            consume = self.consuming and tag.lower() in HTML_PLAINTEXT_ELEMENTS
 
-        self._tag_stack.append(tag)
-
-        if self._consume:
+        insert_tag = consume and (self._tag_stack or not self._strip_tag)
+        if insert_tag:
             self.append(utils.make_tag(tag, attrs))
 
+        self._tag_stack.append((tag.lower(), consume, insert_tag))
+
     def handle_endtag(self, tag):
-        while self._tag_stack and self._tag_stack.pop() != tag:
-            pass
+        popped = None
+        inserted = False
 
-        if self._consume:
-            self.append(f'</{tag}>')
+        # close tags until we've closed the current one
+        while self._tag_stack and popped != tag.lower():
+            popped, _, inserted = self._tag_stack.pop()
+            if inserted:
+                self.append(f'</{popped}>')
 
-        if tag.lower() == 'table' and not self._found:
-            self._consume = True
-
-        if (not self._tag_stack or tag.lower() == 'p') and self._found:
-            self._consume = False
+        # we're done if we've closed a paragraph and text has been consumed
+        if tag.lower() == 'p' and self._found:
+            self._done = True
 
     def handle_startendtag(self, tag, attrs):
-        if self._consume:
+        if self.consuming and tag in HTML_PLAINTEXT_ELEMENTS:
             self.append(utils.make_tag(tag, attrs, True))
 
     def handle_data(self, data):
-        if self._consume and data.strip():
-            self._found = True
+        if self.consuming:
+            if data.strip():
+                self._found = True
             self.append(data)
 
-
-def first_paragraph(text):
+def first_paragraph(text, markup=True, strip_tag=False):
     """ Extract the first paragraph of text from an HTML document """
-    first_para = FirstParagraph()
+    first_para = FirstParagraph(strip_tag=strip_tag)
     first_para.feed(str(text))
     text = first_para.get_data()
-    return re.sub(r'<p> *</p>', r'', text)
+    if markup:
+        return markupsafe.Markup(text)
+    else:
+        return strip_html(text)
