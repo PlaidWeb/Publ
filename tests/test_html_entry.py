@@ -128,5 +128,3 @@ def test_first_paragraph_filter():
     assert first_paragraph("<p>this is a thing</p>") == "<p>this is a thing</p>"
     assert first_paragraph("<p>this is <em>a</em> thing</p>",
                            strip_tag=True) == "this is <em>a</em> thing"
-    assert first_paragraph("this is <em>a</em> thing",
-                           markup=False) == "this is a thing"

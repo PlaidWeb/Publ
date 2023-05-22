@@ -257,11 +257,8 @@ class FirstParagraph(utils.HTMLTransform):
             self.append(data)
 
 
-def first_paragraph(text, markup=True, strip_tag=False):
+def first_paragraph(text, strip_tag=False):
     """ Extract the first paragraph of text from an HTML document """
     first_para = FirstParagraph(strip_tag=strip_tag)
     first_para.feed(str(text))
-    text = first_para.get_data()
-    if markup:
-        return markupsafe.Markup(text)
-    return strip_html(text)
+    return markupsafe.Markup(first_para.get_data())

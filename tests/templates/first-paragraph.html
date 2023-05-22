@@ -1,13 +1,5 @@
 <h1>First paragraphs only</h1>
 
-<h2>Strip HTML</h2>
-
-<ul>
-{% for entry in view.entries %}
-<li><a href="{{entry.link}}">{{entry.title}}</a>: {{entry.body|first_paragraph(markup=False)}}</li>
-{% endfor %}
-</ul>
-
 <h2>Strip paragraph</h2>
 
 <ul>
@@ -23,3 +15,12 @@
 <li><a href="{{entry.link}}">{{entry.title}}</a>: {{entry.body|first_paragraph}}</li>
 {% endfor %}
 </ul>
+
+<h2>Strip HTML</h2>
+
+<ul>
+{% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>: {{entry.body|first_paragraph|strip_html}}</li>
+{% endfor %}
+</ul>
+
