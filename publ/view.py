@@ -59,6 +59,8 @@ class View(caching.Memoizable):
 
         assert create_key == View.load.__name__, "View must be created with View.load()"
 
+        print(input_spec)
+
         # filter out any priority override things
         spec: ViewSpec = {
             k: v for k, v in input_spec.items()
