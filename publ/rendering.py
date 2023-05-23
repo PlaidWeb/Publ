@@ -39,6 +39,19 @@ NO_CACHE = {
 }
 
 
+def cache_control():
+    """ Determine the cache-control value based on page rendering """
+    if flask.g.get('user_dependent'):
+        # page had a user dependency, so don't cache it
+        return 'private, no-cache'
+
+    # page did not have a user dependency, so it's cacheable
+    timeout = config.cache.get('CACHE_DEFAULT_TIMEOUT', None)
+    if timeout:
+        return f'public, max-age={timeout}'
+    else:
+        return 'public'
+
 def mime_type(template: Template) -> str:
     """ infer the content-type from the extension """
     _, ext = os.path.splitext(template.filename)
@@ -328,7 +341,8 @@ def render_category_path(category: str, template: typing.Optional[str]):
         return 'Not modified', 304, {'ETag': f'"{etag}"'}
 
     return rendered, {'Content-Type': mime_type(tmpl),
-                      'ETag': f'"{etag}"'}
+                      'ETag': f'"{etag}"',
+                      'Cache-Control': cache_control()}
 
 
 @ orm.db_session
@@ -518,7 +532,8 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
 
     headers = {
         'Content-Type': entry_obj.get('Content-Type', mime_type(tmpl)),
-        'ETag': etag
+        'ETag': etag,
+        'Cache-Control': cache_control()
     }
 
     return rendered, headers

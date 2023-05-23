@@ -37,7 +37,8 @@ config = {
         'CACHE_THRESHOLD': 20
     } if os.environ.get('TEST_CACHING') else {
         'CACHE_TYPE': 'NullCache',
-        'CACHE_NO_NULL_WARNING': True
+        'CACHE_NO_NULL_WARNING': True,
+        'CACHE_DEFAULT_TIMEOUT': 720
     },
     'auth': {
         'TEST_ENABLED': True,
@@ -71,7 +72,7 @@ def favicon(ext):
     """ render a favicon """
     logo = publ.image.get_image('images/rawr.jpg', 'tests/content')
     img, _ = logo.get_rendition(format=ext, width=128, height=128, resize='fill')
-    return flask.redirect(img)
+    return flask.redirect(img), {'Cache-Control': 'public, max-age=86400'}
 
 
 @app.path_alias_regex(r'(.*)/date/([0-9]+)')
