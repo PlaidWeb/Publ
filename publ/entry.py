@@ -501,6 +501,8 @@ class Entry(caching.Memoizable):
     @property
     def authorized(self) -> bool:
         """ Returns if the current user is authorized to see this entry """
+        if self._record.auth:
+            flask.g.user_dependent = True
         return self._record.is_authorized(user.get_active())
 
     def _get_markup(self, text, is_markdown, args,

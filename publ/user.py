@@ -87,11 +87,13 @@ class User(caching.Memoizable):
     @cached_property
     def identity(self):
         """ The federated identity name of the user """
+        flask.g.user_dependent = True
         return self._identity
 
     @cached_property
     def humanize(self) -> str:
         """ A humanized version of the identity string """
+        flask.g.user_dependent = True
         url = self.profile.get('profile_url', self._identity)
         parsed = urllib.parse.urlparse(url)
         return ''.join(p for p in (
@@ -103,6 +105,7 @@ class User(caching.Memoizable):
     @cached_property
     def name(self) -> str:
         """ The readable name of the user """
+        flask.g.user_dependent = True
         if 'name' in self.profile:
             return self.profile['name']
 
@@ -111,21 +114,25 @@ class User(caching.Memoizable):
     @property
     def profile(self) -> dict:
         """ Get the user's profile """
+        flask.g.user_dependent = True
         return self._info[0]
 
     @cached_property
     def groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for display purposes """
+        flask.g.user_dependent = True
         return get_groups(self._identity, False)
 
     @cached_property
     def auth_groups(self) -> typing.Set[str]:
         """ The group memberships of the user, for auth purposes """
+        flask.g.user_dependent = True
         return get_groups(self._identity, True)
 
     @cached_property
     def is_admin(self) -> bool:
         """ Returns whether this user has administrator permissions """
+        flask.g.user_dependent = True
         return bool(config.admin_group and config.admin_group in self.auth_groups)
 
     @cached_property
@@ -168,6 +175,7 @@ class User(caching.Memoizable):
 
     def token(self, lifetime: int, scope: Optional[str] = None) -> str:
         """ Get a bearer token for this user """
+        flask.g.user_dependent = True
         return tokens.get_token(self.identity, lifetime, scope)
 
 
