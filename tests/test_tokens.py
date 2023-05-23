@@ -115,8 +115,8 @@ def test_ticketauth_flow(requests_mock):
         verified = json.loads(req.data)
         assert verified['me'] == 'https://foo.example/'
 
-    token_user = user.User(verified['me'])
-    assert token_user.profile['name'] == 'boop'
+        token_user = user.User(verified['me'])
+        assert token_user.profile['name'] == 'boop'
 
     # Provisional request flow
     with app.test_request_context('/bogus'):

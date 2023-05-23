@@ -49,8 +49,8 @@ def cache_control():
     timeout = config.cache.get('CACHE_DEFAULT_TIMEOUT', None)
     if timeout:
         return f'public, max-age={timeout}'
-    else:
-        return 'public'
+    return 'public'
+
 
 def mime_type(template: Template) -> str:
     """ infer the content-type from the extension """
