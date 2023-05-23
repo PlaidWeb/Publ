@@ -154,6 +154,10 @@ class Publ(flask.Flask):
             tmpl = rendering.map_template('/', 'logout')
             return rendering.render_publ_template(tmpl)[0]
 
+        self.config.update(
+            SESSION_COOKIE_HTTPONLY=True,
+            SESSION_COOKIE_SAMESITE='Lax')
+
         if self.auth:
             for route in [
                     '/_logout',
