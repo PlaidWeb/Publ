@@ -1,0 +1,5 @@
+<ul>
+{% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>: body:{{entry.body and "yes" or "no"}} more:{{entry.more and "yes" or "no"}}</li>
+{% endfor %}
+</li>

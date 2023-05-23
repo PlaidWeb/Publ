@@ -312,7 +312,7 @@ class Entry(caching.Memoizable):
         _, ext = os.path.splitext(self._record.file_path)
         is_markdown = ext == '.md'
 
-        return body, more, is_markdown
+        return body.strip(), more.strip(), is_markdown
 
     @cached_property
     def body(self) -> typing.Callable[..., str]:
