@@ -304,14 +304,12 @@ def render_category_path(category: str, template: typing.Optional[str]):
                                   and e.visible).exists():
             raise http_error.NotFound("No such category")
 
-    if not template:
-        template = Category.load(category).get('Index-Template') or 'index'
+    template_name: str = template or Category.load(category).index_template
 
-    tmpl = map_template(category, template)
-
-    if not tmpl:
+    template_impl = map_template(category, template_name)
+    if not template_impl:
         # this might actually be a malformed category URL
-        test_path = '/'.join((category, template)) if category else template
+        test_path = '/'.join((category, template_name)) if category else template_name
         LOGGER.debug("Checking for malformed category %s", test_path)
         record = model.Entry.select(lambda e: e.category ==
                                     test_path and e.visible).exists()  # type:ignore
@@ -333,14 +331,14 @@ def render_category_path(category: str, template: typing.Optional[str]):
         raise http_error.BadRequest(str(err))
 
     rendered, etag = render_publ_template(
-        tmpl,
+        template_impl,
         category=Category.load(category),
         view=view_obj)
 
     if request.if_none_match.contains(etag):
         return 'Not modified', 304, {'ETag': f'"{etag}"'}
 
-    return rendered, {'Content-Type': mime_type(tmpl),
+    return rendered, {'Content-Type': mime_type(template_impl),
                       'ETag': f'"{etag}"',
                       'Cache-Control': cache_control()}
 

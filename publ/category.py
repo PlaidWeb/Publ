@@ -256,11 +256,11 @@ class Category(caching.Memoizable):
             return self._meta.get(name)
         return None
 
-    def get(self, name):
+    def get(self, name, default=None):
         """ Get a single metadata value """
         if self._meta:
-            return self._meta.get(name)
-        return None
+            return self._meta.get(name, default)
+        return default
 
     def get_all(self, name):
         """ Get all matching metadata values """
@@ -296,9 +296,9 @@ class Category(caching.Memoizable):
         return queries.build_query({**spec, 'category': self})
 
     @cached_property
-    def index_template(self):
+    def index_template(self) -> str:
         """ Get the name of the index template for this category """
-        return self.get('Index-Template') or 'index'
+        return self.get('Index-Template', 'index')
 
 
 @orm.db_session(retry=5)
