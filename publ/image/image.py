@@ -191,10 +191,14 @@ class Image(ABC):
     def _wrap_link_target(self, kwargs,
                           text: str,
                           title: typing.Optional[str]) -> str:
-        if kwargs.get('link') is not None:
-            if not text or kwargs['link'] is False:
-                return text
+        link_tag = kwargs.get('link')
 
+        # Explicit False value means to suppress any linking
+        if link_tag is False:
+            return text
+
+        # A string means to link to that destination directly
+        if link_tag and link_tag is not True:
             # pylint:disable=consider-using-f-string
             return '{}{}</a>'.format(
                 utils.make_tag(
@@ -206,9 +210,14 @@ class Image(ABC):
                     }),
                 text)
 
-        if kwargs.get('gallery_id'):
-            return f'{self._fullsize_link_tag(kwargs, title)}{text}</a>'
+        # if link_tag is True, self-link and suppress the lightbox gallery
+        gallery_id = kwargs.get('gallery_id') if link_tag is not True else None
 
+        # if we have self-link or a gallery, link to the fullsize rendition
+        if link_tag is True or gallery_id:
+            return f'{self._fullsize_link_tag(kwargs, title, gallery_id)}{text}</a>'
+
+        # link_tag must be None, and gallery_id is false, so, don't wrap it in a link
         return text
 
     def get_fullsize(self, kwargs) -> str:
@@ -226,12 +235,15 @@ class Image(ABC):
         img_fullsize, _ = self.get_rendition(1, **fullsize_args)
         return img_fullsize
 
-    def _fullsize_link_tag(self, kwargs, title: typing.Optional[str]) -> str:
+    def _fullsize_link_tag(self, kwargs,
+        title: typing.Optional[str],
+        gallery_id: typing.Optional[str]) -> str:
         """ Render an <a href> that points to the fullsize rendition specified """
 
         return utils.make_tag('a', {
             'href': self.get_fullsize(kwargs),
-            'data-lightbox': kwargs.get('gallery_id', False),
+            # only emit lightbox if there's no link value that overrides it
+            'data-lightbox': gallery_id or False,
             'title': title or False,
             'class': kwargs.get('link_class', False)
         })
