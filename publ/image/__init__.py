@@ -143,7 +143,9 @@ def _get_asset(file_path):
             values['is_asset'] = True
 
             # find the minimum checksum length that doesn't cause this to collide with another asset
-            checksum_prefix = ''
+            md5 = hashlib.md5()
+            md5.update(bytes(file_path, 'utf8'))
+            checksum_prefix = f'{md5.hexdigest()[:5]}/'
             basename = os.path.basename(file_path)
             for digit in itertools.cycle(values['checksum']):
                 checksum_prefix += digit

@@ -7,6 +7,7 @@ What happens if multiple assets have colliding fingerprints?
 
 .....
 
+[0](images/boxes.svg)
 [1](images/dupe-assets/1/boxes.svg)
 [2](images/dupe-assets/2/boxes.svg)
 [3](images/dupe-assets/3/boxes.svg)
