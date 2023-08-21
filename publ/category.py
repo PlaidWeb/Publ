@@ -94,7 +94,7 @@ class Category(caching.Memoizable):
         def _link(template='', absolute=False, **kwargs) -> str:
             return url_for('category',
                            category=self.path,
-                           template=template,
+                           template=template if str(template) != self.index_template else '',
                            _external=absolute,
                            **kwargs)
 
@@ -294,6 +294,11 @@ class Category(caching.Memoizable):
     def _entries(self, spec):
         """ Return a model query to get our entry records """
         return queries.build_query({**spec, 'category': self})
+
+    @cached_property
+    def index_template(self):
+        """ Get the name of the index template for this category """
+        return self.get('Index-Template') or 'index'
 
 
 @orm.db_session(retry=5)
