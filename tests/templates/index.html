@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{category.name}}</title>
+    <title>{% block title %}{{category.name}}{% endblock %}</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="alternate" type="application/atom+xml" title="Atom feed" href="feed" />
     <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
