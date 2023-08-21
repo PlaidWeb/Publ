@@ -172,8 +172,10 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
     args = {'category': category} if category else {}
 
     if record.template or not record.entry:
+        from . import category as publ_category  # pylint:disable=cyclic-import
         endpoint = 'category'
-        if record.template and record.template != 'index':
+        dest_category = publ_category.Category.load(category or '')
+        if record.template and record.template != dest_category.index_template:
             args['template'] = record.template
         if record.entry:
             args['id'] = record.entry.id
