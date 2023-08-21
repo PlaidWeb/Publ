@@ -1,0 +1,18 @@
+Title: Category aliases
+Path-Alias: /alias/alt/p1
+Path-Alias: /alias/alt/p2 index
+Path-Alias: /alias/alt/p3 archive
+Path-Mount: /alias/alt/p1m
+Path-Mount: /alias/alt/p2m index
+Path-Mount: /alias/alt/p3m archive
+index-template: archive
+
+[/alias/alt/p1](/alias/alt/p1) and [/alias/alt/p3](/alias/alt/p3) should redirect to this category's archive
+
+[/alias/alt/p2](/alias/alt/p2) should redirect to this category.
+
+[/alias/alt/p1m](/alias/alt/p1m) and [/alias/alt/p3m](/alias/alt/p3m) should display this category's archive.
+
+[/alias/alt/p2m](/alias/alt/p2m) should display this category's index.
+
+
