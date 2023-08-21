@@ -140,11 +140,22 @@ def _get_asset(file_path):
         else:
             # PIL could not figure out what file type this is, so treat it as
             # an asset
-            values.update({
-                'is_asset': True,
-                'asset_name': os.path.join(values['checksum'][:5],
-                                           os.path.basename(file_path)),
-            })
+            values['is_asset'] = True
+
+            # find the minimum checksum length that doesn't cause this to collide with another asset
+            md5 = hashlib.md5()
+            md5.update(bytes(file_path, 'utf8'))
+            checksum_prefix = f'{md5.hexdigest()[:5]}/'
+            basename = os.path.basename(file_path)
+            for digit in itertools.cycle(values['checksum']):
+                checksum_prefix += digit
+                asset_name = f'{checksum_prefix}/{basename}'
+                other = model.Image.get(asset_name=asset_name)
+                if not other or other.file_path == values['file_path']:
+                    break
+
+            values['asset_name'] = asset_name
+
         record = model.Image.get(file_path=file_path)
         if record:
             record.set(**values)

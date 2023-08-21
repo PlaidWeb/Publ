@@ -14,7 +14,6 @@ Some tests for files bundled with an entry.
 [link to SVG](images/boxes.svg)
 [link to SVG with spaces in filename](images/boxes with spaces in filename.svg)
 
-
 [some source code](hello.cpp)
 
 [link to entry should still go to entry](assets.md)
