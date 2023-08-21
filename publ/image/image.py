@@ -236,8 +236,8 @@ class Image(ABC):
         return img_fullsize
 
     def _fullsize_link_tag(self, kwargs,
-        title: typing.Optional[str],
-        gallery_id: typing.Optional[str]) -> str:
+                           title: typing.Optional[str],
+                           gallery_id: typing.Optional[str]) -> str:
         """ Render an <a href> that points to the fullsize rendition specified """
 
         return utils.make_tag('a', {
