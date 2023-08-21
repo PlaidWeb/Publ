@@ -13,7 +13,7 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import entry  # pylint: disable=cyclic-import
-from . import caching, markdown, model, path_alias, queries, utils
+from . import caching, markdown, model, queries, utils
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -304,6 +304,7 @@ class Category(caching.Memoizable):
 @orm.db_session(retry=5)
 def scan_file(fullpath, relpath) -> bool:
     """ scan a file and put it into the index """
+    from . import path_alias
 
     meta = load_metafile(fullpath)
     if not meta:
