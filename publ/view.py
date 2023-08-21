@@ -8,7 +8,9 @@ import arrow
 import flask
 from werkzeug.utils import cached_property
 
-from . import caching, queries, tokens, user, utils, category as publ_category
+from . import caching
+from . import category as publ_category
+from . import queries, tokens, user, utils
 from .entry import Entry
 
 ViewSpec = typing.Dict[str, typing.Any]  # pylint:disable=invalid-name
@@ -354,8 +356,7 @@ class View(caching.Memoizable):
                 args['tag'] = list(utils.TagSet(utils.as_list(taglist)).keys())
 
             view_category = publ_category.Category.load(category if category
-                else self.spec.get('category'))
-
+                                                        else self.spec.get('category'))
 
             return flask.url_for('category',
                                  **args,
