@@ -21,7 +21,7 @@ pony = "^0.7.16"
 Pygments = "^2.15.1"
 Whoosh = { version = "^2.7.4", optional = true }
 watchdog = "*"
-pillow = "^9.5.0"
+pillow = ">=9.5,<11.0"
 
 [tool.poetry.extras]
 auth = ["authl"]
