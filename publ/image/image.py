@@ -25,6 +25,7 @@ RENDITION_ARG_FILTER = {
     'quality',
     'quantize',
     'lossless',
+    'scale_filter'
 }
 
 

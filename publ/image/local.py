@@ -61,13 +61,13 @@ def fix_orientation(image: PIL.Image) -> PIL.Image:
     exif_transpose_sequences = [
         [],
         [],
-        [PIL.Image.FLIP_LEFT_RIGHT],
-        [PIL.Image.ROTATE_180],
-        [PIL.Image.FLIP_TOP_BOTTOM],
-        [PIL.Image.FLIP_LEFT_RIGHT, PIL.Image.ROTATE_90],
-        [PIL.Image.ROTATE_270],
-        [PIL.Image.FLIP_TOP_BOTTOM, PIL.Image.ROTATE_90],
-        [PIL.Image.ROTATE_90],
+        [PIL.Image.Transpose.FLIP_LEFT_RIGHT],
+        [PIL.Image.Transpose.ROTATE_180],
+        [PIL.Image.Transpose.FLIP_TOP_BOTTOM],
+        [PIL.Image.Transpose.FLIP_LEFT_RIGHT, PIL.Image.Transpose.ROTATE_90],
+        [PIL.Image.Transpose.ROTATE_270],
+        [PIL.Image.Transpose.FLIP_TOP_BOTTOM, PIL.Image.Transpose.ROTATE_90],
+        [PIL.Image.Transpose.ROTATE_90],
     ]
 
     try:
@@ -239,13 +239,13 @@ class LocalImage(Image):
 
             if 'scale_filter' in kwargs:
                 try:
-                    scale_filter = getattr(PIL.Image, kwargs['scale_filter'].upper())
+                    scale_filter = getattr(PIL.Image.Resampling, kwargs['scale_filter'].upper())
                     label += f'f{scale_filter}'
                 except AttributeError as error:
                     raise ValueError(
                         f"Invalid scale_filter value '{kwargs['scale_filter']}'") from error
             else:
-                scale_filter = PIL.Image.LANCZOS
+                scale_filter = PIL.Image.Resampling.LANCZOS
             return size, (label,
                           lambda image: image.resize(size=size,
                                                      box=box,
