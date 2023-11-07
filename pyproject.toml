@@ -7,6 +7,9 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/PlaidWeb/Publ"
 homepage = "https://publ.plaidweb.site/"
+include = [
+    "bandcrash/__version__.py"
+]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
@@ -21,7 +24,7 @@ pony = "^0.7.16"
 Pygments = "^2.15.1"
 Whoosh = { version = "^2.7.4", optional = true }
 watchdog = "*"
-pillow = "^10.0.1"
+pillow = "^10.1.0"
 
 [tool.poetry.extras]
 auth = ["authl"]

@@ -120,3 +120,4 @@ index.db
 publ.sublime-workspace
 tests/static/_img
 _index
+publ/__version__.py

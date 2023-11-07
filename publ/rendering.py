@@ -149,7 +149,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
             _url=request.url,
             _index_time=index.last_indexed(),
             _latest=latest_entry(),
-            _publ_version=__version__.__version__,
+            _publ_version=__version__,
             **kwargs)
         return text, etag
     except queries.InvalidQueryError as err:

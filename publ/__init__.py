@@ -7,6 +7,12 @@ import logging
 
 from .flask_wrapper import Publ
 
+try:
+    from .__version__ import __version__
+except ImportError:
+    __version__ = '(unknown)'
+
+
 LOGGER = logging.getLogger(__name__)
 
 

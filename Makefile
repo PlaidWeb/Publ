@@ -1,7 +1,8 @@
-all: setup version format mypy cov pylint flake8
+all: setup format mypy cov pylint flake8
 
 .PHONY: setup
 setup:
+	@echo "Current version: $(shell ./get-version.sh)"
 	poetry install -E auth -E search
 
 .PHONY: format
@@ -47,16 +48,8 @@ cov: test
 	poetry run coverage html
 	poetry run coverage report
 
-.PHONY: version
-version: publ/__version__.py
-publ/__version__.py: pyproject.toml
-	# Kind of a hacky way to get the version updated, until the poetry folks
-	# settle on a better approach
-	printf '""" version """\n__version__ = "%s"\n' \
-		`poetry version | cut -f2 -d\ ` > publ/__version__.py
-
 .PHONY: build
-build: version preflight pylint flake8
+build: preflight pylint flake8
 	poetry build
 
 .PHONY: clean
