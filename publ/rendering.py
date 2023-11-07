@@ -12,7 +12,7 @@ import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
 
-from . import (__version__, caching, image, index, model, path_alias, queries,
+from . import (caching, image, index, model, path_alias, queries,
                user, utils, view)
 from .caching import cache
 from .category import Category
@@ -141,6 +141,7 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
         return None
 
     try:
+        from . import __version__
         cur_user = user.get_active()
         text, etag, flask.g.needs_auth = do_render(  # pylint:disable=assigning-non-slot
             template,
