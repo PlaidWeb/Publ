@@ -249,8 +249,10 @@ def register(verified):
         if (verified.profile
             and 'endpoints' in verified.profile
                 and 'ticket_endpoint' in verified.profile['endpoints']):
-            tokens.send_auth_ticket(identity, flask.request.url_root,
-                                    verified.profile['endpoints']['ticket_endpoint'])
+            tokens.send_auth_ticket(subject=identity,
+                                    resource=flask.request.url_root,
+                                    endpoint=verified.profile['endpoints']['ticket_endpoint'],
+                                    issuer=flask.request.url_root)
 
 
 @orm.db_session(retry=5)

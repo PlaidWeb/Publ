@@ -12,8 +12,8 @@ import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
 
-from . import (caching, image, index, model, path_alias, queries,
-               user, utils, view)
+from . import (caching, image, index, model, path_alias, queries, user, utils,
+               view)
 from .caching import cache
 from .category import Category
 from .config import config

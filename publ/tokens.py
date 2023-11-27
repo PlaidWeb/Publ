@@ -68,6 +68,7 @@ def request(user):
 def send_auth_ticket(subject: str,
                      resource: str,
                      endpoint: str,
+                     issuer: str,
                      scope: Optional[str] = None):
     """ Initiate the TicketAuth flow """
     from .flask_wrapper import current_app
@@ -78,7 +79,8 @@ def send_auth_ticket(subject: str,
         req = requests.post(endpoint, data={
             'ticket': ticket,
             'resource': resource,
-            'subject': subject
+            'subject': subject,
+            'iss': issuer
         }, timeout=30)
         LOGGER.info("Auth ticket sent to %s for %s: %d %s",
                     endpoint, subject, req.status_code, req.text)
@@ -181,7 +183,11 @@ def ticket_request(me_url: str, scope: str):
     if not endpoint:
         raise http_error.BadRequest("Could not get ticket endpoint")
     LOGGER.info("endpoint: %s", endpoint)
-    send_auth_ticket(me_url, flask.request.url_root, endpoint, scope)
+    send_auth_ticket(subject=me_url,
+                     resource=flask.request.url_root,
+                     endpoint=endpoint,
+                     issuer=flask.request.url_root,
+                     scope=scope)
     return "Ticket sent", 202
 
 

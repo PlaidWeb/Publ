@@ -54,8 +54,8 @@ class _Defaults:
     admin_group = 'admin'
     auth_log_prune_interval = 3600
     auth_log_prune_age = 86400 * 30  # one month
-    ticket_lifetime = 60
-    token_lifetime = 86400 * 30
+    ticket_lifetime = 60 * 10  # 10 minutes
+    token_lifetime = 86400 * 30  # one month
     refresh_token_lifetime = 86400 * 90
 
     # Full-text search directory
