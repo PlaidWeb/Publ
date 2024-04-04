@@ -158,6 +158,15 @@ class Publ(flask.Flask):
             SESSION_COOKIE_HTTPONLY=True,
             SESSION_COOKIE_SAMESITE='Lax')
 
+        # Set the secret key from configuration if we have it, otherwise set it
+        # randomly
+        if self.publ_config.secret_key:
+            self.secret_key = self.publ_config.secret_key
+        else:
+            import uuid
+            self.secret_key = uuid.uuid4().hex
+
+
         if self.auth:
             for route in [
                     '/_logout',
@@ -238,10 +247,11 @@ class Publ(flask.Flask):
                     "See https://publ.plaidweb.site/manual/865-Python-API#auth")
 
             if not self.publ_config.secret_key:
+                # While we always have a secret_key, we need an explicitly-set
+                # stable one for auth to work right
                 LOGGER.error(
-                    "No application secret_key is set; authentication will not be configured")
+                    "No application secret_key was set; authentication disabled")
                 return None
-            self.secret_key = self.publ_config.secret_key
 
             auth_force_https = self.publ_config.auth.get(
                 'AUTH_FORCE_HTTPS',
@@ -259,6 +269,7 @@ class Publ(flask.Flask):
                 login_render_func=rendering.render_login_form,
                 on_verified=user.register,
                 token_storage=self.publ_config.auth.get('AUTH_TOKEN_STORAGE'))
+
         return None
 
     def path_alias_regex(self, regex):
