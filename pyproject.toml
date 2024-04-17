@@ -26,6 +26,7 @@ Whoosh = { version = "^2.7.4", optional = true }
 watchdog = "*"
 pillow = "^10.1.0"
 requests = "^2.31.0"
+gunicorn = "^22.0.0"
 
 [tool.poetry.extras]
 auth = ["authl"]
