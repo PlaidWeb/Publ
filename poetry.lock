@@ -1676,4 +1676,4 @@ search = ["Whoosh"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1"
-content-hash = "969e221117f6b483c4771d2ad32545d25a4d82d2e30aee1d921f5476b131dd4b"
+content-hash = "7984455c7ab9fc9f42df5e111751bd866c951c824f7f77486c9c75dca0bd7a12"
