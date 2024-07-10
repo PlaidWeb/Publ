@@ -5,6 +5,7 @@ import os
 import re
 import typing
 from urllib.parse import urljoin
+import logging
 
 from flask import request
 
@@ -12,16 +13,21 @@ from . import entry  # pylint:disable=cyclic-import
 from . import image, model, utils
 from .config import config
 
+LOGGER=logging.getLogger(__name__)
 
 def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = False) -> str:
     """ Remap a link or source target to an appropriate entry or image rendition """
 
+    LOGGER.debug("Resolving path '%s' from search_path '%s'", path, search_path)
+
     # Resolve external URLs
     if re.match(r'([a-z][a-z0-9+.\-]*:)?//', path, re.I):
+        LOGGER.debug("%s: Appears to be a URL", path)
         return path
 
     # Resolve static assets
     if path.startswith('@'):
+        LOGGER.debug("%s: resolving static URL")
         return utils.static_url(path[1:], absolute)
 
     path, sep, anchor = path.partition('#')
@@ -29,12 +35,14 @@ def resolve(path: str, search_path: typing.Tuple[str, ...], absolute: bool = Fal
     # Resolve entries
     found = find_entry(path, search_path)
     if found:
+        LOGGER.debug("Found entry ID %d", found.entry_it)
         return entry.Entry.load(found).permalink(absolute=absolute) + sep + anchor
 
     # Resolve images and assets
     img_path, img_args, _ = image.parse_image_spec(path)
     img = image.get_image(img_path, search_path)
     if not isinstance(img, image.ImageNotFound):
+        LOGGER.debug("Found attachment %s", img)
         path, _ = img.get_rendition(**{**img_args, 'absolute': absolute})
 
     # We don't know what this is, so just treat it like a normal URL.
