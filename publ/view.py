@@ -94,6 +94,10 @@ class View(caching.Memoizable):
 
         count = spec.pop('count', None)
 
+        self._deleted = queries.build_query({
+            **spec,
+            '_deleted': True
+            }).order_by(*queries.ORDER_BY[self._order_by])
         self._entries = queries.build_query(
             spec).order_by(*queries.ORDER_BY[self._order_by])
 
@@ -178,9 +182,9 @@ class View(caching.Memoizable):
     @cached_property
     def deleted(self) -> typing.List[Entry]:
         """ Gets the deleted entries from the view """
-        query = queries.build_query({**self.query_spec,
-                                     'future': False,
-                                     '_deleted': True})
+
+        query = self._deleted
+
         if self.spec.get('count'):
             # We're using a count constraint, so we'll want to limit this to
             # entries that come before our next page of non-deleted results.
