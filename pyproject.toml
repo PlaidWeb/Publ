@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Publ"
-version = "0.7.28"
+version = "0.7.29"
 description = "A flexible web-based publishing framework"
 authors = ["fluffy <fluffy@beesbuzz.biz>"]
 license = "MIT"
@@ -24,7 +24,7 @@ pony = "^0.7.16"
 Pygments = "^2.15.1"
 Whoosh = { version = "^2.7.4", optional = true }
 watchdog = "*"
-pillow = "^10.1.0"
+pillow = "^10.3.0"
 requests = "^2.31.0"
 
 [tool.poetry.extras]

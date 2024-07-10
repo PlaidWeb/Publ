@@ -46,7 +46,7 @@ OPTIMIZE_FORMATS = {'.jpg', '.jpeg', '.png'}
 # arguments that affect the final rendition
 
 
-def fix_orientation(image: PIL.Image) -> PIL.Image:
+def fix_orientation(image: PIL.Image.Image) -> PIL.Image.Image:
     """ adapted from https://stackoverflow.com/a/30462851/318857
 
         Apply Image.transpose to ensure 0th row of pixels is at the visual
@@ -72,7 +72,7 @@ def fix_orientation(image: PIL.Image) -> PIL.Image:
 
     try:
         # pylint:disable=protected-access
-        orientation = image._getexif()[exif_orientation_tag]
+        orientation = image.getexif()[exif_orientation_tag]
         sequence = exif_transpose_sequences[orientation]
         return functools.reduce(type(image).transpose, sequence, image)
     except (TypeError, AttributeError, KeyError):
@@ -239,7 +239,8 @@ class LocalImage(Image):
 
             if 'scale_filter' in kwargs:
                 try:
-                    scale_filter = getattr(PIL.Image.Resampling, kwargs['scale_filter'].upper())
+                    scale_filter = getattr(PIL.Image.Resampling,
+                                           kwargs['scale_filter'].upper())
                     label += f'f{scale_filter}'
                 except AttributeError as error:
                     raise ValueError(
