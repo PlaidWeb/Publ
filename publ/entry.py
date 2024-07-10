@@ -301,7 +301,8 @@ class Entry(caching.Memoizable):
         if not self.authorized:
             return '', '', False
 
-        body, _, more = self._message.get_payload().partition('\n.....\n')
+        payload = typing.cast(str, self._message.get_payload())
+        body, _, more = payload.partition('\n.....\n')
         if not more and body.startswith('.....\n'):
             # The entry began with a cut, which failed to parse.
             # This rule is easier/faster than dealing with a regex from

@@ -166,7 +166,6 @@ class Publ(flask.Flask):
             import uuid
             self.secret_key = uuid.uuid4().hex
 
-
         if self.auth:
             for route in [
                     '/_logout',

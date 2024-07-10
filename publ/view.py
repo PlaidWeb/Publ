@@ -97,7 +97,7 @@ class View(caching.Memoizable):
         self._deleted = queries.build_query({
             **spec,
             '_deleted': True
-            }).order_by(*queries.ORDER_BY[self._order_by])
+        }).order_by(*queries.ORDER_BY[self._order_by])
         self._entries = queries.build_query(
             spec).order_by(*queries.ORDER_BY[self._order_by])
 
