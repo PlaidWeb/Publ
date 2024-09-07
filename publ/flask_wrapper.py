@@ -12,7 +12,7 @@ from werkzeug.utils import cached_property
 
 # pylint:disable=cyclic-import
 from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, search, tokens, user, utils, view)
+               model, rendering, search, tokens, user, utils, view, entry)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ class Publ(flask.Flask):
             arrow=arrow,
             static=utils.static_url,
             get_template=rendering.get_template,
+            get_entry=entry.get_entry_by_id,
             login=utils.auth_link('login'),
             logout=utils.auth_link('logout'),
             token_endpoint=utils.CallableProxy(lambda: utils.secure_link('tokens')),

@@ -300,6 +300,11 @@ class Category(caching.Memoizable):
         """ Get the name of the index template for this category """
         return self.get('Index-Template', 'index')
 
+    def image(self, filename):
+        """ Retrieve an image using our search path as the context """
+        return image.get_image(filename, (self.search_path,))
+
+
 
 @orm.db_session(retry=5)
 def scan_file(fullpath, relpath) -> bool:
