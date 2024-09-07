@@ -16,7 +16,7 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import (caching, cards, html_entry, links, markdown, model, path_alias,
-               queries, tokens, user, utils)
+               queries, tokens, user, utils, image)
 from .config import config
 from .utils import CallableProxy, CallableValue, TrueCallableProxy
 
@@ -715,6 +715,10 @@ class Entry(caching.Memoizable):
 
         return result
 
+    def image(self, filename):
+        """ Retrieve an image using our search path as the context """
+        return image.get_image(filename, self.search_path)
+
 
 def get_entry_id(entry, fullpath, assign_id) -> typing.Optional[int]:
     """ Get or generate an entry ID for an entry """
@@ -1050,3 +1054,15 @@ def remove_by_path(fullpath: str, entry_id: int):
                if e.file_path == fullpath
                and e.id != entry_id)
     orm.commit()
+
+def get_entry_by_id(entry_id: int):
+    """ Given an entry ID, return the entry object """
+
+    record = model.Entry.get(id=entry_id)
+    if not record.visible:
+        return None
+
+    if not record.is_authorized(user.get_active()):
+        return None
+
+    return Entry.load(record)

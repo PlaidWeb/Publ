@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Template entry lookups</title>
+</head>
+<body>
+
+{% set entry=get_entry(2271) %}
+<h1>Entry 2271: {{entry.title}}</h1>
+
+{{entry.body}}
+{{entry.more}}
+
+{{entry.image('construct.gif').get_img_tag()}}
+
+{% set entry=get_entry(107) %}
+{% if entry %}
+<h1>Entry {{entry.id}}: {{entry.title}}</h1>
+
+{{entry.body}}
+{{entry.more}}
+
+{{entry.image('construct.gif').get_img_tag()}}
+{% else %}
+Couldn't retrieve entry 107
+{% endif %}
