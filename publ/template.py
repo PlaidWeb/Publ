@@ -8,7 +8,7 @@ import typing
 import arrow
 import flask
 
-from . import utils, image
+from . import image, utils
 from .config import config
 
 EXT_PRIORITY = ['', '.html', '.htm', '.xml', '.json', '.txt']
@@ -69,7 +69,6 @@ class Template:
         """ Retrieve an image using our search path as the context """
         search_path = (os.path.join(config.content_folder, os.path.dirname(self.filename)),)
         return image.get_image(filename, search_path)
-
 
 
 def map_template(category: str,

@@ -11,8 +11,9 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 
 # pylint:disable=cyclic-import
-from . import (caching, cli, config, html_entry, image, index, maintenance,
-               model, rendering, search, tokens, user, utils, view, entry)
+from . import (caching, cli, config, entry, html_entry, image, index,
+               maintenance, model, rendering, search, tokens, user, utils,
+               view)
 
 LOGGER = logging.getLogger(__name__)
 

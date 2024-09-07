@@ -13,7 +13,7 @@ from pony import orm
 from werkzeug.utils import cached_property
 
 from . import entry  # pylint: disable=cyclic-import
-from . import caching, markdown, model, queries, utils
+from . import caching, image, markdown, model, queries, utils
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -303,7 +303,6 @@ class Category(caching.Memoizable):
     def image(self, filename):
         """ Retrieve an image using our search path as the context """
         return image.get_image(filename, (self.search_path,))
-
 
 
 @orm.db_session(retry=5)

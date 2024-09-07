@@ -15,8 +15,8 @@ import slugify
 from pony import orm
 from werkzeug.utils import cached_property
 
-from . import (caching, cards, html_entry, links, markdown, model, path_alias,
-               queries, tokens, user, utils, image)
+from . import (caching, cards, html_entry, image, links, markdown, model,
+               path_alias, queries, tokens, user, utils)
 from .config import config
 from .utils import CallableProxy, CallableValue, TrueCallableProxy
 
@@ -428,8 +428,8 @@ class Entry(caching.Memoizable):
                                          counter=markdown.ItemCounter())
             card = cards.extract_card(html_text)
 
-            for (image, width, height) in card.images[:kwargs.get('count', 1)]:
-                tags += og_tag('og:image', image)
+            for (img, width, height) in card.images[:kwargs.get('count', 1)]:
+                tags += og_tag('og:image', img)
                 if width:
                     tags += og_tag('og:image:width', width)
                 if height:
@@ -832,7 +832,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     title = entry.get('title', '')
 
-    values = {
+    values: typing.Dict[str, typing.Any] = {
         'file_path': fullpath,
         'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
@@ -1054,6 +1054,7 @@ def remove_by_path(fullpath: str, entry_id: int):
                if e.file_path == fullpath
                and e.id != entry_id)
     orm.commit()
+
 
 def get_entry_by_id(entry_id: int):
     """ Given an entry ID, return the entry object """
