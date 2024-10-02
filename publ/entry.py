@@ -705,7 +705,10 @@ class Entry(caching.Memoizable):
         # so we need to retrieve chunk-wise
         start = 0
         if count is None:
-            # We're going to do a full table retrieval anyway so let's just do it
+            # We're going to do a full query retrieval (either due to lack of
+            # view constraint or using a date-based constraint), so we'd might
+            # as well just go for it instead of trying to be too fancy with
+            # clever loop conditionals
             count = len(entries)
         chunk_size = max(16, count)
 
