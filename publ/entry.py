@@ -700,18 +700,34 @@ class Entry(caching.Memoizable):
 
         result: typing.List[Entry] = []
         cur_user = user.get_active()
-        for record in entries:
-            if count is not None and len(result) >= count:
+
+        # without a known limit, pony just fetches the entire freaking table,
+        # so we need to retrieve chunk-wise
+        start = 0
+        if count is None:
+            count = len(entries)
+        chunk_size = max(16, count)
+
+        while len(result) < count:
+            chunk = entries[start:start + chunk_size]
+
+            if not chunk:
+                # we're out of entries to consume
                 break
 
-            auth = record.is_authorized(cur_user)
-            if auth or unauthorized:
-                result.append(Entry.load(record))
-                if not auth and unauthorized is not True:
-                    unauthorized -= 1
+            for record in chunk:
+                if len(result) >= count:
+                    break
 
-            if not auth:
-                tokens.request(cur_user)
+                auth = record.is_authorized(cur_user)
+                if auth or unauthorized:
+                    result.append(Entry.load(record))
+                    if not auth and unauthorized is not True:
+                        unauthorized -= 1
+                if not auth:
+                    tokens.request(cur_user)
+
+            start += len(chunk)
 
         return result
 
