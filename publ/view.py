@@ -136,48 +136,89 @@ class View(caching.Memoizable):
         return utils.CallableProxy(_entries)
 
     @cached_property
-    def unauthorized(self) -> typing.Callable[..., typing.List[Entry]]:
-        """ Gets entries which the user is not allowed to view """
-
-        def _unauthorized(count=None) -> typing.List[Entry]:
-            result: typing.List[Entry] = []
-            if count is None:
-                count = self.spec.get('count')
-
-            cur_user = user.get_active()
-            for record in self._entries:
-                if count is not None and len(result) >= count:
-                    break
-
-                if not record.is_authorized(cur_user):
-                    tokens.request(cur_user)
-                    result.append(Entry.load(record))
-
-            return result
-
-        return utils.CallableProxy(_unauthorized)
-
-    @cached_property
     def has_unauthorized(self) -> bool:
         """ Returns whether there's entries that the user could see if they
         were authorized differently """
 
+        LOGGER.debug("HAS_UNAUTHORIZED")
+
         count = self.spec.get('count')
-        auth_count = 0
         cur_user = user.get_active()
-        for record in self._entries:
-            if count is not None and auth_count >= count:
-                # we've already hit the end of the list
+
+        if cur_user and cur_user.is_admin:
+            return False
+
+        auth_count = 0
+
+        LOGGER.debug("Checking for unauthorized in the first %s entries", count)
+
+        # retrieve entries a chunk at a time so Pony doesn't have to realize
+        # the whole table up-front
+        start = 0
+        chunk_size = max(count if count is not None else 0, 16)
+        while count is None or auth_count < count:
+            LOGGER.debug("Testing %d", start)
+            chunk = self._entries[start:start + chunk_size]
+            start += chunk_size
+
+            if not chunk:
+                LOGGER.debug("Hit EOF")
                 break
 
-            if not record.is_authorized(cur_user):
-                # there's at least one unauthorized, so fast quit
-                tokens.request(cur_user)
-                return True
-
-            auth_count += 1
+            for record in chunk:
+                if not record.is_authorized(cur_user):
+                    LOGGER.debug("Found unauthorized entry")
+                    tokens.request(cur_user)
+                    return True
+                auth_count += 1
+                LOGGER.debug("Seen %d authorized", auth_count)
 
         return False
+
+    @cached_property
+    def unauthorized(self) -> typing.Callable[..., typing.List[Entry]]:
+        """ Gets the entries which would be visible on the view if the user
+        were authorized to see them """
+
+        def _unauthorized(count=None) -> typing.List[Entry]:
+            result: typing.List[Entry] = []
+
+            auth_max = self.spec.get('count')
+            cur_user = user.get_active()
+
+            if cur_user and cur_user.is_admin:
+                return result
+
+            auth_count = 0
+            start = 0
+            chunk_size = max(auth_max if auth_max is not None else 0, 16)
+            while ((auth_max is None or auth_count < auth_max)
+                   and (count is None or len(result) < count)):
+
+                chunk = self._entries[start:start + chunk_size]
+                start += chunk_size
+
+                if not chunk:
+                    break
+
+                for record in chunk:
+                    # if we've traversed the whole authorized count, exit
+                    if auth_max is not None and auth_count >= auth_max:
+                        break
+
+                    # if we've reached our unauthorized max, exit
+                    if count is not None and len(result) >= count:
+                        break
+
+                    if not record.is_authorized(cur_user):
+                        tokens.request(cur_user)
+                        result.append(Entry.load(record))
+                    else:
+                        auth_count += 1
+
+            return result
+
+        return utils.CallableProxy(_unauthorized)
 
     @cached_property
     def deleted(self) -> typing.List[Entry]:

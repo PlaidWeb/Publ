@@ -705,14 +705,15 @@ class Entry(caching.Memoizable):
         # so we need to retrieve chunk-wise
         start = 0
         if count is None:
+            # We're going to do a full table retrieval anyway so let's just do it
             count = len(entries)
         chunk_size = max(16, count)
 
         while len(result) < count:
             chunk = entries[start:start + chunk_size]
+            start += chunk_size
 
             if not chunk:
-                # we're out of entries to consume
                 break
 
             for record in chunk:
@@ -726,8 +727,6 @@ class Entry(caching.Memoizable):
                         unauthorized -= 1
                 if not auth:
                     tokens.request(cur_user)
-
-            start += len(chunk)
 
         return result
 
