@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 
 class GlobalConfig(DbEntity):
@@ -86,7 +86,7 @@ class Entry(DbEntity):
     aliases = orm.Set("PathAlias")
     tags = orm.Set("EntryTagged")
 
-    auth = orm.Set("EntryAuth")
+    auth = orm.Optional(str)
     auth_log = orm.Set("AuthLog")
 
     attachments = orm.Set("Entry", reverse="attached")
@@ -117,16 +117,19 @@ class Entry(DbEntity):
             return True
 
         result = False
-        for auth in self.auth.order_by(EntryAuth.order):
-            LOGGER.debug("  %d test=%s allowed=%s", auth.order, auth.user_group, auth.allowed)
-            if auth.user_group == '*':
-                # Special group * refers to all logged-in users
-                result = auth.allowed == (user is not None)
-                LOGGER.debug("  result->%s", result)
+        for group in self.auth.split():
+            LOGGER.debug("  group=%s", group)
+            allowed = group[0] != '!'
+            if not allowed:
+                group = group[1:]
 
+            if group == '*':
+                # Special group * refers to all logged-in users
+                result = allowed == (user is not None)
+                LOGGER.debug("  result->%s", result)
             else:
-                if user and auth.user_group in user.auth_groups:
-                    result = auth.allowed
+                if user and group in user.auth_groups:
+                    result = allowed
                     LOGGER.debug("  result->%s", result)
 
         LOGGER.debug("Final result: %s", result)
@@ -182,16 +185,6 @@ class Image(DbEntity):
 
     is_asset = orm.Required(bool, default=False)
     asset_name = orm.Optional(str, index=True)
-
-
-class EntryAuth(DbEntity):
-    """ An authentication record for an entry """
-    order = orm.Required(int)
-    entry = orm.Required(Entry)
-    user_group = orm.Required(str)
-    allowed = orm.Required(bool)
-
-    orm.composite_key(entry, order)
 
 
 class KnownUser(DbEntity):
