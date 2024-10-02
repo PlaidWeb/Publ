@@ -843,7 +843,8 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
         'redirect_url': entry.get('Redirect-To', ''),
         'title': title,
         'sort_title': entry.get('Sort-Title', title),
-        'canonical_path': entry.get('Path-Canonical', '')
+        'canonical_path': entry.get('Path-Canonical', ''),
+        'auth': entry.get('Auth', '')
     }
 
     entry_date = None
@@ -914,15 +915,6 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             path_alias.set_alias(alias, model.AliasType.MOUNT, entry=record)
         for alias in entry.get_all('Path-Canonical', []):
             path_alias.set_alias(alias, model.AliasType.MOUNT, entry=record)
-
-    orm.delete(p for p in model.EntryAuth if p.entry == record)  # type:ignore
-    orm.commit()
-    for order, user_group in enumerate(entry.get('Auth', '').split()):
-        allowed = user_group[0] != '!'
-        if not allowed:
-            user_group = user_group[1:]
-        model.EntryAuth(order=order, entry=record, user_group=user_group, allowed=allowed)
-    orm.commit()
 
     with orm.db_session:
         set_tags = {
