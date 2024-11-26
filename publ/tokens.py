@@ -189,6 +189,7 @@ def parse_authorization_header(header):
     """ Parse an Authorization: header from an HTTP request into token """
     parts = header.split()
     if len(parts) < 2:
+        LOGGER.warning("Got malformed authorization header '%s'", header)
         raise http_error.BadRequest("Malformed authorization header")
 
     if parts[0].lower() == 'bearer':

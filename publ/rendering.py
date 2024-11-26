@@ -107,7 +107,7 @@ def image_function(template=None,
     return lambda filename: image.get_image(filename, path)
 
 
-def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]:
+def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.Tuple[str, str]:
     """ Render out a template, providing the image function based on the args.
 
     Returns tuple of (rendered text, etag)
@@ -142,7 +142,13 @@ def render_publ_template(template: Template, **kwargs) -> typing.Tuple[str, str]
 
     try:
         from . import __version__
-        cur_user = user.get_active()
+        try:
+            cur_user = user.get_active()
+        except http_error.HTTPException:
+            if not is_error:
+                raise
+            cur_user = None
+
         text, etag, flask.g.needs_auth = do_render(  # pylint:disable=assigning-non-slot
             template,
             user=cur_user,
@@ -193,6 +199,7 @@ def render_error(category, error_message, error_codes,
     if template:
         return render_publ_template(
             template,
+            is_error=True,
             category=Category.load(category),
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
