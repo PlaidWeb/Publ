@@ -197,6 +197,7 @@ def make_tag(name: str,
 
     text = '<' + name
 
+    attr_list = None
     if isinstance(attrs, dict):
         attr_list = attrs.items()
     elif isinstance(attrs, list):

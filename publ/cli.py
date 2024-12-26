@@ -1,5 +1,5 @@
 """ CLI utilities for Publ """
-# pylint:disable=too-many-arguments
+# pylint:disable=too-many-arguments,too-many-positional-arguments
 
 import itertools
 import logging

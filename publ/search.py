@@ -157,7 +157,7 @@ class SearchIndex:
         :param int page: The page number to retrieve
         :param bool future: Whether to retrieve entries that aren't yet visible
         """
-        # pylint:disable=too-many-arguments
+        # pylint:disable=too-many-arguments,too-many-positional-arguments
         LOGGER.debug('query: %s  category: %s  recurse: %s  future: %s',
                      query, category, recurse, future)
 

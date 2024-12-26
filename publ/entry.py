@@ -516,7 +516,7 @@ class Entry(caching.Memoizable):
             is_markdown -- whether the entry is formatted as Markdown
             kwargs -- parameters to pass to the Markdown processor
         """
-        # pylint:disable=too-many-arguments
+        # pylint:disable=too-many-arguments,too-many-positional-arguments
         if is_markdown:
             # Set defaults for the ID link generators, so permalinks from category
             # pages work correctly

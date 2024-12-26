@@ -139,7 +139,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                  footnote_buffer: typing.Optional[typing.List[str]],
                  toc_buffer: typing.Optional[TocBuffer],
                  counter: ItemCounter):
-        # pylint:disable=no-member,too-many-arguments
+        # pylint:disable=no-member,too-many-arguments,too-many-positional-arguments
         super().__init__(0, args.get('xhtml') and misaka.HTML_USE_XHTML or 0)
 
         self._config = args
@@ -531,7 +531,7 @@ def to_html(text, args, search_path,
 
     postprocess -- whether to postprocess the buffers for smartypants/HTML/etc.
     """
-    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-arguments,too-many-positional-arguments
 
     LOGGER.debug("counter: %s %s", id(counter), counter)
 
