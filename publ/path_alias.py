@@ -186,4 +186,4 @@ def get_alias(path: str) -> typing.Optional[Disposition]:
             args['slug_text'] = record.entry.slug_text
 
     LOGGER.debug("endpoint=%s args=%s", endpoint, args)
-    return Response(redirect(url_for(endpoint, **args), PERMANENT))
+    return Response(redirect(url_for(endpoint, **args), PERMANENT))  # type: ignore
