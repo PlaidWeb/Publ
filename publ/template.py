@@ -23,7 +23,7 @@ BUILTIN_DIR = os.path.join(os.path.dirname(__file__), 'default_template')
 # A useful set of default priorities for clients that don't declare Accept (e.g. curl)
 DEFAULT_ACCEPT = ['text/html',
                   'application/rss+xml',
-                  'application/rss+atom',
+                  'application/atom+xml',
                   'application/xml',
                   'style/css',
                   'text/plain',
