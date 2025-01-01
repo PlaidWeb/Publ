@@ -23,15 +23,6 @@ from .template import Template, map_template
 
 LOGGER = logging.getLogger(__name__)
 
-# mapping from template extension to MIME type; probably could be better
-EXTENSION_MAP = {
-    '.html': 'text/html; charset=utf-8',
-    '.xml': 'application/xml',
-    '.json': 'application/json',
-    '.css': 'text/css; charset=utf-8',
-    '.txt': 'text/plain; charset=utf-8'
-}
-
 # Headers for responses that shouldn't be cached
 NO_CACHE = {
     'Cache-control': 'private, no-cache, no-store, max-age=0',
@@ -54,8 +45,7 @@ def cache_control():
 
 def mime_type(template: Template) -> str:
     """ infer the content-type from the extension """
-    _, ext = os.path.splitext(template.filename)
-    return EXTENSION_MAP.get(ext, 'text/html; charset=utf-8')
+    return f'{template.mime_type}; charset=utf-8'
 
 
 def get_template(template: str, relation) -> typing.Optional[str]:
@@ -157,6 +147,7 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
             _index_time=index.last_indexed(),
             _latest=latest_entry(),
             _publ_version=__version__,
+            _accept_mime=flask.request.accept_mimetypes,
             **kwargs)
         return text, etag
     except queries.InvalidQueryError as err:

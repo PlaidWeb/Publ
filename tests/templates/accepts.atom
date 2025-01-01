@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<feed xmlns="http://www.w3.org/2005/Atom"
+    xmlns:fh="http://purl.org/syndication/history/1.0"
+    xmlns:at="http://purl.org/atompub/tombstones/1.0">
+
+    <title>{{category.name}} Accept test</title>
+    <entry>
+        <id>urn:uuid:INVALID</id>
+        <content type="html">This is accepts.atom</content>
+    </entry>
+</feed>
