@@ -98,7 +98,7 @@ class Image(ABC):
         if '_mark_rewritten' in params:
             set_val('data-publ-rewritten', params['_mark_rewritten'])
 
-        return markupsafe.Markup(attrs)
+        return attrs
 
     def get_img_tag(self,
                     title: Optional[str] = None,

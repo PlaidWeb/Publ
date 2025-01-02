@@ -93,7 +93,7 @@ class Template:
 
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]],
-                 in_exception = False
+                 in_exception=False
                  ) -> typing.Optional[Template]:
     """
     Given a file path and an acceptable list of templates, return the
