@@ -186,7 +186,7 @@ def render_error(category, error_message, error_codes,
     template_list.append(str(int(error_code / 100) * 100))
     template_list.append('error')
 
-    template = map_template(category, template_list)
+    template = map_template(category, template_list, in_exception=True)
     if template:
         return render_publ_template(
             template,

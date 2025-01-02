@@ -92,7 +92,8 @@ class Template:
 
 
 def map_template(category: str,
-                 template_list: typing.Union[str, typing.List[str]]
+                 template_list: typing.Union[str, typing.List[str]],
+                 in_exception = False
                  ) -> typing.Optional[Template]:
     """
     Given a file path and an acceptable list of templates, return the
@@ -108,6 +109,8 @@ def map_template(category: str,
 
     # get the sorted acceptance list
     accept_mime = [mime for (mime, _) in flask.request.accept_mimetypes]
+    if in_exception:
+        accept_mime.append('*/*')
 
     # Clients which accept *anything* (e.g. curl) should be forced into a more
     # sensible priority order
