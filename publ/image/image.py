@@ -98,7 +98,7 @@ class Image(ABC):
         if '_mark_rewritten' in params:
             set_val('data-publ-rewritten', params['_mark_rewritten'])
 
-        return attrs
+        return markupsafe.Markup(attrs)
 
     def get_img_tag(self,
                     title: Optional[str] = None,
@@ -174,7 +174,7 @@ class Image(ABC):
         if uncomment:
             text = f' */ {text} /* '
 
-        return text
+        return markupsafe.Markup(text)
 
     @abstractmethod
     def _css_background(self, **kwargs):
