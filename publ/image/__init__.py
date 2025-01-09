@@ -261,7 +261,7 @@ def get_async(render_spec: str):
     try:
         # Get the image request parameters
         file_path, output_scale, args = itsdangerous.URLSafeSerializer(
-            flask.current_app.secret_key).loads(render_spec)
+            flask.current_app.secret_key or '').loads(render_spec)
     except itsdangerous.BadData as error:
         raise http_error.BadRequest(f"Invalid image request: {error}")
 
