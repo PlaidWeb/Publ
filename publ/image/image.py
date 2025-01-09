@@ -174,7 +174,7 @@ class Image(ABC):
         if uncomment:
             text = f' */ {text} /* '
 
-        return markupsafe.Markup(text)
+        return text
 
     @abstractmethod
     def _css_background(self, **kwargs):
