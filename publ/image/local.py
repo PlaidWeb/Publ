@@ -550,9 +550,9 @@ class LocalImage(Image):
         # Get the 1x and 2x renditions
         img_1x, img_2x, _ = self._get_renditions(kwargs)
 
-        tmpl = f'background-image: url("{img_1x}");'
+        tmpl = f"background-image: url('{img_1x}');"
         if img_2x and img_1x != img_2x:
-            tmpl += f'background-image: image-set(url("{img_1x}") 1x, url("{img_2x}") 2x);'
+            tmpl += f"background-image: image-set(url('{img_1x}') 1x, url('{img_2x}') 2x);"
         return tmpl
 
     @staticmethod

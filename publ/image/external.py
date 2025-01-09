@@ -77,7 +77,7 @@ class ExternalImage(Image):
 
     def _css_background(self, **kwargs) -> str:
         """ Get the CSS background-image for the remote image """
-        return f'background-image: url("{self._get_url(kwargs.get("absolute"))}");'
+        return f"background-image: url('{self._get_url(kwargs.get('absolute'))}');"
 
     @property
     def _filename(self) -> str:
