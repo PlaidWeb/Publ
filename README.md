@@ -28,7 +28,7 @@ organized in a sensible file hierarchy.
 ## See it in action
 
 The main demonstration site is at https://beesbuzz.biz/ — it is of course a
-work in progress! The documentation site for Publ itself (which is also a work in progress) lives at https://publ.plaidweb.site/
+work in progress! The documentation site for Publ itself (which is also a work in progress) lives at https://publ.beesbuzz.biz/
 
 ## Operating requirements
 
@@ -47,7 +47,7 @@ and Cockroach are also supported.
 
 In order to develop Publ itself, you'll need to install its dependencies; see
 the [getting started
-guide](http://publ.plaidweb.site/manual/328-Getting-started) for more
+guide](http://publ.beesbuzz.biz/manual/328-Getting-started) for more
 information. In particular, make sure you have compatible versions of
 [Python](https://python.org/) and [Poetry](https://python-poetry.org/)
 installed, and, if on Windows, you'll probably need to install the [Visual C++
@@ -65,7 +65,7 @@ environment variable to be `test_app.py`.
 
 The [Publ-site](https://github.com/PlaidWeb/Publ-site) repository stores all of
 the templates, site content, and configuration for the [Publ
-site](https://publ.plaidweb.site).
+site](https://publ.beesbuzz.biz).
 
 The
 [Publ-templates-beesbuzz.biz](https://github.com/PlaidWeb/Publ-templates-beesbuzz.biz)
