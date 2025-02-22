@@ -161,7 +161,6 @@ class Entry(caching.Memoizable):
         template -- Which template to generate the link for
         """
 
-
         def _archive_link(paging=None, template='', category=None, absolute=False, tag=None) -> str:
             # pylint:disable=too-many-arguments
             category = category if category is not None else self.category
