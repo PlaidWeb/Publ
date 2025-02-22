@@ -55,3 +55,14 @@
 </ul>
 {% endfor %}
 
+<h2>Tag browsing</h2>
+<ul>
+{% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>
+    {% for tag in entry.tags %}
+    #<a href="{{entry.archive(template=template,tag=tag)}}">{{tag}}</a>
+    {% endfor %}
+</li>
+{% endfor %}
+</ul>
+
