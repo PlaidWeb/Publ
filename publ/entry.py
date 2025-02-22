@@ -160,12 +160,17 @@ class Entry(caching.Memoizable):
         category -- Which category to generate the link against (default: the entry's category)
         template -- Which template to generate the link for
         """
+
+
         def _archive_link(paging=None, template='', category=None, absolute=False, tag=None) -> str:
             # pylint:disable=too-many-arguments
+            category = category if category is not None else self.category
+
             args = {
-                'template': template,
-                'category': category if category is not None else self.category,
+                'template': template if str(template) != category.index_template else '',
+                'category': category,
             }
+
             if paging == 'day':
                 args['date'] = self.date.format(utils.DAY_FORMAT)
             elif paging == 'month':
