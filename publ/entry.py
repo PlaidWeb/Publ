@@ -164,6 +164,10 @@ class Entry(caching.Memoizable):
         def _archive_link(paging=None, template='', category=None, absolute=False, tag=None) -> str:
             # pylint:disable=too-many-arguments
             category = category if category is not None else self.category
+            if isinstance(category, str):
+                # get the actual category object
+                from .category import Category
+                category = Category.load(category)
 
             args = {
                 'template': template if str(template) != category.index_template else '',

@@ -1,0 +1,8 @@
+<ul>
+    {% for entry in view.entries %}
+<li><a href="{{entry.link}}">{{entry.title}}</a>:
+<a href="{{entry.archive}}">native link</a>
+<a href="{{entry.archive(category='categories')}}">root link</a>
+</li>
+{% endfor %}
+</ul>
