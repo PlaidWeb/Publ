@@ -544,11 +544,11 @@ def admin_dashboard(by=None):  # pylint:disable=invalid-name
     cur_user = user.get_active()
 
     if not cur_user:
-        # Show a login page
-        return handle_unauthorized(cur_user)
+        # Show the login page
+        raise http_error.Unauthorized()
 
     if not cur_user.is_admin:
-        # go straight to 403 error
+        # Go straight to 403 error
         raise http_error.Forbidden("Insufficient access level")
 
     tmpl = map_template('', '_admin')
