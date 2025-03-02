@@ -39,7 +39,7 @@ REVERSE_ORDER_BY = {
 }
 
 
-def where_entry_visible(query, timestamp=None):
+def where_entry_visible(query, timestamp=None, attachments=False):
     """ Generate a where clause for currently-visible entries
 
     Arguments:
@@ -50,18 +50,22 @@ def where_entry_visible(query, timestamp=None):
     ref_time = arrow.utcnow().float_timestamp if timestamp is None else timestamp
 
     return query.filter(lambda e:
-                        e.status == model.PublishStatus.PUBLISHED.value or (
-                            e.status == model.PublishStatus.SCHEDULED.value and (
-                                e.utc_timestamp <= ref_time)
+                        (
+                            e.status == model.PublishStatus.PUBLISHED.value
+                        ) or (
+                            e.status == model.PublishStatus.SCHEDULED.value and
+                            e.utc_timestamp <= ref_time
+                        ) or (
+                            attachments and e.status == model.PublishStatus.ATTACHMENT.value
                         ))
 
 
-def where_entry_visible_future(query):
+def where_entry_visible_future(query, attachments=False):
     """ Generate a where clause for entries that are visible now or in the future """
-
     return query.filter(lambda e:
                         e.status in (model.PublishStatus.PUBLISHED.value,
-                                     model.PublishStatus.SCHEDULED.value))
+                                     model.PublishStatus.SCHEDULED.value) or
+                        (attachments and e.status == model.PublishStatus.ATTACHMENT.value))
 
 
 def where_entry_deleted(query):
@@ -277,6 +281,7 @@ def build_query(spec):
     state_keys = {
         '_all',
         '_deleted',
+        '_attachments',
         'future',
         'recurse',
         'category',
@@ -319,9 +324,11 @@ def build_query(spec):
         query = where_entry_deleted(query)
     else:
         if state.get('future', False):
-            query = where_entry_visible_future(query)
+            query = where_entry_visible_future(query,
+                                               attachments=state.get('_attachments'))
         else:
-            query = where_entry_visible(query)
+            query = where_entry_visible(query,
+                                        attachments=state.get('_attachments'))
 
     if state.get('category') is not None:
         query = where_entry_category(query, state.get('category', ''),
