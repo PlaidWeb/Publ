@@ -542,8 +542,14 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
 def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()
-    if not cur_user or not cur_user.is_admin:
-        return handle_unauthorized(cur_user)
+
+    if not cur_user:
+        # Show the login page
+        raise http_error.Unauthorized()
+
+    if not cur_user.is_admin:
+        # Go straight to 403 error
+        raise http_error.Forbidden("Insufficient access level")
 
     tmpl = map_template('', '_admin')
 
