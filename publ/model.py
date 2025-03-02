@@ -46,6 +46,9 @@ class PublishStatus(Enum):
 
     TEAPOT = 6      # RFC 2324
 
+    ATTACHMENT = 7  # Entry should only be visible in an attachment context
+    ATTACH = 7      # Synonym for ATTACHMENT
+
 
 class AliasType(Enum):
     """ The type of PathAlias mapping """
@@ -103,7 +106,8 @@ class Entry(DbEntity):
         """ Returns true if the entry should be viewable """
         return self.status in (PublishStatus.HIDDEN.value,
                                PublishStatus.PUBLISHED.value,
-                               PublishStatus.SCHEDULED.value)
+                               PublishStatus.SCHEDULED.value,
+                               PublishStatus.ATTACHMENT.value)
 
     def is_authorized(self, user) -> bool:
         """ Returns whether the entry is visible to the specified user """

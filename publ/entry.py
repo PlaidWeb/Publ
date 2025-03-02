@@ -561,7 +561,8 @@ class Entry(caching.Memoizable):
 
         def _get_attachments(order=None, **kwargs) -> typing.List:
             query = queries.build_query({**kwargs,
-                                         'attachments': self._record
+                                         'attachments': self._record,
+                                         '_attachments': True,
                                          })
             if order:
                 query = query.order_by(*queries.ORDER_BY[order])
@@ -998,12 +999,13 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
             other = links.find_entry(attach, search_path)
             if other:
                 set_attach.add(other)
-            elif fixup_pass < 3:
+            elif fixup_pass < 5:
                 # The entry hasn't been found, so treat this as a fixup task
                 # Pass 0 - this entry might not have an ID
                 # Pass 1 - the other entry might not have an ID (since this can be scheduled
                 #    before pass 1 of the other entry)
                 # Pass 2 - everything should have an ID now
+                # Then we give it a few extra passes for safety's sake
                 LOGGER.info("Attempted to link to unknown entry '%s -> %s'; retrying",
                             relpath, attach)
                 result = False
