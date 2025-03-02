@@ -12,29 +12,29 @@ Image rendition tests
 
 External image with width set
 
-![](//placekitten.com/800/600{250} "so smol")
+![](//placecats.com/800/600{250} "so smol")
 
-`![](//placekitten.com/800/600{250} "so smol")`
+`![](//placecats.com/800/600{250} "so smol")`
 
 External image with height set
 
-![](//placekitten.com/800/600{height=250} "less smol")
+![](//placecats.com/800/600{height=250} "less smol")
 
-`![](//placekitten.com/800/600{height=250} "less smol")`
+`![](//placecats.com/800/600{height=250} "less smol")`
 
 External image with width and height set, with different scaling modes:
 
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//placekitten.com/960/480 "fit"
-| //placekitten.com/960/480{resize="fill"} "fill"
-| //placekitten.com/960/480{resize="stretch"} "stretch")
+//placecats.com/960/480 "fit"
+| //placecats.com/960/480{resize="fill"} "fill"
+| //placecats.com/960/480{resize="stretch"} "stretch")
 
 ```markdown
 
 ![{320,320,div_class="gallery",gallery_id="sizing"}](
-//placekitten.com/960/480 "fit"
-| //placekitten.com/960/480{resize="fill"} "fill"
-| //placekitten.com/960/480{resize="stretch"} "stretch")
+//placecats.com/960/480 "fit"
+| //placecats.com/960/480{resize="fill"} "fill"
+| //placecats.com/960/480{resize="stretch"} "stretch")
 ```
 
 Image using static path
@@ -46,9 +46,9 @@ Image using static path
 
 Force absolute URLs
 
-![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})
+![{640,320,absolute=True}](//placecats.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})
 
-`![{640,320,absolute=True}](//placekitten.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})`
+`![{640,320,absolute=True}](//placecats.com/800/600 | @images/IMG_0377.jpg | critter.webp{999,format='png'})`
 
 
 ## Local images
@@ -129,12 +129,12 @@ should still be in a paragraph
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg
 | rawr.jpg{fullscreen_width=50} "Rawr!"
 | rawr.jpg{100}
-| //placekitten.com/1280/720)
+| //placecats.com/1280/720)
 
 ```markdown
 
 ![such gallery{255,gallery_id="rawry"}](rawr.jpg | rawr.jpg{fullscreen_width=50} "Rawr!" | rawr.jpg{100}
-| //placekitten.com/800/600)
+| //placecats.com/800/600)
 ```
 
 ## PNG transparency
