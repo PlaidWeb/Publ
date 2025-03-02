@@ -47,7 +47,7 @@ def test_clean_cache():
         assert os.path.isfile(get_path('bar', 'qwer'))
 
         with app.app_context():
-            publ.image.clean_cache(7200).result()
+            publ.image.clean_cache(7200)
 
         LOGGER.debug("tempdir contents after purge:")
         for (path, _, files) in os.walk(tempdir):

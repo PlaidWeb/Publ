@@ -1,10 +1,8 @@
 """ Functions for manipulating images stored within local content """
 
-import concurrent.futures
 import functools
 import logging
 import os
-import threading
 import time
 import typing
 
@@ -85,25 +83,11 @@ class LocalImage(Image):
     """ The basic Image class, which knows about the base version and how to
     generate renditions from it """
 
-    _thread_pool = None
-
-    @staticmethod
-    def thread_pool():
-        """ Get the rendition threadpool """
-        # pylint:disable=consider-using-with
-        if not LocalImage._thread_pool:
-            LOGGER.info("Starting LocalImage threadpool")
-            LocalImage._thread_pool = concurrent.futures.ThreadPoolExecutor(
-                thread_name_prefix="Renderer",
-                max_workers=config.image_render_threads)
-        return LocalImage._thread_pool
-
     def __init__(self, record, search_path):
         """ Get the base image from an index record """
         super().__init__(search_path)
 
         self._record = record
-        self._lock = threading.Lock()
 
     def _key(self):
         return LocalImage, self._record
@@ -132,15 +116,13 @@ class LocalImage(Image):
             out_basename)
         out_fullpath = os.path.join(config.static_folder, out_rel_path)
 
+        pending = False
         if os.path.isfile(out_fullpath):
             LOGGER.debug("rendition %s already exists", out_fullpath)
             os.utime(out_fullpath)
-            pending = False
         elif render:
-            LOGGER.debug("scheduling %s for render", out_fullpath)
-            LocalImage.thread_pool().submit(
-                self._render, out_fullpath, [op for _, op in pipeline if op], out_args)
-            pending = True
+            LOGGER.debug("rendering %s", out_fullpath)
+            self._render(out_fullpath, [op for _, op in pipeline if op], out_args)
         else:
             LOGGER.debug("rendition %s does not exist, waiting for a real request", out_fullpath)
             pending = True
@@ -256,30 +238,29 @@ class LocalImage(Image):
     def _render(self, path, operations: typing.List[typing.Callable], out_args):
         image = self._image
 
-        with self._lock:
-            if os.path.isfile(path):
-                # file already exists
-                return
+        if os.path.isfile(path):
+            # file already exists
+            return
 
-            LOGGER.info("Rendering file %s", path)
+        LOGGER.info("Rendering file %s", path)
 
-            try:
-                os.makedirs(os.path.dirname(path))
-            except FileExistsError:
-                pass
+        try:
+            os.makedirs(os.path.dirname(path))
+        except FileExistsError:
+            pass
 
-            try:
-                for operation in operations:
-                    image = operation(image)
+        try:
+            for operation in operations:
+                image = operation(image)
 
-                _, ext = os.path.splitext(path)
-                with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
-                    image.save(file, **out_args)
+            _, ext = os.path.splitext(path)
+            with atomic_write(path, mode='w+b', suffix=ext, overwrite=True) as file:
+                image.save(file, **out_args)
 
-                LOGGER.info("%s: complete", path)
-            except Exception:  # pylint: disable=broad-except
-                LOGGER.exception("Failed to render %s -> %s",
-                                 self._record.file_path, path)
+            LOGGER.info("%s: complete", path)
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception("Failed to render %s -> %s",
+                             self._record.file_path, path)
 
     def get_rendition(self, output_scale=1, **kwargs):
         """
@@ -313,24 +294,21 @@ class LocalImage(Image):
         if pending:
             signer = itsdangerous.URLSafeSerializer(flask.current_app.secret_key)
             return flask.url_for(
-                'async',
+                'get_image',
                 render_spec=signer.dumps(
                     (self._record.file_path, output_scale,
                      {k: v for k, v in kwargs.items() if k in RENDITION_ARG_FILTER})),
                 _external=kwargs.get('absolute')), size
         return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
-    def render_async(self, output_scale, **kwargs):
+    def render(self, output_scale, **kwargs):
         """ Initiate the rendering of an image """
-        out_rel_path, size, pending = self._get_rendition(output_scale, True, **kwargs)
-        return utils.static_url(out_rel_path, kwargs.get('absolute')), size, pending
+        out_rel_path, size, _ = self._get_rendition(output_scale, True, **kwargs)
+        return utils.static_url(out_rel_path, kwargs.get('absolute')), size
 
     @cached_property
     def _image(self):
-        with self._lock:
-            image = PIL.Image.open(self._record.file_path)
-
-        return image
+        return PIL.Image.open(self._record.file_path)
 
     def get_rendition_size(self, spec, output_scale, crop) -> SizeSpecType:
         """
@@ -560,10 +538,7 @@ class LocalImage(Image):
         """ Clean the rendition cache of files older than max_age seconds """
         cache_dir = os.path.join(config.static_folder,
                                  config.image_output_subdir)
-        return LocalImage.thread_pool().submit(LocalImage._clean_cache, max_age, cache_dir)
 
-    @staticmethod
-    def _clean_cache(max_age, cache_dir: str):
         threshold = time.time() - max_age
         LOGGER.debug("Deleting image renditions older than %d from %s", threshold,
                      cache_dir)

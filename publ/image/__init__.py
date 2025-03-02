@@ -3,13 +3,10 @@
 import errno
 import hashlib
 import html
-import io
 import itertools
 import logging
 import os
-import random
 import re
-import time
 import typing
 
 import flask
@@ -255,8 +252,8 @@ def clean_cache(max_age: float):
     return LocalImage.clean_cache(max_age)
 
 
-def get_async(render_spec: str):
-    """ Quasi-asynchronously fetch an image that needs to be rendered """
+def render(render_spec: str):
+    """ Fetch an image that needs to be rendered """
 
     try:
         # Get the image request parameters
@@ -270,38 +267,11 @@ def get_async(render_spec: str):
         if not asset:
             raise http_error.NotFound(f"File not found: {file_path}")
         renderer = LocalImage(asset, [])
-        output_path, _, pending = renderer.render_async(output_scale, **args)
+        output_path, _ = renderer.render(output_scale, **args)
     except FileNotFoundError as err:
         raise http_error.NotFound(f"File not found: {file_path}") from err
 
-    LOGGER.debug("Request for %s (%d) %s -> %s pending=%s", file_path, output_scale, args,
-                 output_path, pending)
+    LOGGER.debug("Request for %s (%d) %s -> %s", file_path, output_scale, args,
+                 output_path)
 
-    if not pending:
-        return flask.redirect(output_path)
-
-    retry_count = int(flask.request.args.get('retry_count', 0))
-    if retry_count < 10:
-        time.sleep(0.25)  # ghastly hack to get the client to backoff a bit
-        return flask.redirect(flask.url_for('async',
-                                            render_spec=render_spec,
-                                            cb=random.randint(0, 2**48),
-                                            retry_count=retry_count + 1))
-
-    return make_placeholder(output_path)
-
-
-def make_placeholder(output_path: str):
-    """ Generate a placeholder image for the given file path """
-    vals = [int(b) for b in hashlib.md5(
-        output_path.encode('utf-8')).digest()[0:12]]
-    placeholder = PIL.Image.new('RGB', (2, 2))
-    placeholder.putdata(list(zip(vals[0::3], vals[1::3], vals[2::3])))
-    outbytes = io.BytesIO()
-    placeholder.save(outbytes, "PNG")
-    outbytes.seek(0)
-
-    response = flask.make_response(
-        flask.send_file(outbytes, mimetype='image/png'))
-    response.headers['Refresh'] = '5'
-    return response
+    return flask.redirect(output_path)
