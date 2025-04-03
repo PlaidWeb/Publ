@@ -427,27 +427,25 @@ class Entry(caching.Memoizable):
             body, more, is_markdown = self._entry_content
 
             render_args = {'count': 1,
-               **kwargs,
-               "max_scale": 1,
-               "_suppress_footnotes": True,
-               "_no_resize_external": True,
-               "absolute": True}
+                           **kwargs,
+                           "max_scale": 1,
+                           "_suppress_footnotes": True,
+                           "_no_resize_external": True,
+                           "absolute": True}
 
+            image_list = []
             if 'image' in kwargs and kwargs['image'] is not None:
                 if kwargs['image'] is False:
                     render_args['count'] = 0
                 else:
                     image_list = [self.image(img).get_img_tag(render_args)
-                     for img in utils.as_list(kwargs['image'])]
-
-            else:
-                image_list = []
+                                  for img in utils.as_list(kwargs['image'])]
 
             html_text = markupsafe.Markup(''.join(image_list)) + (
                 self._get_markup(body + '\n\n' + more,
-                                         is_markdown,
-                                         args=render_args,
-                                         counter=markdown.ItemCounter()))
+                                 is_markdown,
+                                 args=render_args,
+                                 counter=markdown.ItemCounter()))
 
             print(html_text)
 
