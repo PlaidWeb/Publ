@@ -1,6 +1,6 @@
 ==Card data==
 
-{{entry.card}}
+{{entry.card(image=entry.get('card-image'))}}
 
 ==Summary text==
 

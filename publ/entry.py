@@ -425,15 +425,32 @@ class Entry(caching.Memoizable):
             tags += og_tag('og:url', self.link(absolute=True))
 
             body, more, is_markdown = self._entry_content
-            html_text = self._get_markup(body + '\n\n' + more,
+
+            render_args = {'count': 1,
+               **kwargs,
+               "max_scale": 1,
+               "_suppress_footnotes": True,
+               "_no_resize_external": True,
+               "absolute": True}
+
+            if 'image' in kwargs and kwargs['image'] is not None:
+                if kwargs['image'] is False:
+                    render_args['count'] = 0
+                else:
+                    image_list = [self.image(img).get_img_tag(render_args)
+                     for img in utils.as_list(kwargs['image'])]
+
+            else:
+                image_list = []
+
+            html_text = markupsafe.Markup(''.join(image_list)) + (
+                self._get_markup(body + '\n\n' + more,
                                          is_markdown,
-                                         args={'count': 1,
-                                               **kwargs,
-                                               "max_scale": 1,
-                                               "_suppress_footnotes": True,
-                                               "_no_resize_external": True,
-                                               "absolute": True},
-                                         counter=markdown.ItemCounter())
+                                         args=render_args,
+                                         counter=markdown.ItemCounter()))
+
+            print(html_text)
+
             card = cards.extract_card(html_text)
 
             for (img, width, height) in card.images[:kwargs.get('count', 1)]:

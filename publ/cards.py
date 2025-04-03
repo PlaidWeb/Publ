@@ -49,6 +49,7 @@ class HtmlCardParser(utils.HTMLTransform):
 def extract_card(html_text: str) -> CardData:
     """ Extract card data based on the provided HTML. """
     card = CardData()
+
     HtmlCardParser(card).feed(html_text)
 
     return card
