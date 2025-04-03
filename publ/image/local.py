@@ -289,6 +289,7 @@ class LocalImage(Image):
         quality -- the JPEG quality to save the image as
         quantize -- how large a palette to use for GIF or PNG images
         """
+
         out_rel_path, size, pending = self._get_rendition(output_scale, False, **kwargs)
 
         if pending:

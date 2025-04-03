@@ -438,7 +438,7 @@ class Entry(caching.Memoizable):
                 if kwargs['image'] is False:
                     render_args['count'] = 0
                 else:
-                    image_list = [self.image(img).get_img_tag(render_args)
+                    image_list = [self.image(img).get_img_tag(**render_args)
                                   for img in utils.as_list(kwargs['image'])]
 
             html_text = markupsafe.Markup(''.join(image_list)) + (
@@ -446,8 +446,6 @@ class Entry(caching.Memoizable):
                                  is_markdown,
                                  args=render_args,
                                  counter=markdown.ItemCounter()))
-
-            print(html_text)
 
             card = cards.extract_card(html_text)
 

@@ -1,6 +1,6 @@
 ==Card data==
 
-{{entry.card(image=entry.get('card-image'))}}
+{{entry.card(image=entry.get('card-image'),width=240,height=240,resize='fill')}}
 
 ==Summary text==
 
