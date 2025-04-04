@@ -1,6 +1,10 @@
+{{entry.file_path}}
+
 ==Card data==
 
-{{entry.card(image=entry.get('card-image'),width=240,height=240,resize='fill')}}
+{{entry.card(image=False if entry.get('no-image') else entry.get('card-image'),
+    width=240,height=240,resize='fill',
+    image_fallback=entry.get('fallback-image'))}}
 
 ==Summary text==
 

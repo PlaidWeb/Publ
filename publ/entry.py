@@ -433,24 +433,30 @@ class Entry(caching.Memoizable):
                            "_no_resize_external": True,
                            "absolute": True}
 
-            image_list = []
-            if 'image' in kwargs and kwargs['image'] is not None:
-                if kwargs['image'] is False:
-                    render_args['count'] = 0
-                else:
-                    image_list = [self.image(img).get_img_tag(**render_args)
-                                  for img in utils.as_list(kwargs['image'])]
-
-            html_text = markupsafe.Markup(''.join(image_list)) + (
+            card = cards.extract_card(
                 self._get_markup(body + '\n\n' + more,
                                  is_markdown,
                                  args=render_args,
-                                 counter=markdown.ItemCounter()))
+                                 counter=markdown.ItemCounter())
+                )
 
-            card = cards.extract_card(html_text)
+            def get_images(prop):
+                images = []
+                if kwargs.get(prop):
+                    for url, size in [self.image(img).get_rendition(**render_args)
+                        for img in utils.as_list(kwargs[prop])]:
+                        width, height = size if size else ('', '')
+                        images.append((url, str(width), str(height)))
+                return images
 
-            for (img, width, height) in card.images[:kwargs.get('count', 1)]:
-                tags += og_tag('og:image', img)
+            images = []
+            if kwargs.get('image') is not False:
+                images += get_images('image')
+                images += card.images
+                images += get_images('image_fallback')
+
+            for (url, width, height) in images[:kwargs.get('count', 1)]:
+                tags += og_tag('og:image', url)
                 if width:
                     tags += og_tag('og:image:width', width)
                 if height:
