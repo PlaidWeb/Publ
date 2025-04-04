@@ -438,13 +438,13 @@ class Entry(caching.Memoizable):
                                  is_markdown,
                                  args=render_args,
                                  counter=markdown.ItemCounter())
-                )
+            )
 
             def get_images(prop):
                 images = []
                 if kwargs.get(prop):
                     for url, size in [self.image(img).get_rendition(**render_args)
-                        for img in utils.as_list(kwargs[prop])]:
+                                      for img in utils.as_list(kwargs[prop])]:
                         width, height = size if size else ('', '')
                         images.append((url, str(width), str(height)))
                 return images
