@@ -14,7 +14,7 @@ from typing import Optional
 
 import arrow
 import flask
-import slugify
+import demoji
 import werkzeug.routing
 
 from . import model
@@ -32,8 +32,20 @@ TagAttrs = typing.Dict[str, TagAttr]
 
 TimeSpan = typing.Literal['day', 'week', 'month', 'year']
 
-_TagKey = slugify.Slugify(to_lower=True)  # type:ignore
+def slugify(text:str, to_lower=False) -> str:
+    """ Slugify in an emoji-preserving manner """
 
+    # convert runs of bad characters into a dash
+    text = re.sub(r'[\-/ ~!@#$%^&*()+`\[\]\\|{}:";\'<>?,]+', '-', text)
+
+    # remove any hanging whatever
+    text = re.sub(r'[.\-]+$', '', text)
+    text = re.sub(r'^-+', '', text)
+
+    if to_lower:
+        text = text.casefold()
+
+    return text
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties. """
@@ -501,7 +513,7 @@ def parse_tuple_string(argument: typing.Union[str, typing.Tuple, typing.List],
 def tag_key(tag):
     """ Given a tag, return its normalized key """
     if isinstance(tag, str):
-        return _TagKey(tag)
+        return slugify(tag, to_lower=True)
     if isinstance(tag, model.EntryTag):
         return tag.key
     if isinstance(tag, model.EntryTagged):

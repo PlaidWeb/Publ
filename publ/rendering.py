@@ -11,6 +11,7 @@ import flask
 import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
+import urllib.parse
 
 from . import (caching, image, index, model, path_alias, queries, user, utils,
                view)
@@ -413,15 +414,23 @@ def _check_canon_entry_url(record):
 
     LOGGER.debug("request.url=%s canon_url=%s", request.url, canon_url)
 
-    if request.url != canon_url:
+    def path_normalize(url) -> typing.List[str]:
+        path = urllib.parse.urlparse(url).path
+        return [urllib.parse.unquote(p) for p in path.split('/')]
+
+    if path_normalize(request.url) != path_normalize(canon_url):
+        LOGGER.debug("normalized path doesn't match")
         # This could still be a redirected path...
         result = handle_path_alias()
         if result:
+            LOGGER.debug("we have a path alias")
             return result
 
         # Redirect to the canonical URL
+        LOGGER.debug("redirecting to canon URL %s", canon_url)
         return redirect(canon_url, code=301)
 
+    LOGGER.debug("nothing is wrong")
     return None
 
 
