@@ -396,3 +396,13 @@ def test_canonicize_url():
                      ('https://foo.bar/a', 'https://foo.bar/b'),
                      ('https://foo.bar/a', 'https://foo.bar/a/')):
         assert utils.canonicize_url(lhs) != utils.canonicize_url(rhs)
+
+
+def test_slugify():
+    """ Test the slugification """
+    assert utils.slugify('   foo   ') == 'foo'
+    assert utils.slugify('foo.bar.') == 'foo.bar'
+    assert utils.slugify(' 💜 ') == '💜'
+    assert utils.slugify('   this is a test of a long string', max_length=6) == 'this-i'
+    assert utils.slugify('   this is a test of a long string', max_length=5) == 'this'
+    assert utils.slugify('Éclair! yum', to_lower=True) == 'éclair-yum'

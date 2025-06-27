@@ -5,13 +5,13 @@ import base64
 import logging
 import os
 import typing
+import urllib.parse
 from typing import Optional
 
 import flask
 import werkzeug.exceptions as http_error
 from flask import redirect, request, send_file, url_for
 from pony import orm
-import urllib.parse
 
 from . import (caching, image, index, model, path_alias, queries, user, utils,
                view)

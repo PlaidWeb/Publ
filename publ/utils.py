@@ -14,7 +14,6 @@ from typing import Optional
 
 import arrow
 import flask
-import demoji
 import werkzeug.routing
 
 from . import model
@@ -32,20 +31,27 @@ TagAttrs = typing.Dict[str, TagAttr]
 
 TimeSpan = typing.Literal['day', 'week', 'month', 'year']
 
-def slugify(text:str, to_lower=False) -> str:
+
+def slugify(text: str, to_lower=False, max_length: typing.Optional[int] = None) -> str:
     """ Slugify in an emoji-preserving manner """
 
     # convert runs of bad characters into a dash
     text = re.sub(r'[\-/ ~!@#$%^&*()+`\[\]\\|{}:";\'<>?,]+', '-', text)
 
-    # remove any hanging whatever
-    text = re.sub(r'[.\-]+$', '', text)
+    # remove any prefixed chaff
     text = re.sub(r'^-+', '', text)
+
+    if max_length is not None:
+        text = text[:max_length]
+
+    # remove any suffixed chaff
+    text = re.sub(r'[.\-]+$', '', text)
 
     if to_lower:
         text = text.casefold()
 
     return text
+
 
 class CallableProxy:
     """ Wrapper class to make args possible on properties. """

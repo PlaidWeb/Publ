@@ -25,7 +25,6 @@ whoosh-reloaded = { version = "^2.7.4", optional = true }
 watchdog = "*"
 pillow = "^11.1.0"
 requests = "^2.32.3"
-demoji = "^1.1.0"
 awesome-slugify = "^1.6.5"
 
 [tool.poetry.extras]
