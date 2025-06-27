@@ -11,7 +11,6 @@ import uuid
 import arrow
 import flask
 import markupsafe
-import slugify
 from pony import orm
 from werkzeug.utils import cached_property
 
@@ -884,7 +883,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
         'category': entry.get('Category', utils.get_category(relpath)),
         'status': model.PublishStatus[entry.get('Status', 'SCHEDULED').upper()].value,
         'entry_type': entry.get('Entry-Type', ''),
-        'slug_text': slugify.slugify(
+        'slug_text': utils.slugify(
             entry.get('Slug-Text',
                       markdown.render_title(title, markup=False, smartquotes=False))),
         'redirect_url': entry.get('Redirect-To', ''),

@@ -15,7 +15,6 @@ import misaka
 import pygments
 import pygments.formatters
 import pygments.lexers
-import slugify
 
 from . import html_entry, image, links, utils
 from .config import config
@@ -235,7 +234,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
             eid=self._entry_id,
             level=level,
             num=num,
-            slug=slugify.slugify(content, max_length=32))
+            slug=utils.slugify(content, max_length=32))
 
     def header(self, content, level):
         """ Make a header with anchor.

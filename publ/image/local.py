@@ -9,7 +9,6 @@ import typing
 import flask
 import itsdangerous
 import PIL.Image
-import slugify
 from atomicwrites import atomic_write
 from werkzeug.utils import cached_property
 
@@ -100,7 +99,7 @@ class LocalImage(Image):
         """ implements get_rendition and returns tuple of out_rel_path,size,pending """
         basename, ext = os.path.splitext(
             os.path.basename(self._record.file_path))
-        basename = slugify.slugify(basename)
+        basename = utils.slugify(basename)
 
         if kwargs.get('format'):
             ext = '.' + kwargs['format']
