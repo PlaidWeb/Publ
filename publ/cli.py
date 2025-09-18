@@ -23,9 +23,10 @@ publ_cli = AppGroup('publ', short_help="Publ-specific commands")  # pylint:disab
 
 @publ_cli.command('reindex', short_help="Reindex the content store")
 @click.option('--quietly', '-q', 'quietly', is_flag=True, help="Quietly")
-@click.option('--fresh', '-f', 'fresh', is_flag=True, help="Start with a fresh database")
+@click.option('--force-rescan', '-f', 'force_rescan', is_flag=True, help="Force rescanning all files")
+@click.option('--fresh', '-F', 'fresh', is_flag=True, help="Start with a fresh database")
 @with_appcontext
-def reindex_command(quietly, fresh):
+def reindex_command(quietly, fresh, force_rescan):
     """ Forces a reindex of the content store.
 
     This is particularly useful to ensure that all content has been indexed
@@ -35,6 +36,10 @@ def reindex_command(quietly, fresh):
 
     if fresh:
         model.reset()
+
+    if force_rescan:
+        with orm.db_session:
+            orm.select(fp for fp in model.FileFingerprint).delete(bulk=True)
 
     spinner = itertools.cycle('|/-\\')
 
