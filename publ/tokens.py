@@ -9,7 +9,6 @@ import urllib.parse
 from typing import Optional
 
 import arrow
-import bs4
 import flask
 import itsdangerous
 import requests
@@ -151,7 +150,7 @@ def get_ticket_endpoint(me_url: str):
     if req.links and 'canonical' in req.links:
         canonical_url = req.links['canonical']['url']
     else:
-        link = typing.cast(bs4.Tag, content.find('link', rel='canonical'))
+        link = content.find('link', rel='canonical')
         if link:
             canonical_url = urllib.parse.urljoin(me_url,
                                                  typing.cast(str, link.get('href')))
