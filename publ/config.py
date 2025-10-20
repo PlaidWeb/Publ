@@ -64,6 +64,9 @@ class _Defaults:
     # security secret key
     secret_key = None
 
+    # MIME type registrations for templates
+    template_mimetypes: typing.Dict[str, str] = {}
+
 
 class Config(_Defaults):
     """ Stores configuration for a Publ app """
