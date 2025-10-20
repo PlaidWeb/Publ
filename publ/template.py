@@ -30,6 +30,13 @@ DEFAULT_ACCEPT = ['text/html',
                   'text/plain',
                   '*/*']
 
+def get_mimetype(fname):
+    LOGGER.debug("get_mimetype(%s)", fname)
+    for pattern in (fname, os.path.basename(fname), os.path.splitext(fname)[1]):
+        if pattern in config.template_mimetypes:
+            return config.template_mimetypes[pattern]
+
+    return mimetypes.guess_type(fname)[0]
 
 class Template:
     """ Template information wrapper """
@@ -66,7 +73,7 @@ class Template:
         if content:
             self._fingerprint = hashlib.md5(content.encode('utf-8')).hexdigest()
 
-        self.mime_type = mime_type if mime_type else mimetypes.guess_type(filename)[0]
+        self.mime_type = mime_type if mime_type else get_mimetype(filename)
 
     def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
@@ -155,7 +162,7 @@ def map_template(category: str,
 
             # If the template name was given exactly, just return it
             if os.path.isfile(base_path):
-                accept, _ = mimetypes.guess_type(basename)
+                accept = get_mimetype(basename)
                 if (accept_all or
                     accept in accept_mime or
                     match_glob(accept, accept_mime)):
@@ -169,7 +176,7 @@ def map_template(category: str,
 
             # Otherwise, check to see which extensions are available
             template_mimetypes = {
-                mimetypes.guess_type(fname)[0] : fname
+                get_mimetype(fname) : fname
                 for fname in glob.glob(f'{basename}.*', root_dir=root_dir)
                 }
 

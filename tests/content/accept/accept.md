@@ -9,3 +9,5 @@ Here are some templates and their expected MIME types:
 * [test.json](test.json) `application/json`
 * [test.txt](test.txt) `text/plain`
 * [test.xml](test.xml) `application/xml`
+* [bloop.plap](bloop.plap) `application/bloop`
+* [test.xyzzy](test.xyzzy) `application/plugh`

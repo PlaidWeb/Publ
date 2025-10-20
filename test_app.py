@@ -62,6 +62,11 @@ config = {
     'search_index': '_index' if whoosh else None,
     'index_enable_watchdog': True,
     'secret_key': "We are insecure",
+    'template_mimetypes': {
+        'bloop.plap': 'application/bloop',
+        '.xyzzy': 'application/plugh',
+        'accept/subdir/bloop.plap': 'application/plap-override'
+    }
 }
 
 app = publ.Publ(__name__, config)

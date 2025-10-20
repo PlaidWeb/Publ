@@ -10,3 +10,5 @@ Here are some templates and their expected MIME types:
 * [test.txt](test.txt) `text/plain` --- should fallback
 * [test.xml](test.xml) `application/xml` --- should use the subdir version
 * [test.css](test.css) `style/css` --- should use the subdir version
+* [bloop.plap](bloop.plap) `application/plap-override` --- should use subdir, and override the MIME type
+* [test.xyzzy](test.xyzzy) `application/plugh` --- should fallback
