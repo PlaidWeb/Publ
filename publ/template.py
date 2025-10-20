@@ -27,8 +27,7 @@ DEFAULT_ACCEPT = ['text/html',
                   'application/xml',
                   'application/json',
                   'style/css',
-                  'text/plain',
-                  '*/*']
+                  'text/plain']
 
 
 def get_mimetype(fname):
@@ -119,21 +118,32 @@ def map_template(category: str,
     category -- The path to map
     template_list -- A template to look up (as a string), or a list of templates.
     """
-    # pylint:disable=too-many-locals,too-many-branches
+    # pylint:disable=too-many-locals,too-many-branches,too-many-statements
 
     LOGGER.debug('accept_mimetypes = %s', list(flask.request.accept_mimetypes))
 
-    # get the sorted acceptance list
-    accept_mime = [mime for (mime, _) in flask.request.accept_mimetypes]
+    accept_all = False
+
+    # get the sorted acceptance list.
+    # If */* is in the acceptance list, expand it to our default acceptance to
+    # still prioritize things reasonably well
+    accept_mime: list[str] = []
+    for mime, _ in flask.request.accept_mimetypes:
+        if mime == '*/*':
+            accept_mime += DEFAULT_ACCEPT
+            accept_all = True
+        elif mime not in accept_mime:
+            accept_mime.append(mime)
+
+    # If we're handling an exception, always allow a fallback
     if in_exception:
-        accept_mime.append('*/*')
+        accept_all = True
 
     # Clients which accept *anything* (e.g. curl) should be forced into a more
     # sensible priority order
     if not accept_mime or accept_mime == ['*/*']:
         accept_mime = DEFAULT_ACCEPT
-
-    accept_all = '*/*' in accept_mime
+        accept_all = True
 
     LOGGER.debug("accept_mime: %s", accept_mime)
 
@@ -161,11 +171,12 @@ def map_template(category: str,
         Otherwise, returns False.
         """
 
+        could_glob = False
+
         for template in utils.as_list(template_list):
             LOGGER.debug("checking path %s for template %s", path, template)
             basename = os.path.join(path, template)
             base_path = os.path.join(root_dir, basename)
-            could_glob = False
 
             # If the template name was given exactly, just return it
             if os.path.isfile(base_path):
@@ -187,6 +198,12 @@ def map_template(category: str,
                 for fname in glob.glob(f'{basename}.*', root_dir=root_dir)
             }
 
+            if not template_mimetypes:
+                # No template extensions were found for this template, move on
+                # to the next one
+                continue
+
+            could_glob = True
             for accept in accept_mime:
                 # Check for exact match
                 if accept in template_mimetypes:
@@ -206,10 +223,15 @@ def map_template(category: str,
                                             os.path.join(root_dir, tpath),
                                             mime_type=tmime)
 
-            # We could have matched with a wider net
-            return could_glob
+            if accept_all:
+                # No standard MIME type was found so we're being weird, just return
+                # the first one and call it a day
+                for tmime, tpath in template_mimetypes.items():
+                    return Template(template, tpath, os.path.join(root_dir, tpath),
+                                    mime_type=tmime)
 
-        return False
+        # No matching template was found for any of the requested template names
+        return could_glob
 
     # Check the template directory hierarchy
     path = os.path.normpath(category)
