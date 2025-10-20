@@ -25,6 +25,7 @@ DEFAULT_ACCEPT = ['text/html',
                   'application/rss+xml',
                   'application/atom+xml',
                   'application/xml',
+                  'application/json',
                   'style/css',
                   'text/plain',
                   '*/*']
@@ -90,7 +91,6 @@ class Template:
         search_path = (os.path.join(config.content_folder, os.path.dirname(self.filename)),)
         return image.get_image(filename, search_path)
 
-
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]],
                  in_exception=False
@@ -107,6 +107,8 @@ def map_template(category: str,
     """
     # pylint:disable=too-many-locals,too-many-branches
 
+    LOGGER.debug('accept_mimetypes = %s', [(mime,q) for mime,q in flask.request.accept_mimetypes])
+
     # get the sorted acceptance list
     accept_mime = [mime for (mime, _) in flask.request.accept_mimetypes]
     if in_exception:
@@ -117,83 +119,107 @@ def map_template(category: str,
     if not accept_mime or accept_mime == ['*/*']:
         accept_mime = DEFAULT_ACCEPT
 
-    # Get the MIME types that are also just glob matches
-    accept_glob = [mime for mime in accept_mime if '*' in mime]
+    accept_all = '*/*' in accept_mime
 
     LOGGER.debug("accept_mime: %s", accept_mime)
-    LOGGER.debug("accep_glob: %s", accept_glob)
 
-    # gets a list like [('foo/bar', ['.foo','.bar'])]
-    mime_exts = [(None, [''])] + [(mime, mimetypes.guess_all_extensions(mime))
-                                  for mime in accept_mime]
+    def match_glob(mime, patterns):
+        """
+        Given a precise MIME type and a list of patterns, return the first
+        pattern that the MIME type matches
+        """
 
-    # unpacks it to [('foo/bar', '.foo'), ('foo/bar', '.bar')]
-    extensions = [(mime, ext) for mime, exts in mime_exts for ext in exts]
+        for pat in patterns:
+            if fnmatch.fnmatch(mime, pat):
+                return pat
 
-    LOGGER.debug("Extension priority: %s", extensions)
+        return None
 
-    could_glob = False
+    def check_path(path, root_dir) -> typing.Union[Template, bool]:
+        """
+        Checks the path for the template list.
 
-    for template in utils.as_list(template_list):
-        path: typing.Optional[str] = os.path.normpath(category)
-        while path is not None:
+        If an acceptable match is found, returns the template.
+
+        If an acceptable match wasn't found but there was a template that would
+        match with a wider Accept filter, returns True.
+
+        Otherwise, returns False.
+        """
+
+        for template in utils.as_list(template_list):
             LOGGER.debug("checking path %s for template %s", path, template)
-            for mime, extension in extensions:
-                LOGGER.debug('path=%s mime=%s extension=%s', path, mime, extension)
-                candidate = os.path.join(path, template + extension)
-                file_path = os.path.join(config.template_folder, candidate)
-                if os.path.isfile(file_path):
-                    # Note that if the template is called out directly, this will
-                    # not check if it matches the Accept: header. This technically
-                    # violates HTTP but in any situation where the name is given
-                    # directly there's almost certainly a */* in place.
-                    #
-                    # Properly checking Accept: in this context would be super annoying.
-                    return Template(template, candidate, file_path,
-                                    mime_type=mime)
+            basename = os.path.join(path, template)
+            base_path = os.path.join(root_dir, basename)
+            could_glob = False
 
-            # check for glob matches
-            glob_candidate = os.path.join(path, f'{template}.*')
-            glob_files = glob.glob(glob_candidate, root_dir=config.template_folder)
-            if glob_files:
+            # If the template name was given exactly, just return it
+            if os.path.isfile(base_path):
+                accept, _ = mimetypes.guess_type(basename)
+                if (accept_all or
+                    accept in accept_mime or
+                    match_glob(accept, accept_mime)):
+                    LOGGER.debug("Found exact template name match: %s (%s)",
+                        basename, accept)
+                    return Template(template, basename, base_path, mime_type=accept)
+
+                # We found this template by name and would have accepted it
+                # with a wider filter
                 could_glob = True
 
-            for pattern in accept_glob:
-                for candidate in glob_files:
-                    cmime, _ = mimetypes.guess_type(candidate)
-                    if pattern == '*/*' or (cmime and fnmatch.fnmatch(cmime, pattern)):
-                        LOGGER.debug("Found glob match: %s (%s)", candidate, cmime)
-                        return Template(template, candidate,
-                                        os.path.join(config.template_folder, candidate))
+            # Otherwise, check to see which extensions are available
+            template_mimetypes = {
+                mimetypes.guess_type(fname)[0] : fname
+                for fname in glob.glob(f'{basename}.*', root_dir=root_dir)
+                }
 
-            parent = os.path.dirname(path)
-            if parent != path:
-                path = parent
-            else:
-                path = None
+            for accept in accept_mime:
+                # Check for exact match
+                if accept in template_mimetypes:
+                    tpath = template_mimetypes[accept]
+                    LOGGER.debug("Found exact match: %s -> %s", accept, tpath)
+                    return Template(template, tpath,
+                        os.path.join(root_dir, tpath),
+                        mime_type=accept)
 
-    # We didn't find one in the filesystem, so let's consult the builtins instead
-    for template in utils.as_list(template_list):
-        for mime, extension in extensions:
-            filename = template + extension
-            template_string = _get_builtin(filename)
-            if template_string:
-                return Template(template, filename, None,
-                                content=template_string, mime_type=mime)
+                # Check for glob match
+                if '*' in accept:
+                    for tmime, tpath in template_mimetypes.items():
+                        if fnmatch.fnmatch(tmime, accept):
+                            LOGGER.debug("Found glob match for: %s -> %s (%s)",
+                                accept, tpath, tmime)
+                            return Template(template, tpath,
+                                os.path.join(root_dir, tpath),
+                                mime_type=tmime)
 
-        # check for glob matches
-        glob_files = glob.glob(f'{template}.*', root_dir=BUILTIN_DIR)
-        if glob_files:
-            could_glob = True
+            # We could have matched with a wider net
+            return could_glob
 
-        for pattern in accept_glob:
-            for candidate in glob_files:
-                cmime, _ = mimetypes.guess_type(candidate)
-                if cmime and fnmatch.fnmatch(cmime, pattern):
-                    return Template(template, candidate, None, content=_get_builtin(candidate))
+        return False
+
+    # Check the template directory hierarchy
+    path = os.path.normpath(category)
+    could_glob = False
+    while path is not None:
+        found = check_path(path, config.template_folder)
+        if found and isinstance(found, Template):
+            return found
+        could_glob |= found
+
+        parent = os.path.dirname(path)
+        if parent != path:
+            path = parent
+        else:
+            path = None
+
+    # Check the builtins
+    found = check_path('', BUILTIN_DIR)
+    if found and isinstance(found, Template):
+        return Template(found.name, found.filename, None, content=_get_builtin(found.filename))
+    could_glob |= found
 
     if could_glob:
-        # A precise match wasn't found, but could have been if there were a broader acceptance
+        # A template would have been found but it was filtered out by our filter
         raise http_error.NotAcceptable(f"Could not find match for {accept_mime}")
 
     return None
