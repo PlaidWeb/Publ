@@ -30,13 +30,19 @@ DEFAULT_ACCEPT = ['text/html',
                   'text/plain',
                   '*/*']
 
+
 def get_mimetype(fname):
+    """
+    Get the MIME type of a template, either from the configuration or from
+    the Python mimetypes configuration
+    """
     LOGGER.debug("get_mimetype(%s)", fname)
     for pattern in (fname, os.path.basename(fname), os.path.splitext(fname)[1]):
         if pattern in config.template_mimetypes:
             return config.template_mimetypes[pattern]
 
     return mimetypes.guess_type(fname)[0]
+
 
 class Template:
     """ Template information wrapper """
@@ -98,6 +104,7 @@ class Template:
         search_path = (os.path.join(config.content_folder, os.path.dirname(self.filename)),)
         return image.get_image(filename, search_path)
 
+
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]],
                  in_exception=False
@@ -114,7 +121,7 @@ def map_template(category: str,
     """
     # pylint:disable=too-many-locals,too-many-branches
 
-    LOGGER.debug('accept_mimetypes = %s', [(mime,q) for mime,q in flask.request.accept_mimetypes])
+    LOGGER.debug('accept_mimetypes = %s', list(flask.request.accept_mimetypes))
 
     # get the sorted acceptance list
     accept_mime = [mime for (mime, _) in flask.request.accept_mimetypes]
@@ -165,9 +172,9 @@ def map_template(category: str,
                 accept = get_mimetype(basename)
                 if (accept_all or
                     accept in accept_mime or
-                    match_glob(accept, accept_mime)):
+                        match_glob(accept, accept_mime)):
                     LOGGER.debug("Found exact template name match: %s (%s)",
-                        basename, accept)
+                                 basename, accept)
                     return Template(template, basename, base_path, mime_type=accept)
 
                 # We found this template by name and would have accepted it
@@ -176,9 +183,9 @@ def map_template(category: str,
 
             # Otherwise, check to see which extensions are available
             template_mimetypes = {
-                get_mimetype(fname) : fname
+                get_mimetype(fname): fname
                 for fname in glob.glob(f'{basename}.*', root_dir=root_dir)
-                }
+            }
 
             for accept in accept_mime:
                 # Check for exact match
@@ -186,18 +193,18 @@ def map_template(category: str,
                     tpath = template_mimetypes[accept]
                     LOGGER.debug("Found exact match: %s -> %s", accept, tpath)
                     return Template(template, tpath,
-                        os.path.join(root_dir, tpath),
-                        mime_type=accept)
+                                    os.path.join(root_dir, tpath),
+                                    mime_type=accept)
 
                 # Check for glob match
                 if '*' in accept:
                     for tmime, tpath in template_mimetypes.items():
                         if fnmatch.fnmatch(tmime, accept):
                             LOGGER.debug("Found glob match for: %s -> %s (%s)",
-                                accept, tpath, tmime)
+                                         accept, tpath, tmime)
                             return Template(template, tpath,
-                                os.path.join(root_dir, tpath),
-                                mime_type=tmime)
+                                            os.path.join(root_dir, tpath),
+                                            mime_type=tmime)
 
             # We could have matched with a wider net
             return could_glob
@@ -207,23 +214,25 @@ def map_template(category: str,
     # Check the template directory hierarchy
     path = os.path.normpath(category)
     could_glob = False
-    while path is not None:
+    while path:
         found = check_path(path, config.template_folder)
-        if found and isinstance(found, Template):
-            return found
-        could_glob |= found
+        if found:
+            if isinstance(found, Template):
+                return found
+            could_glob = True
 
         parent = os.path.dirname(path)
         if parent != path:
             path = parent
         else:
-            path = None
+            break
 
     # Check the builtins
     found = check_path('', BUILTIN_DIR)
-    if found and isinstance(found, Template):
-        return Template(found.name, found.filename, None, content=_get_builtin(found.filename))
-    could_glob |= found
+    if found:
+        if isinstance(found, Template):
+            return Template(found.name, found.filename, None, content=_get_builtin(found.filename))
+        could_glob = True
 
     if could_glob:
         # A template would have been found but it was filtered out by our filter

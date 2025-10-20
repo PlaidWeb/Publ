@@ -65,7 +65,7 @@ class _Defaults:
     secret_key = None
 
     # MIME type registrations for templates
-    template_mimetypes: typing.Dict[str,str] = {}
+    template_mimetypes: typing.Dict[str, str] = {}
 
 
 class Config(_Defaults):
