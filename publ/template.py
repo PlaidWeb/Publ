@@ -179,6 +179,7 @@ def map_template(category: str,
             base_path = os.path.join(root_dir, basename)
 
             # If the template name was given exactly, just return it
+            LOGGER.debug("Checking base_path=%s", base_path)
             if os.path.isfile(base_path):
                 accept = get_mimetype(basename)
                 if (accept_all or
@@ -236,7 +237,7 @@ def map_template(category: str,
     # Check the template directory hierarchy
     path = os.path.normpath(category)
     could_glob = False
-    while path:
+    while path is not None:
         found = check_path(path, config.template_folder)
         if found:
             if isinstance(found, Template):
