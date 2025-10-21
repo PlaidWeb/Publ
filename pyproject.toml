@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Publ"
-version = "0.8.3"
+version = "0.8.4"
 description = "A flexible web-based publishing framework"
 authors = ["fluffy <fluffy@beesbuzz.biz>"]
 license = "MIT"
