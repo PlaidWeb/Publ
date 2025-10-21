@@ -104,6 +104,19 @@ class Template:
         return image.get_image(filename, search_path)
 
 
+def match_glob(mime, patterns):
+    """
+    Given a precise MIME type and a list of patterns, return the first
+    pattern that the MIME type matches
+    """
+
+    for pat in patterns:
+        if fnmatch.fnmatch(mime, pat):
+            return pat
+
+    return None
+
+
 def map_template(category: str,
                  template_list: typing.Union[str, typing.List[str]],
                  in_exception=False
@@ -118,7 +131,7 @@ def map_template(category: str,
     category -- The path to map
     template_list -- A template to look up (as a string), or a list of templates.
     """
-    # pylint:disable=too-many-locals,too-many-branches,too-many-statements
+    # pylint:disable=too-many-locals,too-many-branches
 
     LOGGER.debug('accept_mimetypes = %s', list(flask.request.accept_mimetypes))
 
@@ -146,18 +159,6 @@ def map_template(category: str,
         accept_all = True
 
     LOGGER.debug("accept_mime: %s", accept_mime)
-
-    def match_glob(mime, patterns):
-        """
-        Given a precise MIME type and a list of patterns, return the first
-        pattern that the MIME type matches
-        """
-
-        for pat in patterns:
-            if fnmatch.fnmatch(mime, pat):
-                return pat
-
-        return None
 
     def check_path(path, root_dir) -> typing.Union[Template, bool]:
         """
@@ -237,18 +238,15 @@ def map_template(category: str,
     # Check the template directory hierarchy
     path = os.path.normpath(category)
     could_glob = False
-    while path is not None:
-        found = check_path(path, config.template_folder)
-        if found:
+    while True:
+        if found := check_path(path, config.template_folder):
             if isinstance(found, Template):
                 return found
             could_glob = True
 
-        parent = os.path.dirname(path)
-        if parent != path:
-            path = parent
-        else:
+        if (parent := os.path.dirname(path)) == path:
             break
+        path = parent
 
     # Check the builtins
     found = check_path('', BUILTIN_DIR)
