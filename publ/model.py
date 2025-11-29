@@ -16,7 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 25
 
 
 class GlobalConfig(DbEntity):
@@ -78,6 +78,8 @@ class Entry(DbEntity):
     # The actual displayable date - stored as string to guarantee the timezone
     # is maintained
     display_date = orm.Required(str)
+
+    uuid = orm.Required(str, unique=True)
 
     slug_text = orm.Optional(str)
     entry_type = orm.Optional(str)

@@ -934,6 +934,11 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
 
     remove_by_path(fullpath, entry_id)
 
+    if 'UUID' not in entry:
+        entry['UUID'] = str(uuid.uuid4())
+        fixup_needed = True
+    values['uuid'] = entry['UUID']
+
     record = model.Entry.get(id=entry_id)
     if record:
         LOGGER.debug("Reusing existing entry %d", record.id)
@@ -945,11 +950,6 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     if str(record.id) != entry['Entry-ID']:  # pylint:disable=no-member
         del entry['Entry-ID']
         entry['Entry-ID'] = str(record.id)
-        fixup_needed = True
-
-    if 'UUID' not in entry:
-        entry['UUID'] = str(uuid.uuid5(
-            uuid.NAMESPACE_URL, 'file://' + fullpath))
         fixup_needed = True
 
     # add other relationships to the index
