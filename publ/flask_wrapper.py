@@ -4,6 +4,7 @@ import functools
 import logging
 import re
 import typing
+import uuid
 
 import arrow
 import flask
@@ -62,7 +63,8 @@ class Publ(flask.Flask):
             the key ``AUTH_FORCE_HTTPS`` to a truthy value can be used to force the
             user to switch to a secure connection when they log in, and setting
             ``AUTH_TOKEN_STORAGE`` to a :py:class:`authl.tokens.TokenStore` will
-            use that for token storage instead of the default.
+            use that for token storage instead of the default (which stores tokens
+            securely within the Publ database).
         * ``user_list``: The file that configures the user and group list
         * ``admin_group``: The user or group that has full administrative access
             to all entries regardless of permissions
@@ -165,7 +167,6 @@ class Publ(flask.Flask):
         if self.publ_config.secret_key:
             self.secret_key = self.publ_config.secret_key
         else:
-            import uuid
             self.secret_key = uuid.uuid4().hex
 
         if self.auth:
@@ -242,6 +243,9 @@ class Publ(flask.Flask):
         if self.publ_config.auth:
             try:
                 import authl.flask
+                import authl.tokens
+                import itsdangerous
+                from pony.orm import db_session
             except ImportError:
                 LOGGER.error(
                     "Authentication system requested, but the dependencies are not installed. "
@@ -260,6 +264,36 @@ class Publ(flask.Flask):
             if auth_force_https:
                 self.config['SESSION_COOKIE_SECURE'] = True
 
+            class TokenStore(authl.tokens.TokenStore):
+                """ database-backed token storage """
+
+                def __init__(self, secret_key):
+                    self._serializer = itsdangerous.URLSafeSerializer(secret_key)
+
+                @db_session
+                def put(self, value):
+                    key = uuid.uuid4().hex
+                    val = self._serializer.dumps(value)
+                    model.AuthlToken(key=key, val=val)
+                    return key
+
+                @db_session
+                def get(self, key, to_type=tuple):
+                    token = model.AuthlToken.get(key=key)
+                    if not token:
+                        raise KeyError("Invalid token")
+                    return to_type(self._serializer.loads(token.val))
+
+                @db_session
+                def remove(self, key):
+                    token = model.AuthlToken.get(key=key)
+                    if token:
+                        token.delete()
+
+            token_store = self.publ_config.auth.get('AUTH_TOKEN_STORAGE')
+            if not token_store:
+                token_store = TokenStore(self.publ_config.secret_key)
+
             return authl.flask.AuthlFlask(
                 self, self.publ_config.auth,
                 login_path='/_login',
@@ -269,7 +303,7 @@ class Publ(flask.Flask):
                 force_https=bool(self.publ_config.auth.get('AUTH_FORCE_HTTPS')),
                 login_render_func=rendering.render_login_form,
                 on_verified=user.register,
-                token_storage=self.publ_config.auth.get('AUTH_TOKEN_STORAGE'))
+                token_storage=token_store)
 
         return None
 

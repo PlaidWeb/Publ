@@ -16,6 +16,7 @@ DbEntity: orm.core.Entity = db.Entity
 LOGGER = logging.getLogger(__name__)
 
 # schema version; bump this number if it changes
+# (only necessary for table changes; additions don't require a bump)
 SCHEMA_VERSION = 25
 
 
@@ -211,6 +212,12 @@ class AuthLog(DbEntity):
     authorized = orm.Required(bool, index=True)
 
     orm.PrimaryKey(entry, user)
+
+
+class AuthlToken(DbEntity):
+    """ Token storage for Authl tokens """
+    key = orm.PrimaryKey(str)
+    val = orm.Required(str)
 
 
 def reset():
