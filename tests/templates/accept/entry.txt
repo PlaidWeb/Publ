@@ -1,0 +1,5 @@
+Title: {{entry.title}}
+Date: {{entry.date}}
+
+{{entry.body(markup=False)}}
+{{entry.more(markup=False)}}
