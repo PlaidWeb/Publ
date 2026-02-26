@@ -6,6 +6,12 @@
 </head>
 
 <body>
+    <p>{{user}}</p>
+
+    {% if user.is_bot %}
+    <p>hello robo</p>
+    {% endif %}
+
     {% if user %}
     <ul>
         <li>identity: <a href="{{user.identity}}">{{user.humanize}}</a> ({{user.identity}})</li>
@@ -15,6 +21,7 @@
         <li>groups: {{user.groups}}</li>
         <li>auth_groups: {{user.auth_groups}}</li>
         <li>is_admin: {{user.is_admin}}</li>
+        <li>is_bot: {{user.is_bot}}
         <li>profile:<ul>
             {% for key,val in user.profile.items() %}
             <li>{{key}}: {{val}}</li>

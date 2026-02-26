@@ -6,12 +6,14 @@ import collections
 import configparser
 import datetime
 import logging
+import re
 import typing
 import urllib.parse
 from typing import Optional
 
 import arrow
 import flask
+import user_agents
 import werkzeug.exceptions as http_error
 from pony import orm
 from werkzeug.utils import cached_property
@@ -78,11 +80,16 @@ class User(caching.Memoizable):
         self._auth_type = auth_type
         self._scope = scope
 
+        self.is_bot = False
+
     def _key(self):
         return self._identity, self._auth_type, self._scope
 
     def __lt__(self, other):
         return self.identity < other.identity
+
+    def __bool__(self):
+        return bool(self._identity)
 
     @cached_property
     def identity(self):
@@ -179,6 +186,21 @@ class User(caching.Memoizable):
         return tokens.get_token(self.identity, lifetime, scope)
 
 
+class BotUser(User):
+    """ A user that is a known bot """
+
+    def __init__(self, bot_url, user_agent):
+        super().__init__(f'bot:{bot_url}')
+        self.is_bot = True
+
+        parsed = user_agents.parse(user_agent)
+        self._info = {
+            'name': str(parsed),
+            'profile_url': bot_url,
+            'homepage': bot_url
+        }, None, None
+
+
 @utils.stash
 def get_active() -> typing.Optional[User]:
     """ Get the active user """
@@ -197,7 +219,12 @@ def get_active() -> typing.Optional[User]:
     if flask.session.get('me'):
         return User(flask.session['me'], 'session')
 
-    return None
+    ua_string = flask.request.headers.get('user-agent', '')
+    ua_bot = re.search(r'\+(https?://[^\) ]*)', ua_string)
+    if ua_bot:
+        return BotUser(ua_bot[1], ua_string)
+
+    return User('')
 
 
 @orm.db_session(retry=5)

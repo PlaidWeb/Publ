@@ -152,7 +152,8 @@ class Publ(flask.Flask):
                 LOGGER.info("Redir: %s", redir)
                 LOGGER.info("Request path: %s", flask.request.path)
 
-                flask.session.pop('me')
+                if 'me' in flask.session:
+                    flask.session.pop('me')
                 return flask.redirect('/' + redir)
 
             tmpl = rendering.map_template('/', 'logout')

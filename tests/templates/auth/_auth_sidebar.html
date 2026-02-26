@@ -16,6 +16,13 @@
 </ul>
 {% endif %}
 
+{% if user.is_bot %}
+<h3>Bot info</h3>
+<ul>
+<li>Hello, bot friend</li>
+</ul>
+{% endif %}
+
 <h3>Test users</h3>
 <ul>
     {% for name in ('admin','good_friend1','good_friend2','friend1','friend2','friend3','friend3_other1','friend3_other2','mutual1','mutual2','specific') %}
