@@ -200,6 +200,10 @@ class BotUser(User):
             'homepage': bot_url
         }, None, None
 
+    def __bool__(self):
+        """ Bot users don't count as active users """
+        return False
+
 
 @utils.stash
 def get_active() -> typing.Optional[User]:
