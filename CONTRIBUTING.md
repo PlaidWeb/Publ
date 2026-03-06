@@ -25,7 +25,7 @@ get an expected result. Hand-written URLs are still useful.
     As a point of comparison, many blogging systems (Tumblr, LiveJournal,
     WordPress, etc.) paginate with `/page/N` suffixes; if someone finds and
     saves a page like, say,
-    [http://tumblr.beesbuzz.biz/page/5](http://tumblr.beesbuzz.biz/page/5)
+    [https://fluffy-critter.tumblr.com/page/5](https://fluffy-critter.tumblr.com/page/5)
     because they like a piece of content that was on it, if they come back later
     the content will have probably disappeared from that page. This is bad for
     search results, and is bad for long-form continuous content.
@@ -61,7 +61,7 @@ This project is built using Python 3,
 [Pony](http://ponyorm.com). The primary intended format for users to interact
 with is Markdown, specifically the flavor expressed by
 [Misaka](http://misaka.61924.nl), but pure-HTML entries should also be treated
-as first-class, citizens.
+as first-class citizens.
 
 ## Code quality
 
