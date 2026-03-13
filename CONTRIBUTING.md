@@ -136,6 +136,15 @@ apply minimal automated code formatting and run a number of checks (`pylint`,
 `mypy`, `pytest`, etc.). All of those checks must pass before a pull request can
 be considered successful.
 
+### No AI contributions
+
+This software is made by people, for people. While limited uses of AI can be
+helpful, the direct use of AI-generated code is an ethical and legal minefield,
+and the current means by which models are trained puts an undue burden on the
+people, systems, and resources who are being exploited with vanishingly small
+returns on their efforts. Further, AI code is not generated with the context of
+the specific needs or design goals of a project.
+
 ## Behavior
 
 Be prepared to answer whatever questions people might have about a contribution.
