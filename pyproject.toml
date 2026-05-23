@@ -7,9 +7,6 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/PlaidWeb/Publ"
 homepage = "https://publ.plaidweb.site/"
-include = [
-    "bandcrash/__version__.py"
-]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"

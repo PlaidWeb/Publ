@@ -10,7 +10,9 @@ from .flask_wrapper import Publ
 try:
     from .__version__ import __version__
 except ImportError:
-    __version__ = '(unknown)'
+    import importlib.metadata
+    __version__ = importlib.metadata.version(
+        'publ')  # ty:ignore[invalid-assignment]
 
 
 LOGGER = logging.getLogger(__name__)
