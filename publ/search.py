@@ -76,7 +76,7 @@ class SearchIndex:
             self.index = None
             LOGGER.error(
                 "Search index configured but required libraries are not installed. "
-                "See https://publ.plaidweb.site/manual/865-Python-API#search_index")
+                "See https://publ.beesbuzz.biz/manual/865-Python-API#search_index")
 
         self.schema = whoosh.fields.Schema(
             entry_id=whoosh.fields.ID(stored=True, unique=True),

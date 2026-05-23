@@ -250,7 +250,7 @@ class Publ(flask.Flask):
             except ImportError:
                 LOGGER.error(
                     "Authentication system requested, but the dependencies are not installed. "
-                    "See https://publ.plaidweb.site/manual/865-Python-API#auth")
+                    "See https://publ.beesbuzz.biz/manual/865-Python-API#auth")
 
             if not self.publ_config.secret_key:
                 # While we always have a secret_key, we need an explicitly-set
