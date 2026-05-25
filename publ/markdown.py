@@ -131,6 +131,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
     :py:func:`HtmlRenderer.image`, and py:mod:`publ.image`.
 
     """
+    # pylint:disable=too-many-instance-attributes
 
     def __init__(self, args: typing.Dict,
                  search_path: typing.Tuple[str],
@@ -401,9 +402,6 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         """
         LOGGER.debug("blockcode lang=%s", lang)
-
-        if not self._markup:
-            return text
 
         self._counter.blockcode(text, lang)
 
