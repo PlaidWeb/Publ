@@ -34,6 +34,6 @@ Also,
 This is
 Preformatted TEXT
     that should stay
-    the same
+      the same
 as it was before
 ```

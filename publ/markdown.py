@@ -402,6 +402,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         """
         LOGGER.debug("blockcode lang=%s", lang)
 
+        if not self._markup:
+            return text
+
         self._counter.blockcode(text, lang)
 
         out = '<figure class="blockcode">'
@@ -490,9 +493,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
         # tag
         for element in ('div', 'figure'):
             if content.startswith(f'<{element}') and content.endswith(f'</{element}>'):
-                return '\n' + content + '\n'
+                return f'\n{content}\n'
 
-        return '<p>' + content + '</p>'
+        return f'<p>{content}</p>'
 
     def _render_image(self, spec, show, container_args, alt_text=None):
         """ Render an image specification into an <img> tag """
