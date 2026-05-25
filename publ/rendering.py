@@ -228,7 +228,7 @@ def render_exception(error, category: typing.Optional[str] = None):
         if result:
             return result
 
-    # We can't properly map the category so let's make a best guess.
+    # If the category hasn't been provided, make a best guess based on request path
     #
     # os.path.dirname is sufficient for this guess; if this was /path/to/category
     # and category was valid, we'd have been redirected to /path/to/category/ first anyway.
@@ -253,15 +253,13 @@ def render_exception(error, category: typing.Optional[str] = None):
             })
 
     if isinstance(error, http_error.HTTPException):
-        return render_error(category, error.name, error.code,
-                            entry=flask.g.get('entry'),
-                            exception={
-                                'type': type(error).__name__,
-                                'str': error.description,
-                                'args': error.args
-                            })
+        error_name = error.name
+        error_code = error.code
+    else:
+        error_name = "Exception Occurred"
+        error_code = 500
 
-    return render_error(category, "Exception Occurred", 500,
+    return render_error(category, error_name, error_code,
                         entry=flask.g.get('entry'),
                         exception={
                             'type': type(error).__name__,
