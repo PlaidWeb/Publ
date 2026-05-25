@@ -185,6 +185,8 @@ class HTMLStripper(utils.HTMLTransform):
             self._remove_depth -= 1
 
     def handle_startendtag(self, tag, attrs):
+        if tag == 'br':
+            self.append('\n')
         self.append(self._filter(tag, attrs, start_end=True))
 
     def handle_data(self, data):
