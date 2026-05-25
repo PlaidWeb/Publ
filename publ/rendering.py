@@ -156,7 +156,7 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
 
 
 @orm.db_session
-def render_error(category, error_message, error_codes,
+def render_error(category, error_message, error_codes, *,
                  entry=None,
                  exception=None,
                  headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
@@ -174,6 +174,7 @@ def render_error(category, error_message, error_codes,
 
     Returns a tuple of (rendered_text, status_code, headers)
     """
+    # pylint:disable=too-many-arguments
 
     LOGGER.info("Rendering error: category=%s error_message='%s' error_codes=%s exception=%s",
                 category,
@@ -202,7 +203,7 @@ def render_error(category, error_message, error_codes,
 
 
 @orm.db_session
-def render_exception(error, category:typing.Optional[str]=None):
+def render_exception(error, category: typing.Optional[str] = None):
     """ Catch-all renderer for the top-level exception handler """
 
     LOGGER.debug("render_exception %s %s", type(error), error)
@@ -212,9 +213,9 @@ def render_exception(error, category:typing.Optional[str]=None):
 
         force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
         if force_ssl and request.scheme != 'https':
-            return redirect(utils.secure_link(request.endpoint,
-                                              **request.view_args,
-                                              **request.args))
+            return redirect(urllib.parse.urlunparse(
+                urllib.parse.urlparse(request.url)._replace(scheme='https')
+            ))
 
         flask.g.needs_token = True  # pylint:disable=assigning-non-slot
         if app.auth:
@@ -253,23 +254,23 @@ def render_exception(error, category:typing.Optional[str]=None):
 
     if isinstance(error, http_error.HTTPException):
         return render_error(category, error.name, error.code,
-            entry=flask.g.get('entry'),
-            exception={
-                'type': type(error).__name__,
-                'str': error.description,
-                'args': error.args
-        })
+                            entry=flask.g.get('entry'),
+                            exception={
+                                'type': type(error).__name__,
+                                'str': error.description,
+                                'args': error.args
+                            })
 
     return render_error(category, "Exception Occurred", 500,
-        entry=flask.g.get('entry'),
-        exception={
-            'type': type(error).__name__,
-            'str': str(error),
-            'args': error.args,
-    })
+                        entry=flask.g.get('entry'),
+                        exception={
+                            'type': type(error).__name__,
+                            'str': str(error),
+                            'args': error.args,
+                        })
 
 
-@orm.db_session
+@ orm.db_session
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for forced .php redirects) """
 
@@ -279,7 +280,7 @@ def render_path_alias(path):
     raise http_error.NotFound("Path redirection not found")
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -444,7 +445,7 @@ def _check_canon_entry_url(record):
     return None
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
@@ -560,7 +561,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     return rendered, headers
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()
@@ -614,7 +615,7 @@ def render_transparent_chit():
                        'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
 
 
-@orm.db_session
+@ orm.db_session
 def retrieve_asset(filename):
     """ Retrieves a non-image asset associated with an entry """
 
