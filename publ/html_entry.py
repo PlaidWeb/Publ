@@ -172,12 +172,12 @@ class HTMLStripper(utils.HTMLTransform):
         return ''
 
     def handle_starttag(self, tag, attrs):
-        if tag in ('p', 'br'):
+        if tag in ('p', 'br') and tag not in self._allowed_tags:
             self.append('\n')
         self.append(self._filter(tag, attrs))
 
     def handle_endtag(self, tag):
-        if tag == 'p':
+        if tag == 'p' and tag not in self._allowed_tags:
             self.append('\n')
         if self._allowed_tags and tag in self._allowed_tags:
             self.append(f'</{tag}>')
@@ -185,7 +185,7 @@ class HTMLStripper(utils.HTMLTransform):
             self._remove_depth -= 1
 
     def handle_startendtag(self, tag, attrs):
-        if tag == 'br':
+        if tag == 'br' and tag not in self._allowed_tags:
             self.append('\n')
         self.append(self._filter(tag, attrs, start_end=True))
 
