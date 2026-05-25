@@ -156,7 +156,8 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
 
 
 @orm.db_session
-def render_error(category, error_message, error_codes,
+def render_error(category, error_message, error_codes, *,
+                 entry=None,
                  exception=None,
                  headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
     """ Render an error page.
@@ -173,6 +174,7 @@ def render_error(category, error_message, error_codes,
 
     Returns a tuple of (rendered_text, status_code, headers)
     """
+    # pylint:disable=too-many-arguments
 
     LOGGER.info("Rendering error: category=%s error_message='%s' error_codes=%s exception=%s",
                 category,
@@ -192,6 +194,7 @@ def render_error(category, error_message, error_codes,
         return render_publ_template(
             template,
             is_error=True,
+            entry=entry,
             category=Category.load(category),
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
@@ -200,7 +203,7 @@ def render_error(category, error_message, error_codes,
 
 
 @orm.db_session
-def render_exception(error):
+def render_exception(error, category: typing.Optional[str] = None):
     """ Catch-all renderer for the top-level exception handler """
 
     LOGGER.debug("render_exception %s %s", type(error), error)
@@ -210,9 +213,9 @@ def render_exception(error):
 
         force_ssl = config.auth.get('AUTH_FORCE_HTTPS')
         if force_ssl and request.scheme != 'https':
-            return redirect(utils.secure_link(request.endpoint,
-                                              **request.view_args,
-                                              **request.args))
+            return redirect(urllib.parse.urlunparse(
+                urllib.parse.urlparse(request.url)._replace(scheme='https')
+            ))
 
         flask.g.needs_token = True  # pylint:disable=assigning-non-slot
         if app.auth:
@@ -220,13 +223,17 @@ def render_exception(error):
                 destination='/' + utils.redir_path(),
                 error=flask.g.get('token_error')), 401
 
-    result = handle_path_alias()
-    if result:
-        return result
+    if isinstance(error, http_error.NotFound):
+        result = handle_path_alias()
+        if result:
+            return result
 
-    # Effectively strip off the leading '/', so map_template can decide
-    # what the actual category is
-    category = request.path[1:]
+    # If the category hasn't been provided, make a best guess based on request path
+    #
+    # os.path.dirname is sufficient for this guess; if this was /path/to/category
+    # and category was valid, we'd have been redirected to /path/to/category/ first anyway.
+    # The same logic applies to path_aliased categories as a whole.
+    category = flask.g.get('category', os.path.dirname(request.path)[1:])
 
     qsize = index.queue_size()
     if isinstance(error, http_error.NotFound) and (qsize or index.in_progress()):
@@ -246,20 +253,21 @@ def render_exception(error):
             })
 
     if isinstance(error, http_error.HTTPException):
-        return render_error(category, error.name, error.code, exception={
-            'type': type(error).__name__,
-            'str': error.description,
-            'args': error.args
-        })
+        h_error = error
+    else:
+        h_error = http_error.InternalServerError(description="Exception Occurred",
+            original_exception=error)
 
-    return render_error(category, "Exception Occurred", 500, exception={
-        'type': type(error).__name__,
-        'str': str(error),
-        'args': error.args
-    })
+    return render_error(category, h_error.name, h_error.code,
+                        entry=flask.g.get('entry'),
+                        exception={
+                            'type': type(error).__name__,
+                            'str': str(error),
+                            'args': error.args,
+                        })
 
 
-@orm.db_session
+@ orm.db_session
 def render_path_alias(path):
     """ Render a known path-alias (used primarily for forced .php redirects) """
 
@@ -269,7 +277,7 @@ def render_path_alias(path):
     raise http_error.NotFound("Path redirection not found")
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def render_category(category='', template=None):
     """ Render a category page.
 
@@ -434,7 +442,7 @@ def _check_canon_entry_url(record):
     return None
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def render_entry(entry_id, slug_text='', category=''):
     """ Render an entry page.
 
@@ -530,6 +538,9 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     if not tmpl:
         raise http_error.BadRequest("Missing entry template" + entry_template)
 
+    flask.g.entry = entry_obj
+    flask.g.category = category
+
     rendered, etag = render_publ_template(
         tmpl,
         entry=entry_obj,
@@ -547,7 +558,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     return rendered, headers
 
 
-@orm.db_session(retry=5)
+@ orm.db_session(retry=5)
 def admin_dashboard(by=None):  # pylint:disable=invalid-name
     """ Render the authentication dashboard """
     cur_user = user.get_active()
@@ -601,7 +612,7 @@ def render_transparent_chit():
                        'Last-Modified': 'Tue, 31 Jul 1990 08:00:00 -0000'}
 
 
-@orm.db_session
+@ orm.db_session
 def retrieve_asset(filename):
     """ Retrieves a non-image asset associated with an entry """
 

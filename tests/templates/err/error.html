@@ -7,7 +7,7 @@
 <body>
     <h1>{{error.message}}</h1>
 
-    <p>This is the overridden error template.</p>
+    <p>This is the overridden error template, <code>{{template.filename}}</code>.</p>
 
     <div id="errorinfo"><ul>
         <li><span>error</span> {{error.code}} {{error.message}}</li>
@@ -17,6 +17,10 @@
         <li><span>full_path</span> <code>{{request.full_path}}</code></li>
         <li><span>endpoint</span> <code>{{request.endpoint}}</code></li>
         <li><span>url_rule</span> <code>{{request.url_rule}}</code></li>
+        <li><span>category</span> <code>{{category.path}}</code></li>
+        {% if entry %}
+            <li><span>entry</span> {{entry.id}}: {{entry.title}}</li>
+        {% endif %}
     {% if exception %}
         <li><span>Exception information</span>:<ul>
             {% for key,val in exception.items() %}
@@ -27,4 +31,3 @@
     </ul></div>
 
 </body></html>
-

@@ -168,7 +168,7 @@ def last_indexed() -> typing.Optional[str]:
     return None
 
 
-def queue_size() -> typing.Optional[int]:
+def queue_size() -> int:
     """ Return the approximate length of the work queue """
     from .flask_wrapper import current_app
     return current_app.indexer.queue_size
