@@ -222,9 +222,10 @@ def render_exception(error, category:typing.Optional[str]=None):
                 destination='/' + utils.redir_path(),
                 error=flask.g.get('token_error')), 401
 
-    result = handle_path_alias()
-    if result:
-        return result
+    if isinstance(error, http_error.NotFound):
+        result = handle_path_alias()
+        if result:
+            return result
 
     # We can't properly map the category so let's make a best guess.
     #
