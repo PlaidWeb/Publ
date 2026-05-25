@@ -277,6 +277,9 @@ class Category(caching.Memoizable):
     def __lt__(self, other):
         return self.path < other.path
 
+    def __html__(self):
+        return self.path
+
     @cached_property
     def parent(self) -> typing.Optional["Category"]:
         """ Get the parent category """

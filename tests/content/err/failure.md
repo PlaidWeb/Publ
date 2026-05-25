@@ -1,9 +1,6 @@
-Title: failure
-Date: 2019-05-13 20:57:39-07:00
-Entry-ID: 724
-UUID: f003e67a-c3e8-5f91-8ae1-f4def03843f1
-Status: DRAFT
+Date: 2026-05-25 00:52:02-07:00
+UUID: 7b55f45b-7b67-4256-982d-dececd8a06db
+Entry-ID: 3733
+Title: failure to render
 
-This category's index should not work. In prod it should show a pretty error page, in debug it should show the exception handler.
-
-The entry itself should generate a 403.
+This should allow the category to render (but that should raise an exception), and this entry should also raise an exception

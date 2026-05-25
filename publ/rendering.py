@@ -157,6 +157,7 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
 
 @orm.db_session
 def render_error(category, error_message, error_codes,
+                 entry=None,
                  exception=None,
                  headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
     """ Render an error page.
@@ -192,6 +193,7 @@ def render_error(category, error_message, error_codes,
         return render_publ_template(
             template,
             is_error=True,
+            entry=entry,
             category=Category.load(category),
             error={'code': error_code, 'message': error_message},
             exception=exception)[0], error_code, headers
@@ -200,7 +202,7 @@ def render_error(category, error_message, error_codes,
 
 
 @orm.db_session
-def render_exception(error):
+def render_exception(error, category:typing.Optional[str]=None):
     """ Catch-all renderer for the top-level exception handler """
 
     LOGGER.debug("render_exception %s %s", type(error), error)
@@ -224,9 +226,12 @@ def render_exception(error):
     if result:
         return result
 
-    # Effectively strip off the leading '/', so map_template can decide
-    # what the actual category is
-    category = request.path[1:]
+    # We can't properly map the category so let's make a best guess.
+    #
+    # os.path.dirname is sufficient for this guess; if this was /path/to/category
+    # and category was valid, we'd have been redirected to /path/to/category/ first anyway.
+    # The same logic applies to path_aliased categories as a whole.
+    category = flask.g.get('category', os.path.dirname(request.path)[1:])
 
     qsize = index.queue_size()
     if isinstance(error, http_error.NotFound) and (qsize or index.in_progress()):
@@ -246,16 +251,20 @@ def render_exception(error):
             })
 
     if isinstance(error, http_error.HTTPException):
-        return render_error(category, error.name, error.code, exception={
-            'type': type(error).__name__,
-            'str': error.description,
-            'args': error.args
+        return render_error(category, error.name, error.code,
+            entry=flask.g.get('entry'),
+            exception={
+                'type': type(error).__name__,
+                'str': error.description,
+                'args': error.args
         })
 
-    return render_error(category, "Exception Occurred", 500, exception={
-        'type': type(error).__name__,
-        'str': str(error),
-        'args': error.args
+    return render_error(category, "Exception Occurred", 500,
+        entry=flask.g.get('entry'),
+        exception={
+            'type': type(error).__name__,
+            'str': str(error),
+            'args': error.args,
     })
 
 
@@ -529,6 +538,9 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
     tmpl = map_template(category, entry_template)
     if not tmpl:
         raise http_error.BadRequest("Missing entry template" + entry_template)
+
+    flask.g.entry = entry_obj
+    flask.g.category = category
 
     rendered, etag = render_publ_template(
         tmpl,
