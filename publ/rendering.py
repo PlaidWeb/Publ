@@ -253,13 +253,12 @@ def render_exception(error, category: typing.Optional[str] = None):
             })
 
     if isinstance(error, http_error.HTTPException):
-        error_name = error.name
-        error_code = error.code
+        h_error = error
     else:
-        error_name = "Exception Occurred"
-        error_code = 500
+        h_error = http_error.InternalServerError(description="Exception Occurred",
+            original_exception=error)
 
-    return render_error(category, error_name, error_code,
+    return render_error(category, h_error.name, h_error.code,
                         entry=flask.g.get('entry'),
                         exception={
                             'type': type(error).__name__,
