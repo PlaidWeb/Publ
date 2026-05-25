@@ -255,7 +255,8 @@ def render_exception(error, category: typing.Optional[str] = None):
     if isinstance(error, http_error.HTTPException):
         h_error = error
     else:
-        h_error = http_error.InternalServerError(description="Exception Occurred",
+        h_error = http_error.InternalServerError(
+            description="Exception Occurred",
             original_exception=error)
 
     return render_error(category, h_error.name, h_error.code,
