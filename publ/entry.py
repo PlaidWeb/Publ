@@ -621,7 +621,9 @@ class Entry(caching.Memoizable):
                              counter=counter)
 
         if footnotes:
-            return markupsafe.Markup(f"<ol>{''.join(footnotes)}</ol>")
+            if args.get('markup', True):
+                return markupsafe.Markup(f"<ol>{''.join(footnotes)}</ol>")
+            return '\n\n'.join([f'[{idx}] {content}' for idx, content in enumerate(footnotes,start=1)])
         return ''
 
     def _get_toc(self, body, more, max_depth, args) -> str:

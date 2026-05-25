@@ -152,6 +152,8 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         self._counter = counter
 
+        self._markup = args.get('markup', True)
+
     def _inner(self, text):
         """ process some inner markdown """
         return misaka.Markdown(self,
@@ -184,6 +186,9 @@ class HtmlRenderer(misaka.HtmlRenderer):
 
         if self._config.get('_suppress_footnotes'):
             return '\u200b'  # zero-width space to prevent Misaka fallback
+
+        if not self._markup:
+            return f'[{self._footnote_num(num)}]'
 
         return '{sup}{link}{content}</a></sup>'.format(
             sup=utils.make_tag('sup', {
@@ -221,7 +226,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
                 'href': self._footnote_url(num, "r"),
                 'rev': 'footnote'
             }),
-            icon=self._config.get('footnotes_return', '↩'),
+            icon=self._config.get('footnotes_return', '↩' if self._markup else ''),
             partition=partition,
             after=after,
         )
@@ -323,7 +328,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
         # pylint: disable=too-many-locals
 
         # If we aren't generating images or markup, there's no reason to do any of this
-        if self._config.get('_suppress_images') or not self._config.get('markup', True):
+        if not self._markup or self._config.get('_suppress_images'):
             return ' '
 
         text = ''
@@ -464,7 +469,7 @@ class HtmlRenderer(misaka.HtmlRenderer):
           links (default: ``False``)
         """
 
-        if not self._config.get('markup', True):
+        if not self._markup:
             return content
 
         link = links.resolve(link, self._search_path,

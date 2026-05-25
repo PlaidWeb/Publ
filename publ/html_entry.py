@@ -172,9 +172,13 @@ class HTMLStripper(utils.HTMLTransform):
         return ''
 
     def handle_starttag(self, tag, attrs):
+        if tag in ('p', 'br'):
+            self.append('\n')
         self.append(self._filter(tag, attrs))
 
     def handle_endtag(self, tag):
+        if tag == 'p':
+            self.append('\n')
         if self._allowed_tags and tag in self._allowed_tags:
             self.append(f'</{tag}>')
         elif self._remove_elements and tag in self._remove_elements:

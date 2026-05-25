@@ -1,0 +1,12 @@
+TITLE: {{entry.title(markup=False)}}
+BODY:
+
+{{entry.body(markup=False)}}
+
+MORE:
+
+{{entry.more(markup=False)}}
+
+FOOTNOTES:
+
+{{entry.footnotes(markup=False)}}
