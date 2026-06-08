@@ -559,9 +559,7 @@ def to_html(text, args, search_path,
         # We prefer setting 'smartquotes' but we fall back to the negation of
         # 'no_smartquotes' for backwards compatibility with a not-well-considered
         # API.
-        if 'no_smartquotes' in args:
-            LOGGER.warning("no_smartquotes is deprecated and will be removed in a future version")
-        smartquotes = args.get('smartquotes', not args.get('no_smartquotes', False))
+        smartquotes = args.get('smartquotes', True)
         if smartquotes:
             text = misaka.smartypants(text)
             footnotes[:] = (misaka.smartypants(text) for text in footnotes)
