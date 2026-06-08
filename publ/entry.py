@@ -899,7 +899,7 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     entry_date = None
     if 'Date' in entry:
         try:
-            entry_date = arrow.get(entry['Date'], tzinfo=config.timezone)
+            entry_date = arrow.get(entry['Date'])
         except Exception as error:  # pylint:disable=broad-except
             LOGGER.info("Could not parse date %s (%s); setting to now", entry_date, error)
             entry_date = None
@@ -914,12 +914,12 @@ def scan_file(fullpath: str, relpath: typing.Optional[str], fixup_pass: int) -> 
     if 'Last-Modified' in entry:
         last_modified_str = entry['Last-Modified']
         try:
-            last_modified = arrow.get(
-                last_modified_str, tzinfo=config.timezone)
+            last_modified = arrow.get(last_modified_str)
         except Exception as error:  # pylint:disable=broad-except
             LOGGER.info("Could not parse last-modified %s (%s); setting to now",
                         last_modified_str, error)
-            last_modified = arrow.get()
+            last_modified = arrow.get(
+                os.stat(fullpath).st_ctime).to(config.timezone)
             del entry['Last-Modified']
             entry['Last-Modified'] = last_modified.format()
             fixup_needed = True

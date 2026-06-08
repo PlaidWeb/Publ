@@ -88,13 +88,18 @@
         <h2 class="p-name">
             <a class="u-url" href="{{entry.link}}">{{entry.title or '<code>(no title)</code>'|safe}}</a>
         </h2>
+        {% block posted %}
+        <div class="posted">Posted: <time class="dt-posted" datetime="{{entry.date.isoformat()}}">{{entry.date.format('YYYY-MM-DD h:mm A ZZ')}} ({{entry.date.humanize()}})</time>
+        </div>
+
+        {% endblock %}
 
         {% block body scoped %}
         {{entry.body(width=320,height=320,prefix='index_')}}
         {% endblock %}
 
         {% if entry.more %}
-        <div><a href="{{entry.link}}">read body</a></div>
+        <div><a href="{{entry.link}}">read body</a></>
         {%endif%}
         {% endblock %}
 
