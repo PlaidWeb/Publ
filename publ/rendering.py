@@ -32,7 +32,7 @@ NO_CACHE = {
 
 
 def cache_control():
-    # page did not have a user dependency, so it's cacheable
+    """ Set the cache control headers on a page """
     timeout = config.cache.get('CACHE_DEFAULT_TIMEOUT', None)
     if timeout:
         return f'public, max-age={timeout}'
