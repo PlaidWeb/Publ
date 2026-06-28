@@ -32,11 +32,6 @@ NO_CACHE = {
 
 
 def cache_control():
-    """ Determine the cache-control value based on page rendering """
-    if flask.g.get('user_dependent'):
-        # page had a user dependency, so don't cache it
-        return 'private, no-cache'
-
     # page did not have a user dependency, so it's cacheable
     timeout = config.cache.get('CACHE_DEFAULT_TIMEOUT', None)
     if timeout:
