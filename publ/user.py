@@ -216,7 +216,7 @@ def get_active() -> typing.Optional[User]:
         return User(flask.session['me'], 'session')
 
     ua_string = flask.request.headers.get('user-agent', '')
-    ua_bot = re.search(r'\+(https?://[^\) ]*)', ua_string)
+    ua_bot = re.search(r'((https?://[^\) ]*)|([^ )]*@[^ )]*))', ua_string)
     if ua_bot:
         return BotUser(ua_bot[1], ua_string)
 

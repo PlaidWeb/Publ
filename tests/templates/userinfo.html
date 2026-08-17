@@ -9,7 +9,13 @@
     <p>{{user}}</p>
 
     {% if user.is_bot %}
-    <p>hello robo {{user.name}}</p>
+        <p>hello robo {{user.name}}</p>
+
+        <ul>
+            {% for key,val in user.profile.items() %}
+            <li>{{key}}: {{val}}</li>
+            {% endfor %}
+        </ul>
     {% endif %}
 
     {% if user %}
