@@ -4,6 +4,8 @@
 import logging
 import os
 
+import werkzeug.exceptions
+
 try:
     import authl.flask
 except ImportError:
@@ -85,3 +87,13 @@ def date_view(match):
     """ Simple test of regex path aliases, maps e.g. /foo/date/2020 to /foo/?date=2020 """
     return flask.url_for('category', category=match.group(1),
                          date=match.group(2)), True
+
+
+@app.route('/_retry')
+def fake_retry():
+    raise werkzeug.exceptions.TooManyRequests(retry_after=3600)
+
+
+@app.route('/_error/<int:code>')
+def raise_error(code):
+    werkzeug.exceptions.abort(code)
