@@ -181,21 +181,19 @@ class User(caching.Memoizable):
 class BotUser(User):
     """ A user that is a known bot """
 
-    def __init__(self, bot_url, user_agent):
-        super().__init__(f'bot:{bot_url}')
+    def __init__(self, user_agent):
+        parsed = user_agents.parse(user_agent)
+        super().__init__(f'bot:null')
         self.is_bot = True
 
-        parsed = user_agents.parse(user_agent)
         self._info = {
             'name': str(parsed),
-            'profile_url': bot_url,
-            'homepage': bot_url
+            'user_agent': user_agent
         }, None, None
 
     def __bool__(self):
         """ Bot users don't count as active users """
         return False
-
 
 @utils.stash
 def get_active() -> typing.Optional[User]:
@@ -216,9 +214,8 @@ def get_active() -> typing.Optional[User]:
         return User(flask.session['me'], 'session')
 
     ua_string = flask.request.headers.get('user-agent', '')
-    ua_bot = re.search(r'((https?://[^\) ]*)|([^ )]*@[^ )]*))', ua_string)
-    if ua_bot:
-        return BotUser(ua_bot[1], ua_string)
+    if re.search(r'@|//|\+', ua_string):
+        return BotUser(ua_string)
 
     return User('')
 
