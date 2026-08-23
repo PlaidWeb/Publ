@@ -183,7 +183,7 @@ class BotUser(User):
 
     def __init__(self, user_agent):
         parsed = user_agents.parse(user_agent)
-        super().__init__(f'bot:null')
+        super().__init__('bot:null')
         self.is_bot = True
 
         self._info = {
@@ -194,6 +194,7 @@ class BotUser(User):
     def __bool__(self):
         """ Bot users don't count as active users """
         return False
+
 
 @utils.stash
 def get_active() -> typing.Optional[User]:

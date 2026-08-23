@@ -232,7 +232,7 @@ def render_exception(error, category: typing.Optional[str] = None):
 
     qsize = index.queue_size()
     if isinstance(error, http_error.NotFound) and (qsize or index.in_progress()):
-        retry = max(5, qsize / 5)
+        retry_time = max(5, qsize // 5)
         return render_error(
             category, "Site reindex in progress", 503,
             exception={
@@ -243,8 +243,8 @@ def render_exception(error, category: typing.Optional[str] = None):
             },
             headers={
                 **NO_CACHE,
-                'Retry-After': retry,
-                'Refresh': retry
+                'Retry-After': retry_time,
+                'Refresh': retry_time
             })
 
     if isinstance(error, http_error.HTTPException):
@@ -254,13 +254,19 @@ def render_exception(error, category: typing.Optional[str] = None):
             description="Exception Occurred",
             original_exception=error)
 
+    headers = {**NO_CACHE}
+
+    if retry := getattr(error, 'retry_after', None):
+        headers['Retry-After'] = retry
+
     return render_error(category, h_error.name, h_error.code,
                         entry=flask.g.get('entry'),
                         exception={
                             'type': type(error).__name__,
                             'str': str(error),
                             'args': error.args,
-                        })
+                        },
+                        headers=headers)
 
 
 @ orm.db_session
