@@ -158,7 +158,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
         date = arrow.get(entry.local_date)
 
         LOGGER.debug("%s: type='%s' id=%s sid=%s", entry.file_path,
-            entry.entry_type, eid, sid)
+                     entry.entry_type, eid, sid)
 
         dest_basename = type_formats.get(entry.entry_type, format_str).format(
             date=date.format('YYYYMMDD'),
