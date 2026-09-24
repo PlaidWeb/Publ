@@ -74,8 +74,14 @@ def token_command(identity, scope, lifetime):
 @click.option('--dry-run', '-n', 'dry_run', is_flag=True,
               help="Show, but don't apply, changes")
 @click.option('--format', '-f', 'format_str',
-              help="Filename format to use",
+              help="Default filename format to use",
               default="{date} {sid} {title}")
+@click.option('--type-format', '-F', 'type_format',
+              nargs=2, multiple=True,
+              help="Per-type filename format")
+@click.option('--type-ignore', '-g', 'type_ignore',
+              nargs=1, multiple=True,
+              help="Entry types to ignore")
 @click.option('--verbose', '-v', 'verbose', is_flag=True,
               help="Show detailed actions")
 @click.option('--max-length', '-m', 'max_length',
@@ -83,7 +89,8 @@ def token_command(identity, scope, lifetime):
               default=120)
 @with_appcontext
 @orm.db_session
-def normalize_command(category, recurse, dry_run, format_str, verbose, all_entries, max_length):
+def normalize_command(category, recurse, dry_run, format_str, verbose, all_entries, max_length,
+                      type_format, type_ignore):
     """ Normalizes the filenames of content files based on a standardized format.
 
     This will only normalize entries which are already in the content index.
@@ -116,6 +123,13 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
 
     from .model import PublishStatus
 
+    type_formats = dict(type_format)
+    ignore_types = set(type_ignore)
+
+    LOGGER.debug("Default format: %s", format_str)
+    LOGGER.debug("Type formats: %s", type_formats)
+    LOGGER.debug("Ignore types: %s", ignore_types)
+
     entries = queries.build_query({
         'category': category or '',
         'recurse': recurse,
@@ -124,6 +138,8 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
     })
 
     for entry in entries:
+        LOGGER.debug("Checking %s (%s)", entry.file_path, entry.entry_type)
+
         path = os.path.dirname(entry.file_path)
         basename, ext = os.path.splitext(os.path.basename(entry.file_path))
 
@@ -135,12 +151,15 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             eid = status.name
 
         sid = entry.id if status in (PublishStatus.PUBLISHED,
-                                     PublishStatus.HIDDEN,
                                      PublishStatus.SCHEDULED) else status.name
 
         date = arrow.get(entry.local_date)
 
-        dest_basename = format_str.format(
+        if entry.entry_type in ignore_types:
+            LOGGER.debug("Skipping %s: %s", entry.entry_type, entry.file_path)
+            continue
+
+        dest_basename = type_formats.get(entry.entry_type, format_str).format(
             date=date.format('YYYYMMDD'),
             time=date.format('HHmmss'),
             id=eid,
