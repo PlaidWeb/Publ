@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import typing
+import unicodedata
 import urllib.parse
 from typing import Optional
 
@@ -32,7 +33,10 @@ TagAttrs = typing.Dict[str, TagAttr]
 TimeSpan = typing.Literal['day', 'week', 'month', 'year']
 
 
-def slugify(text: str, to_lower=False, max_length: typing.Optional[int] = None) -> str:
+def slugify(text: str, *,
+            to_lower=False,
+            max_length: typing.Optional[int] = None,
+            allow_unicode=True) -> str:
     """ Slugify in an emoji-preserving manner """
 
     # convert runs of bad characters into a dash
@@ -49,6 +53,11 @@ def slugify(text: str, to_lower=False, max_length: typing.Optional[int] = None) 
 
     if to_lower:
         text = text.casefold()
+
+    if allow_unicode:
+        text = unicodedata.normalize('NFKC', text)
+    else:
+        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
 
     return text
 

@@ -406,3 +406,4 @@ def test_slugify():
     assert utils.slugify('   this is a test of a long string', max_length=6) == 'this-i'
     assert utils.slugify('   this is a test of a long string', max_length=5) == 'this'
     assert utils.slugify('Éclair! yum', to_lower=True) == 'éclair-yum'
+    assert utils.slugify('Éclair! yum', allow_unicode=False) == 'Eclair-yum'

@@ -22,7 +22,6 @@ whoosh-reloaded = { version = "^2.7.4", optional = true }
 watchdog = "*"
 pillow = "^12.1.1"
 requests = "^2.32.3"
-awesome-slugify = "^1.6.5"
 beautifulsoup4 = "^4.14.0"
 user-agents = "^2.2.0"
 

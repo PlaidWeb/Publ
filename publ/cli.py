@@ -9,11 +9,10 @@ import time
 
 import arrow
 import click
-import slugify
 from flask.cli import AppGroup, with_appcontext
 from pony import orm
 
-from . import queries
+from . import queries, utils
 from .config import config
 
 LOGGER = logging.getLogger(__name__)
@@ -121,8 +120,6 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
         '_all': all_entries,
     })
 
-    fname_slugify = slugify.UniqueSlugify(max_length=100, safe_chars='-.', separator=' ')
-
     for entry in entries:
         path = os.path.dirname(entry.file_path)
         basename, ext = os.path.splitext(os.path.basename(entry.file_path))
@@ -146,17 +143,24 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             id=eid,
             status=status.name,
             sid=sid,
-            title=entry.title,
-            slug=entry.slug_text,
+            title=utils.slugify(entry.title),
+            slug=utils.slugify(entry.slug_text),
             type=entry.entry_type).strip()
         dest_basename = re.sub(r' +', ' ', dest_basename)
 
         if dest_basename != basename:
+            suffix = 0
             while True:
-                # UniqueSlugify will bump the suffix until it doesn't collide
-                dest_path = os.path.join(path, fname_slugify(dest_basename) + ext)
+                dest_path = os.path.join(path, dest_basename)
+                if suffix:
+                    dest_path = f'{dest_path}-{suffix}'
+
                 if not os.path.exists(dest_path):
                     break
+
+                suffix += 1
+
+            dest_path += ext
 
             if verbose:
                 print(f'{entry.file_path} -> {dest_path}')
