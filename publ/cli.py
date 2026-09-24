@@ -78,9 +78,12 @@ def token_command(identity, scope, lifetime):
               default="{date} {sid} {title}")
 @click.option('--verbose', '-v', 'verbose', is_flag=True,
               help="Show detailed actions")
+@click.option('--max-length', '-m', 'max_length',
+              help="Maximum filename length",
+              default=120)
 @with_appcontext
 @orm.db_session
-def normalize_command(category, recurse, dry_run, format_str, verbose, all_entries):
+def normalize_command(category, recurse, dry_run, format_str, verbose, all_entries, max_length):
     """ Normalizes the filenames of content files based on a standardized format.
 
     This will only normalize entries which are already in the content index.
@@ -105,7 +108,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
 
         {title}   The entry's title, normalized to filename-safe characters
 
-        {slug}    The entry's slug text
+        {slug}    The entry's slug text, normalized to filename-safe characters
 
         {type}    The entry's type
     """
@@ -116,7 +119,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
     entries = queries.build_query({
         'category': category or '',
         'recurse': recurse,
-        '_future': True,
+        'future': True,
         '_all': all_entries,
     })
 
@@ -143,17 +146,17 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             id=eid,
             status=status.name,
             sid=sid,
-            title=utils.slugify(entry.title),
-            slug=utils.slugify(entry.slug_text),
+            title=utils.slugify(entry.title, allow_spaces=True),
+            slug=utils.slugify(entry.slug_text, allow_spaces=True),
             type=entry.entry_type).strip()
         dest_basename = re.sub(r' +', ' ', dest_basename)
 
         if dest_basename != basename:
             suffix = 0
             while True:
-                dest_path = os.path.join(path, dest_basename)
-                if suffix:
-                    dest_path = f'{dest_path}-{suffix}'
+                suffix_str = f'-{suffix}' if suffix else ''
+                cap_length = max_length - len(suffix_str)
+                dest_path = os.path.join(path, dest_basename[:cap_length] + suffix_str)
 
                 if not os.path.exists(dest_path):
                     break

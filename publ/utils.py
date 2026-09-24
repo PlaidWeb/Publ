@@ -36,11 +36,15 @@ TimeSpan = typing.Literal['day', 'week', 'month', 'year']
 def slugify(text: str, *,
             to_lower=False,
             max_length: typing.Optional[int] = None,
-            allow_unicode=True) -> str:
+            allow_unicode=True,
+            allow_spaces=False) -> str:
     """ Slugify in an emoji-preserving manner """
 
     # convert runs of bad characters into a dash
-    text = re.sub(r'[\-/ ~!@#$%^&*()+`\[\]\\|{}:";\'<>?,]+', '-', text)
+    text = re.sub(r'[\-/~!@#$%^&*()+`\[\]\\|{}:";\'<>?,]+', '-', text)
+
+    if not allow_spaces:
+        text = re.sub(r'[\- ]+', '-', text)
 
     # remove any prefixed chaff
     text = re.sub(r'^-+', '', text)
