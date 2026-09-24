@@ -155,15 +155,14 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             suffix = 0
             while True:
                 suffix_str = f'-{suffix}' if suffix else ''
-                cap_length = max_length - len(suffix_str)
-                dest_path = os.path.join(path, dest_basename[:cap_length] + suffix_str)
+                cap_length = max_length - len(suffix_str) - len(ext)
+                dest_path = os.path.join(path, dest_basename[:cap_length] + suffix_str + ext)
+                LOGGER.debug("suffix=%d dest_path=%s", suffix, dest_path)
+                suffix += 1
 
                 if not os.path.exists(dest_path):
                     break
 
-                suffix += 1
-
-            dest_path += ext
 
             if verbose:
                 print(f'{entry.file_path} -> {dest_path}')
