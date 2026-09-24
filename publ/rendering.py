@@ -39,11 +39,6 @@ def cache_control():
     return 'public'
 
 
-def mime_type(template: Template) -> str:
-    """ infer the content-type from the extension """
-    return f'{template.mime_type}; charset=utf-8'
-
-
 def get_template(template: str, relation) -> typing.Optional[str]:
     """ Given an entry or a category, return the path to a related template """
     if isinstance(relation, Entry):
@@ -153,7 +148,7 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
 @orm.db_session
 def render_error(category, error_message, error_codes, *,
                  entry=None,
-                 exception=None) -> str:
+                 exception=None) -> typing.Tuple[str, str]:
     """ Render an error page.
 
     Arguments:
@@ -166,7 +161,7 @@ def render_error(category, error_message, error_codes, *,
         for looking up the error template to use.
     exception -- Any exception that led to this error page
 
-    Returns a tuple of (rendered_text, status_code, headers)
+    Returns a tuple of (rendered_text, content_type)
     """
     # pylint:disable=too-many-arguments
 
@@ -191,9 +186,9 @@ def render_error(category, error_message, error_codes, *,
             entry=entry,
             category=Category.load(category),
             error={'code': error_code, 'message': error_message},
-            exception=exception)[0]
+            exception=exception)[0], template.content_type
 
-    return f'{error_code} {error_message}'
+    return f'{error_code} {error_message}', 'text/plain'
 
 
 @orm.db_session
@@ -242,7 +237,7 @@ def render_exception(error, category: typing.Optional[str] = None):
                 **NO_CACHE,
                 'Retry-After': retry_time,
                 'Refresh': retry_time
-            }
+        }
 
     if isinstance(error, http_error.HTTPException):
         h_error = error
@@ -251,14 +246,15 @@ def render_exception(error, category: typing.Optional[str] = None):
             description="Exception Occurred",
             original_exception=error)
 
-    response = error.get_response()
-    response.data = render_error(category, h_error.name, h_error.code,
-                        entry=flask.g.get('entry'),
-                        exception={
-                            'type': type(error).__name__,
-                            'str': str(error),
-                            'args': error.args,
-                        })
+    response = h_error.get_response()
+    response.data, response.headers['content-type'] = render_error(
+        category, h_error.name, h_error.code,
+        entry=flask.g.get('entry'),
+        exception={
+            'type': type(error).__name__,
+            'str': str(error),
+            'args': error.args,
+        })
 
     return response
 
@@ -344,7 +340,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
     if request.if_none_match.contains(etag):
         return 'Not modified', 304, {'ETag': f'"{etag}"'}
 
-    return rendered, {'Content-Type': mime_type(template_impl),
+    return rendered, {'Content-Type': template_impl.content_type,
                       'ETag': f'"{etag}"',
                       'Cache-Control': cache_control()}
 
@@ -546,7 +542,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         return 'Not modified', 304
 
     headers = {
-        'Content-Type': entry_obj.get('Content-Type', mime_type(tmpl)),
+        'Content-Type': tmpl.content_type,
         'ETag': etag,
         'Cache-Control': cache_control()
     }
