@@ -23,7 +23,7 @@ import publ.image
 
 APP_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
 
-logging.basicConfig(level=logging.DEBUG if 'FLASK_DEBUG' in os.environ else logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 config = {
     'database_config': {

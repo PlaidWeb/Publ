@@ -79,6 +79,10 @@ class Template:
             self._fingerprint = hashlib.md5(content.encode('utf-8')).hexdigest()
 
         self.mime_type = mime_type if mime_type else get_mimetype(filename)
+        if self.mime_type.startswith('text/'):
+            self.content_type = f"{self.mime_type}; charset=utf-8"
+        else:
+            self.content_type = self.mime_type
 
     def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
