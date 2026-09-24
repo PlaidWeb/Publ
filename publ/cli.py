@@ -77,11 +77,11 @@ def token_command(identity, scope, lifetime):
               help="Default filename format to use",
               default="{date} {sid} {title}")
 @click.option('--type-format', '-F', 'type_format',
-    nargs=2, multiple=True,
-                help="Per-type filename format")
+              nargs=2, multiple=True,
+              help="Per-type filename format")
 @click.option('--type-ignore', '-g', 'type_ignore',
-    nargs=1, multiple=True,
-    help="Entry types to ignore")
+              nargs=1, multiple=True,
+              help="Entry types to ignore")
 @click.option('--verbose', '-v', 'verbose', is_flag=True,
               help="Show detailed actions")
 @click.option('--max-length', '-m', 'max_length',
@@ -90,7 +90,7 @@ def token_command(identity, scope, lifetime):
 @with_appcontext
 @orm.db_session
 def normalize_command(category, recurse, dry_run, format_str, verbose, all_entries, max_length,
-    type_format, type_ignore):
+                      type_format, type_ignore):
     """ Normalizes the filenames of content files based on a standardized format.
 
     This will only normalize entries which are already in the content index.
@@ -123,7 +123,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
 
     from .model import PublishStatus
 
-    type_formats = {tt:ff for tt,ff in type_format}
+    type_formats = dict(type_format)
     ignore_types = set(type_ignore)
 
     LOGGER.debug("Default format: %s", format_str)
