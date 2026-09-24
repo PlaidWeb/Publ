@@ -124,7 +124,11 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
     from .model import PublishStatus
 
     type_formats = {tt:ff for tt,ff in type_format}
-    ignore_formats = set(type_ignore)
+    ignore_types = set(type_ignore)
+
+    LOGGER.debug("Default format: %s", format_str)
+    LOGGER.debug("Type formats: %s", type_formats)
+    LOGGER.debug("Ignore types: %s", ignore_types)
 
     entries = queries.build_query({
         'category': category or '',
@@ -134,6 +138,8 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
     })
 
     for entry in entries:
+        LOGGER.debug("Checking %s (%s)", entry.file_path, entry.entry_type)
+
         path = os.path.dirname(entry.file_path)
         basename, ext = os.path.splitext(os.path.basename(entry.file_path))
 
@@ -145,12 +151,12 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             eid = status.name
 
         sid = entry.id if status in (PublishStatus.PUBLISHED,
-                                     PublishStatus.HIDDEN,
                                      PublishStatus.SCHEDULED) else status.name
 
         date = arrow.get(entry.local_date)
 
-        if entry.entry_type in ignore_formats:
+        if entry.entry_type in ignore_types:
+            LOGGER.debug("Skipping %s: %s", entry.entry_type, entry.file_path)
             continue
 
         dest_basename = type_formats.get(entry.entry_type, format_str).format(
