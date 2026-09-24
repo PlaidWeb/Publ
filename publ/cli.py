@@ -163,7 +163,6 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
                 if not os.path.exists(dest_path):
                     break
 
-
             if verbose:
                 print(f'{entry.file_path} -> {dest_path}')
 
