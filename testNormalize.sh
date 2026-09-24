@@ -7,7 +7,7 @@ poetry install
 export FLASK_APP=test_app.py
 
 poetry run flask publ reindex
-poetry run flask publ normalize -rv -f "_{type}-{title}" \
+poetry run flask publ normalize -rva -f "_{type}-{title}" \
     -F '' "{date}-{sid} {title}" \
     -F 'collide' "{title}" \
     -g nonorm \

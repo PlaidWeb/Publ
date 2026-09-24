@@ -138,7 +138,9 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
     })
 
     for entry in entries:
-        LOGGER.debug("Checking %s (%s)", entry.file_path, entry.entry_type)
+        if entry.entry_type in ignore_types:
+            LOGGER.debug("Skipping %s: %s", entry.entry_type, entry.file_path)
+            continue
 
         path = os.path.dirname(entry.file_path)
         basename, ext = os.path.splitext(os.path.basename(entry.file_path))
@@ -150,14 +152,13 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
             # Draft entries don't get a stable entry ID
             eid = status.name
 
-        sid = entry.id if status in (PublishStatus.PUBLISHED,
-                                     PublishStatus.SCHEDULED) else status.name
+        sid = eid if status in (PublishStatus.PUBLISHED,
+                                PublishStatus.SCHEDULED) else status.name
 
         date = arrow.get(entry.local_date)
 
-        if entry.entry_type in ignore_types:
-            LOGGER.debug("Skipping %s: %s", entry.entry_type, entry.file_path)
-            continue
+        LOGGER.debug("%s: type='%s' id=%s sid=%s", entry.file_path,
+            entry.entry_type, eid, sid)
 
         dest_basename = type_formats.get(entry.entry_type, format_str).format(
             date=date.format('YYYYMMDD'),
@@ -180,6 +181,7 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
                 suffix += 1
 
                 if not os.path.exists(dest_path):
+                    LOGGER.debug("Found unique path %s", dest_path)
                     break
 
             if verbose:
