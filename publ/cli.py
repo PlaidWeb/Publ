@@ -180,14 +180,16 @@ def normalize_command(category, recurse, dry_run, format_str, verbose, all_entri
                 LOGGER.debug("suffix=%d dest_path=%s", suffix, dest_path)
                 suffix += 1
 
-                if not os.path.exists(dest_path):
+                if not os.path.exists(dest_path) or dest_path == entry.file_path:
                     LOGGER.debug("Found unique path %s", dest_path)
                     break
 
-            if verbose:
+            if verbose and dest_path != entry.file_path:
                 print(f'{entry.file_path} -> {dest_path}')
 
-            if not os.path.isfile(entry.file_path):
+            if dest_path == entry.file_path:
+                LOGGER.debug("Path %s didn't change, ignoring", dest_path)
+            elif not os.path.isfile(entry.file_path):
                 LOGGER.warning('File %s does not exist; is the index up-to-date?', entry.file_path)
             elif os.path.exists(dest_path):
                 LOGGER.warning('File %s already exists', dest_path)
