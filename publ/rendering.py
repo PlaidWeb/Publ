@@ -153,8 +153,7 @@ def render_publ_template(template: Template, is_error=True, **kwargs) -> typing.
 @orm.db_session
 def render_error(category, error_message, error_codes, *,
                  entry=None,
-                 exception=None,
-                 headers=None) -> typing.Tuple[str, int, typing.Dict[str, str]]:
+                 exception=None) -> str:
     """ Render an error page.
 
     Arguments:
@@ -192,15 +191,14 @@ def render_error(category, error_message, error_codes, *,
             entry=entry,
             category=Category.load(category),
             error={'code': error_code, 'message': error_message},
-            exception=exception)[0], error_code, headers
+            exception=exception)[0]
 
-    return f'{error_code} {error_message}', error_code, headers
+    return f'{error_code} {error_message}'
 
 
 @orm.db_session
 def render_exception(error, category: typing.Optional[str] = None):
     """ Catch-all renderer for the top-level exception handler """
-
     LOGGER.debug("render_exception %s %s", type(error), error)
 
     if isinstance(error, http_error.Unauthorized):
@@ -240,12 +238,11 @@ def render_exception(error, category: typing.Optional[str] = None):
                 'str': "The site's contents are not fully known; please try again later (qs="
                 + str(qsize) + ")",
                 'qsize': qsize
-            },
-            headers={
+            }), 503, {
                 **NO_CACHE,
                 'Retry-After': retry_time,
                 'Refresh': retry_time
-            })
+            }
 
     if isinstance(error, http_error.HTTPException):
         h_error = error
@@ -254,19 +251,16 @@ def render_exception(error, category: typing.Optional[str] = None):
             description="Exception Occurred",
             original_exception=error)
 
-    headers = {**NO_CACHE}
-
-    if retry := getattr(error, 'retry_after', None):
-        headers['Retry-After'] = retry
-
-    return render_error(category, h_error.name, h_error.code,
+    response = error.get_response()
+    response.data = render_error(category, h_error.name, h_error.code,
                         entry=flask.g.get('entry'),
                         exception={
                             'type': type(error).__name__,
                             'str': str(error),
                             'args': error.args,
-                        },
-                        headers=headers)
+                        })
+
+    return response
 
 
 @ orm.db_session
