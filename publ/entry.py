@@ -64,7 +64,9 @@ class Entry(caching.Memoizable):
         return self._record.id < other._record.id
 
     def _key(self):
-        return self._record.id, self._record.file_path, self._fingerprint.fingerprint
+        return (self._record.id,
+                self._record.file_path,
+                self._fingerprint.fingerprint if self._fingerprint else None)
 
     @cached_property
     def date(self) -> arrow.Arrow:

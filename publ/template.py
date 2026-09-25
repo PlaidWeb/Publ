@@ -12,6 +12,7 @@ import typing
 import arrow
 import flask
 import werkzeug.exceptions as http_error
+from werkzeug.utils import cached_property
 
 from . import image, utils
 from .config import config
@@ -78,11 +79,14 @@ class Template:
         if content:
             self._fingerprint = hashlib.md5(content.encode('utf-8')).hexdigest()
 
-        self.mime_type = mime_type if mime_type else get_mimetype(filename)
-        if self.mime_type.startswith('text/'):
-            self.content_type = f"{self.mime_type}; charset=utf-8"
-        else:
-            self.content_type = self.mime_type
+        self.mime_type = mime_type or get_mimetype(filename) or ''
+
+    @cached_property
+    def content_type(self):
+        """ Get an appropriate content-type header for the template """
+        if self.mime_type and self.mime_type.startswith('text/') and ';' not in self.mime_type:
+            return f"{self.mime_type}; charset=utf-8"
+        return self.mime_type
 
     def render(self, **args) -> str:
         """ Render the template with the appropriate Flask function """
