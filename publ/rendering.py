@@ -538,7 +538,7 @@ def render_entry_record(record: model.Entry, category: str, template: typing.Opt
         entry=entry_obj,
         category=Category.load(category))
 
-    if request.if_none_match.contains(etag):
+    if request.if_none_match.contains_weak(etag):
         return 'Not modified', 304
 
     headers = {
