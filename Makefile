@@ -40,7 +40,7 @@ preflight:
 
 .PHONY: test
 test:
-	FLASK_APP=test_app.py poetry run flask publ reindex
+	FLASK_APP=tests/test_app.py poetry run flask publ reindex
 	poetry run coverage run -m pytest
 
 .PHONY: cov
