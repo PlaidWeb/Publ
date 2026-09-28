@@ -21,7 +21,7 @@ import flask
 import publ
 import publ.image
 
-APP_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 logging.basicConfig(level=logging.DEBUG if 'FLASK_DEBUG' in os.environ else logging.WARNING)
 
@@ -91,9 +91,11 @@ def date_view(match):
 
 @app.route('/_retry')
 def fake_retry():
+    """ test endpoint for 429 error propagation """
     raise werkzeug.exceptions.TooManyRequests(retry_after=3600)
 
 
 @app.route('/_error/<int:code>')
 def raise_error(code):
+    """ test endpoint for raising an arbitrary error """
     werkzeug.exceptions.abort(code)

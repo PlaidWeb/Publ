@@ -4,7 +4,7 @@
 cd "$(dirname "$0")"
 poetry install
 
-export FLASK_APP=test_app.py
+export FLASK_APP=tests/test_app.py
 
 poetry run flask publ reindex
 poetry run flask publ normalize -rva -f "_{type}-{title}" \

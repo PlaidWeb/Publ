@@ -337,7 +337,7 @@ def render_category_path(category: str, template: typing.Optional[str]):
         category=Category.load(category),
         view=view_obj)
 
-    if request.if_none_match.contains(etag):
+    if request.if_none_match.contains_weak(etag):
         return 'Not modified', 304, {'ETag': f'"{etag}"'}
 
     return rendered, {'Content-Type': template_impl.content_type,
