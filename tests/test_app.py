@@ -45,6 +45,7 @@ config = {
     'auth': {
         'TEST_ENABLED': True,
 
+        # pylint:disable=using-constant-test
         'INDIEAUTH_CLIENT_ID': authl.flask.client_id if authl else None,
 
         'FEDIVERSE_NAME': 'Publ test suite',

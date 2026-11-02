@@ -1,12 +1,5 @@
 """ Tests of rendering functions """
 
-import os.path
-
-import flask
-import pytest
-
-import publ
-
 from .test_app import app
 
 
@@ -70,6 +63,7 @@ def test_etag_caching():
         response = client.get('/308-This-is-a-simple-test-entry',
                               headers={'If-None_match': f'{etag}, "FAKE ETAG'})
         assert response.status_code == 304
+
 
 def test_retry_after():
     """ Ensure that the retry_after header propagates """
